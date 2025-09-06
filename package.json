@@ -6,6 +6,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "biome lint . --write",
+    "postinstall": "echo 'postinstall'",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:ui": "turbo run test:ui",
@@ -14,7 +15,9 @@
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:publish": "pnpm build && changeset publish",
-    "clean": "tsx scripts/clean.ts"
+    "clean": "tsx scripts/clean.ts",
+    "docker:pg": "docker run --name solves-pg -e POSTGRES_PASSWORD=your_password -e POSTGRES_USER=your_username -e POSTGRES_DB=your_database_name -p 5432:5432 -d postgres",
+    "docker:redis": "docker run --name solves-redis -p 6379:6379 -d redis:7-alpine"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
