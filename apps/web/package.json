@@ -24,6 +24,9 @@
     "@workspace/typescript-config": "workspace:*",
     "@workspace/tailwind-config": "workspace:*",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.5"
+    "@tailwindcss/postcss": "^4.1.5",
+    "autoprefixer": "^10.4.20",
+    "tailwindcss": "^4.1.5",
+    "typescript": "5.9.2"
   }
 }
