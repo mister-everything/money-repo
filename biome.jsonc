@@ -1,13 +1,19 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
- "vcs": {
-    "enabled": true,
+  "vcs": {
+    "enabled": false,
     "clientKind": "git",
     "useIgnoreFile": true
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", ".next", "public", "docker", "dist/**", "*.d.ts"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/build",
+      "!**/dist",
+      "!**/.turbo"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -18,7 +24,7 @@
     "lineWidth": 80,
     "attributePosition": "auto"
   },
-  "organizeImports": { "enabled": true },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
@@ -26,10 +32,13 @@
       "complexity": { "noUselessTypeConstraint": "error" },
       "correctness": {
         "noUnusedVariables": "error",
-        "useArrayLiterals": "off",
         "useExhaustiveDependencies": "off"
       },
-      "style": { "noNamespace": "error", "useAsConstAssertion": "error" },
+      "style": {
+        "noNamespace": "error",
+        "useAsConstAssertion": "error",
+        "useArrayLiterals": "off"
+      },
       "suspicious": {
         "noExplicitAny": "off",
         "noExtraNonNullAssertion": "error",
@@ -40,5 +49,4 @@
     }
   },
   "javascript": { "formatter": { "quoteStyle": "double" } }
-
 }

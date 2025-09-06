@@ -5,12 +5,11 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "lint:fix": "turbo run lint:fix",
+    "lint": "biome lint . --write",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:ui": "turbo run test:ui",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "biome check . --apply",
     "check-types": "turbo run check-types",
     "changeset": "changeset",
     "changeset:version": "changeset version",
@@ -27,7 +26,11 @@
   "engines": {
     "node": ">=20"
   },
+  "trustedDependencies": [
+    "@biomejs/biome"
+  ],
   "dependencies": {
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "tsx": "^4.20.5"
   }
 }

@@ -4,32 +4,22 @@
       "mode": "auto"
     }
   ],
-  "tailwindCSS.experimental.configFile": "packages/tailwind-config/shared-styles.css",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "[javascript]": {
+  "tailwindCSS.experimental.configFile": "packages/tailwind-config/shared-styles.css",
+  "[json][jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[javascriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[css]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[graphql]": {
+  "[html][css][javascript][typescript][typescriptreact][javascriptreact]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
   "editor.formatOnSave": true,
-
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit",
+    "source.action.useSortedKeys.biome": "explicit",
+    "source.action.useSortedAttributes.biome": "explicit",
+    "source.action.useSortedProperties.biome": "explicit"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "json.schemaDownload.enable": true,
+  "json.validate.enable": true
 }
