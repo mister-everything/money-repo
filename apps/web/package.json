@@ -7,12 +7,14 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "lint": "biome lint . --write",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "^0.475.0",
     "next": "^15.4.5",
     "next-themes": "^0.4.6",
+    "@workspace/util": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
