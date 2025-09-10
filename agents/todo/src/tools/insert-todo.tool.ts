@@ -35,9 +35,3 @@ export const insertTodoTool = tool({
     await insertTodo(input);
   },
 });
-
-insertTodo({
-  title: "test",
-  writer: "test",
-  conetent: "test",
-});

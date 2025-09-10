@@ -1,11 +1,11 @@
 import { existsSync, writeFileSync } from "node:fs";
-import { Todo, TODO_FILE_NAME } from "./todo.interface";
-import { getTodo } from "./get-todo.tool";
 import { tool } from "ai";
 import { z } from "zod";
+import { getTodo } from "./get-todo.tool";
+import { TODO_FILE_NAME, Todo } from "./todo.interface";
 
 export const doneTodo = async (todo: Pick<Todo, "id">): Promise<Todo[]> => {
-    if (existsSync(TODO_FILE_NAME)) {
+  if (existsSync(TODO_FILE_NAME)) {
     const todos = await getTodo();
     const doneTodo = todos.find((t) => t.id === todo.id);
     if (!doneTodo) {
@@ -19,14 +19,14 @@ export const doneTodo = async (todo: Pick<Todo, "id">): Promise<Todo[]> => {
 };
 
 export const doneTodoTool = tool({
-    name: "doneTodo",
-    description: "Done a todo",
-    inputSchema: z.object({
-        id: z.string().describe("The id of the todo to done"),
-    }),
-    execute: async ({ id }) => {
-        return doneTodo({ id });
-    }
+  name: "doneTodo",
+  description: "Done a todo",
+  inputSchema: z.object({
+    id: z.string().describe("The id of the todo to done"),
+  }),
+  execute: async ({ id }) => {
+    return doneTodo({ id });
+  },
 });
 
-doneTodo({ id: "9a883794-6624-4f9d-8b56-39c53d18fa5f" }).then(console.log);
+// doneTodo({ id: "9a883794-6624-4f9d-8b56-39c53d18fa5f" }).then(console.log);
