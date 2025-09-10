@@ -20,6 +20,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^2.0.27",
     "ai": "^5.0.39",
-    "inquirer": "^12.9.4"
+    "inquirer": "^12.9.4",
+    "zod": "^4.1.5"
   }
 }

@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
+import { tool } from "ai";
+import z from "zod";
 import { TODO_FILE_NAME, Todo } from "./todo.interface";
 
 export const getTodo = async (): Promise<Todo[]> => {
@@ -8,3 +10,14 @@ export const getTodo = async (): Promise<Todo[]> => {
   }
   return [];
 };
+
+// getTodo().then(console.log);
+
+export const getTodoTool = tool({
+  name: "getTodo",
+  description: "get todo list",
+  inputSchema: z.object({}),
+  execute: async () => {
+    return await getTodo();
+  },
+});
