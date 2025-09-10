@@ -36,10 +36,8 @@ export const insertTodoTool = tool({
   },
 });
 
-// insertTodo({
-//   title: "test",
-//   writer: "test",
-//   conetent: "test",
-//   done: false,
-//   createdAt: new Date().toISOString(),
-// });
+insertTodo({
+  title: "test",
+  writer: "test",
+  conetent: "test",
+});
