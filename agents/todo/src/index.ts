@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateText, stepCountIs } from "ai";
+import { generateText, ModelMessage, stepCountIs } from "ai";
 import inquirer from "inquirer";
 import { doneTodoTool } from "./tools/done-todo.tool";
 import { getTodoTool } from "./tools/get-todo.tool";
@@ -21,14 +21,22 @@ const SYSTEM_PROMPT = `
 
 `;
 
+const DB_MESSAGE_TABLE: ModelMessage[] = [];
+
 const main = async () => {
   const answer = await inquirer.prompt([
     {
       type: "input",
       name: "prompt",
-      message: "무엇을 도와드릴까요?",
+      message: "",
     },
   ]);
+
+  DB_MESSAGE_TABLE.push({
+    role: "user",
+    content: answer.prompt,
+  });
+
   const result = await generateText({
     model,
     system: SYSTEM_PROMPT,
@@ -37,13 +45,14 @@ const main = async () => {
       insertTodo: insertTodoTool,
       doneTodo: doneTodoTool,
     },
-    // prompt: "나 오늘 운동해야해 할 일 추가해줘",
-    prompt: answer.prompt,
-    // prompt: "나 오늘 운동 완료했어",
+    messages: DB_MESSAGE_TABLE,
     stopWhen: stepCountIs(10),
   });
+  DB_MESSAGE_TABLE.push(...result.response.messages);
 
-  console.dir(result.steps, { depth: null });
+  console.dir(result.response.messages, { depth: null });
+
+  main();
 };
 
 main();
