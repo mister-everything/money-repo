@@ -1,0 +1,25 @@
+{
+  "name": "@agents/todo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome lint . --write",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@workspace/typescript-config": "workspace:*",
+    "tsx": "^4.20.5",
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.1"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.27",
+    "ai": "^5.0.39",
+    "inquirer": "^12.9.4"
+  }
+}
