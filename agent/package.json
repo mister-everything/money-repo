@@ -1,0 +1,31 @@
+{
+  "name": "agent",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "agent": "node --import=tsx src/index.ts",
+    "lint": "biome lint . --write",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.4.1",
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.28",
+    "@biomejs/biome": "2.2.2",
+    "@types/node": "^24.3.1",
+    "@workspace/env": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "@workspace/util": "workspace:*",
+    "ai": "^5.0.41",
+    "consola": "^3.4.2",
+    "inquirer": "^12.9.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^2.1.1",
+    "zod": "^4.1.8"
+  }
+}

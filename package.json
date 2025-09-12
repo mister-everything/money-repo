@@ -6,6 +6,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "start": "turbo run start",
+    "agent": "pnpm -F agent agent",
     "lint": "biome lint . --write",
     "postinstall": "tsx scripts/postinstall.ts",
     "test": "turbo run test",
