@@ -1,10 +1,11 @@
 {
-  "name": "solves",
+  "name": "root",
   "version": "0.0.1",
   "private": true,
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "start": "turbo run start",
     "lint": "biome lint . --write",
     "postinstall": "tsx scripts/postinstall.ts",
     "test": "turbo run test",

@@ -35,6 +35,12 @@ importers:
 
   apps/node-server:
     dependencies:
+      '@workspace/env':
+        specifier: workspace:*
+        version: link:../../packages/env
+      '@workspace/util':
+        specifier: workspace:*
+        version: link:../../packages/util
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -72,6 +78,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@workspace/env':
+        specifier: workspace:*
+        version: link:../../packages/env
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util

@@ -6,14 +6,16 @@
   "scripts": {
     "build": "tsc && tsup",
     "dev": "node --import=tsx --watch src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/index.cjs",
     "lint": "biome lint . --write",
     "check-types": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "@workspace/util": "workspace:*",
+    "@workspace/env": "workspace:*"
   },
   "devDependencies": {
     "@workspace/typescript-config": "workspace:*",
@@ -32,14 +34,16 @@
     ],
     "outDir": "dist",
     "format": [
-      "cjs",
-      "esm"
+      "cjs"
     ],
     "target": "es2020",
     "sourcemap": true,
     "clean": true,
     "dts": true,
     "splitting": false,
-    "skipNodeModulesBundle": true
+    "noExternal": [
+      "@workspace/util",
+      "@workspace/env"
+    ]
   }
 }

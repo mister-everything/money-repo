@@ -28,7 +28,6 @@ async function initEnv() {
 
       // Check if .env already exists
       if (existsSync(envFile)) {
-        console.log(`    ⚠️  .env already exists, skipping: ${envFile}`);
         continue;
       }
 

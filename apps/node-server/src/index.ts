@@ -1,8 +1,9 @@
 import { createServer } from "node:http";
 import { generateUUID } from "@workspace/util";
 import express from "express";
+import "@workspace/env";
 
-const PORT = process.env.PORT || 5058;
+const PORT = process.env.PORT || 5050;
 
 const app = express();
 
