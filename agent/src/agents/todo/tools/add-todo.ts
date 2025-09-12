@@ -21,8 +21,10 @@ export const addTodoTool: Tool = tool({
     todoList.push(newTodo);
     saveFileByJson(todoList);
 
-    // 도구의 결과 기준으로 ai 는 text 응답을 생성하기때문에 아래와 같이
-    // 응답 가이드를 return 하는 것도 좋은 방법 입니다.
+    /**
+     * @TIP 도구의 결과 기준으로 ai 는 text 응답을 생성하기때문에 아래와 같이
+     * 응답 가이드를 return 하는 것도 좋은 방법 입니다.
+     */
     return "정상적으로 추가 되었습니다. 사용자에게 잘 등록 되었다고 말하세요.";
   },
 });
