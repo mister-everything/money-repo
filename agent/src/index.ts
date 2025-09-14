@@ -1,9 +1,9 @@
 import "@workspace/env";
 import inquirer from "inquirer";
-
+import { apiTestAgent } from "./agents/apiTest";
 import { todoAgent } from "./agents/todo";
 
-const agents = [todoAgent];
+const agents = [todoAgent, apiTestAgent];
 
 const result = await inquirer.prompt([
   {
