@@ -3,8 +3,6 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
     "lint": "biome lint . --write",
     "check-types": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
