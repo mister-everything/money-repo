@@ -11,24 +11,27 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@workspace/env": "workspace:*",
+    "@workspace/util": "workspace:*",
+    "drizzle-orm": "^0.44.5",
     "lucide-react": "^0.475.0",
     "next": "^15.4.5",
     "next-themes": "^0.4.6",
-    "@workspace/util": "workspace:*",
-    "@workspace/env": "workspace:*",
+    "pg": "^8.16.3",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
+    "@tailwindcss/postcss": "^4.1.5",
     "@types/node": "^20.19.9",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
-    "@workspace/typescript-config": "workspace:*",
     "@workspace/tailwind-config": "workspace:*",
-    "postcss": "^8.5.3",
-    "@tailwindcss/postcss": "^4.1.5",
+    "@workspace/typescript-config": "workspace:*",
     "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
     "tailwindcss": "^4.1.5",
     "typescript": "5.9.2"
   }
