@@ -9,8 +9,7 @@
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "tsx src/migrate.ts",
-    "postinstall": "tsx src/migrate.ts"
+    "db:migrate": "tsx src/migrate.ts"
   },
   "exports": {
     ".": "./src/index.ts"
