@@ -1,6 +1,6 @@
 import "@workspace/env";
 import inquirer from "inquirer";
-import { apiTestAgent } from "./agents/apiTest";
+import { apiTestAgent } from "./agents/api-test";
 import { todoAgent } from "./agents/todo";
 
 const agents = [todoAgent, apiTestAgent];
