@@ -16,6 +16,7 @@
     "@workspace/env": "workspace:*",
     "@workspace/util": "workspace:*",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
     "pg": "^8.16.3",

@@ -11,7 +11,7 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
     "dotenv": "^16.4.5"
   },
 
