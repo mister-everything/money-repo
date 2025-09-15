@@ -1,6 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@workspace/env";
+import { ThemeProvider } from "next-themes";
+
 const fontSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -19,9 +21,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
+        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
       >
-        <div>{children}</div>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          themes={["light", "dark"]}
+          disableTransitionOnChange
+        >
+          <div>{children}</div>
+        </ThemeProvider>
       </body>
     </html>
   );
