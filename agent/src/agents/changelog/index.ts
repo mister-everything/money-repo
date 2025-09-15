@@ -3,7 +3,18 @@ import { addCommitTool } from "./tools/add-commit";
 import { getCommitLogTool } from "./tools/get-commit-log";
 import { saveChangelogTool } from "./tools/save-changelog";
 import { searchChangelogTool } from "./tools/search-changelog";
+import { execCommandTool } from "./tools/exec-command";
 
+/**
+ * @description CHANGE_LOG 에이전트
+ * CHANGE_LOG 파일을 관리하는 에이전트입니다.
+ *
+ * @tools
+ * - getCommitLog: 현재 브랜치와 main 브랜치의 차이점을 확인하고 커밋 로그를 반환합니다.
+ * - saveChangelog: CHANGELOG.md 파일에 일관된 형식으로 주요 변경 사항을 기록하고 업데이트합니다.
+ * - searchChangelog: CHANGELOG.md 파일을 조회합니다.
+ * - addCommit: 변경 사항을 커밋합니다.
+ */
 export const changelogAgent = createAgent({
   name: "CHANGE_LOG",
   systemPrompt: `
@@ -13,6 +24,7 @@ export const changelogAgent = createAgent({
     - 변경된 파일들의 내용을 분석하여 주요 변경 사항(기능 추가, 수정, 버그 수정 등)을 파악합니다.
     - CHANGELOG 파일에 일관된 형식으로 주요 변경 사항을 기록하고 업데이트합니다.
     - 업데이트된 CHANGELOG 파일을 커밋합니다.
+    - 사용자의 답변이 필요한 경우 사용자에게 답변을 요청합니다.
 
     주의사항:
     - 변경 사항 분석 시 실제 코드 변경 내용과 커밋 메시지를 함께 이용합니다.
@@ -31,5 +43,6 @@ export const changelogAgent = createAgent({
     saveChangelog: saveChangelogTool,
     searchChangelog: searchChangelogTool,
     addCommit: addCommitTool,
+    execCommand: execCommandTool,
   },
 });
