@@ -1,14 +1,16 @@
 export type Changelog = {
   type: ChangelogType;
-  description: string;
-  prNumber: string;
-  author: string;
+  contents: {
+    description: string;
+    commitNumber: string;
+    author: string;
+  }[];
 };
 
 export enum ChangelogType {
-  Added,
-  Changed,
-  Fixed,
-  Removed,
-  Security,
+  Added = "Added",
+  Changed = "Changed",
+  Fixed = "Fixed",
+  Removed = "Removed",
+  Security = "Security",
 }

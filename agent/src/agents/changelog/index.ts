@@ -16,15 +16,15 @@ export const changelogAgent = createAgent({
 
     주의사항:
     - 변경 사항 분석 시 실제 코드 변경 내용과 커밋 메시지를 함께 이용합니다.
-    - CHANGELOG는 보통 'Added', 'Changed', 'Fixed'와 같은 카테고리로 구분하여 작성합니다.
     - 명확하지 않은 변경 사항은 '확실하지 않음'으로 표기하거나 별도로 표시할 수 있습니다.
     - git 명령어 실행 시 결과가 없거나 오류가 발생하면 적절한 안내 메시지를 제공합니다.
-
+    - commit-number는 앞 5자리 숫자로 작성합니다.
+    - 버전은 주요 버전 번호만 작성합니다. (ex: 1.0.0)
+    
     CHANGELOG.md TEMPLATE
     ## [{version}] - {date}
     ### {type}
-    - {description} ({#pr-number}) (by {author})
-    
+    - {description} ({#commit-number}) (by {author})
     `.trim(),
   tools: {
     getCommitLog: getCommitLogTool,
