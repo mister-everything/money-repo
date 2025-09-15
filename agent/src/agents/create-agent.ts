@@ -12,6 +12,7 @@ type AgentOptions = {
   model?: LanguageModel; // 언어 모델 기본 openai 4.1 mini
 };
 
+
 export function createAgent(options: AgentOptions) {
   const model = options.model ?? openai("gpt-4.1-mini");
   const maxSteps = options.maxSteps ?? 10;
