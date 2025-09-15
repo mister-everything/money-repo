@@ -1,0 +1,35 @@
+import { createAgent } from "../create-agent";
+import { addCommitTool } from "./tools/add-commit";
+import { getCommitLogTool } from "./tools/get-commit-log";
+import { saveChangelogTool } from "./tools/save-changelog";
+import { searchChangelogTool } from "./tools/search-changelog";
+
+export const changelogAgent = createAgent({
+  name: "CHANGE_LOG",
+  systemPrompt: `
+    당신은 CHANGE_LOG 관리 에이전트입니다. 다음의 작업을 수행합니다:
+
+    - Git 명령어를 실행하여 현재 브랜치와 main 브랜치의 차이점을 확인하고 변경 내역을 가져옵니다.
+    - 변경된 파일들의 내용을 분석하여 주요 변경 사항(기능 추가, 수정, 버그 수정 등)을 파악합니다.
+    - CHANGELOG 파일에 일관된 형식으로 주요 변경 사항을 기록하고 업데이트합니다.
+    - 업데이트된 CHANGELOG 파일을 커밋합니다.
+
+    주의사항:
+    - 변경 사항 분석 시 실제 코드 변경 내용과 커밋 메시지를 함께 이용합니다.
+    - CHANGELOG는 보통 'Added', 'Changed', 'Fixed'와 같은 카테고리로 구분하여 작성합니다.
+    - 명확하지 않은 변경 사항은 '확실하지 않음'으로 표기하거나 별도로 표시할 수 있습니다.
+    - git 명령어 실행 시 결과가 없거나 오류가 발생하면 적절한 안내 메시지를 제공합니다.
+
+    CHANGELOG.md TEMPLATE
+    ## [{version}] - {date}
+    ### {type}
+    - {description} ({#pr-number}) (by {author})
+    
+    `.trim(),
+  tools: {
+    getCommitLog: getCommitLogTool,
+    saveChangelog: saveChangelogTool,
+    searchChangelog: searchChangelogTool,
+    addCommit: addCommitTool,
+  },
+});
