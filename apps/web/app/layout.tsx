@@ -29,7 +29,7 @@ export default function RootLayout({
           themes={["light", "dark"]}
           disableTransitionOnChange
         >
-          <div>{children}</div>
+          <div id="root">{children}</div>
         </ThemeProvider>
       </body>
     </html>
