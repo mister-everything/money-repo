@@ -2,9 +2,10 @@ import "@workspace/env";
 import inquirer from "inquirer";
 import { apiTestAgent } from "./agents/api-test";
 import { changelogAgent } from "./agents/changelog";
+import { notifyAgent } from "./agents/notify";
 import { todoAgent } from "./agents/todo";
 
-const agents = [todoAgent, apiTestAgent, changelogAgent];
+const agents = [todoAgent, apiTestAgent, changelogAgent, notifyAgent];
 
 const result = await inquirer.prompt([
   {
