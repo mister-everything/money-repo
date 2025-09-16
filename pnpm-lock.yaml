@@ -47,6 +47,9 @@ importers:
       '@workspace/env':
         specifier: workspace:*
         version: link:../packages/env
+      '@workspace/json-storage':
+        specifier: workspace:*
+        version: link:../packages/json-storage
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../packages/typescript-config

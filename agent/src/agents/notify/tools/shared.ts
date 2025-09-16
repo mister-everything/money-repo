@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { Notify } from "../types";
 
-const WRITER_DIR_PATH = join(process.cwd(), "node_modules", "@solves-agent");
+const WRITER_DIR_PATH = join(process.cwd(), "node_modules", "@local-agent");
 const WRITER_FILE_PATH = join(WRITER_DIR_PATH, "notify-writer.txt");
 
 export const saveWriterToFile = (writer: string) => {
