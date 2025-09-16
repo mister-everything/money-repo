@@ -9,7 +9,9 @@
     "start": "node dist/index.cjs",
     "lint": "biome lint . --write",
     "check-types": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run __test__/index.test.ts",
+    "test:e2e": "start-server-and-test start 5050 test:e2e:run",
+    "test:e2e:run": "vitest run __test__/e2e --config vitest.e2e.config.ts"
   },
   "dependencies": {
     "@service/todo-service": "workspace:*",
@@ -26,7 +28,10 @@
     "@biomejs/biome": "2.2.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/supertest": "^6.0.3",
     "@workspace/typescript-config": "workspace:*",
+    "start-server-and-test": "^2.1.0",
+    "supertest": "^7.1.4",
     "tsup": "^8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",

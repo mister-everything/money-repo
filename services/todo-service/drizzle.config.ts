@@ -14,7 +14,10 @@ export default defineConfig({
   schema,
   out,
   dialect,
-  migrations: {},
+  migrations: {
+    table: "todo_drizzle",
+    schema: "todo-app",
+  },
   dbCredentials: {
     url,
   },

@@ -21,8 +21,14 @@
     "test:coverage": {
       "dependsOn": ["^test:coverage"]
     },
+    "test:e2e": {
+      "dependsOn": ["^test:e2e"]
+    },
     "test:ui": {
       "dependsOn": ["^test:ui"]
+    },
+    "db:migrate": {
+      "dependsOn": ["^db:migrate"]
     },
     "dev": {
       "cache": false,
