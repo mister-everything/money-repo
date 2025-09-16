@@ -2,7 +2,7 @@ import { generateUUID } from "@workspace/util";
 import { Tool, tool } from "ai";
 import { z } from "zod";
 import type { ApiRequest, TestResult } from "../types";
-import { getResults, saveResults } from "./shared";
+import { storage } from "./shared";
 
 export const saveResultTool: Tool = tool({
   description: "API 테스트 결과를 저장합니다.",
@@ -26,7 +26,7 @@ export const saveResultTool: Tool = tool({
     error: z.string().optional().describe("에러 메시지"),
     success: z.boolean().describe("성공 여부"),
   }),
-  execute: ({
+  execute: async ({
     url,
     method,
     headers,
@@ -49,7 +49,7 @@ export const saveResultTool: Tool = tool({
     error?: string;
     success: boolean;
   }) => {
-    const results = getResults();
+    const results = (await storage.get()) ?? [];
 
     const request: ApiRequest = {
       id: generateUUID(),
@@ -69,7 +69,7 @@ export const saveResultTool: Tool = tool({
     };
 
     results.push(testResult);
-    saveResults(results);
+    await storage.save(results);
 
     return `테스트 결과가 저장되었습니다. ID: ${testResult.id}`;
   },
