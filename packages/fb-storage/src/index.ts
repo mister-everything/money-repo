@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { isJson } from "@workspace/util";
 
 export interface JsonStorage<T = any> {
   /**
@@ -53,7 +54,10 @@ class FsJsonStorage<T = any> implements JsonStorage<T> {
         await fs.mkdir(dir, { recursive: true });
       }
 
-      const jsonData = JSON.stringify(data, null, this.indent);
+      const jsonData =
+        typeof data === "string"
+          ? data
+          : JSON.stringify(data, null, this.indent);
       await fs.writeFile(this.filePath, jsonData, "utf-8");
     } catch (error) {
       throw new Error(`Failed to save JSON to ${this.filePath}: ${error}`);
@@ -63,7 +67,7 @@ class FsJsonStorage<T = any> implements JsonStorage<T> {
   async get(): Promise<T | null> {
     try {
       const data = await fs.readFile(this.filePath, "utf-8");
-      return JSON.parse(data) as T;
+      return isJson(data) ? JSON.parse(data) : (data as T);
     } catch (error: any) {
       if (error.code === "ENOENT") {
         return null;

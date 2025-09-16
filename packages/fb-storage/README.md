@@ -1,11 +1,11 @@
-# @workspace/json-storage
+# @workspace/fb-storage
 
 Node.js 파일 시스템 기반의 JSON 스토리지 모듈입니다.
 
 ## 설치
 
 ```bash
-pnpm add @workspace/json-storage
+pnpm add @workspace/fb-storage
 ```
 
 ## 사용법
@@ -13,7 +13,7 @@ pnpm add @workspace/json-storage
 ### 기본 사용법
 
 ```typescript
-import { createFsJsonStorage } from "@workspace/json-storage";
+import { createFsJsonStorage } from "@workspace/fb-storage";
 
 // 스토리지 생성
 const storage = createFsJsonStorage("./data.json");

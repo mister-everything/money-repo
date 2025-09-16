@@ -17,7 +17,7 @@
     "@biomejs/biome": "2.2.2",
     "@types/node": "^24.3.1",
     "@workspace/env": "workspace:*",
-    "@workspace/json-storage": "workspace:*",
+    "@workspace/fb-storage": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "@workspace/util": "workspace:*",
     "ai": "^5.0.41",

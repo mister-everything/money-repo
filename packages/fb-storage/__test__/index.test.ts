@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createFsJsonStorage } from "../src/index.js";
 
-const TEST_DIR = path.join(process.cwd(), "temp-test-json-storage");
+const TEST_DIR = path.join(process.cwd(), "temp-test-fb-storage");
 const TEST_FILE = path.join(TEST_DIR, "test.json");
 
 describe("createFsJsonStorage", () => {

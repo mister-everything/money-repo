@@ -1,4 +1,4 @@
-import { createFsJsonStorage } from "@workspace/json-storage";
+import { createFsJsonStorage } from "@workspace/fb-storage";
 import { join } from "path";
 
 export type Todo = {
