@@ -5,6 +5,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "solves:dev": "turbo -F solves dev",
     "start": "turbo run start",
     "agent": "pnpm -F agent agent",
     "lint": "biome lint . --write",
