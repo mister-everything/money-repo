@@ -3,6 +3,7 @@
     "biomejs.biome",
     "bradlc.vscode-tailwindcss",
     "esbenp.prettier-vscode",
-    "editorconfig.editorconfig"
+    "editorconfig.editorconfig",
+    "ms-playwright.playwright"
   ]
 }

@@ -1,4 +1,6 @@
-CREATE TABLE IF NOT EXISTS "todo" (
+create schema if not exists  "todo-app";
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "todo-app"."todo" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"title" text NOT NULL,
 	"done" boolean DEFAULT false NOT NULL,
