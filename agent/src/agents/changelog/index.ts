@@ -1,9 +1,10 @@
+import { openai } from "@ai-sdk/openai";
 import { createAgent } from "../create-agent";
 import { addCommitTool } from "./tools/add-commit";
 import { getCommitLogTool } from "./tools/get-commit-log";
+import { gitDiffTool } from "./tools/git-diff";
 import { saveChangelogTool } from "./tools/save-changelog";
 import { searchChangelogTool } from "./tools/search-changelog";
-import { execCommandTool } from "./tools/exec-command";
 
 /**
  * @description CHANGE_LOG 에이전트
@@ -16,6 +17,7 @@ import { execCommandTool } from "./tools/exec-command";
  * - addCommit: 변경 사항을 커밋합니다.
  */
 export const changelogAgent = createAgent({
+  model: openai("gpt-4.1"),
   name: "CHANGE_LOG",
   systemPrompt: `
     당신은 CHANGE_LOG 관리 에이전트입니다. 다음의 작업을 수행합니다:
@@ -43,6 +45,6 @@ export const changelogAgent = createAgent({
     saveChangelog: saveChangelogTool,
     searchChangelog: searchChangelogTool,
     addCommit: addCommitTool,
-    execCommand: execCommandTool,
+    gitDiff: gitDiffTool,
   },
 });
