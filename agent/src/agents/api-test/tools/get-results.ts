@@ -1,6 +1,6 @@
 import { Tool, tool } from "ai";
 import { z } from "zod";
-import { getResults } from "./shared";
+import { storage } from "./shared";
 
 export const getResultsTool: Tool = tool({
   description: "저장된 API 테스트 결과를 조회합니다.",
@@ -8,8 +8,8 @@ export const getResultsTool: Tool = tool({
     limit: z.number().optional().default(10).describe("최대 조회 개수"),
     success: z.boolean().optional().describe("성공한 테스트만 조회할지 여부"),
   }),
-  execute: ({ limit = 10, success }) => {
-    let results = getResults();
+  execute: async ({ limit = 10, success }) => {
+    let results = (await storage.get()) ?? [];
 
     if (success !== undefined) {
       results = results.filter((r) => r.success === success);
