@@ -13,10 +13,10 @@ pnpm add @workspace/fb-storage
 ### 기본 사용법
 
 ```typescript
-import { createFsJsonStorage } from "@workspace/fb-storage";
+import { createFileBaseStorage } from "@workspace/fb-storage";
 
 // 스토리지 생성
-const storage = createFsJsonStorage("./data.json");
+const storage = createFileBaseStorage("./data.json");
 
 // 데이터 저장
 await storage.save({ name: "John", age: 30, active: true });
@@ -42,7 +42,7 @@ interface User {
   email: string;
 }
 
-const userStorage = createFsJsonStorage<User>("./user.json");
+const userStorage = createFileBaseStorage<User>("./user.json");
 await userStorage.save({
   id: 1,
   name: "Jane Doe",
@@ -53,14 +53,14 @@ await userStorage.save({
 ### 배열 데이터
 
 ```typescript
-const listStorage = createFsJsonStorage<string[]>("./list.json");
+const listStorage = createFileBaseStorage<string[]>("./list.json");
 await listStorage.save(["apple", "banana", "cherry"]);
 ```
 
 ### 옵션 사용
 
 ```typescript
-const configStorage = createFsJsonStorage("./config.json", {
+const configStorage = createFileBaseStorage("./config.json", {
   indent: 4, // 4칸 들여쓰기
   createDir: true, // 디렉토리 자동 생성
 });
@@ -76,7 +76,7 @@ await configStorage.save({
 
 ## API
 
-### `createFsJsonStorage<T>(filePath: string, options?: Options)`
+### `createFileBaseStorage<T>(filePath: string, options?: Options)`
 
 JSON 파일 스토리지 인스턴스를 생성합니다.
 
