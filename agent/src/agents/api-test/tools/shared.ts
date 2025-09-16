@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import type { TestResult } from "../types";
 
-const DIR_PATH = join(process.cwd(), "node_modules", "@solves-agent");
+const DIR_PATH = join(process.cwd(), "node_modules", "@local-agent");
 const FILE_PATH = join(DIR_PATH, "api-test-results.json");
 
 export const saveResults = (results: TestResult[]) => {

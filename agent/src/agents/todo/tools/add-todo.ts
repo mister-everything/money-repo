@@ -1,15 +1,15 @@
 import { generateUUID } from "@workspace/util";
 import { Tool, tool } from "ai";
 import { z } from "zod";
-import { getFileByJson, saveFileByJson } from "./shared";
+import { storage } from "./shared";
 
 export const addTodoTool: Tool = tool({
   description: "TODO 항목을 추가합니다.",
   inputSchema: z.object({
     content: z.string().describe("할 일을 구체적으로 작성하세요."),
   }),
-  execute: ({ content }) => {
-    const todoList = getFileByJson();
+  execute: async ({ content }) => {
+    const todoList = (await storage.get()) ?? [];
     const newTodo = {
       id: generateUUID(),
       done: false,
@@ -19,7 +19,7 @@ export const addTodoTool: Tool = tool({
     };
 
     todoList.push(newTodo);
-    saveFileByJson(todoList);
+    await storage.save(todoList);
 
     /**
      * @TIP 도구의 결과 기준으로 ai 는 text 응답을 생성하기때문에 아래와 같이

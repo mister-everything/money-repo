@@ -9,8 +9,8 @@ import { sendRequestTool } from "./tools/send-request";
  *
  * @tools
  * - sendRequest: HTTP 요청을 전송합니다 (GET, POST, PUT, DELETE 등)
- * - saveResult: API 테스트 결과를 저장합니다 (node_modules/@solves-agent/api-test-results.json)
- * - getResults: 저장된 테스트 히스토리를 조회합니다 (node_modules/@solves-agent/api-test-results.json)
+ * - saveResult: API 테스트 결과를 저장합니다 (node_modules/@local-agent/api-test-results.json)
+ * - getResults: 저장된 테스트 히스토리를 조회합니다 (node_modules/@local-agent/api-test-results.json)
  */
 export const apiTestAgent = createAgent({
   name: "API_TEST",
