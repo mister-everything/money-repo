@@ -48,14 +48,7 @@ const handler = createMcpHandler((server) => {
     "get-member-detail",
     "mr. everything team member의 상세 정보를 조회합니다.",
     {
-      koreanName: z
-        .string()
-        .refine(
-          (val) => ["최성근", "박주창", "조현재", "전인산"].includes(val),
-          {
-            message: "최성근, 박주창, 조현재, 전인산 중 하나를 입력해주세요.",
-          },
-        ),
+      koreanName: z.string(),
     },
     async ({ koreanName }) => {
       const info = {
@@ -66,7 +59,7 @@ const handler = createMcpHandler((server) => {
       };
       const responseData = info[koreanName]
         ? info[koreanName]
-        : `${koreanName}은 없습니다. 다시 입력해주세요.`;
+        : `${koreanName}은 없습니다. 다시 입력해주세요. 예시: 최성근, 박주창, 조현재, 전인산 중 하나`;
       return {
         content: [
           {
@@ -77,6 +70,6 @@ const handler = createMcpHandler((server) => {
       };
     },
   );
-});
+}, {});
 
 export { handler as GET, handler as POST, handler as DELETE };
