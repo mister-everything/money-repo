@@ -46,10 +46,22 @@ const teamMembers = [
   },
 ];
 
+const serverConfig = {
+  mcpServers: {
+    moneyRepo: {
+      url: "https://money-repo-tools.vercel.app/mcp",
+      headers: {
+        Authorization: "Bearer ${your_token}",
+      },
+    },
+  },
+};
+
 export default function Page() {
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
     setCopied(true);
+    navigator.clipboard.writeText(JSON.stringify(serverConfig, null, 2));
     setTimeout(() => {
       setCopied(false);
     }, 2000);
@@ -58,13 +70,7 @@ export default function Page() {
   return (
     <div className="flex items-center justify-center min-h-svh relative">
       <AnimatePresence>
-        <motion.div
-          className="-z-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 5 }}
-        >
+        <motion.div className="-z-10">
           <div className="absolute top-0 left-0 w-full h-full z-10 ">
             <Particles />
           </div>
@@ -85,19 +91,7 @@ export default function Page() {
                   {copied ? <CheckIcon /> : <CopyIcon />}
                 </Button>
                 <div className="p-4">
-                  <JsonView
-                    initialExpandDepth={5}
-                    data={{
-                      mcpServers: {
-                        moneyRepo: {
-                          url: "https://money-repo-tools.vercel.app/mcp",
-                          headers: {
-                            Authorization: "Bearer ${your_token}",
-                          },
-                        },
-                      },
-                    }}
-                  />
+                  <JsonView initialExpandDepth={5} data={serverConfig} />
                 </div>
               </div>
             </CardDescription>
