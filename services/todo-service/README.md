@@ -15,6 +15,9 @@ Example 서비스 패키지로, 모노레포에서 서비스를 패키지로 분
 ```bash
 # 모노레포 루트에서 실행
 pnpm docker:pg
+
+# 레포 폴더 아무 하위폴더에서
+pnpm -w docker:pg
 ```
 
 ### 2. 데이터베이스 스튜디오 실행
@@ -22,6 +25,9 @@ pnpm docker:pg
 ```bash
 # todo-service 디렉토리에서 실행
 pnpm db:studio
+
+# 레포 아무 하위 폴더 에서
+pnpm -F todo-service db:studio
 ```
 
 브라우저에서 `https://local.drizzle.studio`으로 접속하여 데이터베이스 스튜디오를 확인할 수 있습니다.
