@@ -11,14 +11,14 @@ jobs:
     timeout-minutes: 30
     env:
       # Database
-      POSTGRES_URL: postgres://your_username:your_password@localhost:5432/your_database_name
+      POSTGRES_URL: postgresql://testuser:testpass@localhost:5432/test
     services:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: your_username
-          POSTGRES_PASSWORD: your_password
-          POSTGRES_DB: your_database_name
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
