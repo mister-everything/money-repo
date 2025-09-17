@@ -14,4 +14,5 @@ export const todoAgent = createAgent({
     addTodo: addTodoTool,
     doneTodo: doneTodoTool,
   },
+  assistFirst: true,
 });
