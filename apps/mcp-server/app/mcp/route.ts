@@ -1,4 +1,9 @@
 import { createMcpHandler } from "mcp-handler";
+/**
+ * @modelcontextprotocol/sdk module 에서
+ * zod4 version 을 마이그레이션 되기 전까지 v3 를 사용합니다.
+ */
+import { ZodString } from "zod";
 import { z } from "zod/v3";
 
 const handler = createMcpHandler((server) => {
@@ -48,7 +53,7 @@ const handler = createMcpHandler((server) => {
     "get-member-detail",
     "mr. everything team member의 상세 정보를 조회합니다.",
     {
-      koreanName: z.string(),
+      koreanName: z.string() as unknown as ZodString,
     },
     async ({ koreanName }) => {
       const info = {
