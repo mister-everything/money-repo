@@ -1,4 +1,4 @@
-import { todoSaveSchema, todoService } from "@service/todo-service";
+import { todoSaveSchema, todoService } from "@service/todo";
 import { generateUUID } from "@workspace/util";
 import express from "express";
 

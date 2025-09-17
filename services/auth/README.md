@@ -1,4 +1,4 @@
-# @service/todo-service
+# @service/todo
 
 Example 서비스 패키지로, 모노레포에서 서비스를 패키지로 분리하여 사용하는 방법을 보여줍니다.
 
@@ -87,7 +87,7 @@ src/
 ### 다른 패키지에서 사용하기
 
 ```typescript
-import { todoService, todoSaveSchema, Todo } from "@service/todo-service";
+import { todoService, todoSaveSchema, Todo } from "@service/todo";
 
 // Todo 목록 조회
 const todos = await todoService.findAll();

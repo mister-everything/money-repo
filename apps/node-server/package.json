@@ -14,7 +14,7 @@
     "test:e2e:run": "vitest run __test__/e2e --config vitest.e2e.config.ts"
   },
   "dependencies": {
-    "@service/todo-service": "workspace:*",
+    "@service/todo": "workspace:*",
     "@workspace/env": "workspace:*",
     "@workspace/util": "workspace:*",
     "cors": "^2.8.5",
@@ -54,7 +54,7 @@
     "noExternal": [
       "@workspace/util",
       "@workspace/env",
-      "@service/todo-service"
+      "@service/todo"
     ]
   }
 }

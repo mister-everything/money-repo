@@ -1,5 +1,5 @@
 {
-  "name": "@service/todo-service",
+  "name": "@service/auth",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -18,13 +18,14 @@
     "@workspace/util": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
-    "zod": "^4.1.8"
+    "zod": "^4.1.8",
+    "better-auth": "^1.3.11"
   },
   "devDependencies": {
-    "@workspace/env": "workspace:*",
     "@biomejs/biome": "2.2.2",
     "@types/node": "^22.13.0",
     "@types/pg": "^8.15.5",
+    "@workspace/env": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "drizzle-kit": "^0.31.4",
     "tsx": "^4.20.5",

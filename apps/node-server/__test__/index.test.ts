@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app";
 
 // Mock 설정
-vi.mock("@service/todo-service", () => ({
+vi.mock("@service/todo", () => ({
   todoService: {
     findAll: vi.fn(),
     findById: vi.fn(),
@@ -37,7 +37,7 @@ describe("Express Server", () => {
 
   describe("Todo API", () => {
     it("GET /todo - 모든 todo 조회", async () => {
-      const { todoService } = await import("@service/todo-service");
+      const { todoService } = await import("@service/todo");
 
       const mockTodos = [
         {
@@ -67,9 +67,7 @@ describe("Express Server", () => {
     });
 
     it("POST /todo - 새 todo 생성", async () => {
-      const { todoService, todoSaveSchema } = await import(
-        "@service/todo-service"
-      );
+      const { todoService, todoSaveSchema } = await import("@service/todo");
 
       const newTodo = { title: "New Todo", description: "New", done: false };
       const savedTodo = {
@@ -96,7 +94,7 @@ describe("Express Server", () => {
     });
 
     it("GET /todo/:id - 특정 todo 조회", async () => {
-      const { todoService } = await import("@service/todo-service");
+      const { todoService } = await import("@service/todo");
 
       const mockTodo = {
         id: 1,
@@ -122,7 +120,7 @@ describe("Express Server", () => {
     });
 
     it("DELETE /todo/:id - todo 삭제", async () => {
-      const { todoService } = await import("@service/todo-service");
+      const { todoService } = await import("@service/todo");
 
       vi.mocked(todoService.deleteById).mockResolvedValue(undefined);
 
