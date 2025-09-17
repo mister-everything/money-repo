@@ -1,4 +1,4 @@
-import { createFsJsonStorage } from "@workspace/json-storage";
+import { createFbStorage } from "@workspace/fb-storage";
 import { join } from "path";
 
 export type Todo = {
@@ -12,4 +12,4 @@ export type Todo = {
 const DIR_PATH = join(process.cwd(), "node_modules", "@local-agent");
 const FILE_PATH = join(DIR_PATH, "todo.json");
 
-export const storage = createFsJsonStorage<Todo[]>(FILE_PATH);
+export const storage = createFbStorage<Todo[]>(FILE_PATH);

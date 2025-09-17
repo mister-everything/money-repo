@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { createFbStorage } from "@workspace/fb-storage";
 import { join } from "path";
 
 export const DIR_PATH = join(process.cwd(), "docs");
@@ -12,17 +12,15 @@ export const getFilePath = () => {
   return FILE_PATH;
 };
 
-export const saveFileByMarkdown = (changelog: string) => {
-  // 폴더가 아직 생성되지 않은 경우 폴더 강제 생성
-  mkdirSync(DIR_PATH, { recursive: true });
+const storage = createFbStorage<string>(FILE_PATH);
 
-  // 파일 쓰기
-  writeFileSync(FILE_PATH, changelog);
+export const saveFileByMarkdown = async (changelog: string) => {
+  await storage.save(changelog);
 };
 
-export const getFileByMarkdown = (): string => {
-  if (!existsSync(FILE_PATH)) {
+export const getFileByMarkdown = async (): Promise<string> => {
+  if (!(await storage.exists())) {
     return "";
   }
-  return readFileSync(FILE_PATH, "utf-8") ?? "";
+  return (await storage.get()) ?? "";
 };
