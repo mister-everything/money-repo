@@ -6,7 +6,7 @@ import { createFbStorage } from "../src/index.js";
 const TEST_DIR = path.join(process.cwd(), "temp-test-fb-storage");
 const TEST_FILE = path.join(TEST_DIR, "test.json");
 
-describe("createFileBaseStorage", () => {
+describe("createFbStorage", () => {
   beforeEach(async () => {
     await fs.mkdir(TEST_DIR, { recursive: true });
   });

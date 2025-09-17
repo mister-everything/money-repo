@@ -1,6 +1,6 @@
 # @workspace/fb-storage
 
-Node.js 파일 시스템 기반의 JSON 스토리지 모듈입니다.
+Node.js 파일 시스템 기반의 스토리지 모듈입니다.
 
 ## 설치
 
@@ -13,10 +13,10 @@ pnpm add @workspace/fb-storage
 ### 기본 사용법
 
 ```typescript
-import { createFileBaseStorage } from "@workspace/fb-storage";
+import { createFbStorage } from "@workspace/fb-storage";
 
 // 스토리지 생성
-const storage = createFileBaseStorage("./data.json");
+const storage = createFbStorage("./data.json");
 
 // 데이터 저장
 await storage.save({ name: "John", age: 30, active: true });
@@ -42,7 +42,7 @@ interface User {
   email: string;
 }
 
-const userStorage = createFileBaseStorage<User>("./user.json");
+const userStorage = createFbStorage<User>("./user.json");
 await userStorage.save({
   id: 1,
   name: "Jane Doe",
@@ -53,14 +53,14 @@ await userStorage.save({
 ### 배열 데이터
 
 ```typescript
-const listStorage = createFileBaseStorage<string[]>("./list.json");
+const listStorage = createFbStorage<string[]>("./list.json");
 await listStorage.save(["apple", "banana", "cherry"]);
 ```
 
 ### 옵션 사용
 
 ```typescript
-const configStorage = createFileBaseStorage("./config.json", {
+const configStorage = createFbStorage("./config.json", {
   indent: 4, // 4칸 들여쓰기
   createDir: true, // 디렉토리 자동 생성
 });
@@ -76,20 +76,20 @@ await configStorage.save({
 
 ## API
 
-### `createFileBaseStorage<T>(filePath: string, options?: Options)`
+### `createFbStorage<T>(filePath: string, options?: Options)`
 
-JSON 파일 스토리지 인스턴스를 생성합니다.
+파일 스토리지 인스턴스를 생성합니다.
 
 **Parameters:**
 
-- `filePath` - 저장할 JSON 파일 경로
+- `filePath` - 저장할 data 파일 경로
 - `options` - 선택적 설정 옵션
 
 **Returns:** 스토리지 인스턴스
 
 ### 스토리지 메서드
 
-- `save(data: T)` - 데이터를 JSON 파일로 저장
-- `get()` - JSON 파일에서 데이터 읽기
+- `save(data: T)` - 데이터를 파일로 저장
+- `get()` - 파일에서 데이터 읽기
 - `exists()` - 파일 존재 여부 확인
-- `delete()` - JSON 파일 삭제
+- `delete()` - 파일 삭제
