@@ -21,7 +21,6 @@
     "noUnusedLocals": true,
     "strictPropertyInitialization": false,
     "noUnusedParameters": false,
-    "noUncheckedSideEffectImports": false,
     "noImplicitAny": false
   }
 }
