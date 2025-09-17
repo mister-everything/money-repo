@@ -1,5 +1,5 @@
 import { createMcpHandler } from "mcp-handler";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const handler = createMcpHandler((server) => {
   server.tool(
