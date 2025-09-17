@@ -10,8 +10,8 @@ type AgentOptions = {
   name: string; // 이름
   maxSteps?: number; // 맥스스텝 기본 10
   model?: LanguageModel; // 언어 모델 기본 openai 4.1 mini
+  assistFirst?: boolean; // 최초 대화를 시작할 때 사용자 메시지를 건너뛸지 여부
 };
-
 
 export function createAgent(options: AgentOptions) {
   const model = options.model ?? openai("gpt-4.1-mini");
@@ -19,19 +19,24 @@ export function createAgent(options: AgentOptions) {
 
   const messages: ModelMessage[] = [];
 
-  const startChat = async () => {
-    const answer = await inquirer.prompt([
-      {
-        message: "USER: ",
-        name: "user_message",
-        type: "input",
-      },
-    ]);
-
-    messages.push({
-      role: "user",
-      content: answer.user_message,
-    });
+  const startChat = async (skipUserMessage?: boolean) => {
+    if (!skipUserMessage) {
+      const answer = await inquirer.prompt([
+        {
+          message: "USER: ",
+          name: "user_message",
+          type: "input",
+        },
+      ]);
+      messages.push({
+        role: "user",
+        content: answer.user_message,
+      });
+    } else
+      messages.push({
+        role: "user",
+        content: "",
+      });
 
     const result = streamText({
       model,
@@ -93,7 +98,7 @@ export function createAgent(options: AgentOptions) {
   };
 
   return {
-    runChat: startChat,
+    runChat: () => startChat(options.assistFirst),
     name: options.name,
   };
 }
