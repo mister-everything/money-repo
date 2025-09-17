@@ -13,6 +13,7 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:e2e": "turbo run test:e2e",
+    "playwright:install": "playwright install chromium --with-deps",
     "db:migrate": "turbo run db:migrate",
     "format": "biome check . --apply",
     "check-types": "turbo run check-types",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@changesets/cli": "^2.29.6",
+    "@playwright/test": "^1.55.0",
     "danger": "^13.0.4",
     "glob": "^11.0.3",
     "inquirer": "^12.9.4",
