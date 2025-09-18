@@ -23,11 +23,11 @@ pnpm -w docker:pg
 ### 2. 데이터베이스 스튜디오 실행
 
 ```bash
-# todo-service 디렉토리에서 실행
+# /service/todo 디렉토리에서 실행
 pnpm db:studio
 
 # 레포 아무 하위 폴더 에서
-pnpm -F todo-service db:studio
+pnpm -F todo db:studio
 ```
 
 브라우저에서 `https://local.drizzle.studio`으로 접속하여 데이터베이스 스튜디오를 확인할 수 있습니다.
@@ -44,30 +44,30 @@ export const SCHEMA_NAME = "todo";
 export const SERVICE_NAME = "todo-service";
 ```
 
-1. **스키마 정의**
+1. **스키마,테이블 정의**
 
-   ```typescript
-   // src/schema.ts
-   import {
-     boolean,
-     pgSchema,
-     serial,
-     text,
-     timestamp,
-   } from "drizzle-orm/pg-core";
-   import { SCHEMA_NAME } from "./const";
+```typescript
+// src/schema.ts
+import {
+  boolean,
+  pgSchema,
+  serial,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
+import { SCHEMA_NAME } from "./const";
 
-   export const todoSchema = pgSchema(SCHEMA_NAME);
+export const todoSchema = pgSchema(SCHEMA_NAME);
 
-   export const todoTable = todoSchema.table("todo", {
-     id: serial("id").primaryKey(),
-     title: text("title").notNull(),
-     done: boolean("done").notNull().default(false),
-     description: text("description").notNull(),
-     createdAt: timestamp("created_at").notNull().defaultNow(),
-     updatedAt: timestamp("updated_at").notNull().defaultNow(),
-   });
-   ```
+export const todoTable = todoSchema.table("todo", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  done: boolean("done").notNull().default(false),
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+```
 
 2. **마이그레이션 파일 생성**
 
@@ -76,17 +76,31 @@ pnpm db:generate
 ```
 
 - `/migrations/` 디렉토리에 `?.sql` 파일이 생성됩니다
-- 이 파일에는 실제 테이블 생성 쿼리가 포함되어 있습니다
+- 실제 데이터 베이스에 테이블을 생성하는 것이 아닌, 테이블 생성 쿼리를 생성 합니다.
 
 3. **마이그레이션 실행**
-   ```bash
+
+```bash
    pnpm db:migrate
-   ```
-   - 생성된 SQL 파일이 실행되어 실제 테이블이 생성됩니다
+```
+
+- 생성된 SQL 파일이 실행되어 실제 테이블이 생성됩니다
 
 ## 🔧 사용법
 
 ### 다른 패키지에서 사용하기
+
+```json
+// package.json
+ "dependencies": {
+    "@service/todo": "workspace:*",
+    "drizzle-orm": "^0.44.5",
+    "pg": "^8.16.3",
+    ...
+ }
+```
+
+사용할 패키지에 의존성 추가
 
 ```typescript
 import { todoService, todoSaveSchema, Todo } from "@service/todo";
@@ -125,16 +139,6 @@ export const todoSaveSchema = z.object({
   title: z.string(),
   done: z.boolean(),
 });
-```
-
-**❌ 피해야 할 예시:**
-
-```typescript
-// 외부 라이브러리 import 금지
-import { drizzle } from "drizzle-orm";
-import { pgTable } from "drizzle-orm/pg-core";
-
-// 이런 타입들은 schema.ts에서 정의해야 함
 ```
 
 ### 이유
