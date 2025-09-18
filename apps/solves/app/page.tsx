@@ -11,6 +11,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { authClient } from "@/lib/auth/client";
 
 const LightRays = dynamic(() => import("@/components/ui/light-rays"), {
   ssr: false,
@@ -44,12 +51,40 @@ const teamMembers = [
 ];
 
 export default function Page() {
+  const { data: session, isPending } = authClient.useSession();
+
   return (
     <div className="flex items-center justify-center min-h-svh relative">
       <div className="absolute top-0 right-0 z-10 p-4">
-        <Link href="/sign-in">
-          <Button variant={"ghost"}>로그인</Button>
-        </Link>
+        {isPending ? null : !session ? (
+          <Link href="/account">
+            <Button variant={"ghost"}>로그인</Button>
+          </Link>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="flex items-center gap-2" variant={"ghost"}>
+                <Avatar className="size-4">
+                  <AvatarImage src={session.user.image ?? ""} />
+                  <AvatarFallback>{session.user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="text-sm text-muted-foreground">
+                  {session.user.name}
+                </p>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem>
+                <Link href="/account">
+                  <Button variant={"ghost"}>계정</Button>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => authClient.signOut()}>
+                <Button variant={"ghost"}>로그아웃</Button>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       <AnimatePresence>
         <motion.div
