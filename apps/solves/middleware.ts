@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/") {
     return NextResponse.next();
   }
-  console.log(`middleware: ${pathname}`);
+  console.log(`[middleware] check-auth: ${pathname}`);
 
   const sessionCookie = getSessionCookie(request);
 
