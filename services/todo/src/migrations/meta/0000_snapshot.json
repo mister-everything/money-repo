@@ -1,12 +1,12 @@
 {
-  "id": "9f451719-07fd-4ecc-8dfb-d253871acb6b",
+  "id": "8eff1435-401f-4ea2-81c0-eef8d83d73f3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "todo-app.todo": {
+    "todo.todo": {
       "name": "todo",
-      "schema": "todo-app",
+      "schema": "todo",
       "columns": {
         "id": {
           "name": "id",
@@ -59,7 +59,7 @@
   },
   "enums": {},
   "schemas": {
-    "todo-app": "todo-app"
+    "todo": "todo"
   },
   "sequences": {},
   "roles": {},

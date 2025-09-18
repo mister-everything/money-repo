@@ -36,51 +36,53 @@ pnpm -F todo-service db:studio
 
 ### 새로운 테이블 추가하기
 
+0. **서비스,스키마 이름정의**
+
+```typescript
+// src/const.ts
+export const SCHEMA_NAME = "todo";
+export const SERVICE_NAME = "todo-service";
+```
+
 1. **스키마 정의**
 
    ```typescript
    // src/schema.ts
    import {
      boolean,
-     pgTable,
+     pgSchema,
      serial,
      text,
      timestamp,
    } from "drizzle-orm/pg-core";
+   import { SCHEMA_NAME } from "./const";
 
-   export const newTableSchema = pgTable("new_table", {
+   export const todoSchema = pgSchema(SCHEMA_NAME);
+
+   export const todoTable = todoSchema.table("todo", {
      id: serial("id").primaryKey(),
-     name: text("name").notNull(),
-     // ... 다른 컬럼들
+     title: text("title").notNull(),
+     done: boolean("done").notNull().default(false),
+     description: text("description").notNull(),
+     createdAt: timestamp("created_at").notNull().defaultNow(),
+     updatedAt: timestamp("updated_at").notNull().defaultNow(),
    });
    ```
 
 2. **마이그레이션 파일 생성**
 
-   ```bash
-   pnpm db:generate
-   ```
+```bash
+pnpm db:generate
+```
 
-   - `/migrations/` 디렉토리에 `?.sql` 파일이 생성됩니다
-   - 이 파일에는 실제 테이블 생성 쿼리가 포함되어 있습니다
+- `/migrations/` 디렉토리에 `?.sql` 파일이 생성됩니다
+- 이 파일에는 실제 테이블 생성 쿼리가 포함되어 있습니다
 
 3. **마이그레이션 실행**
    ```bash
    pnpm db:migrate
    ```
    - 생성된 SQL 파일이 실행되어 실제 테이블이 생성됩니다
-
-## 📦 패키지 구조
-
-```
-src/
-├── index.ts          # 메인 export 파일
-├── schema.ts         # Drizzle ORM 스키마 정의
-├── types.ts          # 순수 타입 및 Zod 스키마
-├── todo.service.ts   # 비즈니스 로직
-├── db.ts            # 데이터베이스 연결
-└── migrate.ts       # 마이그레이션 실행
-```
 
 ## 🔧 사용법
 
@@ -144,69 +146,6 @@ import { pgTable } from "drizzle-orm/pg-core";
 ## 🛠️ 새로운 서비스 패키지 생성 가이드
 
 이 예시를 참고하여 새로운 서비스 패키지를 생성할 때 다음 가이드라인을 따르세요:
-
-### 1. 패키지 구조
-
-```
-services/your-service/
-├── package.json
-├── tsconfig.json
-├── drizzle.config.ts
-└── src/
-    ├── index.ts
-    ├── schema.ts
-    ├── types.ts
-    ├── your.service.ts
-    ├── db.ts
-    └── migrate.ts
-```
-
-### 2. package.json 설정
-
-```json
-{
-  "name": "@service/your-service",
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "peerDependencies": {
-    "drizzle-orm": "^0.44.5",
-    "pg": "^8.16.3",
-    "zod": "^4.1.8"
-  }
-}
-```
-
-### 3. 타입 정의 원칙
-
-- `types.ts`에는 **순수 타입**과 **Zod 스키마**만 export
-- **외부 라이브러리 import 금지** (zod 제외)
-- Next.js Server/Client 양쪽에서 사용 가능하도록 설계
-
-### 4. 의존성 관리
-
-- 사용하는 앱에서 peerDependencies 해결
-- `drizzle-orm`, `pg`, `zod` 등을 직접 dependencies에 추가
-
-## 🎯 사용 가능한 스크립트
-
-```bash
-# 데이터베이스 스튜디오 실행
-pnpm db:studio
-
-# 마이그레이션 파일 생성
-pnpm db:generate
-
-# 마이그레이션 실행
-pnpm db:migrate
-
-# 데이터베이스 리셋
-pnpm db:reset
-
-# 데이터베이스 푸시 (개발용)
-pnpm db:push
-```
 
 ## 📚 관련 문서
 

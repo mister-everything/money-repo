@@ -1,12 +1,12 @@
 {
-  "id": "12119076-ef53-42aa-a2c4-abdf698f8222",
+  "id": "930c20aa-4630-47f5-9ed6-db6b4363aa26",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "auth-app.account": {
+    "auth.account": {
       "name": "account",
-      "schema": "auth-app",
+      "schema": "auth",
       "columns": {
         "id": {
           "name": "id",
@@ -94,7 +94,7 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "schemaTo": "auth-app",
+          "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
           ],
@@ -111,46 +111,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "auth-app.jwks": {
-      "name": "jwks",
-      "schema": "auth-app",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "public_key": {
-          "name": "public_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "private_key": {
-          "name": "private_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "auth-app.session": {
+    "auth.session": {
       "name": "session",
-      "schema": "auth-app",
+      "schema": "auth",
       "columns": {
         "id": {
           "name": "id",
@@ -214,7 +177,7 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "schemaTo": "auth-app",
+          "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
           ],
@@ -239,9 +202,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "auth-app.user": {
+    "auth.user": {
       "name": "user",
-      "schema": "auth-app",
+      "schema": "auth",
       "columns": {
         "id": {
           "name": "id",
@@ -336,9 +299,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "auth-app.verification": {
+    "auth.verification": {
       "name": "verification",
-      "schema": "auth-app",
+      "schema": "auth",
       "columns": {
         "id": {
           "name": "id",
@@ -390,7 +353,7 @@
   },
   "enums": {},
   "schemas": {
-    "auth-app": "auth-app"
+    "auth": "auth"
   },
   "sequences": {},
   "roles": {},

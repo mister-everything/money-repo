@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default async function AuthLayout({
   children,
 }: {
@@ -5,18 +7,11 @@ export default async function AuthLayout({
 }) {
   return (
     <main className="relative w-full flex flex-col h-screen">
-      <div className="flex-1">
-        <div className="flex min-h-screen w-full">
-          <div className="hidden lg:flex lg:w-1/2 bg-muted border-r flex-col p-18 relative">
-            <div className="absolute inset-0 w-full h-full"></div>
-            <h1 className="text-xl font-semibold flex items-center gap-3 animate-in fade-in duration-1000">
-              <span>Solves</span>
-            </h1>
-            <div className="flex-1" />
-          </div>
-
-          <div className="w-full lg:w-1/2 p-6">{children}</div>
-        </div>
+      <div className="flex-1 flex flex-col gap-4 p-4 md:p-6">
+        <Link className="text-xl font-bold" href="/">
+          Solves
+        </Link>
+        <div className="w-full flex-1">{children}</div>
       </div>
     </main>
   );

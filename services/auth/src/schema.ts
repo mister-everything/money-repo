@@ -1,8 +1,9 @@
 import { boolean, pgSchema, text, timestamp } from "drizzle-orm/pg-core";
+import { SCHEMA_NAME } from "./const";
 
-export const authSchema = pgSchema("auth-app");
+export const authSchema = pgSchema(SCHEMA_NAME);
 
-export const UserTable = authSchema.table("user", {
+export const userTable = authSchema.table("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
@@ -20,7 +21,7 @@ export const UserTable = authSchema.table("user", {
   banExpires: timestamp("ban_expires"),
 });
 
-export const SessionTable = authSchema.table("session", {
+export const sessionTable = authSchema.table("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
@@ -32,17 +33,17 @@ export const SessionTable = authSchema.table("session", {
   userAgent: text("user_agent"),
   userId: text("user_id")
     .notNull()
-    .references(() => UserTable.id, { onDelete: "cascade" }),
+    .references(() => userTable.id, { onDelete: "cascade" }),
   impersonatedBy: text("impersonated_by"),
 });
 
-export const AccountTable = authSchema.table("account", {
+export const accountTable = authSchema.table("account", {
   id: text("id").primaryKey(),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
   userId: text("user_id")
     .notNull()
-    .references(() => UserTable.id, { onDelete: "cascade" }),
+    .references(() => userTable.id, { onDelete: "cascade" }),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   idToken: text("id_token"),
@@ -56,7 +57,7 @@ export const AccountTable = authSchema.table("account", {
     .notNull(),
 });
 
-export const VerificationTable = authSchema.table("verification", {
+export const verificationTable = authSchema.table("verification", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
@@ -66,11 +67,4 @@ export const VerificationTable = authSchema.table("verification", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-});
-
-export const JwksTable = authSchema.table("jwks", {
-  id: text("id").primaryKey(),
-  publicKey: text("public_key").notNull(),
-  privateKey: text("private_key").notNull(),
-  createdAt: timestamp("created_at").notNull(),
 });
