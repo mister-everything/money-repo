@@ -1,6 +1,6 @@
-CREATE SCHEMA IF NOT EXISTS "auth-app";
+CREATE SCHEMA IF NOT EXISTS "auth";
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "auth-app"."account" (
+CREATE TABLE IF NOT EXISTS "auth"."account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
@@ -16,14 +16,7 @@ CREATE TABLE IF NOT EXISTS "auth-app"."account" (
 	"updated_at" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "auth-app"."jwks" (
-	"id" text PRIMARY KEY NOT NULL,
-	"public_key" text NOT NULL,
-	"private_key" text NOT NULL,
-	"created_at" timestamp NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "auth-app"."session" (
+CREATE TABLE IF NOT EXISTS "auth"."session" (
 	"id" text PRIMARY KEY NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"token" text NOT NULL,
@@ -36,7 +29,7 @@ CREATE TABLE IF NOT EXISTS "auth-app"."session" (
 	CONSTRAINT "session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "auth-app"."user" (
+CREATE TABLE IF NOT EXISTS "auth"."user" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
@@ -52,7 +45,7 @@ CREATE TABLE IF NOT EXISTS "auth-app"."user" (
 	CONSTRAINT "user_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "auth-app"."verification" (
+CREATE TABLE IF NOT EXISTS "auth"."verification" (
 	"id" text PRIMARY KEY NOT NULL,
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
@@ -61,17 +54,15 @@ CREATE TABLE IF NOT EXISTS "auth-app"."verification" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-
 DO $$ BEGIN
-	ALTER TABLE "auth-app"."account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth-app"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "auth"."account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 
 DO $$ BEGIN
-	ALTER TABLE "auth-app"."session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth-app"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "auth"."session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
-
 

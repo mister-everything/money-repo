@@ -1,7 +1,9 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -44,6 +46,11 @@ const teamMembers = [
 export default function Page() {
   return (
     <div className="flex items-center justify-center min-h-svh relative">
+      <div className="absolute top-0 right-0 z-10 p-4">
+        <Link href="/sign-in">
+          <Button variant={"ghost"}>로그인</Button>
+        </Link>
+      </div>
       <AnimatePresence>
         <motion.div
           className="-z-10"

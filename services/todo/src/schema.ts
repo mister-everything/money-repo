@@ -5,8 +5,9 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { SCHEMA_NAME } from "./const";
 
-export const todoSchema = pgSchema("todo-app");
+export const todoSchema = pgSchema(SCHEMA_NAME);
 
 export const todoTable = todoSchema.table("todo", {
   id: serial("id").primaryKey(),
