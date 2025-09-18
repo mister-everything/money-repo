@@ -15,7 +15,6 @@ export default defineConfig({
   out,
   dialect,
   migrations: {
-    table: "todo_drizzle",
     schema: "todo-app",
   },
   dbCredentials: {

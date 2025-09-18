@@ -9,6 +9,7 @@ const runMigrate = async () => {
   const start = Date.now();
   await migrate(pgDb, {
     migrationsFolder: join(process.cwd(), "src/migrations"),
+    migrationsSchema: "todo-app",
   }).catch((err) => {
     console.error(
       `❌ [TODO Service] PostgreSQL migrations failed. check the postgres instance is running.`,

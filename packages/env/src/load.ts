@@ -5,6 +5,9 @@ import { config } from "dotenv";
 export const load = <T extends Record<string, string> = Record<string, string>>(
   root: string = process.cwd(),
 ): T => {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[ENV] Loading environment variables from ${root}`);
+  }
   const localEnv = join(root, ".env.local");
   const modeEnv = join(root, `.env.${process.env.NODE_ENV}`);
   const defaultEnv = join(root, ".env");

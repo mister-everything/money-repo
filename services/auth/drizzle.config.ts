@@ -15,7 +15,6 @@ export default defineConfig({
   out,
   dialect,
   migrations: {
-    table: "auth_drizzle",
     schema: "auth-app",
   },
   dbCredentials: {
