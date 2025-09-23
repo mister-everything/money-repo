@@ -54,7 +54,7 @@
 ## 사용법
 
 ```typescript
-import { probService, ProbBook, ProbBlock } from "@service/prob-service";
+import { probService, ProbBook, ProbBlock } from "@service/prob";
 
 // 모든 문제집 조회
 const probBooks = await probService.findAll();
