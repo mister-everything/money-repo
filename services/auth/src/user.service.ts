@@ -24,4 +24,7 @@ export const userService = {
       .where(or(eq(userTable.banned, false), eq(userTable.isAnonymous, false)));
     return users;
   },
+  updateUserRole: async (id: string, role: string) => {
+    await pgDb.update(userTable).set({ role }).where(eq(userTable.id, id));
+  },
 };
