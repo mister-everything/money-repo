@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div>
-      DashBoard임
+      DashBoard입니다
       <Link href="/users">Users</Link>
     </div>
   );
