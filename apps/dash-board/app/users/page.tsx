@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+export const dynamic = "force-dynamic";
 
 //user list 싹 간다
 export default async function UsersPage() {
