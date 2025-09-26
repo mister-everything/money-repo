@@ -146,13 +146,29 @@ export type ProbBookSaveInput = {
 };
 
 /**
+ * @description 저장용 정답 메타데이터 (probId 제외)
+ */
+export type SaveAnswerMeta =
+  | {
+      kind: "objective";
+      multiple?: boolean;
+      randomized?: boolean;
+    }
+  | {
+      kind: "subjective";
+      charLimit?: number;
+      lines?: number;
+      placeholder?: string;
+    };
+
+/**
  * @description 저장용 문제 블록 타입
  */
 export type ProbBlockSaveInput = {
   id: string;
   style: styleFormat;
   content: ProbCotentType;
-  answerMeta: Omit<AnswerMeta, "probId">; // probId는 서비스에서 추가
+  answerMeta: SaveAnswerMeta; // probId는 서비스에서 추가
   options?: ProbSelectType[];
   title?: string;
   tags?: string[];

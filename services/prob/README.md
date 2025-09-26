@@ -1,129 +1,158 @@
-# Prob Service
+# Problem Service Database Schema
 
-문제집과 문제 블록을 관리하는 서비스입니다.
+## 개요
 
-## 기능
+Problem Service는 정규화된 관계형 데이터베이스 구조로 문제집과 문제를 관리합니다.
 
-- 문제집(ProbBook) CRUD 작업
-- 복합 미디어 문제 블록 지원 (텍스트, 이미지, 비디오, 오디오, 혼합)
-- 객관식/주관식 문제 유형 지원
-- 태그 기반 분류
-- 소유자별 문제집 관리
+## 테이블 구조
 
-## 타입 구조
+### 1. 핵심 테이블
 
-### ProbBook (문제집)
+#### prob_books (문제집)
 
-- `id`: 문제집 고유 ID
-- `ownerId`: 소유자 ID
-- `title`: 제목
-- `description`: 설명 (선택사항)
-- `blocks`: 문제 블록 배열
-- `tags`: 태그 배열 (선택사항)
-- `createdAt`: 생성 시간
-- `updatedAt`: 수정 시간
-
-### ProbBlock (문제 블록)
-
-- `id`: 문제 블록 ID
-- `style`: 문제 스타일 (`generalFormat` | `mixedFormat`)
-- `content`: 문제 내용 (다양한 미디어 타입 지원)
-- `answerMeta`: 정답 메타데이터 (객관식/주관식)
-- `options`: 선택지 배열 (선택사항)
-- `title`: 문제 제목 (선택사항)
-- `tags`: 태그 배열 (선택사항)
-
-### 지원하는 컨텐츠 타입
-
-- `text`: 텍스트 데이터
-- `image`: 이미지 데이터 (URL 포함)
-- `video`: 비디오 데이터 (URL, 재생시간 포함)
-- `audio`: 오디오 데이터 (URL, 재생시간 포함)
-- `mixed`: 여러 리소스 혼합
-
-### 정답 유형
-
-- **객관식** (`ObjectiveAnswerMeta`)
-  - `multiple`: 복수 선택 여부
-  - `randomized`: 랜덤 정답 여부
-- **주관식** (`SubjectiveAnswerMeta`)
-  - `charLimit`: 최대 글자 수
-  - `lines`: 최대 줄 수
-  - `placeholder`: 입력 플레이스홀더
-
-## 사용법
-
-```typescript
-import { probService, ProbBook, ProbBlock } from "@service/prob";
-
-// 모든 문제집 조회
-const probBooks = await probService.findAll();
-
-// ID로 문제집 조회
-const probBook = await probService.findById("prob-book-id");
-
-// 소유자별 문제집 조회
-const userProbBooks = await probService.findByOwnerId("user-id");
-
-// 문제집 저장/업데이트
-const newProbBook = await probService.save({
-  id: "new-prob-book",
-  ownerId: "user-id",
-  title: "수학 문제집",
-  description: "중학교 2학년 수학",
-  blocks: [
-    {
-      id: "block-1",
-      style: "generalFormat",
-      content: {
-        id: "content-1",
-        type: "text",
-        data: { content: "다음 중 가장 큰 수는?" },
-      },
-      answerMeta: {
-        kind: "objective",
-        multiple: false,
-      },
-      options: [
-        {
-          id: "option-1",
-          type: "text",
-          data: { content: "1. 0.5" },
-        },
-        {
-          id: "option-2",
-          type: "text",
-          data: { content: "2. 0.75" },
-        },
-      ],
-    },
-  ],
-  tags: ["수학", "중등"],
-});
-
-// 문제집 삭제
-await probService.deleteById("prob-book-id");
+```sql
+CREATE TABLE prob_books (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
 ```
 
-## 데이터베이스 마이그레이션
+#### probs (문제)
+
+```sql
+CREATE TABLE probs (
+    id TEXT PRIMARY KEY,
+    prob_book_id TEXT REFERENCES prob_books(id) ON DELETE CASCADE,
+    title TEXT,
+    style TEXT NOT NULL, -- "generalFormat" | "mixedFormat"
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### tags (태그)
+
+```sql
+CREATE TABLE tags (
+    id SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### 2. 관계 테이블
+
+#### prob_book_tags (문제집-태그)
+
+```sql
+CREATE TABLE prob_book_tags (
+    prob_book_id TEXT REFERENCES prob_books(id) ON DELETE CASCADE,
+    tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (prob_book_id, tag_id)
+);
+```
+
+#### prob_tags (문제-태그)
+
+```sql
+CREATE TABLE prob_tags (
+    prob_id TEXT REFERENCES probs(id) ON DELETE CASCADE,
+    tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (prob_id, tag_id)
+);
+```
+
+### 3. 문제 세부 테이블
+
+#### prob_answer_meta (정답 메타데이터)
+
+```sql
+CREATE TABLE prob_answer_meta (
+    prob_id TEXT PRIMARY KEY REFERENCES probs(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL, -- "objective" | "subjective"
+
+    -- 객관식 전용
+    multiple BOOLEAN,      -- 복수 선택 가능
+    randomized BOOLEAN,    -- 선택지 랜덤 배치
+
+    -- 주관식 전용
+    char_limit INTEGER,    -- 최대 글자수
+    lines INTEGER,         -- 최대 줄수
+    placeholder TEXT       -- 입력 힌트
+);
+```
+
+#### prob_contents (문제 내용)
+
+```sql
+CREATE TABLE prob_contents (
+    id SERIAL PRIMARY KEY,
+    prob_id TEXT REFERENCES probs(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,     -- "text" | "image" | "video" | "audio" | "mixed"
+    content TEXT NOT NULL,
+    url TEXT,               -- 미디어 파일 URL
+    duration INTEGER,       -- 비디오/오디오 길이
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### prob_options (문제 선택지)
+
+```sql
+CREATE TABLE prob_options (
+    id SERIAL PRIMARY KEY,
+    prob_id TEXT REFERENCES probs(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,        -- "text" | "image" | "video" | "audio"
+    content TEXT NOT NULL,
+    url TEXT,
+    is_correct BOOLEAN DEFAULT false,
+    correct_order INTEGER,     -- 복수정답 순서
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## 주요 특징
+
+### 정규화된 구조
+
+- JSON 필드 → 관계형 테이블로 전환
+- 쿼리 성능 향상 및 데이터 무결성 보장
+
+### 태그 시스템
+
+- 문제집/문제 레벨 태그 지원
+- 자동 중복 제거 및 정규화
+
+### CASCADE 삭제
+
+- 문제집 삭제 시 모든 관련 데이터 자동 삭제
+
+### 다양한 미디어 지원
+
+- 텍스트, 이미지, 비디오, 오디오
+- Mixed 타입으로 여러 미디어 조합
+
+## 마이그레이션
 
 ```bash
-# 마이그레이션 파일 생성
-pnpm db:generate
-
 # 마이그레이션 실행
 pnpm db:migrate
 
-# 데이터베이스 리셋
+# DB 리셋 (개발용)
 pnpm db:reset
+
+# 스키마 재생성
+pnpm db:generate
 ```
 
-## 스크립트
+## TypeScript 타입
 
-- `pnpm lint`: 코드 린팅
-- `pnpm check-types`: 타입 검사
-- `pnpm db:generate`: 마이그레이션 파일 생성
-- `pnpm db:push`: 스키마를 데이터베이스에 푸시
-- `pnpm db:studio`: Drizzle Studio 실행
-- `pnpm db:migrate`: 마이그레이션 실행
-- `pnpm db:reset`: 데이터베이스 리셋
+주요 타입들은 `src/types.ts`에서 확인:
+
+- `ProbBook`: 완성된 문제집
+- `ProbBookSaveInput`: 저장용 문제집
+- `AnswerMeta`: 정답 메타데이터

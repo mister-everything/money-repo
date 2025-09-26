@@ -5,6 +5,8 @@
   "scripts": {
     "lint": "biome lint . --write",
     "check-types": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "db:push": "drizzle-kit push",

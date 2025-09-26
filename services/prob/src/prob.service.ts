@@ -84,127 +84,137 @@ export const probService = {
   },
 
   save: async (probBookData: ProbBookSaveInput): Promise<ProbBook> => {
-    return await pgDb.transaction(async (tx) => {
-      const { blocks, tags, ...bookData } = probBookData;
+    try {
+      const savedBookId = await pgDb.transaction(async (tx) => {
+        const { blocks, tags, ...bookData } = probBookData;
 
-      // 1. 문제집 저장
-      const insertData = {
-        id: bookData.id || `prob-book-${Date.now()}`, // id가 없으면 생성
-        ownerId: bookData.ownerId,
-        title: bookData.title,
-        description: bookData.description || null,
-        updatedAt: new Date(),
-      };
+        // 1. 문제집 저장
+        const insertData = {
+          id: bookData.id || `prob-book-${Date.now()}`, // id가 없으면 생성
+          ownerId: bookData.ownerId,
+          title: bookData.title,
+          description: bookData.description || null,
+          updatedAt: new Date(),
+        };
 
-      const [savedBook] = await tx
-        .insert(probBookSchema)
-        .values(insertData)
-        .onConflictDoUpdate({
-          target: [probBookSchema.id],
-          set: {
-            ownerId: insertData.ownerId,
-            title: insertData.title,
-            description: insertData.description,
-            updatedAt: new Date(),
-          },
-        })
-        .returning();
-
-      // 2. 기존 관계 데이터들 삭제 (CASCADE로 관련 데이터도 자동 삭제)
-      await Promise.all([
-        tx.delete(probSchema).where(eq(probSchema.probBookId, savedBook.id)),
-        tx
-          .delete(probBookTagSchema)
-          .where(eq(probBookTagSchema.probBookId, savedBook.id)),
-      ]);
-
-      // 3. 문제집 태그들 저장
-      if (tags && tags.length > 0) {
-        const savedTags = await _saveTags(tx, tags);
-        await Promise.all(
-          savedTags.map((tag) =>
-            tx.insert(probBookTagSchema).values({
-              probBookId: savedBook.id,
-              tagId: tag.id,
-            }),
-          ),
-        );
-      }
-
-      // 4. 새로운 문제들 저장
-      for (const block of blocks) {
-        // 문제 저장
-        const [savedProb] = await tx
-          .insert(probSchema)
-          .values({
-            id: block.id,
-            probBookId: savedBook.id,
-            title: block.title,
-            style: block.style,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+        const [savedBook] = await tx
+          .insert(probBookSchema)
+          .values(insertData)
+          .onConflictDoUpdate({
+            target: [probBookSchema.id],
+            set: {
+              ownerId: insertData.ownerId,
+              title: insertData.title,
+              description: insertData.description,
+              updatedAt: new Date(),
+            },
           })
           .returning();
 
-        // 정답 메타 저장
-        const answerMeta = block.answerMeta;
-        await tx.insert(probAnswerMetaSchema).values({
-          probId: savedProb.id,
-          kind: answerMeta.kind,
-          multiple:
-            answerMeta.kind === "objective"
-              ? (answerMeta as any).multiple
-              : null,
-          randomized:
-            answerMeta.kind === "objective"
-              ? (answerMeta as any).randomized
-              : null,
-          charLimit:
-            answerMeta.kind === "subjective"
-              ? (answerMeta as any).charLimit
-              : null,
-          lines:
-            answerMeta.kind === "subjective" ? (answerMeta as any).lines : null,
-          placeholder:
-            answerMeta.kind === "subjective"
-              ? (answerMeta as any).placeholder
-              : null,
-        });
+        // 2. 기존 관계 데이터들 삭제 (CASCADE로 관련 데이터도 자동 삭제)
+        await Promise.all([
+          tx.delete(probSchema).where(eq(probSchema.probBookId, savedBook.id)),
+          tx
+            .delete(probBookTagSchema)
+            .where(eq(probBookTagSchema.probBookId, savedBook.id)),
+        ]);
 
-        // 문제 태그들 저장
-        if (block.tags && block.tags.length > 0) {
-          const savedProbTags = await _saveTags(tx, block.tags);
+        // 3. 문제집 태그들 저장
+        if (tags && tags.length > 0) {
+          const savedTags = await _saveTags(tx, tags);
           await Promise.all(
-            savedProbTags.map((tag) =>
-              tx.insert(probTagSchema).values({
-                probId: savedProb.id,
+            savedTags.map((tag) =>
+              tx.insert(probBookTagSchema).values({
+                probBookId: savedBook.id,
                 tagId: tag.id,
               }),
             ),
           );
         }
 
-        // 문제 내용 저장
-        await _saveProbContent(tx, savedProb.id, block.content);
+        // 4. 새로운 문제들 저장
+        for (const block of blocks) {
+          // 문제 저장
+          const [savedProb] = await tx
+            .insert(probSchema)
+            .values({
+              id: block.id,
+              probBookId: savedBook.id,
+              title: block.title,
+              style: block.style,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .returning();
 
-        // 문제 선택지들 저장
-        if (block.options) {
-          for (const option of block.options) {
-            const optionData = option.data as any;
-            await tx.insert(probOptionSchema).values({
-              probId: savedProb.id,
-              type: option.type,
-              content: optionData.content,
-              url: optionData.url || null,
-              isCorrect: false, // TODO: 정답 로직 개선 필요
-            });
+          // 정답 메타 저장
+          const answerMeta = block.answerMeta;
+          await tx.insert(probAnswerMetaSchema).values({
+            probId: savedProb.id,
+            kind: answerMeta.kind,
+            multiple:
+              answerMeta.kind === "objective"
+                ? (answerMeta as any).multiple
+                : null,
+            randomized:
+              answerMeta.kind === "objective"
+                ? (answerMeta as any).randomized
+                : null,
+            charLimit:
+              answerMeta.kind === "subjective"
+                ? (answerMeta as any).charLimit
+                : null,
+            lines:
+              answerMeta.kind === "subjective"
+                ? (answerMeta as any).lines
+                : null,
+            placeholder:
+              answerMeta.kind === "subjective"
+                ? (answerMeta as any).placeholder
+                : null,
+          });
+
+          // 문제 태그들 저장
+          if (block.tags && block.tags.length > 0) {
+            const savedProbTags = await _saveTags(tx, block.tags);
+            await Promise.all(
+              savedProbTags.map((tag) =>
+                tx.insert(probTagSchema).values({
+                  probId: savedProb.id,
+                  tagId: tag.id,
+                }),
+              ),
+            );
+          }
+
+          // 문제 내용 저장
+          await _saveProbContent(tx, savedProb.id, block.content);
+
+          // 문제 선택지들 저장
+          if (block.options) {
+            for (const option of block.options) {
+              const optionData = option.data as any;
+              await tx.insert(probOptionSchema).values({
+                probId: savedProb.id,
+                type: option.type,
+                content: optionData.content,
+                url: optionData.url || null,
+                isCorrect: false, // TODO: 정답 로직 개선 필요
+              });
+            }
           }
         }
-      }
 
-      // 5. 저장된 데이터 조회해서 반환
-      return (await probService.findById(savedBook.id)) as ProbBook;
-    });
+        // 5. 트랜잭션 완료, 문제집 ID 반환
+        return savedBook.id;
+      });
+
+      // 트랜잭션 완료 후 조회
+      const finalResult = await probService.findById(savedBookId);
+      return finalResult as ProbBook;
+    } catch (error) {
+      throw error;
+    }
   },
 
   deleteById: async (id: string): Promise<void> => {
