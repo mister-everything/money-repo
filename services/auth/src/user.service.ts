@@ -1,7 +1,7 @@
 import { eq, or } from "drizzle-orm";
 import { userTable } from ".";
 import { pgDb } from "./db";
-
+import { Role } from "./types";
 export const userService = {
   getAllUsers: async () => {
     const users = await pgDb.select().from(userTable);
@@ -26,5 +26,12 @@ export const userService = {
   },
   updateUserRole: async (id: string, role: string) => {
     await pgDb.update(userTable).set({ role }).where(eq(userTable.id, id));
+  },
+  isAdmin: async (id: string) => {
+    const [user] = await pgDb
+      .select({ role: userTable.role })
+      .from(userTable)
+      .where(eq(userTable.id, id));
+    return user?.role === Role.ADMIN;
   },
 };
