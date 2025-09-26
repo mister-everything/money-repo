@@ -1,24 +1,38 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { pgDb } from "./db";
 import {
+  probAnswerMetaSchema,
   probBookSchema,
+  probBookTagSchema,
   probContentSchema,
   probOptionSchema,
   probSchema,
+  probTagSchema,
+  tagSchema,
 } from "./schema";
-import { ProbBlock, ProbBook } from "./types";
+import {
+  AnswerMeta,
+  ProbBlock,
+  ProbBook,
+  ProbBookSaveInput,
+  Tag,
+} from "./types";
 
 export const probService = {
   findAll: async (): Promise<ProbBook[]> => {
     const probBooks = await pgDb.select().from(probBookSchema);
 
-    // 각 문제집에 대해 관련 문제들을 조회하고 조합
+    // 각 문제집에 대해 관련 데이터들을 조회하고 조합
     const results = await Promise.all(
       probBooks.map(async (book) => {
-        const blocks = await _getProbBlocks(book.id);
+        const [blocks, tags] = await Promise.all([
+          _getProbBlocks(book.id),
+          _getBookTags(book.id),
+        ]);
         return {
           ...book,
           blocks,
+          tags,
         } as ProbBook;
       }),
     );
@@ -34,11 +48,15 @@ export const probService = {
 
     if (!probBook) return null;
 
-    const blocks = await _getProbBlocks(id);
+    const [blocks, tags] = await Promise.all([
+      _getProbBlocks(id),
+      _getBookTags(id),
+    ]);
 
     return {
       ...probBook,
       blocks,
+      tags,
     } as ProbBook;
   },
 
@@ -50,10 +68,14 @@ export const probService = {
 
     const results = await Promise.all(
       probBooks.map(async (book) => {
-        const blocks = await _getProbBlocks(book.id);
+        const [blocks, tags] = await Promise.all([
+          _getProbBlocks(book.id),
+          _getBookTags(book.id),
+        ]);
         return {
           ...book,
           blocks,
+          tags,
         } as ProbBook;
       }),
     );
@@ -61,35 +83,56 @@ export const probService = {
     return results;
   },
 
-  save: async (probBookData: ProbBook): Promise<ProbBook> => {
+  save: async (probBookData: ProbBookSaveInput): Promise<ProbBook> => {
     return await pgDb.transaction(async (tx) => {
-      // 문제집 저장 (blocks 제외)
-      const { blocks, ...bookData } = probBookData;
+      const { blocks, tags, ...bookData } = probBookData;
+
+      // 1. 문제집 저장
+      const insertData = {
+        id: bookData.id || `prob-book-${Date.now()}`, // id가 없으면 생성
+        ownerId: bookData.ownerId,
+        title: bookData.title,
+        description: bookData.description || null,
+        updatedAt: new Date(),
+      };
 
       const [savedBook] = await tx
         .insert(probBookSchema)
-        .values({
-          ...bookData,
-          updatedAt: new Date(),
-        })
+        .values(insertData)
         .onConflictDoUpdate({
           target: [probBookSchema.id],
           set: {
-            ...bookData,
+            ownerId: insertData.ownerId,
+            title: insertData.title,
+            description: insertData.description,
             updatedAt: new Date(),
           },
         })
         .returning();
 
-      // 기존 문제들 삭제 (CASCADE로 관련 데이터도 자동 삭제)
-      await tx
-        .delete(probSchema)
-        .where(eq(probSchema.probBookId, savedBook.id));
+      // 2. 기존 관계 데이터들 삭제 (CASCADE로 관련 데이터도 자동 삭제)
+      await Promise.all([
+        tx.delete(probSchema).where(eq(probSchema.probBookId, savedBook.id)),
+        tx
+          .delete(probBookTagSchema)
+          .where(eq(probBookTagSchema.probBookId, savedBook.id)),
+      ]);
 
-      // 새로운 문제들 저장
-      for (let i = 0; i < blocks.length; i++) {
-        const block = blocks[i];
+      // 3. 문제집 태그들 저장
+      if (tags && tags.length > 0) {
+        const savedTags = await _saveTags(tx, tags);
+        await Promise.all(
+          savedTags.map((tag) =>
+            tx.insert(probBookTagSchema).values({
+              probBookId: savedBook.id,
+              tagId: tag.id,
+            }),
+          ),
+        );
+      }
 
+      // 4. 새로운 문제들 저장
+      for (const block of blocks) {
         // 문제 저장
         const [savedProb] = await tx
           .insert(probSchema)
@@ -98,36 +141,69 @@ export const probService = {
             probBookId: savedBook.id,
             title: block.title,
             style: block.style,
-            answerMeta: block.answerMeta,
-            tags: block.tags,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           })
           .returning();
+
+        // 정답 메타 저장
+        const answerMeta = block.answerMeta;
+        await tx.insert(probAnswerMetaSchema).values({
+          probId: savedProb.id,
+          kind: answerMeta.kind,
+          multiple:
+            answerMeta.kind === "objective"
+              ? (answerMeta as any).multiple
+              : null,
+          randomized:
+            answerMeta.kind === "objective"
+              ? (answerMeta as any).randomized
+              : null,
+          charLimit:
+            answerMeta.kind === "subjective"
+              ? (answerMeta as any).charLimit
+              : null,
+          lines:
+            answerMeta.kind === "subjective" ? (answerMeta as any).lines : null,
+          placeholder:
+            answerMeta.kind === "subjective"
+              ? (answerMeta as any).placeholder
+              : null,
+        });
+
+        // 문제 태그들 저장
+        if (block.tags && block.tags.length > 0) {
+          const savedProbTags = await _saveTags(tx, block.tags);
+          await Promise.all(
+            savedProbTags.map((tag) =>
+              tx.insert(probTagSchema).values({
+                probId: savedProb.id,
+                tagId: tag.id,
+              }),
+            ),
+          );
+        }
 
         // 문제 내용 저장
         await _saveProbContent(tx, savedProb.id, block.content);
 
         // 문제 선택지들 저장
         if (block.options) {
-          for (let j = 0; j < block.options.length; j++) {
-            const option = block.options[j];
+          for (const option of block.options) {
             const optionData = option.data as any;
             await tx.insert(probOptionSchema).values({
               probId: savedProb.id,
               type: option.type,
               content: optionData.content,
               url: optionData.url || null,
-              isCorrect: false, // 기본값, 필요시 로직 추가
+              isCorrect: false, // TODO: 정답 로직 개선 필요
             });
           }
         }
       }
 
-      // 저장된 데이터 조회해서 반환
-      const resultBlocks = await _getProbBlocks(savedBook.id);
-      return {
-        ...savedBook,
-        blocks: resultBlocks,
-      } as ProbBook;
+      // 5. 저장된 데이터 조회해서 반환
+      return (await probService.findById(savedBook.id)) as ProbBook;
     });
   },
 
@@ -143,19 +219,94 @@ export const probService = {
 
     const results = await Promise.all(
       probBooks.map(async (book) => {
-        const blocks = await _getProbBlocks(book.id);
+        const [blocks, tags] = await Promise.all([
+          _getProbBlocks(book.id),
+          _getBookTags(book.id),
+        ]);
         return {
           ...book,
           blocks,
+          tags,
         } as ProbBook;
       }),
     );
 
     return results;
   },
+
+  // 새로운 메서드: 태그로 검색
+  findByTags: async (tagNames: string[]): Promise<ProbBook[]> => {
+    // 태그 ID들 조회
+    const tags = await pgDb
+      .select({ id: tagSchema.id })
+      .from(tagSchema)
+      .where(inArray(tagSchema.name, tagNames));
+
+    if (tags.length === 0) return [];
+
+    // 해당 태그들을 가진 문제집들 조회
+    const probBookIds = await pgDb
+      .select({ probBookId: probBookTagSchema.probBookId })
+      .from(probBookTagSchema)
+      .where(
+        inArray(
+          probBookTagSchema.tagId,
+          tags.map((t) => t.id),
+        ),
+      );
+
+    if (probBookIds.length === 0) return [];
+
+    // 문제집들 조회
+    const probBooks = await pgDb
+      .select()
+      .from(probBookSchema)
+      .where(
+        inArray(
+          probBookSchema.id,
+          probBookIds.map((p) => p.probBookId),
+        ),
+      );
+
+    const results = await Promise.all(
+      probBooks.map(async (book) => {
+        const [blocks, bookTags] = await Promise.all([
+          _getProbBlocks(book.id),
+          _getBookTags(book.id),
+        ]);
+        return {
+          ...book,
+          blocks,
+          tags: bookTags,
+        } as ProbBook;
+      }),
+    );
+
+    return results;
+  },
+
+  // 새로운 메서드: 태그 통계
+  getTagStats: async () => {
+    return await pgDb
+      .select({
+        tagName: tagSchema.name,
+        bookCount: sql<number>`count(distinct ${probBookTagSchema.probBookId})`,
+        probCount: sql<number>`count(distinct ${probTagSchema.probId})`,
+      })
+      .from(tagSchema)
+      .leftJoin(probBookTagSchema, eq(tagSchema.id, probBookTagSchema.tagId))
+      .leftJoin(probTagSchema, eq(tagSchema.id, probTagSchema.tagId))
+      .groupBy(tagSchema.name)
+      .orderBy(sql`count(distinct ${probBookTagSchema.probBookId}) desc`);
+  },
+
+  // 새로운 메서드: 모든 태그 조회
+  getAllTags: async (): Promise<Tag[]> => {
+    return await pgDb.select().from(tagSchema).orderBy(tagSchema.name);
+  },
 };
 
-// 헬퍼 함수: 문제집 ID로 ProbBlock[] 조회
+// 헬퍼 함수: 문제집 ID로 ProbBlock[] 조회 (정규화된 구조)
 async function _getProbBlocks(probBookId: string): Promise<ProbBlock[]> {
   // 문제들을 순서대로 조회
   const probs = await pgDb
@@ -165,28 +316,52 @@ async function _getProbBlocks(probBookId: string): Promise<ProbBlock[]> {
 
   const blocks = await Promise.all(
     probs.map(async (prob) => {
-      // 문제 내용들 조회
-      const contents = await pgDb
-        .select()
-        .from(probContentSchema)
-        .where(eq(probContentSchema.probId, prob.id));
+      // 병렬로 모든 관련 데이터 조회
+      const [contents, options, answerMeta, probTags] = await Promise.all([
+        pgDb
+          .select()
+          .from(probContentSchema)
+          .where(eq(probContentSchema.probId, prob.id)),
+        pgDb
+          .select()
+          .from(probOptionSchema)
+          .where(eq(probOptionSchema.probId, prob.id)),
+        pgDb
+          .select()
+          .from(probAnswerMetaSchema)
+          .where(eq(probAnswerMetaSchema.probId, prob.id)),
+        _getProbTags(prob.id),
+      ]);
 
-      // 문제 선택지들 조회
-      const options = await pgDb
-        .select()
-        .from(probOptionSchema)
-        .where(eq(probOptionSchema.probId, prob.id));
+      // 정답 메타 변환
+      const meta = answerMeta[0];
+      const answerMetaForBlock: AnswerMeta = meta
+        ? {
+            probId: meta.probId,
+            kind: meta.kind as "objective" | "subjective",
+            ...(meta.kind === "objective" && {
+              multiple: meta.multiple || undefined,
+              randomized: meta.randomized || undefined,
+            }),
+            ...(meta.kind === "subjective" && {
+              charLimit: meta.charLimit || undefined,
+              lines: meta.lines || undefined,
+              placeholder: meta.placeholder || undefined,
+            }),
+          }
+        : {
+            probId: prob.id,
+            kind: "objective" as const,
+          };
 
       // ProbBlock 형태로 변환
       const probBlock: ProbBlock = {
         id: prob.id,
         style: prob.style,
         title: prob.title || undefined,
-        tags: prob.tags || undefined,
-        answerMeta: prob.answerMeta,
-        // content 타입에 따라 처리
+        tags: probTags,
+        answerMeta: answerMetaForBlock,
         content: _buildProbContent(contents),
-        // 선택지들 변환
         options: options.map((option) => ({
           id: option.id.toString(),
           type: option.type as any,
@@ -202,6 +377,55 @@ async function _getProbBlocks(probBookId: string): Promise<ProbBlock[]> {
   );
 
   return blocks;
+}
+
+// 헬퍼 함수: 문제집 태그들 조회
+async function _getBookTags(probBookId: string): Promise<Tag[]> {
+  return await pgDb
+    .select({
+      id: tagSchema.id,
+      name: tagSchema.name,
+      createdAt: tagSchema.createdAt,
+    })
+    .from(tagSchema)
+    .innerJoin(probBookTagSchema, eq(tagSchema.id, probBookTagSchema.tagId))
+    .where(eq(probBookTagSchema.probBookId, probBookId))
+    .orderBy(tagSchema.name);
+}
+
+// 헬퍼 함수: 문제 태그들 조회
+async function _getProbTags(probId: string): Promise<Tag[]> {
+  return await pgDb
+    .select({
+      id: tagSchema.id,
+      name: tagSchema.name,
+      createdAt: tagSchema.createdAt,
+    })
+    .from(tagSchema)
+    .innerJoin(probTagSchema, eq(tagSchema.id, probTagSchema.tagId))
+    .where(eq(probTagSchema.probId, probId))
+    .orderBy(tagSchema.name);
+}
+
+// 헬퍼 함수: 태그들 저장/조회 (중복 제거)
+async function _saveTags(tx: any, tagNames: string[]): Promise<Tag[]> {
+  const uniqueTagNames = [...new Set(tagNames)];
+  const savedTags: Tag[] = [];
+
+  for (const tagName of uniqueTagNames) {
+    // 태그가 없으면 생성
+    await tx.insert(tagSchema).values({ name: tagName }).onConflictDoNothing();
+
+    // 태그 조회
+    const [tag] = await tx
+      .select()
+      .from(tagSchema)
+      .where(eq(tagSchema.name, tagName));
+
+    savedTags.push(tag);
+  }
+
+  return savedTags;
 }
 
 // 헬퍼 함수: content 저장 (mixed 배열 지원)

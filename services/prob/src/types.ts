@@ -51,25 +51,29 @@ export type ProbSelectType =
   | BaseProbBlock<"audio">;
 
 /**
- * @description 객관식 정답 정책
+ * @description 객관식 정답 정책 (정규화된 테이블 버전)
+ * @param probId 문제 ID
  * @param kind objective
  * @param multiple 복수 선택 여부
  * @param randomized 랜덤 정답 여부
  */
 export type ObjectiveAnswerMeta = {
+  probId: string;
   kind: "objective";
   multiple?: boolean;
   randomized?: boolean;
 };
 
 /**
- * @description 주관식 정답 정책
+ * @description 주관식 정답 정책 (정규화된 테이블 버전)
+ * @param probId 문제 ID
  * @param kind subjective
  * @param charLimit 주관식 최대 글자 수
  * @param lines 주관식 최대 줄 수
  * @param placeholder 주관식 입력 플레이스홀더
  */
 export type SubjectiveAnswerMeta = {
+  probId: string;
   kind: "subjective";
   charLimit?: number;
   lines?: number;
@@ -79,13 +83,23 @@ export type SubjectiveAnswerMeta = {
 export type AnswerMeta = ObjectiveAnswerMeta | SubjectiveAnswerMeta;
 
 /**
- * @description 문제 블록
+ * @description 태그 타입
+ */
+export type Tag = {
+  id: number;
+  name: string;
+  createdAt: Date;
+};
+
+/**
+ * @description 문제 블록 (정규화된 구조)
  * @param id 문제 블록 id
  * @param style 문제 스타일 (포맷)
  * @param content 문제 내용
  * @param answerMeta 문제 정답 메타
  * @param options 문제 선택지
  * @param title 문제 제목
+ * @param tags 태그 객체 배열 (정규화)
  */
 export type ProbBlock = {
   id: string;
@@ -94,17 +108,17 @@ export type ProbBlock = {
   answerMeta: AnswerMeta;
   options?: ProbSelectType[];
   title?: string;
-  tags?: string[];
+  tags?: Tag[];
 };
 
 /**
- * @description 문제집 타입
+ * @description 문제집 타입 (정규화된 구조)
  * @param id 문제집 id
  * @param ownerId 문제집 소유자 id
  * @param title 문제집 제목
  * @param description 문제집 설명
  * @param blocks 문제 블록
- * @param tags 문제집 태그
+ * @param tags 태그 객체 배열 (정규화)
  * @param createdAt 문제집 생성 시간
  * @param updatedAt 문제집 수정 시간
  */
@@ -114,9 +128,34 @@ export type ProbBook = {
   title: string;
   description: string | null;
   blocks: ProbBlock[];
-  tags: string[] | null;
+  tags: Tag[];
   createdAt: Date;
   updatedAt: Date;
+};
+
+/**
+ * @description 저장용 문제집 타입 (태그는 문자열 배열로 받아서 내부에서 정규화)
+ */
+export type ProbBookSaveInput = {
+  id?: string;
+  ownerId: string;
+  title: string;
+  description?: string | null;
+  blocks: ProbBlockSaveInput[];
+  tags?: string[];
+};
+
+/**
+ * @description 저장용 문제 블록 타입
+ */
+export type ProbBlockSaveInput = {
+  id: string;
+  style: styleFormat;
+  content: ProbCotentType;
+  answerMeta: Omit<AnswerMeta, "probId">; // probId는 서비스에서 추가
+  options?: ProbSelectType[];
+  title?: string;
+  tags?: string[];
 };
 
 // Zod 스키마 정의
@@ -166,6 +205,43 @@ export const answerMetaSchema = z.union([
   subjectiveAnswerMetaSchema,
 ]);
 
+// 저장용 정답 메타 스키마 (probId 제외)
+export const saveAnswerMetaSchema = z.union([
+  z.object({
+    kind: z.literal("objective"),
+    multiple: z.boolean().optional(),
+    randomized: z.boolean().optional(),
+  }),
+  z.object({
+    kind: z.literal("subjective"),
+    charLimit: z.number().optional(),
+    lines: z.number().optional(),
+    placeholder: z.string().optional(),
+  }),
+]);
+
+// 저장용 문제 블록 스키마 (정규화된 구조)
+export const probBlockSaveSchema = z.object({
+  id: z.string(),
+  style: z.enum(["generalFormat", "mixedFormat"]),
+  content: baseProbBlockSchema,
+  answerMeta: saveAnswerMetaSchema,
+  options: z.array(baseProbBlockSchema).optional(),
+  title: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+// 저장용 문제집 스키마 (정규화된 구조)
+export const probBookSaveSchema = z.object({
+  id: z.string().optional(),
+  ownerId: z.string(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  blocks: z.array(probBlockSaveSchema),
+  tags: z.array(z.string()).optional(),
+});
+
+// 기존 probBlockSchema는 응답용으로 유지 (Tag 객체 포함)
 export const probBlockSchema = z.object({
   id: z.string(),
   style: z.enum(["generalFormat", "mixedFormat"]),
@@ -173,14 +249,13 @@ export const probBlockSchema = z.object({
   answerMeta: answerMetaSchema,
   options: z.array(baseProbBlockSchema).optional(),
   title: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-});
-
-export const probBookSaveSchema = z.object({
-  id: z.string().optional(),
-  ownerId: z.string(),
-  title: z.string(),
-  description: z.string().nullable().optional(),
-  blocks: z.array(probBlockSchema),
-  tags: z.array(z.string()).nullable().optional(),
+  tags: z
+    .array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+        createdAt: z.date(),
+      }),
+    )
+    .optional(),
 });
