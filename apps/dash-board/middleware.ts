@@ -1,3 +1,4 @@
+import { AUTH_COOKIE_PREFIX } from "@service/auth/const";
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -11,12 +12,11 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
-  if (pathname === "/") {
-    return NextResponse.next();
-  }
   console.log(`[middleware] check-auth: ${pathname}`);
 
-  const sessionCookie = getSessionCookie(request);
+  const sessionCookie = getSessionCookie(request, {
+    cookiePrefix: AUTH_COOKIE_PREFIX,
+  });
 
   if (!sessionCookie) {
     return NextResponse.redirect(new URL("/sign-in", request.url));

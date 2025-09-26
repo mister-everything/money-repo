@@ -12,24 +12,25 @@
     "db:migrate": "tsx src/migrate.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./const": "./src/const.ts"
   },
   "peerDependencies": {
     "@workspace/util": "workspace:*",
+    "better-auth": "^1.3.11",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
-    "zod": "^4.1.8",
-    "better-auth": "^1.3.11"
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
-    "@types/node": "^22.13.0",
+    "@types/node": "^22.18.6",
     "@types/pg": "^8.15.5",
     "@workspace/env": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "drizzle-kit": "^0.31.4",
-    "tsx": "^4.20.5",
-    "typescript": "^5.3.3",
-    "vitest": "^2.1.1"
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "vitest": "^2.1.9"
   }
 }
