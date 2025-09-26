@@ -1,3 +1,27 @@
-export default function ErrorPage() {
-  return <div>Error?</div>;
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+export default function ErrorPage({
+  searchParams,
+}: {
+  searchParams: { error?: string };
+}) {
+  const { error } = searchParams;
+
+  return (
+    <div className="w-full h-screen flex items-center justify-center">
+      <Card className="w-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">Auth Error</CardTitle>
+          <CardDescription>{error ?? "Unknown error"}</CardDescription>
+        </CardHeader>
+        <CardContent>담당자에게 문의해주세요.</CardContent>
+      </Card>
+    </div>
+  );
 }
