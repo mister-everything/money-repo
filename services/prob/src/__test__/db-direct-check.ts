@@ -1,7 +1,7 @@
 import "@workspace/env";
 import { eq } from "drizzle-orm";
 import { pgDb } from "../db";
-import { probBookSchema, probSchema } from "../schema";
+import { probBookSchema } from "../schema";
 
 async function checkDB() {
   console.log("🔍 직접 DB 조회...");
