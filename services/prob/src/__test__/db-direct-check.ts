@@ -1,14 +1,14 @@
 import "@workspace/env";
 import { eq } from "drizzle-orm";
 import { pgDb } from "../db";
-import { probBookSchema } from "../schema";
+import { probBooksTable } from "../schema";
 
 async function checkDB() {
   console.log("🔍 직접 DB 조회...");
 
   try {
     // 모든 문제집 조회
-    const allBooks = await pgDb.select().from(probBookSchema);
+    const allBooks = await pgDb.select().from(probBooksTable);
     console.log("📋 전체 문제집 개수:", allBooks.length);
 
     if (allBooks.length > 0) {
@@ -24,8 +24,8 @@ async function checkDB() {
       // probService.findById 대신 직접 조회
       const directResult = await pgDb
         .select()
-        .from(probBookSchema)
-        .where(eq(probBookSchema.id, lastBook.id));
+        .from(probBooksTable)
+        .where(eq(probBooksTable.id, lastBook.id));
 
       console.log(
         "📋 직접 조회 결과:",

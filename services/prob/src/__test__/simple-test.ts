@@ -1,7 +1,7 @@
 import "@workspace/env";
 import { pgDb } from "../db";
 import { probService } from "../prob.service";
-import { probBookSchema } from "../schema";
+import { probBooksTable } from "../schema";
 
 async function simpleTest() {
   console.log("🧪 간단한 저장/조회 테스트...");
@@ -12,7 +12,7 @@ async function simpleTest() {
     // 1. 직접 DB에 저장
     console.log("💾 직접 DB 저장...");
     const [directSaved] = await pgDb
-      .insert(probBookSchema)
+      .insert(probBooksTable)
       .values({
         id: testId,
         ownerId: "test-user",

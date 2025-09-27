@@ -1,23 +1,26 @@
 import {
   boolean,
   integer,
-  pgTable,
+  pgSchema,
   primaryKey,
   serial,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+import { SCHEMA_NAME } from "./const";
 import type { styleFormat } from "./types";
 
+export const probSchema = pgSchema(SCHEMA_NAME);
+
 // 태그 테이블
-export const tagSchema = pgTable("tags", {
+export const tagsTable = probSchema.table("tags", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // 문제집 테이블 (JSON 제거)
-export const probBookSchema = pgTable("prob_books", {
+export const probBooksTable = probSchema.table("prob_books", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id").notNull(),
   title: text("title").notNull(),
@@ -27,15 +30,15 @@ export const probBookSchema = pgTable("prob_books", {
 });
 
 // 문제집-태그 관계 테이블
-export const probBookTagSchema = pgTable(
+export const probBookTagsTable = probSchema.table(
   "prob_book_tags",
   {
     probBookId: text("prob_book_id")
       .notNull()
-      .references(() => probBookSchema.id, { onDelete: "cascade" }),
+      .references(() => probBooksTable.id, { onDelete: "cascade" }),
     tagId: integer("tag_id")
       .notNull()
-      .references(() => tagSchema.id, { onDelete: "cascade" }),
+      .references(() => tagsTable.id, { onDelete: "cascade" }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.probBookId, table.tagId] }),
@@ -43,11 +46,11 @@ export const probBookTagSchema = pgTable(
 );
 
 // 문제 테이블 (JSON 제거)
-export const probSchema = pgTable("probs", {
+export const probsTable = probSchema.table("probs", {
   id: text("id").primaryKey(),
   probBookId: text("prob_book_id")
     .notNull()
-    .references(() => probBookSchema.id, { onDelete: "cascade" }),
+    .references(() => probBooksTable.id, { onDelete: "cascade" }),
   title: text("title"),
   style: text("style").$type<styleFormat>().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -55,15 +58,15 @@ export const probSchema = pgTable("probs", {
 });
 
 // 문제-태그 관계 테이블
-export const probTagSchema = pgTable(
+export const probTagsTable = probSchema.table(
   "prob_tags",
   {
     probId: text("prob_id")
       .notNull()
-      .references(() => probSchema.id, { onDelete: "cascade" }),
+      .references(() => probsTable.id, { onDelete: "cascade" }),
     tagId: integer("tag_id")
       .notNull()
-      .references(() => tagSchema.id, { onDelete: "cascade" }),
+      .references(() => tagsTable.id, { onDelete: "cascade" }),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.probId, table.tagId] }),
@@ -71,10 +74,10 @@ export const probTagSchema = pgTable(
 );
 
 // 정답 메타데이터 테이블 (JSON 대신 정규화)
-export const probAnswerMetaSchema = pgTable("prob_answer_meta", {
+export const probAnswerMetaTable = probSchema.table("prob_answer_meta", {
   probId: text("prob_id")
     .primaryKey()
-    .references(() => probSchema.id, { onDelete: "cascade" }),
+    .references(() => probsTable.id, { onDelete: "cascade" }),
   kind: text("kind").notNull(), // "objective" | "subjective"
 
   // objective 전용 필드들
@@ -88,11 +91,11 @@ export const probAnswerMetaSchema = pgTable("prob_answer_meta", {
 });
 
 // 문제 내용 테이블 (텍스트, 이미지, 비디오 등)
-export const probContentSchema = pgTable("prob_contents", {
+export const probContentsTable = probSchema.table("prob_contents", {
   id: serial("id").primaryKey(),
   probId: text("prob_id")
     .notNull()
-    .references(() => probSchema.id, { onDelete: "cascade" }),
+    .references(() => probsTable.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // text, image, video, audio, mixed
   content: text("content").notNull(),
   url: text("url"),
@@ -101,11 +104,11 @@ export const probContentSchema = pgTable("prob_contents", {
 });
 
 // 문제 선택지 테이블 (정답 처리 개선)
-export const probOptionSchema = pgTable("prob_options", {
+export const probOptionsTable = probSchema.table("prob_options", {
   id: serial("id").primaryKey(),
   probId: text("prob_id")
     .notNull()
-    .references(() => probSchema.id, { onDelete: "cascade" }),
+    .references(() => probsTable.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // text, image, video, audio
   content: text("content").notNull(),
   url: text("url"),
