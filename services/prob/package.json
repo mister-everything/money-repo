@@ -12,7 +12,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx src/migrate.ts",
-    "db:seed": "tsx src/__test__/sample-data.ts"
+    "db:seed": "tsx src/__test__/sample-data.ts",
+    "docker:generate": "drizzle-kit generate"
   },
   "exports": {
     ".": "./src/index.ts"
