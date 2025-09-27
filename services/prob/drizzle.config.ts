@@ -1,4 +1,5 @@
 import { defineConfig } from "drizzle-kit";
+import { SCHEMA_NAME } from "./src/const";
 import "@workspace/env";
 
 const dialect = "postgresql";
@@ -14,7 +15,9 @@ export default defineConfig({
   schema,
   out,
   dialect,
-  migrations: {},
+  migrations: {
+    schema: SCHEMA_NAME,
+  },
   dbCredentials: {
     url,
   },
