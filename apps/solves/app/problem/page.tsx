@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { ProblemBook } from "@/components/problem/problem-book";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,39 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useBook, useBooks } from "@/lib/swr/books";
+import { useBooks } from "@/lib/swr/books";
 
 export default function ProblemBookPage() {
-  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+  const router = useRouter();
   const { books, isLoading, isError } = useBooks({ page: 1, limit: 30 });
-  const { book } = useBook(selectedBookId ?? undefined);
 
-  const selectBook = (bookId: string) => {
-    setSelectedBookId(bookId);
+  const goToBook = (bookId: string) => {
+    router.push(`/problem/${bookId}`);
   };
-
-  const goBackToList = () => {
-    setSelectedBookId(null);
-  };
-
-  if (selectedBookId) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-card">
-          <div className="max-w-4xl mx-auto p-6">
-            <Button
-              variant="ghost"
-              onClick={goBackToList}
-              className="text-primary hover:text-primary/90"
-            >
-              ← 문제집 목록으로 돌아가기
-            </Button>
-          </div>
-        </div>
-        {book && <ProblemBook probBook={book} />}
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -73,7 +48,7 @@ export default function ProblemBookPage() {
               <Card
                 key={book.id}
                 className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => selectBook(book.id)}
+                onClick={() => goToBook(book.id)}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
