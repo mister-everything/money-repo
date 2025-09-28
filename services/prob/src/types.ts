@@ -5,7 +5,8 @@ import { z } from "zod";
  * @param generalFormat 일반적인 1번 ~, 2번 ~ 텍스트형
  * @param mixedFormat 텍스트 + 도표가 있는 포맷 (임시)
  */
-export type styleFormat = "generalFormat" | "mixedFormat";
+export const PropStyleFormatSchema = z.enum(["generalFormat", "mixedFormat"]);
+export type PropStyleFormat = z.infer<typeof PropStyleFormatSchema>;
 
 /**
  * @description 각 유형별 필요 데이터 맵
@@ -103,7 +104,7 @@ export type Tag = {
  */
 export type ProbBlock = {
   id: string;
-  style: styleFormat;
+  style: PropStyleFormat;
   content: ProbCotentType;
   answerMeta: AnswerMeta;
   options?: ProbSelectType[];
@@ -166,7 +167,7 @@ export type SaveAnswerMeta =
  */
 export type ProbBlockSaveInput = {
   id: string;
-  style: styleFormat;
+  style: PropStyleFormat;
   content: ProbCotentType;
   answerMeta: SaveAnswerMeta; // probId는 서비스에서 추가
   options?: ProbSelectType[];
@@ -239,7 +240,7 @@ export const saveAnswerMetaSchema = z.union([
 // 저장용 문제 블록 스키마 (정규화된 구조)
 export const probBlockSaveSchema = z.object({
   id: z.string(),
-  style: z.enum(["generalFormat", "mixedFormat"]),
+  style: PropStyleFormatSchema,
   content: baseProbBlockSchema,
   answerMeta: saveAnswerMetaSchema,
   options: z.array(baseProbBlockSchema).optional(),
@@ -260,7 +261,7 @@ export const probBookSaveSchema = z.object({
 // 기존 probBlockSchema는 응답용으로 유지 (Tag 객체 포함)
 export const probBlockSchema = z.object({
   id: z.string(),
-  style: z.enum(["generalFormat", "mixedFormat"]),
+  style: PropStyleFormatSchema,
   content: baseProbBlockSchema,
   answerMeta: answerMetaSchema,
   options: z.array(baseProbBlockSchema).optional(),

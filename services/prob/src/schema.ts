@@ -1,3 +1,4 @@
+import { userTable } from "@service/auth";
 import {
   boolean,
   integer,
@@ -6,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { SCHEMA_NAME } from "./const";
 import type { styleFormat } from "./types";
@@ -22,8 +24,10 @@ export const tagsTable = probSchema.table("tags", {
 // 문제집 테이블 (JSON 제거)
 export const probBooksTable = probSchema.table("prob_books", {
   id: text("id").primaryKey(),
-  ownerId: text("owner_id").notNull(),
-  title: text("title").notNull(),
+  ownerId: text("owner_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 150 }).notNull(),
   description: text("description"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -51,7 +55,7 @@ export const probsTable = probSchema.table("probs", {
   probBookId: text("prob_book_id")
     .notNull()
     .references(() => probBooksTable.id, { onDelete: "cascade" }),
-  title: text("title"),
+  title: varchar("title", { length: 150 }),
   style: text("style").$type<styleFormat>().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
