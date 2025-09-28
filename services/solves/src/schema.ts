@@ -12,17 +12,17 @@ import {
 import { SCHEMA_NAME } from "./const";
 import type { PropStyleFormat } from "./types";
 
-export const probSchema = pgSchema(SCHEMA_NAME);
+export const solvesSchema = pgSchema(SCHEMA_NAME);
 
 // 태그 테이블
-export const tagsTable = probSchema.table("tags", {
+export const tagsTable = solvesSchema.table("tags", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // 문제집 테이블 (JSON 제거)
-export const probBooksTable = probSchema.table("prob_books", {
+export const probBooksTable = solvesSchema.table("prob_books", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id")
     .notNull()
@@ -34,7 +34,7 @@ export const probBooksTable = probSchema.table("prob_books", {
 });
 
 // 문제집-태그 관계 테이블
-export const probBookTagsTable = probSchema.table(
+export const probBookTagsTable = solvesSchema.table(
   "prob_book_tags",
   {
     probBookId: text("prob_book_id")
@@ -50,7 +50,7 @@ export const probBookTagsTable = probSchema.table(
 );
 
 // 문제 테이블 (JSON 제거)
-export const probsTable = probSchema.table("probs", {
+export const probsTable = solvesSchema.table("probs", {
   id: text("id").primaryKey(),
   probBookId: text("prob_book_id")
     .notNull()
@@ -62,7 +62,7 @@ export const probsTable = probSchema.table("probs", {
 });
 
 // 문제-태그 관계 테이블
-export const probTagsTable = probSchema.table(
+export const probTagsTable = solvesSchema.table(
   "prob_tags",
   {
     probId: text("prob_id")
@@ -78,7 +78,7 @@ export const probTagsTable = probSchema.table(
 );
 
 // 정답 메타데이터 테이블 (JSON 대신 정규화)
-export const probAnswerMetaTable = probSchema.table("prob_answer_meta", {
+export const probAnswerMetaTable = solvesSchema.table("prob_answer_meta", {
   probId: text("prob_id")
     .primaryKey()
     .references(() => probsTable.id, { onDelete: "cascade" }),
@@ -95,7 +95,7 @@ export const probAnswerMetaTable = probSchema.table("prob_answer_meta", {
 });
 
 // 문제 내용 테이블 (텍스트, 이미지, 비디오 등)
-export const probContentsTable = probSchema.table("prob_contents", {
+export const probContentsTable = solvesSchema.table("prob_contents", {
   id: serial("id").primaryKey(),
   probId: text("prob_id")
     .notNull()
@@ -108,7 +108,7 @@ export const probContentsTable = probSchema.table("prob_contents", {
 });
 
 // 문제 선택지 테이블 (정답 처리 개선)
-export const probOptionsTable = probSchema.table("prob_options", {
+export const probOptionsTable = solvesSchema.table("prob_options", {
   id: serial("id").primaryKey(),
   probId: text("prob_id")
     .notNull()

@@ -1,0 +1,13 @@
+// isTextProb
+// isImageProb ...
+// isVideoProb ...
+// isAudioProb ...
+// isMixedProb ...
+
+// export const isTextProb = (prob: ProbBlock): prob is TextProb => {
+//   return prob.type === "text";
+// };
+
+// export const isImageProb = (prob: ProbBlock): prob is ImageProb => {
+//   return prob.type === "image";
+// };

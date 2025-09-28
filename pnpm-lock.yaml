@@ -400,7 +400,7 @@ importers:
         version: link:../../services/auth
       '@service/solves':
         specifier: workspace:*
-        version: link:../../services/prob
+        version: link:../../services/solves
       '@workspace/env':
         specifier: workspace:*
         version: link:../../packages/env
@@ -605,7 +605,7 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.18.6)(lightningcss@1.30.1)
 
-  services/prob:
+  services/solves:
     dependencies:
       '@service/auth':
         specifier: workspace:*
