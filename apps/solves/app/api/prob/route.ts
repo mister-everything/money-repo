@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import "@workspace/env";
-import { probBookSaveSchema, probService } from "@service/prob";
+import { probBookSaveSchema, probService } from "@service/solves";
 // import { mockProbService as probService } from "./mock-service";
 
 /**

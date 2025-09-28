@@ -398,7 +398,7 @@ importers:
       '@service/auth':
         specifier: workspace:*
         version: link:../../services/auth
-      '@service/prob':
+      '@service/solves':
         specifier: workspace:*
         version: link:../../services/prob
       '@workspace/env':
@@ -607,6 +607,9 @@ importers:
 
   services/prob:
     dependencies:
+      '@service/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util

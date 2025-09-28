@@ -10,7 +10,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { SCHEMA_NAME } from "./const";
-import type { styleFormat } from "./types";
+import type { PropStyleFormat } from "./types";
 
 export const probSchema = pgSchema(SCHEMA_NAME);
 
@@ -56,7 +56,7 @@ export const probsTable = probSchema.table("probs", {
     .notNull()
     .references(() => probBooksTable.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 150 }),
-  style: text("style").$type<styleFormat>().notNull(),
+  style: text("style").$type<PropStyleFormat>().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
