@@ -165,51 +165,51 @@ export const mockProbBook: ProbBook = {
   updatedAt: new Date("2025-09-19T14:12:15.000Z"),
 };
 
-export const mockProbBooks: ProbBook[] = [
-  mockProbBook,
-  {
-    id: "2",
-    ownerId: "100001",
-    title: "수학 기초 문제집",
-    description: "초등 수학 기초 개념 문제집입니다.",
-    blocks: [
-      {
-        id: "prob-math-1",
-        style: "generalFormat",
-        title: "덧셈 계산",
-        tags: ["수학", "덧셈", "초등"],
-        content: {
-          id: "content-math-1",
-          type: "text",
-          data: {
-            content: "15 + 23 = ?",
-          },
+export const mockProbBook2: ProbBook = {
+  id: "2",
+  ownerId: "100001",
+  title: "수학 기초 문제집",
+  description: "초등 수학 기초 개념 문제집입니다.",
+  blocks: [
+    {
+      id: "prob-math-1",
+      style: "generalFormat",
+      title: "덧셈 계산",
+      tags: ["수학", "덧셈", "초등"],
+      content: {
+        id: "content-math-1",
+        type: "text",
+        data: {
+          content: "15 + 23 = ?",
         },
-        answerMeta: {
-          kind: "objective",
-          multiple: false,
-        },
-        options: [
-          {
-            id: "option-math-1",
-            type: "text",
-            data: { content: "38" },
-          },
-          {
-            id: "option-math-2",
-            type: "text",
-            data: { content: "37" },
-          },
-          {
-            id: "option-math-3",
-            type: "text",
-            data: { content: "39" },
-          },
-        ],
       },
-    ],
-    tags: ["수학", "초등", "기초"],
-    createdAt: new Date("2025-09-20T10:30:00.000Z"),
-    updatedAt: new Date("2025-09-20T10:30:00.000Z"),
-  },
-];
+      answerMeta: {
+        kind: "objective",
+        multiple: false,
+      },
+      options: [
+        {
+          id: "option-math-1",
+          type: "text",
+          data: { content: "38" },
+        },
+        {
+          id: "option-math-2",
+          type: "text",
+          data: { content: "37" },
+        },
+        {
+          id: "option-math-3",
+          type: "text",
+          data: { content: "39" },
+        },
+      ],
+    },
+  ],
+  tags: ["수학", "초등", "기초"],
+  createdAt: new Date("2025-09-20T10:30:00.000Z"),
+  updatedAt: new Date("2025-09-20T10:30:00.000Z"),
+};
+
+export const mockProbBooks: ProbBook[] = [mockProbBook, mockProbBook2];
+

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ProblemBook } from "@/components/problem/proplem-book";
+import { ProblemBook } from "@/components/problem/problem-book";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { mockProbBook, mockProbBooks } from "@/lib/proplem/mock-data";
+import { mockProbBook, mockProbBooks } from "@/lib/problem/mock-data";
 
 export default function ProblemBookPage() {
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);

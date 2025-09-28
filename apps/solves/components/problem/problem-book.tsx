@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ProbBook } from "@/type";
-import { ProblemBlock } from "./proplem-block";
+import { ProblemBlock } from "./problem-block";
 
 interface ProblemBookProps {
   probBook: ProbBook;

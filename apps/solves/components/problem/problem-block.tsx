@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProbBlock } from "@/type";
 import { ContentRenderer } from "./content-renderer";
-import { ProblemOptions } from "./proplem-options";
+import { ProblemOptions } from "./problem-options";
 
 interface ProblemBlockProps {
   problem: ProbBlock;
