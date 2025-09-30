@@ -115,7 +115,6 @@ export const ColumnPresets = {
       relatedFields?: string[]; // 변경 시 함께 검증할 필드들
     }>
   ): ColumnDefinition<T> => ({
-    editable: true,
     ...params,
     render: (value, item, isEditing, context) => {
       const isDisabled = isDisabledField(params.disabled, item);
@@ -189,7 +188,6 @@ export const ColumnPresets = {
       if (params.format) {
         return params.format(dateObj);
       }
-
       return dateObj.toLocaleDateString("ko-KR");
     },
   }),
@@ -305,7 +303,7 @@ export const ColumnPresets = {
         return (
           <div className="flex items-center gap-2">
             <span className="text-gray-600 bg-gray-100 px-2 py-1 rounded text-sm">
-              {option?.label || value?.toString() || ""} (수정 불가)
+              {option?.label || value?.toString() || ""}
             </span>
           </div>
         );
@@ -325,7 +323,6 @@ export const ColumnPresets = {
   ): ColumnDefinition<T> => ({
     key: "__checkbox__" as const,
     label: "",
-    editable: false,
     ...params,
     render: (_, item, __, context) => {
       const isHeader = !item?.data || Object.keys(item).length === 0;
@@ -380,6 +377,7 @@ export const ColumnPresets = {
     }>
   ): ColumnDefinition<T> => ({
     ...params,
+    editable: true,
     render: (value, item, isEditing, context) => {
       return params.renderCell?.(value, item.data, isEditing, context);
     },

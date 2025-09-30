@@ -1,5 +1,6 @@
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
+import { mutate } from "swr";
 import { EditableTable } from "@/components/common/editable-table/editable-table";
 import { ColumnPresets } from "@/components/common/editable-table/presets";
 import {
@@ -31,45 +32,67 @@ interface UsersTableProps {
 }
 
 const statusRoles = ["admin", "user"];
-
+// 789,990 1611115
+// 406,600,383,390 + 701,125, 120,000
+// 73000 574125 28000 14000 58500 23000 3500 : 774125
+// 110000 58000 15000 23100 5000 18500 98000: 327600
 const usersColumns: ColumnDefinition<User>[] = [
+  ColumnPresets.CheckSelect({
+    className: "w-[50px]",
+  }),
   ColumnPresets.Text({
     key: "name",
     label: "사용자",
     className: "w-[200px]",
-    editable: false,
   }),
   ColumnPresets.Text({
     key: "email",
     label: "이메일",
     className: "w-[170px]",
-    editable: false,
   }),
   ColumnPresets.Select({
     key: "role",
     label: "역할",
     className: "w-[120px]",
+    disabled: false,
     options: statusRoles.map((role) => ({ label: role, value: role })),
   }),
-  ColumnPresets.Date({
+  ColumnPresets.Text({
     key: "createdAt",
     label: "생성일",
     className: "w-[150px]",
-    editable: false,
-    format: (date) => date.toLocaleString(),
+    transform: (date) => date.toLocaleString(),
   }),
-  ColumnPresets.Date({
+  ColumnPresets.Text({
     key: "updatedAt",
     label: "수정일",
     className: "w-[150px]",
-    editable: false,
-    format: (date) => date.toLocaleString(),
+    transform: (date) => date.toLocaleString(),
   }),
 ];
 
 export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
   const usersTableRef = useRef<EditableTableMethods<User>>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // 선택된 항목을 삭제 예정으로 표시
+  const handleMarkForDeletion = () => {
+    const selectedItems = usersTableRef.current?.getSelectedItems();
+    if (!selectedItems || selectedItems.length === 0) {
+      notify.alert({
+        title: "알림",
+        description: "삭제할 사용자를 선택해주세요.",
+      });
+      return;
+    }
+
+    usersTableRef.current?.deleteSelectedItems();
+
+    notify.alert({
+      title: "삭제 예정",
+      description: `${selectedItems.length}명의 사용자가 삭제 예정으로 표시되었습니다. "변경사항 저장"을 클릭하여 실제로 삭제하세요.`,
+    });
+  };
 
   const handleSaveChanges = async () => {
     const statusData = usersTableRef.current?.getStatusData();
@@ -83,36 +106,93 @@ export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
 
     setIsSaving(true);
     try {
-      await Promise.all(
-        statusData.modified.map(async (user) => {
-          const response = await fetch(`/api/users/${user.id}/role`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ role: user.role }),
-          });
+      const promises: Promise<any>[] = [];
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "역할 업데이트에 실패했습니다.");
-          }
+      // 1. 역할 수정 처리
+      if (statusData.modified.length > 0) {
+        // 낙관적 업데이트: 먼저 UI에서 변경사항을 반영
+        const updatedUsers = users.map((user) => {
+          const modifiedUser = statusData.modified.find(
+            (mod) => mod.id === user.id
+          );
+          return modifiedUser ? { ...user, role: modifiedUser.role } : user;
+        });
 
-          return response.json();
-        })
-      );
+        // SWR 캐시를 낙관적으로 업데이트
+        mutate("/api/users", updatedUsers, false);
+
+        // 역할 업데이트 API 호출들을 promises에 추가
+        promises.push(
+          ...statusData.modified.map(async (user) => {
+            const response = await fetch(`/api/users/${user.id}/role`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ role: user.role }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(
+                errorData.error || "역할 업데이트에 실패했습니다."
+              );
+            }
+
+            return response.json();
+          })
+        );
+      }
+
+      // 2. 사용자 삭제 처리
+      if (statusData.deleted.length > 0) {
+        // 삭제 API 호출들을 promises에 추가
+        promises.push(
+          ...statusData.deleted.map(async (user) => {
+            const response = await fetch(`/api/users/${user.id}`, {
+              method: "DELETE",
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || "사용자 삭제에 실패했습니다.");
+            }
+
+            return response.json();
+          })
+        );
+      }
+
+      // 모든 API 호출을 병렬로 실행
+      await Promise.all(promises);
+
+      // 성공 시 서버에서 최신 데이터 가져오기
+      mutate("/api/users");
+
+      // 성공 메시지 구성
+      const messages: string[] = [];
+      if (statusData.modified.length > 0) {
+        messages.push(`${statusData.modified.length}명의 역할 수정`);
+      }
+      if (statusData.deleted.length > 0) {
+        messages.push(`${statusData.deleted.length}명의 사용자 삭제`);
+      }
 
       notify.alert({
         title: "저장 완료",
-        description: `${statusData.modified.length}명의 사용자 역할이 성공적으로 업데이트되었습니다.`,
+        description: `${messages.join(", ")}이 성공적으로 완료되었습니다.`,
       });
 
-      // 데이터 새로고침
+      // 선택적으로 onRefresh 콜백 실행 (SWR 사용 시 필요 없을 수도 있음)
       if (onRefresh) {
         onRefresh();
       }
     } catch (error) {
       console.error("사용자 역할 업데이트 실패:", error);
+
+      // 에러 발생 시 원래 데이터로 되돌리기
+      mutate("/api/users");
+
       notify.alert({
         title: "저장 실패",
         description:
@@ -146,8 +226,8 @@ export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
       <CardHeader>
         <CardTitle className="text-white">사용자 관리</CardTitle>
         <CardDescription className="text-gray-400">
-          등록된 사용자들을 관리하고 확인할 수 있습니다. 역할을 클릭하여 수정할
-          수 있습니다.
+          등록된 사용자들을 관리하고 확인할 수 있습니다. 역할을 클릭하여
+          수정하거나, 사용자를 선택하여 삭제할 수 있습니다.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -160,7 +240,14 @@ export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
             className="bg-gray-900 text-white"
             toolbarActions={[
               {
-                label: isSaving ? "저장 중..." : "변경사항 저장",
+                label: "선택 삭제",
+                onClick: handleMarkForDeletion,
+                icon: <Trash2 className="h-4 w-4" />,
+                disabled: isSaving,
+                variant: "outline",
+              },
+              {
+                label: "변경사항 저장",
                 onClick: handleSaveChanges,
                 icon: <Download className="h-4 w-4" />,
                 disabled: isSaving,

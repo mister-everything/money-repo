@@ -412,7 +412,7 @@ export const EditableTable = forwardRef<
         return column.render(value, item, isEditing, context);
       }
 
-      if (isEditing && column.editable !== false) {
+      if (isEditing) {
         return (
           <Input
             value={editingData[column.key]?.toString() || ""}
