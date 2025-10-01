@@ -1,10 +1,9 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { MessageDock } from "@/components/message-dock";
+import { ChatDrawer } from "@/components/ChatInterface/chat-drawer";
 import { ProblemBook } from "@/components/problem/problem-book";
 import { Button } from "@/components/ui/button";
-import { FloatingAiAssistant } from "@/components/ui/glowing-ai-chat-assistant";
 import { useBook } from "@/lib/swr/books";
 
 export default function ProblemBookDetailPage() {
@@ -38,7 +37,7 @@ export default function ProblemBookDetailPage() {
 
   if (isError || !book) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         <div className="max-w-4xl mx-auto p-6">
           <Button variant="ghost" onClick={() => router.push("/problem")}>
             ← 문제집 목록으로 돌아가기
@@ -52,21 +51,26 @@ export default function ProblemBookDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b bg-card">
-        <div className="max-w-4xl mx-auto p-6">
-          <Button
-            variant="ghost"
-            onClick={() => router.push("/problem")}
-            className="text-primary hover:text-primary/90"
-          >
-            ← 문제집 목록으로 돌아가기
-          </Button>
+    <div className="bg-background flex min-h-svh flex-col overflow-hidden">
+      <div className="px-6 py-6 flex ">
+        <Button
+          className="text-primary hover:text-primary/90 mr-auto"
+          variant="ghost"
+          onClick={() => router.push("/problem")}
+        >
+          ← 문제집 목록으로 돌아가기
+        </Button>
+        <ChatDrawer />
+      </div>
+
+      <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          <ProblemBook probBook={book} />
         </div>
       </div>
-      <ProblemBook probBook={book} />
+
       {/* <MessageDock theme="dark" /> */}
-      <FloatingAiAssistant />;
+      {/* <FloatingAiAssistant />; */}
     </div>
   );
 }
