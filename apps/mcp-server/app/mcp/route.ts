@@ -58,6 +58,42 @@ const handler = createMcpHandler((server) => {
       }
     },
   );
+  server.tool(
+    "update-user-role",
+    "우리 서비스를 이용하는 유저의 Role을 업데이트 합니다.",
+    {
+      userId: z.string() as unknown as ZodString,
+      role: z.enum(["user", "admin"]) as unknown as ZodString,
+    },
+    async ({ userId, role }) => {
+      try {
+        await userService.updateUserRole(userId, role);
+        return {
+          content: [
+            {
+              type: "text",
+              text: "유저 업데이트 완료",
+            },
+          ],
+        };
+      } catch (error) {
+        console.error(error);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: "유저 업데이트 실패",
+            },
+            {
+              type: "text",
+              text: errorToString(error),
+            },
+          ],
+        };
+      }
+    },
+  );
 }, {});
 
 export { handler as GET, handler as POST, handler as DELETE };
