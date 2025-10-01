@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome lint . --write",
+    "check": "pnpm run lint && pnpm run check-types",
     "check-types": "tsc --noEmit",
     "playwright:install": "playwright install",
     "test:e2e": "playwright test",
