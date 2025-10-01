@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { ChatDrawer } from "@/components/ChatInterface/chat-drawer";
+import { ChatDrawer } from "@/components/chat-interface/chat-drawer";
 import { ProblemBook } from "@/components/problem/problem-book";
 import { Button } from "@/components/ui/button";
 import { useBook } from "@/lib/swr/books";
