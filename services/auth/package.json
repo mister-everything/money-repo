@@ -5,6 +5,7 @@
   "scripts": {
     "lint": "biome lint . --write",
     "check-types": "tsc --noEmit",
+    "check": "pnpm run lint && pnpm run check-types",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "db:push": "drizzle-kit push",

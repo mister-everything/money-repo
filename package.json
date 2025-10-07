@@ -18,17 +18,21 @@
     "format": "biome check . --apply",
     "check-types": "turbo run check-types",
     "changeset": "changeset",
+    "check": "turbo run check",
     "changeset:version": "changeset version",
     "changeset:publish": "pnpm build && changeset publish",
     "clean": "tsx scripts/clean.ts",
     "docker:pg": "docker run --name local-pg -e POSTGRES_PASSWORD=your_password -e POSTGRES_USER=your_username -e POSTGRES_DB=your_database_name -p 5432:5432 -d postgres",
-    "docker:redis": "docker run --name local-redis -p 6379:6379 -d redis:7-alpine"
+    "docker:redis": "docker run --name local-redis -p 6379:6379 -d redis:7-alpine",
+    "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@changesets/cli": "^2.29.7",
     "@playwright/test": "^1.55.1",
+    "@workspace/env": "workspace:*",
     "danger": "^13.0.4",
+    "drizzle-kit": "^0.31.5",
     "glob": "^11.0.3",
     "inquirer": "^12.9.6",
     "rimraf": "^6.0.1",

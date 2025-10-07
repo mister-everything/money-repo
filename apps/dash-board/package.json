@@ -12,7 +12,8 @@
     "playwright:install": "playwright install",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "check": "pnpm run lint && pnpm run check-types"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
