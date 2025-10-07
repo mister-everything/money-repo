@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { pgDb } from "./db";
 import {
   probBlockAnswerSubmitsTable,
@@ -281,11 +281,35 @@ export const probService = {
   // ============================================================
 
   /**
+   * 진행 중인 세션 조회 (endTime이 null인 세션)
+   */
+  getOngoingSession: async (
+    probBookId: number,
+    ownerId: string,
+  ): Promise<ProbBookSubmit | null> => {
+    const [session] = await pgDb
+      .select()
+      .from(probBookSubmitsTable)
+      .where(
+        and(
+          eq(probBookSubmitsTable.probBookId, probBookId),
+          eq(probBookSubmitsTable.ownerId, ownerId),
+          isNull(probBookSubmitsTable.endTime),
+        ),
+      )
+      .limit(1);
+
+    return (session as ProbBookSubmit) || null;
+  },
+
+  /**
    * 문제집 제출 세션 시작
+   * @param mode - "new": 새로 시작 (기존 미완료 세션 삭제), "resume": 이어하기, undefined: 그냥 새로 생성
    */
   startSubmitSession: async (
     probBookId: number,
     ownerId: string,
+    mode?: "new" | "resume",
   ): Promise<ProbBookSubmit> => {
     // 문제집 확인
     const probBook = await probService.findById(probBookId);
@@ -293,6 +317,25 @@ export const probService = {
       throw new Error("문제집을 찾을 수 없습니다.");
     }
 
+    // 진행 중인 세션 확인
+    const ongoingSession = await probService.getOngoingSession(
+      probBookId,
+      ownerId,
+    );
+
+    // resume 모드: 진행 중인 세션이 있으면 그것을 반환
+    if (mode === "resume" && ongoingSession) {
+      return ongoingSession;
+    }
+
+    // new 모드: 진행 중인 세션이 있으면 삭제
+    if (mode === "new" && ongoingSession) {
+      await pgDb
+        .delete(probBookSubmitsTable)
+        .where(eq(probBookSubmitsTable.id, ongoingSession.id));
+    }
+
+    // 새 세션 생성
     const [session] = await pgDb
       .insert(probBookSubmitsTable)
       .values({
@@ -418,6 +461,84 @@ export const probService = {
    */
   getAllTags: async (): Promise<Tag[]> => {
     return await pgDb.select().from(tagsTable).orderBy(asc(tagsTable.name));
+  },
+
+  // ============================================================
+  // 개별 문제 블록 CRUD
+  // ============================================================
+
+  /**
+   * 개별 문제 블록 생성
+   */
+  createBlock: async (
+    blockData: Omit<ProbBlock, "id" | "tags"> & { probBookId: number },
+  ): Promise<ProbBlock> => {
+    const [block] = await pgDb
+      .insert(probBlocksTable)
+      .values({
+        probBookId: blockData.probBookId,
+        type: blockData.type,
+        question: blockData.question,
+        content: blockData.content,
+        answer: blockData.answer,
+        order: blockData.order ?? 0,
+      })
+      .returning();
+
+    return {
+      ...block,
+      tags: [],
+    } as ProbBlock;
+  },
+
+  /**
+   * 개별 문제 블록 조회
+   */
+  getBlockById: async (blockId: number): Promise<ProbBlock | null> => {
+    const [block] = await pgDb
+      .select()
+      .from(probBlocksTable)
+      .where(eq(probBlocksTable.id, blockId));
+
+    if (!block) return null;
+
+    return {
+      ...block,
+      tags: [],
+    } as ProbBlock;
+  },
+
+  /**
+   * 개별 문제 블록 수정
+   */
+  updateBlock: async (
+    blockId: number,
+    blockData: Partial<Omit<ProbBlock, "id" | "tags">>,
+  ): Promise<ProbBlock> => {
+    const [updatedBlock] = await pgDb
+      .update(probBlocksTable)
+      .set({
+        ...blockData,
+        updatedAt: new Date(),
+      })
+      .where(eq(probBlocksTable.id, blockId))
+      .returning();
+
+    if (!updatedBlock) {
+      throw new Error("문제를 찾을 수 없습니다.");
+    }
+
+    return {
+      ...updatedBlock,
+      tags: [],
+    } as ProbBlock;
+  },
+
+  /**
+   * 개별 문제 블록 삭제
+   */
+  deleteBlock: async (blockId: number): Promise<void> => {
+    await pgDb.delete(probBlocksTable).where(eq(probBlocksTable.id, blockId));
   },
 };
 

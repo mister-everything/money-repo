@@ -312,6 +312,7 @@ export type ProbBlock = {
   question?: string;
   content: ProbBlockContent;
   answer?: ProbBlockAnswer;
+  order?: number;
   tags: string[];
 };
 
@@ -382,6 +383,27 @@ export type ProbBlockSaveInput = {
   order?: number;
 };
 
+/**
+ * 개별 문제 블록 생성/수정 타입 (문제집 ID 포함)
+ */
+export type ProbBlockCreateInput = {
+  probBookId: number;
+  type: ProbBlockContent["type"];
+  question?: string;
+  content: ProbBlockContent;
+  answer?: ProbBlockAnswer;
+  order?: number;
+};
+
+export type ProbBlockUpdateInput = {
+  id: number;
+  type?: ProbBlockContent["type"];
+  question?: string;
+  content?: ProbBlockContent;
+  answer?: ProbBlockAnswer;
+  order?: number;
+};
+
 // ============================================================
 // Zod 스키마 정의 (API 검증용)
 // ============================================================
@@ -434,6 +456,59 @@ export const probBlockAnswerSubmitApiSchema = z.union([
   oxBlockAnswerSubmitSchema,
   matchingBlockAnswerSubmitSchema,
 ]);
+
+/**
+ * 개별 문제 블록 생성 스키마 (API 요청 검증용)
+ */
+export const probBlockCreateSchema = z.object({
+  probBookId: z.number(),
+  type: z.enum(["default", "mcq", "ranking", "ox", "matching"]),
+  question: z.string().optional(),
+  content: z.union([
+    defaultBlockContentSchema,
+    mcqBlockContentSchema,
+    rankingBlockContentSchema,
+    oxBlockContentSchema,
+    matchingBlockContentSchema,
+  ]),
+  answer: z
+    .union([
+      defaultBlockAnswerSchema,
+      mcqBlockAnswerSchema,
+      rankingBlockAnswerSchema,
+      oxBlockAnswerSchema,
+      matchingBlockAnswerSchema,
+    ])
+    .optional(),
+  order: z.number().optional(),
+});
+
+/**
+ * 개별 문제 블록 수정 스키마 (API 요청 검증용)
+ */
+export const probBlockUpdateSchema = z.object({
+  type: z.enum(["default", "mcq", "ranking", "ox", "matching"]).optional(),
+  question: z.string().optional(),
+  content: z
+    .union([
+      defaultBlockContentSchema,
+      mcqBlockContentSchema,
+      rankingBlockContentSchema,
+      oxBlockContentSchema,
+      matchingBlockContentSchema,
+    ])
+    .optional(),
+  answer: z
+    .union([
+      defaultBlockAnswerSchema,
+      mcqBlockAnswerSchema,
+      rankingBlockAnswerSchema,
+      oxBlockAnswerSchema,
+      matchingBlockAnswerSchema,
+    ])
+    .optional(),
+  order: z.number().optional(),
+});
 
 // ============================================================
 // Utility Functions 재export (prob-utils에서 import)

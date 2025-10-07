@@ -6,26 +6,37 @@ import { probService } from "@service/solves";
 /**
  * POST /api/prob/submit
  * 문제집 제출 세션 시작
- * Body: { probBookId: number, ownerId: string }
+ * Body: { probBookId: number, ownerId: string, mode?: "new" | "resume" }
+ * - mode: "new" - 새로 시작 (기존 미완료 세션 삭제)
+ * - mode: "resume" - 이어하기 (진행 중인 세션이 있으면 그것 반환)
+ * - mode 없음 - 그냥 새로 생성
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { probBookId, ownerId } = z
+    const { probBookId, ownerId, mode } = z
       .object({
         probBookId: z.number(),
         ownerId: z.string(),
+        mode: z.enum(["new", "resume"]).optional(),
       })
       .parse(body);
 
-    const session = await probService.startSubmitSession(probBookId, ownerId);
+    const session = await probService.startSubmitSession(
+      probBookId,
+      ownerId,
+      mode,
+    );
 
     return NextResponse.json(
       {
         success: true,
         data: session,
-        message: "문제집 풀이 세션이 시작되었습니다.",
+        message:
+          mode === "resume" && session.startTime
+            ? "이전 세션을 이어서 진행합니다."
+            : "문제집 풀이 세션이 시작되었습니다.",
       },
       { status: 201 },
     );
