@@ -14,7 +14,7 @@ const defaultBlock: ProbBlock<"default"> = {
   type: "default",
   content: defaultBlockContent,
   answer: defaultBlockAnswer,
-  id: 1,
+  id: "1",
   order: 1,
   question: "한국의 수도는?",
 };
@@ -38,7 +38,7 @@ const mcqBlock: ProbBlock<"mcq"> = {
   type: "mcq",
   content: mcqBlockContent,
   answer: mcqBlockAnswer,
-  id: 2,
+  id: "2",
   order: 2,
   question: "한국의 도시는?",
 };
@@ -58,7 +58,7 @@ const oxBlock: ProbBlock<"ox"> = {
   type: "ox",
   content: oxBlockContent,
   answer: oxBlockAnswer,
-  id: 3,
+  id: "3",
   order: 3,
   question: "지구는 태양 주위를 돈다",
 };
@@ -82,7 +82,7 @@ const rankingBlock: ProbBlock<"ranking"> = {
   type: "ranking",
   content: rankingBlockContent,
   answer: rankingBlockAnswer,
-  id: 4,
+  id: "4",
   order: 4,
   question: "잘생긴 사람 순서대로 나열하시오.",
 };
