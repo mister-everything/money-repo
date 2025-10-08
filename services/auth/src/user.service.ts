@@ -21,6 +21,7 @@ export const userService = {
         email: userTable.email,
         image: userTable.image,
         createdAt: userTable.createdAt,
+        updatedAt: userTable.updatedAt,
         role: userTable.role,
       })
       .from(userTable)
