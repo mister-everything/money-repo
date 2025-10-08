@@ -3,15 +3,15 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { admin, anonymous } from "better-auth/plugins";
 import { GoogleOptions } from "better-auth/social-providers";
+import { AUTH_COOKIE_PREFIX, SERVICE_NAME } from "./const";
+import { pgDb } from "./db";
 import {
   accountTable,
   sessionTable,
-  userService,
   userTable,
   verificationTable,
-} from ".";
-import { AUTH_COOKIE_PREFIX, SERVICE_NAME } from "./const";
-import { pgDb } from "./db";
+} from "./schema";
+import { userService } from "./user.service";
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   console.warn(
