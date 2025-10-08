@@ -14,7 +14,7 @@
     "test:coverage": "turbo run test:coverage",
     "test:e2e": "turbo run test:e2e",
     "playwright:install": "turbo run playwright:install",
-    "db:migrate": "turbo run db:migrate",
+
     "format": "biome check . --apply",
     "check-types": "turbo run check-types",
     "changeset": "changeset",
@@ -23,8 +23,11 @@
     "changeset:publish": "pnpm build && changeset publish",
     "clean": "tsx scripts/clean.ts",
     "docker:pg": "docker run --name local-pg -e POSTGRES_PASSWORD=your_password -e POSTGRES_USER=your_username -e POSTGRES_DB=your_database_name -p 5432:5432 -d postgres",
+    "docker:pg:hard": "(docker stop local-pg && docker rm local-pg) || true && pnpm docker:pg && pnpm db:migrate",
     "docker:redis": "docker run --name local-redis -p 6379:6379 -d redis:7-alpine",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "turbo run db:seed",
+    "db:migrate": "turbo run db:migrate"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",

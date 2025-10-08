@@ -1,158 +1,51 @@
-# Problem Service Database Schema
+# Problem Service
 
 ## 개요
 
-Problem Service는 정규화된 관계형 데이터베이스 구조로 문제집과 문제를 관리합니다.
-
-## 테이블 구조
-
-### 1. 핵심 테이블
-
-#### prob_books (문제집)
-
-```sql
-CREATE TABLE prob_books (
-    id TEXT PRIMARY KEY,
-    owner_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### probs (문제)
-
-```sql
-CREATE TABLE probs (
-    id TEXT PRIMARY KEY,
-    prob_book_id TEXT REFERENCES prob_books(id) ON DELETE CASCADE,
-    title TEXT,
-    style TEXT NOT NULL, -- "generalFormat" | "mixedFormat"
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### tags (태그)
-
-```sql
-CREATE TABLE tags (
-    id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 2. 관계 테이블
-
-#### prob_book_tags (문제집-태그)
-
-```sql
-CREATE TABLE prob_book_tags (
-    prob_book_id TEXT REFERENCES prob_books(id) ON DELETE CASCADE,
-    tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
-    PRIMARY KEY (prob_book_id, tag_id)
-);
-```
-
-#### prob_tags (문제-태그)
-
-```sql
-CREATE TABLE prob_tags (
-    prob_id TEXT REFERENCES probs(id) ON DELETE CASCADE,
-    tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
-    PRIMARY KEY (prob_id, tag_id)
-);
-```
-
-### 3. 문제 세부 테이블
-
-#### prob_answer_meta (정답 메타데이터)
-
-```sql
-CREATE TABLE prob_answer_meta (
-    prob_id TEXT PRIMARY KEY REFERENCES probs(id) ON DELETE CASCADE,
-    kind TEXT NOT NULL, -- "objective" | "subjective"
-
-    -- 객관식 전용
-    multiple BOOLEAN,      -- 복수 선택 가능
-    randomized BOOLEAN,    -- 선택지 랜덤 배치
-
-    -- 주관식 전용
-    char_limit INTEGER,    -- 최대 글자수
-    lines INTEGER,         -- 최대 줄수
-    placeholder TEXT       -- 입력 힌트
-);
-```
-
-#### prob_contents (문제 내용)
-
-```sql
-CREATE TABLE prob_contents (
-    id SERIAL PRIMARY KEY,
-    prob_id TEXT REFERENCES probs(id) ON DELETE CASCADE,
-    type TEXT NOT NULL,     -- "text" | "image" | "video" | "audio" | "mixed"
-    content TEXT NOT NULL,
-    url TEXT,               -- 미디어 파일 URL
-    duration INTEGER,       -- 비디오/오디오 길이
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### prob_options (문제 선택지)
-
-```sql
-CREATE TABLE prob_options (
-    id SERIAL PRIMARY KEY,
-    prob_id TEXT REFERENCES probs(id) ON DELETE CASCADE,
-    type TEXT NOT NULL,        -- "text" | "image" | "video" | "audio"
-    content TEXT NOT NULL,
-    url TEXT,
-    is_correct BOOLEAN DEFAULT false,
-    correct_order INTEGER,     -- 복수정답 순서
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-## 주요 특징
-
-### 정규화된 구조
-
-- JSON 필드 → 관계형 테이블로 전환
-- 쿼리 성능 향상 및 데이터 무결성 보장
-
-### 태그 시스템
-
-- 문제집/문제 레벨 태그 지원
-- 자동 중복 제거 및 정규화
-
-### CASCADE 삭제
-
-- 문제집 삭제 시 모든 관련 데이터 자동 삭제
-
-### 다양한 미디어 지원
-
-- 텍스트, 이미지, 비디오, 오디오
-- Mixed 타입으로 여러 미디어 조합
-
-## 마이그레이션
+문제집과 문제(Problem)를 관리하는 서비스 패키지입니다. Drizzle ORM 기반으로 데이터베이스를 다루고, 다양한 문제 유형을 `blocks` 모듈로 정의하여 재사용합니다.
 
 ```bash
-# 마이그레이션 실행
-pnpm db:migrate
+# 의존성 설치
+pnpm install
 
-# DB 리셋 (개발용)
-pnpm db:reset
 
-# 스키마 재생성
-pnpm db:generate
+# DB 마이그레이션 및 시드
+pnpm -F @service/solves db:migrate
+pnpm -F @service/solves db:seed
 ```
 
-## TypeScript 타입
+## 디렉터리 구성
 
-주요 타입들은 `src/types.ts`에서 확인:
+- `src/prob/blocks.ts` : 지원하는 문제 블록 유형 정의 (주관식, 객관식, O/X 등)
+- `src/prob/create-block.ts` : 블록 스키마/체커를 선언적으로 생성하는 빌더
+- `src/prob/mock-data.ts` : 샘플 문제 데이터
+- `src/prob/prob.service.ts` : 문제집/문제 CRUD 서비스 로직
+- `src/prob/types.ts` : 문제집과 문제에 대한 타입 및 생성 스키마
+- `src/prob/utils.ts` : 공통 유틸(타입 가드, 파서, 정답 검증 등)
+- `src/schema.ts` : Drizzle ORM 스키마 정의
+- `src/seed.ts` : 테스트용 시드 스크립트
 
-- `ProbBook`: 완성된 문제집
-- `ProbBookSaveInput`: 저장용 문제집
-- `AnswerMeta`: 정답 메타데이터
+## 문제 블록 구조
+
+각 문제는 세 가지 구성 요소로 이루어집니다.
+
+1. **content** – 문제 본문이나 선택지 등 사용자에게 보여줄 내용
+2. **answer** – 정답 데이터 (문제집 생성 시 저장)
+3. **answerSubmit** – 사용자가 제출한 답안을 검증하기 위한 입력 스키마
+
+`create-block.ts`의 `blockBuilder`를 통해 각 블록의 스키마와 정답 체커를 손쉽게 정의할 수 있습니다. 모든 블록은 `contentSchema`, `answerSchema`, `answerSubmitSchema`, `checkAnswer`를 제공하며, `blocks.ts`에서 실제 유형을 등록합니다.
+
+## utils.ts 소개
+
+`src/prob/utils.ts`는 블록 관련 공통 기능을 모아둔 파일로 다음 기능을 제공합니다.
+
+- **타입 가드**
+  - `isContent`, `isAnswer`, `isAnswerSubmit` : 블록 타입별로 content/answer/answerSubmit 형태인지 런타임에 판별합니다.
+- **파서**
+  - `parseContent`, `parseAnswer`, `parseAnswerSubmit` : 블록의 타입을 확인하고 해당 스키마로 파싱하여, 잘못된 데이터는 즉시 예외를 발생시킵니다.
+- **통합 스키마**
+  - `allContentSchemas`, `allAnswerSchemas`, `allAnswerSubmitSchemas` : 모든 블록 유형을 통합한 Zod 스키마로, create 시 입력값 유효성 검증에 사용됩니다.
+- **정답 검증**
+  - `checkAnswer(correctAnswer, submittedAnswer)` : 동일 타입인지 확인하고 각 블록의 `checkAnswer`를 호출해 정답 여부를 판단합니다.
+
+이 유틸들을 활용하면 문제집 생성/검증 로직에서 타입 안정성과 공통 검증을 일관되게 유지할 수 있습니다.

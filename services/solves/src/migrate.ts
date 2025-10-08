@@ -4,7 +4,7 @@ import { join } from "path";
 import { SCHEMA_NAME, SERVICE_NAME } from "./const";
 import { pgDb } from "./db";
 
-const runMigrate = async () => {
+export const runMigrate = async () => {
   console.log(`⏳ [${SERVICE_NAME}] Running PostgreSQL migrations...`);
 
   const start = Date.now();

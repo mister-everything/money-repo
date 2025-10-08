@@ -1,64 +1,68 @@
 {
-  "id": "6255144c-d239-4a24-925d-7a5881353d9c",
+  "id": "4184b56d-d63b-4559-b336-628e796545fb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.prob_answer_meta": {
-      "name": "prob_answer_meta",
-      "schema": "",
+    "solves.prob_block_answer_submits": {
+      "name": "prob_block_answer_submits",
+      "schema": "solves",
       "columns": {
-        "prob_id": {
-          "name": "prob_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
+        "block_id": {
+          "name": "block_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "multiple": {
-          "name": "multiple",
+        "submit_id": {
+          "name": "submit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "answer": {
+          "name": "answer",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_correct": {
+          "name": "is_correct",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "randomized": {
-          "name": "randomized",
-          "type": "boolean",
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
-        },
-        "char_limit": {
-          "name": "char_limit",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "lines": {
-          "name": "lines",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "placeholder": {
-          "name": "placeholder",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "prob_answer_meta_prob_id_probs_id_fk": {
-          "name": "prob_answer_meta_prob_id_probs_id_fk",
-          "tableFrom": "prob_answer_meta",
-          "tableTo": "probs",
+        "prob_block_answer_submits_block_id_prob_blocks_id_fk": {
+          "name": "prob_block_answer_submits_block_id_prob_blocks_id_fk",
+          "tableFrom": "prob_block_answer_submits",
+          "tableTo": "prob_blocks",
+          "schemaTo": "solves",
           "columnsFrom": [
-            "prob_id"
+            "block_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "prob_block_answer_submits_submit_id_prob_book_submits_id_fk": {
+          "name": "prob_block_answer_submits_submit_id_prob_book_submits_id_fk",
+          "tableFrom": "prob_block_answer_submits",
+          "tableTo": "prob_book_submits",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "submit_id"
           ],
           "columnsTo": [
             "id"
@@ -67,37 +71,65 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "prob_block_answer_submits_block_id_submit_id_pk": {
+          "name": "prob_block_answer_submits_block_id_submit_id_pk",
+          "columns": [
+            "block_id",
+            "submit_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.prob_books": {
-      "name": "prob_books",
-      "schema": "",
+    "solves.prob_blocks": {
+      "name": "prob_blocks",
+      "schema": "solves",
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "prob_book_id": {
+          "name": "prob_book_id",
+          "type": "uuid",
+          "primaryKey": false,
           "notNull": true
         },
-        "owner_id": {
-          "name": "owner_id",
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "type": {
+          "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "title": {
-          "name": "title",
+        "question": {
+          "name": "question",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "text",
+        "answer": {
+          "name": "answer",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
@@ -117,20 +149,122 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "prob_blocks_prob_book_id_prob_books_id_fk": {
+          "name": "prob_blocks_prob_book_id_prob_books_id_fk",
+          "tableFrom": "prob_blocks",
+          "tableTo": "prob_books",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "prob_book_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.prob_book_tags": {
+    "solves.prob_book_submits": {
+      "name": "prob_book_submits",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "prob_book_id": {
+          "name": "prob_book_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "prob_book_submits_prob_book_id_prob_books_id_fk": {
+          "name": "prob_book_submits_prob_book_id_prob_books_id_fk",
+          "tableFrom": "prob_book_submits",
+          "tableTo": "prob_books",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "prob_book_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "prob_book_submits_owner_id_user_id_fk": {
+          "name": "prob_book_submits_owner_id_user_id_fk",
+          "tableFrom": "prob_book_submits",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.prob_book_tags": {
       "name": "prob_book_tags",
-      "schema": "",
+      "schema": "solves",
       "columns": {
         "prob_book_id": {
           "name": "prob_book_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -147,6 +281,7 @@
           "name": "prob_book_tags_prob_book_id_prob_books_id_fk",
           "tableFrom": "prob_book_tags",
           "tableTo": "prob_books",
+          "schemaTo": "solves",
           "columnsFrom": [
             "prob_book_id"
           ],
@@ -160,6 +295,7 @@
           "name": "prob_book_tags_tag_id_tags_id_fk",
           "tableFrom": "prob_book_tags",
           "tableTo": "tags",
+          "schemaTo": "solves",
           "columnsFrom": [
             "tag_id"
           ],
@@ -184,180 +320,47 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.prob_contents": {
-      "name": "prob_contents",
-      "schema": "",
+    "solves.prob_books": {
+      "name": "prob_books",
+      "schema": "solves",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
-        },
-        "prob_id": {
-          "name": "prob_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "url": {
-          "name": "url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "duration": {
-          "name": "duration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
           "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "prob_contents_prob_id_probs_id_fk": {
-          "name": "prob_contents_prob_id_probs_id_fk",
-          "tableFrom": "prob_contents",
-          "tableTo": "probs",
-          "columnsFrom": [
-            "prob_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.prob_options": {
-      "name": "prob_options",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
+          "default": "gen_random_uuid()"
         },
-        "prob_id": {
-          "name": "prob_id",
-          "type": "text",
+        "title": {
+          "name": "title",
+          "type": "varchar(150)",
           "primaryKey": false,
           "notNull": true
         },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "url": {
-          "name": "url",
+        "description": {
+          "name": "description",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "is_correct": {
-          "name": "is_correct",
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_public": {
+          "name": "is_public",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
         },
-        "correct_order": {
-          "name": "correct_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "prob_options_prob_id_probs_id_fk": {
-          "name": "prob_options_prob_id_probs_id_fk",
-          "tableFrom": "prob_options",
-          "tableTo": "probs",
-          "columnsFrom": [
-            "prob_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.probs": {
-      "name": "probs",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "prob_book_id": {
-          "name": "prob_book_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
+        "thumbnail": {
+          "name": "thumbnail",
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "style": {
-          "name": "style",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -376,12 +379,13 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "probs_prob_book_id_prob_books_id_fk": {
-          "name": "probs_prob_book_id_prob_books_id_fk",
-          "tableFrom": "probs",
-          "tableTo": "prob_books",
+        "prob_books_owner_id_user_id_fk": {
+          "name": "prob_books_owner_id_user_id_fk",
+          "tableFrom": "prob_books",
+          "tableTo": "user",
+          "schemaTo": "auth",
           "columnsFrom": [
-            "prob_book_id"
+            "owner_id"
           ],
           "columnsTo": [
             "id"
@@ -396,69 +400,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.prob_tags": {
-      "name": "prob_tags",
-      "schema": "",
-      "columns": {
-        "prob_id": {
-          "name": "prob_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tag_id": {
-          "name": "tag_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "prob_tags_prob_id_probs_id_fk": {
-          "name": "prob_tags_prob_id_probs_id_fk",
-          "tableFrom": "prob_tags",
-          "tableTo": "probs",
-          "columnsFrom": [
-            "prob_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "prob_tags_tag_id_tags_id_fk": {
-          "name": "prob_tags_tag_id_tags_id_fk",
-          "tableFrom": "prob_tags",
-          "tableTo": "tags",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "prob_tags_prob_id_tag_id_pk": {
-          "name": "prob_tags_prob_id_tag_id_pk",
-          "columns": [
-            "prob_id",
-            "tag_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.tags": {
+    "solves.tags": {
       "name": "tags",
-      "schema": "",
+      "schema": "solves",
       "columns": {
         "id": {
           "name": "id",
@@ -498,7 +442,9 @@
     }
   },
   "enums": {},
-  "schemas": {},
+  "schemas": {
+    "solves": "solves"
+  },
   "sequences": {},
   "roles": {},
   "policies": {},

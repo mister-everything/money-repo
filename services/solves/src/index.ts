@@ -1,9 +1,6 @@
-// Service exports - 확장 가능한 구조
-
-export * from "./chat";
-export { chatService } from "./chat";
-export * from "./prob";
-export * from "./prob/prob-utils";
-// 개별 서비스 직접 접근도 가능
-export * from "./prob.service";
-export * from "./types";
+export * from "./prob/blocks";
+export * from "./prob/error";
+export * from "./prob/prob.service";
+export * from "./prob/types";
+export * from "./prob/utils";
+export * from "./schema";

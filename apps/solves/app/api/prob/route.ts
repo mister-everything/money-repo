@@ -1,7 +1,7 @@
+import { createProbBookSchema, probService } from "@service/solves";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import "@workspace/env";
-import { probBookSaveSchema, probService } from "@service/solves";
+import { errorResponse } from "@/lib/response";
 
 /**
  * GET /api/prob
@@ -12,38 +12,18 @@ import { probBookSaveSchema, probService } from "@service/solves";
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log(
-      "🔗 POSTGRES_URL:",
-      process.env.POSTGRES_URL ? "설정됨" : "없음",
-    );
+    // @todo search Options
 
-    const searchParams = request.nextUrl.searchParams;
-    const ownerId = searchParams.get("ownerId");
-    const publicOnly = searchParams.get("public") === "true";
+    const probBooks = await probService.searchProbBooks();
 
-    let probBooks;
-    if (ownerId) {
-      probBooks = await probService.findByOwnerId(ownerId);
-    } else if (publicOnly) {
-      probBooks = await probService.findPublic();
-    } else {
-      probBooks = await probService.findAll();
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: probBooks,
-      count: probBooks.length,
-    });
+    return NextResponse.json(probBooks);
   } catch (error) {
     console.error("Error fetching prob books:", error);
     return NextResponse.json(
+      errorResponse("문제집 조회 중 오류가 발생했습니다."),
       {
-        success: false,
-        error: "문제집 조회 중 오류가 발생했습니다.",
-        details: error instanceof Error ? error.message : "Unknown error",
+        status: 500,
       },
-      { status: 500 },
     );
   }
 }
@@ -58,41 +38,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 입력 데이터 검증
-    const validatedData = probBookSaveSchema.parse(body);
+    const validatedData = createProbBookSchema.parse(body);
 
-    const savedProbBook = await probService.save(validatedData);
+    const savedProbBook = await probService.createProbBook(validatedData);
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: savedProbBook,
-        message: validatedData.id
-          ? "문제집이 성공적으로 수정되었습니다."
-          : "문제집이 성공적으로 생성되었습니다.",
-      },
-      { status: validatedData.id ? 200 : 201 },
-    );
+    return NextResponse.json(savedProbBook);
   } catch (error) {
     console.error("Error saving prob book:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
+        errorResponse("입력 데이터가 올바르지 않습니다."),
         {
-          success: false,
-          error: "입력 데이터가 올바르지 않습니다.",
-          details: error.issues,
+          status: 400,
         },
-        { status: 400 },
       );
     }
 
     return NextResponse.json(
+      errorResponse("문제집 생성 중 오류가 발생했습니다."),
       {
-        success: false,
-        error: "문제집 저장 중 오류가 발생했습니다.",
-        details: error instanceof Error ? error.message : "Unknown error",
+        status: 500,
       },
-      { status: 500 },
     );
   }
 }

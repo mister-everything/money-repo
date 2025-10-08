@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import "@workspace/env";
 import { probService } from "@service/solves";
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth/server";
+import { errorResponse, successMessageResponse } from "@/lib/response";
 
 /**
  * GET /api/prob/[id]
@@ -11,44 +12,36 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id: idString } = await params;
-    const id = parseInt(idString, 10);
+    const { id } = await params;
 
-    if (isNaN(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "올바른 문제집 ID를 입력해주세요.",
-        },
-        { status: 400 },
-      );
+    const session = await getSession();
+
+    const hasPermission = await probService.hasProbBookPermission(
+      id,
+      session.user.id,
+    );
+    if (!hasPermission) {
+      return NextResponse.json(errorResponse("문제집에 접근할 수 없습니다."), {
+        status: 403,
+      });
     }
 
-    const probBook = await probService.findById(id);
+    const probBook = await probService.selectProbBookById(id);
 
     if (!probBook) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "문제집을 찾을 수 없습니다.",
-        },
-        { status: 404 },
-      );
+      return NextResponse.json(errorResponse("문제집을 찾을 수 없습니다."), {
+        status: 404,
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: probBook,
-    });
+    return NextResponse.json(probBook);
   } catch (error) {
     console.error("Error fetching prob book:", error);
     return NextResponse.json(
+      errorResponse("문제집 조회 중 오류가 발생했습니다."),
       {
-        success: false,
-        error: "문제집 조회 중 오류가 발생했습니다.",
-        details: error instanceof Error ? error.message : "Unknown error",
+        status: 500,
       },
-      { status: 500 },
     );
   }
 }
@@ -62,46 +55,29 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id: idString } = await params;
-    const id = parseInt(idString, 10);
+    const { id } = await params;
 
-    if (isNaN(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "올바른 문제집 ID를 입력해주세요.",
-        },
-        { status: 400 },
-      );
+    const session = await getSession();
+
+    const isOwner = await probService.isProbBookOwner(id, session.user.id);
+    if (!isOwner) {
+      return NextResponse.json(errorResponse("문제집에 접근할 수 없습니다."), {
+        status: 403,
+      });
     }
 
-    // 문제집이 존재하는지 확인
-    const probBook = await probService.findById(id);
-    if (!probBook) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "문제집을 찾을 수 없습니다.",
-        },
-        { status: 404 },
-      );
-    }
+    await probService.deleteProbBook(id);
 
-    await probService.delete(id);
-
-    return NextResponse.json({
-      success: true,
-      message: "문제집이 성공적으로 삭제되었습니다.",
-    });
+    return NextResponse.json(
+      successMessageResponse("문제집이 성공적으로 삭제되었습니다."),
+    );
   } catch (error) {
     console.error("Error deleting prob book:", error);
     return NextResponse.json(
+      errorResponse("문제집 삭제 중 오류가 발생했습니다."),
       {
-        success: false,
-        error: "문제집 삭제 중 오류가 발생했습니다.",
-        details: error instanceof Error ? error.message : "Unknown error",
+        status: 500,
       },
-      { status: 500 },
     );
   }
 }

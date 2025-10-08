@@ -8,14 +8,16 @@ import {
   serial,
   text,
   timestamp,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { SCHEMA_NAME } from "./const";
-import type {
-  ProbBlockAnswer,
-  ProbBlockAnswerSubmit,
-  ProbBlockContent,
-} from "./types";
+import {
+  BlockAnswer,
+  BlockAnswerSubmit,
+  BlockContent,
+  BlockType,
+} from "./prob/blocks";
 
 export const solvesSchema = pgSchema(SCHEMA_NAME);
 
@@ -24,7 +26,7 @@ export const solvesSchema = pgSchema(SCHEMA_NAME);
  * 문제들의 모음을 관리하는 테이블
  */
 export const probBooksTable = solvesSchema.table("prob_books", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
   title: varchar("title", { length: 150 }).notNull(),
   description: text("description"),
   ownerId: text("owner_id")
@@ -41,15 +43,15 @@ export const probBooksTable = solvesSchema.table("prob_books", {
  * 개별 문제를 관리하는 테이블
  */
 export const probBlocksTable = solvesSchema.table("prob_blocks", {
-  id: serial("id").primaryKey(),
-  probBookId: integer("prob_book_id")
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  probBookId: uuid("prob_book_id")
     .notNull()
     .references(() => probBooksTable.id, { onDelete: "cascade" }),
   order: integer("order").notNull().default(0), // 문제 순서 (정렬용)
-  type: text("type").notNull(), // 문제 타입 (검색 최적화)
+  type: text("type").$type<BlockType>().notNull(), // 문제 타입 (검색 최적화)
   question: text("question"), // 문제 텍스트 (검색 최적화)
-  content: jsonb("content").notNull().$type<ProbBlockContent>(), // 문제 내용 (타입별 구조 다름)
-  answer: jsonb("answer").$type<ProbBlockAnswer>(), // 정답 (퀴즈 모드에서만 사용)
+  content: jsonb("content").notNull().$type<BlockContent>(), // 문제 내용 (타입별 구조 다름)
+  answer: jsonb("answer").$type<BlockAnswer>(), // 정답 (퀴즈 모드에서만 사용)
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -59,8 +61,8 @@ export const probBlocksTable = solvesSchema.table("prob_blocks", {
  * 사용자가 문제집을 푸는 세션을 관리 (한 번의 시도)
  */
 export const probBookSubmitsTable = solvesSchema.table("prob_book_submits", {
-  id: serial("id").primaryKey(),
-  probBookId: integer("prob_book_id")
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  probBookId: uuid("prob_book_id")
     .notNull()
     .references(() => probBooksTable.id, { onDelete: "cascade" }),
   ownerId: text("owner_id")
@@ -68,8 +70,6 @@ export const probBookSubmitsTable = solvesSchema.table("prob_book_submits", {
     .references(() => userTable.id, { onDelete: "cascade" }),
   startTime: timestamp("start_time").notNull(), // 시작 시간
   endTime: timestamp("end_time"), // 종료 시간 (진행 중이면 null)
-  totalQuestions: integer("total_questions").notNull(), // 전체 문제 수
-  correctCount: integer("correct_count").notNull().default(0), // 맞은 문제 수
   score: integer("score").notNull().default(0), // 총점
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -82,13 +82,13 @@ export const probBookSubmitsTable = solvesSchema.table("prob_book_submits", {
 export const probBlockAnswerSubmitsTable = solvesSchema.table(
   "prob_block_answer_submits",
   {
-    blockId: integer("block_id")
+    blockId: uuid("block_id")
       .notNull()
       .references(() => probBlocksTable.id, { onDelete: "cascade" }),
-    submitId: integer("submit_id")
+    submitId: uuid("submit_id")
       .notNull()
       .references(() => probBookSubmitsTable.id, { onDelete: "cascade" }),
-    answer: jsonb("answer").notNull().$type<ProbBlockAnswerSubmit>(), // 사용자 답안
+    answer: jsonb("answer").notNull().$type<BlockAnswerSubmit>(), // 사용자 답안
     isCorrect: boolean("is_correct").notNull(), // 정답 여부
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
@@ -112,7 +112,7 @@ export const tagsTable = solvesSchema.table("tags", {
 export const probBookTagsTable = solvesSchema.table(
   "prob_book_tags",
   {
-    probBookId: integer("prob_book_id")
+    probBookId: uuid("prob_book_id")
       .notNull()
       .references(() => probBooksTable.id, { onDelete: "cascade" }),
     tagId: integer("tag_id")
