@@ -6,7 +6,7 @@ import {
   probBooksTable,
   probBookTagsTable,
   tagsTable,
-} from "../schema";
+} from "./schema";
 import {
   CreateProbBlock,
   CreateProbBook,
