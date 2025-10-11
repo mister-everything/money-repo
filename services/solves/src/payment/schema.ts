@@ -14,6 +14,15 @@ import {
 } from "drizzle-orm/pg-core";
 import { solvesSchema } from "../prob/schema";
 
+const timestamps = {
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date()),
+  deletedAt: timestamp("deleted_at"),
+};
+
 /* ============================================================
    1) AI Provider 가격 테이블 (모델별 원가/마진/활성화)
    - 목적: 사용 시점의 단가 참조 및 리포팅
@@ -68,8 +77,7 @@ export const AiProviderPricesTable = solvesSchema.table(
     isActive: boolean("is_active").notNull().default(true),
 
     /** 생성/수정 시각 */
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    ...timestamps,
   },
   (t) => [
     uniqueIndex("ai_provider_prices_provider_model_idx").on(
@@ -92,7 +100,7 @@ export const CreditWalletTable = solvesSchema.table(
     /** 지갑 소유자(개인) — FK(User.id)
      *  eg: 3a5b6c7d-8e9f-4011-a1b2-3c4d5e6f7a8b
      */
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
 
@@ -109,9 +117,7 @@ export const CreditWalletTable = solvesSchema.table(
      */
     version: integer("version").notNull().default(0),
 
-    /** 생성/수정 시각 */
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    ...timestamps,
   },
   (t) => [
     /** 사용자당 1 지갑 보장 */
@@ -201,16 +207,16 @@ export const UsageEventsTable = solvesSchema.table(
     /** 호출한 사용자 — 팀 지갑을 쓰더라도 "누가 썼는지" 추적 용
      *  eg: user UUID
      */
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
+      .references(() => userTable.id, { onDelete: "restrict" }),
 
     /** 차감이 일어난 지갑 — 개인/팀 지갑 모두 가능
      *  eg: wallet UUID
      */
     walletId: uuid("wallet_id")
       .notNull()
-      .references(() => CreditWalletTable.id, { onDelete: "cascade" }),
+      .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
 
     /** 가격 스냅샷 참조 — 사용 시점의 단가(모델/벤더/마진)
      *  NOTE: priceId가 있지만 provider/model/vendorCostUsd를 중복 저장하는 이유:
@@ -220,7 +226,7 @@ export const UsageEventsTable = solvesSchema.table(
      */
     priceId: uuid("price_id")
       .notNull()
-      .references(() => AiProviderPricesTable.id),
+      .references(() => AiProviderPricesTable.id, { onDelete: "restrict" }),
     /** 공급자/모델명 (비정규화)
      *  priceId로 JOIN 가능하지만 리포팅 성능을 위해 중복 저장
      *  eg: provider="openai", model="gpt-4o-mini"
@@ -296,14 +302,14 @@ export const InvoicesTable = solvesSchema.table(
     id: uuid("id").primaryKey().defaultRandom(),
 
     /** 결제자 — 개인/팀 결제에서도 "누가 결제했는지" 추적 */
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
+      .references(() => userTable.id, { onDelete: "restrict" }),
 
     /** 적립 대상 지갑 — 개인/팀 지갑 모두 가능 */
     walletId: uuid("wallet_id")
       .notNull()
-      .references(() => CreditWalletTable.id, { onDelete: "cascade" }),
+      .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
 
     /** 인보이스/패키지 이름
      *  eg: "Credit Pack 1,000"
@@ -357,9 +363,9 @@ export const IdempotencyKeysTable = solvesSchema.table(
     key: text("key").primaryKey(),
 
     /** 요청한 사용자 */
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
+      .references(() => userTable.id, { onDelete: "set null" }),
 
     /** 리소스 타입 (usage_event, invoice, etc.) */
     resourceType: text("resource_type").notNull(),

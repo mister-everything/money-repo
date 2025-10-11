@@ -1,11 +1,12 @@
 DO $$ BEGIN
- CREATE TYPE "public"."invoice_status" AS ENUM('pending', 'paid', 'failed');
+CREATE TYPE "public"."invoice_status" AS ENUM('pending', 'paid', 'failed');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+
 DO $$ BEGIN
- CREATE TYPE "public"."credit_txn_kind" AS ENUM('purchase', 'grant', 'debit', 'refund', 'adjustment');
+CREATE TYPE "public"."credit_txn_kind" AS ENUM('purchase', 'grant', 'debit', 'refund', 'adjustment');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -20,7 +21,8 @@ CREATE TABLE IF NOT EXISTS "solves"."ai_provider_prices" (
 	"markup_rate" numeric(6, 3) DEFAULT '1.60' NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."credit_ledger" (
@@ -36,17 +38,18 @@ CREATE TABLE IF NOT EXISTS "solves"."credit_ledger" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."credit_wallet" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
 	"balance" numeric(18, 6) DEFAULT '0' NOT NULL,
 	"version" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "balance_non_negative" CHECK ("solves"."credit_wallet"."balance" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."idempotency_keys" (
 	"key" text PRIMARY KEY NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
 	"resource_type" text NOT NULL,
 	"resource_id" uuid NOT NULL,
 	"response" text NOT NULL,
@@ -56,7 +59,7 @@ CREATE TABLE IF NOT EXISTS "solves"."idempotency_keys" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."invoices" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
 	"wallet_id" uuid NOT NULL,
 	"title" text NOT NULL,
 	"amount_usd" numeric(18, 6) NOT NULL,
@@ -70,7 +73,7 @@ CREATE TABLE IF NOT EXISTS "solves"."invoices" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."usage_events" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
 	"wallet_id" uuid NOT NULL,
 	"price_id" uuid NOT NULL,
 	"provider" text NOT NULL,
@@ -86,61 +89,63 @@ CREATE TABLE IF NOT EXISTS "solves"."usage_events" (
 );
 --> statement-breakpoint
 
+
 DO $$ BEGIN
- ALTER TABLE "solves"."credit_ledger" ADD CONSTRAINT "credit_ledger_wallet_id_credit_wallet_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "solves"."credit_wallet"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."credit_ledger" ADD CONSTRAINT "credit_ledger_wallet_id_credit_wallet_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "solves"."credit_wallet"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 
 DO $$ BEGIN
- ALTER TABLE "solves"."credit_wallet" ADD CONSTRAINT "credit_wallet_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."credit_wallet" ADD CONSTRAINT "credit_wallet_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 
 DO $$ BEGIN
- ALTER TABLE "solves"."idempotency_keys" ADD CONSTRAINT "idempotency_keys_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."idempotency_keys" ADD CONSTRAINT "idempotency_keys_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 
 DO $$ BEGIN
- ALTER TABLE "solves"."invoices" ADD CONSTRAINT "invoices_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."invoices" ADD CONSTRAINT "invoices_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 
 DO $$ BEGIN
- ALTER TABLE "solves"."invoices" ADD CONSTRAINT "invoices_wallet_id_credit_wallet_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "solves"."credit_wallet"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."invoices" ADD CONSTRAINT "invoices_wallet_id_credit_wallet_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "solves"."credit_wallet"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 
 DO $$ BEGIN
- ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 
 DO $$ BEGIN
- ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_wallet_id_credit_wallet_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "solves"."credit_wallet"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_wallet_id_credit_wallet_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "solves"."credit_wallet"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 
 DO $$ BEGIN
- ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_price_id_ai_provider_prices_id_fk" FOREIGN KEY ("price_id") REFERENCES "solves"."ai_provider_prices"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_price_id_ai_provider_prices_id_fk" FOREIGN KEY ("price_id") REFERENCES "solves"."ai_provider_prices"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+
 CREATE UNIQUE INDEX IF NOT EXISTS "ai_provider_prices_provider_model_idx" ON "solves"."ai_provider_prices" USING btree ("provider","model");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "credit_ledger_wallet_created_idx" ON "solves"."credit_ledger" USING btree ("wallet_id","created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "credit_ledger_wallet_idemp_uniq" ON "solves"."credit_ledger" USING btree ("wallet_id","idempotency_key");--> statement-breakpoint
