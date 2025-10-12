@@ -20,6 +20,7 @@ export const userTable = authSchema.table("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date()),
   deletedAt: timestamp("deleted_at"),
+  isDeleted: boolean("is_deleted").default(false).notNull(),
 });
 
 export const sessionTable = authSchema.table("session", {
