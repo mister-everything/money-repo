@@ -1,5 +1,5 @@
 import { BlockAnswerSubmit, ProbBook } from "@service/solves/types";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,12 +17,15 @@ interface ProblemBookProps {
 export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
   const [answers, setAnswers] = useState<Record<string, BlockAnswerSubmit>>({});
 
-  const handleAnswerChange = (problemId: string, answer: BlockAnswerSubmit) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [problemId]: answer,
-    }));
-  };
+  const handleAnswerChange = useCallback(
+    (problemId: string, answer: BlockAnswerSubmit) => {
+      setAnswers((prev) => ({
+        ...prev,
+        [problemId]: answer,
+      }));
+    },
+    [],
+  );
 
   const handleSubmit = () => {
     if (process.env.NODE_ENV !== "production") {

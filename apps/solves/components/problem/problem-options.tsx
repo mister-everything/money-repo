@@ -91,6 +91,7 @@ export const ProblemOptions = <T extends BlockType>({
   const [textAnswer, setTextAnswer] = useState("");
   const [oxAnswer, setOxAnswer] = useState<"o" | "x" | null>(null);
 
+  // submitted prop 변경 시 로컬 state 초기화
   useEffect(() => {
     if (submitted?.type !== content.type) {
       setSelectedOptions([]);
@@ -123,31 +124,36 @@ export const ProblemOptions = <T extends BlockType>({
       : false;
 
     const handleOptionSelect = (optionId: string) => {
-      setSelectedOptions((prev) => {
-        if (allowMultiple) {
-          const exists = prev.includes(optionId);
-          if (exists && prev.length === 1) {
-            return prev;
-          }
-          const updated = exists
-            ? prev.filter((id) => id !== optionId)
-            : [...prev, optionId];
-          if (updated.length > 0) {
+      if (allowMultiple) {
+        const exists = selectedOptions.includes(optionId);
+        if (exists && selectedOptions.length === 1) {
+          return;
+        }
+        const updated = exists
+          ? selectedOptions.filter((id) => id !== optionId)
+          : [...selectedOptions, optionId];
+
+        setSelectedOptions(updated);
+
+        // 다음 이벤트 루프에서 부모에 알림
+        if (updated.length > 0) {
+          queueMicrotask(() => {
             onAnswerChange?.({
               type: content.type,
               answer: updated,
             } as BlockAnswerSubmit<T>);
-          }
-          return updated;
+          });
         }
-
+      } else {
         const updated = [optionId];
-        onAnswerChange?.({
-          type: content.type,
-          answer: updated,
-        } as BlockAnswerSubmit<T>);
-        return updated;
-      });
+        setSelectedOptions(updated);
+        queueMicrotask(() => {
+          onAnswerChange?.({
+            type: content.type,
+            answer: updated,
+          } as BlockAnswerSubmit<T>);
+        });
+      }
     };
 
     return (
@@ -191,14 +197,17 @@ export const ProblemOptions = <T extends BlockType>({
 
   if (isOxContent && isContent.ox(content)) {
     const handleSelect = (value: "o" | "x") => {
-      setOxAnswer((prev) => {
-        const nextValue = prev === value ? null : value;
-        onAnswerChange?.({
-          type: content.type,
-          answer: nextValue ?? "",
-        } as BlockAnswerSubmit<T>);
-        return nextValue;
-      });
+      const nextValue = oxAnswer === value ? null : value;
+      setOxAnswer(nextValue);
+
+      if (nextValue !== null) {
+        queueMicrotask(() => {
+          onAnswerChange?.({
+            type: content.type,
+            answer: nextValue,
+          } as BlockAnswerSubmit<T>);
+        });
+      }
     };
 
     return (
@@ -233,10 +242,15 @@ export const ProblemOptions = <T extends BlockType>({
   if (isDefaultContent) {
     const handleChange = (value: string) => {
       setTextAnswer(value);
-      onAnswerChange?.({
-        type: content.type,
-        answer: value,
-      } as BlockAnswerSubmit<T>);
+
+      if (value.length > 0) {
+        queueMicrotask(() => {
+          onAnswerChange?.({
+            type: content.type,
+            answer: value,
+          } as BlockAnswerSubmit<T>);
+        });
+      }
     };
 
     return (

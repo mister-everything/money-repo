@@ -1,6 +1,6 @@
+import { ProbBlock } from "@service/solves";
 import { useItem } from "@workspace/swr";
 import { SWRConfiguration } from "swr";
-import { ProbBlock } from "@/type";
 
 export function useProblem(id?: string, config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useItem<ProbBlock>(

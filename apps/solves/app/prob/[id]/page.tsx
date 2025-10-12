@@ -56,7 +56,7 @@ export default function ProblemBookDetailPage() {
         <Button
           className="text-primary hover:text-primary/90 mr-auto"
           variant="ghost"
-          onClick={() => router.push("/problem")}
+          onClick={() => router.push("/prob")}
         >
           ← 문제집 목록으로 돌아가기
         </Button>
@@ -68,9 +68,6 @@ export default function ProblemBookDetailPage() {
           <ProblemBook probBook={book} />
         </div>
       </div>
-
-      {/* <MessageDock theme="dark" /> */}
-      {/* <FloatingAiAssistant />; */}
     </div>
   );
 }
