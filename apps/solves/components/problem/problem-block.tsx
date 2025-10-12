@@ -1,3 +1,7 @@
+import {
+  BlockAnswerSubmit,
+  ProbBlockWithoutAnswer,
+} from "@service/solves/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -8,20 +12,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ProbBlock } from "@/type";
 import { AIInput } from "../ui/ai-input";
 import { ContentRenderer } from "./content-renderer";
 import { ProblemOptions } from "./problem-options";
 
 interface ProblemBlockProps {
-  problem: ProbBlock;
+  problem: ProbBlockWithoutAnswer;
   problemNumber: number;
-  onAnswerChange?: (problemId: string, answer: string | string[]) => void;
+  submittedAnswer?: BlockAnswerSubmit;
+  onAnswerChange?: (problemId: string, answer: BlockAnswerSubmit) => void;
 }
 
 export const ProblemBlock: React.FC<ProblemBlockProps> = ({
   problem,
   problemNumber,
+  submittedAnswer,
   onAnswerChange,
 }) => {
   return (
@@ -59,21 +64,12 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
             </DialogContent>
           </Dialog>
         </div>
-        <ContentRenderer content={problem.content} />
+        <ContentRenderer
+          content={problem.content}
+          question={problem.question}
+        />
 
         {/* 태그들 */}
-        {/* {problem.tags && problem.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {problem.tags.map((tag, index) => (
-              <span
-                key={index}
-                className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-sm"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )} */}
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -82,8 +78,8 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
         {/* 문제 옵션/답안 영역 */}
         <div>
           <ProblemOptions
-            options={problem.options}
-            answerMeta={problem.answerMeta}
+            content={problem.content}
+            submitted={submittedAnswer}
             onAnswerChange={(answer) => onAnswerChange?.(problem.id, answer)}
             groupName={`problem-option-${problem.id}`}
           />
@@ -92,8 +88,8 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
         {/* 문제 스타일 표시 (개발용) */}
         <div className="pt-4 border-t">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>스타일: {problem.style}</span>
-            <span>유형: {problem.answerMeta.kind}</span>
+            {/* <span>스타일: {problem.style}</span> */}
+            {/* <span>유형: {problem.answerMeta.kind}</span> */}
           </div>
         </div>
       </CardContent>

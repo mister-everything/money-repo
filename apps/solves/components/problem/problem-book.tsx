@@ -1,3 +1,4 @@
+import { BlockAnswerSubmit, ProbBook } from "@service/solves/types";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ProbBook } from "@/type";
 import { ProblemBlock } from "./problem-block";
 
 interface ProblemBookProps {
@@ -15,9 +15,9 @@ interface ProblemBookProps {
 }
 
 export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, BlockAnswerSubmit>>({});
 
-  const handleAnswerChange = (problemId: string, answer: string | string[]) => {
+  const handleAnswerChange = (problemId: string, answer: BlockAnswerSubmit) => {
     setAnswers((prev) => ({
       ...prev,
       [problemId]: answer,
@@ -50,10 +50,6 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4 text-sm text-primary">
               <span>총 {probBook.blocks.length}문제</span>
-              <span>•</span>
-              <span>
-                생성일: {probBook.createdAt.toLocaleDateString("ko-KR")}
-              </span>
             </div>
 
             {probBook.tags && probBook.tags.length > 0 && (

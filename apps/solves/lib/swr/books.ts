@@ -1,42 +1,10 @@
-import { useItem, useList } from "@workspace/swr";
+import type { ProbBook } from "@service/solves/types";
+import { useItem } from "@workspace/swr";
 import { SWRConfiguration } from "swr";
-import { ProbBook, ProbBookListResponse, ProbBookResponse } from "@/type";
-
-export function useBooks(
-  params?: {
-    page?: number;
-    limit?: number;
-    tag?: string | string[];
-    sort?: string;
-  },
-  config?: SWRConfiguration,
-) {
-  const { data, error, isLoading, mutate } = useList<ProbBook>(
-    "/api/books",
-    params,
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-      ...config,
-    },
-  );
-
-  return {
-    books: (data as ProbBookListResponse | undefined)?.data ?? [],
-    total: (data as ProbBookListResponse | undefined)?.total ?? 0,
-    page: (data as ProbBookListResponse | undefined)?.page ?? params?.page ?? 1,
-    limit:
-      (data as ProbBookListResponse | undefined)?.limit ?? params?.limit ?? 20,
-    isLoading,
-    isError: Boolean(error),
-    error,
-    mutate,
-  };
-}
 
 export function useBook(id?: string, config?: SWRConfiguration) {
   const { data, error, isLoading, mutate } = useItem<ProbBook>(
-    "/api/books",
+    "/api/prob",
     id,
     {
       revalidateOnFocus: false,
@@ -45,7 +13,7 @@ export function useBook(id?: string, config?: SWRConfiguration) {
   );
 
   return {
-    book: (data as ProbBookResponse | undefined)?.data,
+    book: data as ProbBook | undefined,
     isLoading,
     isError: Boolean(error),
     error,

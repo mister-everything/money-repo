@@ -1,4 +1,4 @@
-import { BlockContent, isContent } from "@service/solves";
+import { BlockContent, isContent } from "@service/solves/types";
 import { DefaultContent } from "./default-content";
 import { McqContent } from "./mcq-content";
 

@@ -9,7 +9,7 @@ import { useBook } from "@/lib/swr/books";
 export default function ProblemBookDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const bookId = (params as { bookId?: string })?.bookId;
+  const bookId = (params as { id?: string })?.id;
   const { book, isLoading, isError } = useBook(bookId);
 
   if (!bookId) {
