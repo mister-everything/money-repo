@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ChatDrawer } from "@/components/chat-interface/chat-drawer";
 import { ProblemBook } from "@/components/problem/problem-book";
 import { Button } from "@/components/ui/button";
-import { useBook } from "@/lib/swr/books";
+import { useBook } from "@/lib/swr/prob";
 
 export default function ProblemBookDetailPage() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function ProblemBookDetailPage() {
     return (
       <div className="bg-background">
         <div className="max-w-4xl mx-auto p-6">
-          <Button variant="ghost" onClick={() => router.push("/problem")}>
+          <Button variant="ghost" onClick={() => router.push("/prob")}>
             ← 문제집 목록으로 돌아가기
           </Button>
           <div className="mt-6 text-destructive">
