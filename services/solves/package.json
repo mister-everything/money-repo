@@ -1,31 +1,36 @@
 {
-  "name": "@service/todo",
+  "name": "@service/solves",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "lint": "biome lint . --write",
     "check-types": "tsc --noEmit",
-    "check": "pnpm run lint && pnpm run check-types",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "tsx src/migrate.ts"
+    "db:migrate": "tsx src/migrate.ts",
+    "db:seed": "tsx src/seed.ts",
+    "docker:generate": "drizzle-kit generate"
   },
   "exports": {
     ".": "./src/index.ts"
   },
-  "peerDependencies": {
+  "dependencies": {
+    "@service/auth": "workspace:*",
     "@workspace/util": "workspace:*",
     "drizzle-orm": "^0.44.5",
+    "inquirer": "^12.9.6",
     "pg": "^8.16.3",
     "zod": "^4.1.8"
   },
   "devDependencies": {
-    "@workspace/env": "workspace:*",
     "@biomejs/biome": "2.2.2",
     "@types/node": "^22.13.0",
     "@types/pg": "^8.15.5",
+    "@workspace/env": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "drizzle-kit": "^0.31.4",
     "tsx": "^4.20.5",

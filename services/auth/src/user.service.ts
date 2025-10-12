@@ -1,8 +1,11 @@
 import { eq, or } from "drizzle-orm";
-import { userTable } from ".";
 import { pgDb } from "./db";
+import { userTable } from "./schema";
 import { Role } from "./types";
 export const userService = {
+  createUser: async (user: typeof userTable.$inferInsert) => {
+    return await pgDb.insert(userTable).values(user).returning();
+  },
   getAllUsers: async () => {
     const users = await pgDb.select().from(userTable);
     return users;

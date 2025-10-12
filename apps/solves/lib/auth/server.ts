@@ -18,3 +18,16 @@ export const getSession = async () => {
   }
   return session!;
 };
+
+export const safeGetUser = async () => {
+  "use server";
+  const session = await nextBetterAuth.api
+    .getSession({
+      headers: await headers(),
+    })
+    .catch((e) => {
+      console.error(e);
+      return null;
+    });
+  return session?.user;
+};

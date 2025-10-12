@@ -5,6 +5,7 @@
   "scripts": {
     "lint": "biome lint . --write",
     "check-types": "tsc --noEmit",
+    "check": "pnpm run lint && pnpm run check-types",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "db:push": "drizzle-kit push",
@@ -13,7 +14,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./const": "./src/const.ts"
+    "./const": "./src/const.ts",
+    "./user.service": "./src/user.service.ts"
   },
   "peerDependencies": {
     "@workspace/util": "workspace:*",
