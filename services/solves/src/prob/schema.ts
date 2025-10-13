@@ -11,13 +11,13 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { SCHEMA_NAME } from "./const";
+import { SCHEMA_NAME } from "../const";
 import {
   BlockAnswer,
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
-} from "./prob/blocks";
+} from "./blocks";
 
 export const solvesSchema = pgSchema(SCHEMA_NAME);
 
