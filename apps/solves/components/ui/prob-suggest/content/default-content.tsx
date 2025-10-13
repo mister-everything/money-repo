@@ -1,4 +1,4 @@
-import { BlockContent } from "@service/solves";
+import { BlockContent } from "@service/solves/shared";
 
 export function DefaultContent({
   content,

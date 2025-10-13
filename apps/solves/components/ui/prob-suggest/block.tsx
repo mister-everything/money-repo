@@ -1,4 +1,4 @@
-import { ProbBlockWithoutAnswer } from "@service/solves";
+import { ProbBlockWithoutAnswer } from "@service/solves/shared";
 import { ProbContent } from "./content/content";
 
 export function ProbBlocks({ blocks }: { blocks: ProbBlockWithoutAnswer[] }) {

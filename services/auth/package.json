@@ -15,7 +15,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./const": "./src/const.ts",
-    "./user.service": "./src/user.service.ts"
+    "./user.service": "./src/user.service.ts",
+    "./shared": "./src/shared.ts"
   },
   "peerDependencies": {
     "@workspace/util": "workspace:*",

@@ -1,4 +1,4 @@
-import { Owner } from "@service/auth";
+import { Owner } from "@service/auth/shared";
 import z from "zod";
 import {
   All_BLOCKS,
