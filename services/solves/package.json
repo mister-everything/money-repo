@@ -16,7 +16,8 @@
     "docker:generate": "drizzle-kit generate"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./shared": "./src/shared.ts"
   },
   "dependencies": {
     "@service/auth": "workspace:*",

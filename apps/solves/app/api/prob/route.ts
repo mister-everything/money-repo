@@ -1,4 +1,5 @@
-import { createProbBookSchema, probService } from "@service/solves";
+import { probService } from "@service/solves";
+import { createProbBookSchema } from "@service/solves/shared";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { errorResponse } from "@/lib/response";

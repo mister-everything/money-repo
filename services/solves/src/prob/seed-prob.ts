@@ -1,4 +1,5 @@
-import { Role, userService } from "@service/auth";
+import { Role } from "@service/auth/shared";
+import { userService } from "@service/auth/user.service";
 import { generateUUID } from "@workspace/util";
 import { count } from "drizzle-orm";
 import inquirer from "inquirer";
