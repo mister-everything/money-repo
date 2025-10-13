@@ -9,6 +9,7 @@
     "start": "turbo run start",
     "agent": "pnpm -F agent agent",
     "lint": "turbo run lint",
+    "init:env": "tsx scripts/init-env.ts",
     "postinstall": "tsx scripts/postinstall.ts",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
