@@ -366,4 +366,130 @@ export const paymentService = {
   ): Promise<void> => {
     await cache.del(CacheKeys.aiPrice(provider, model));
   },
+
+  /**
+   * 크레딧 차감 (자동 리필 포함)
+   * - 구독 시스템과 통합된 버전
+   * - 잔액 부족 시 자동 리필 시도
+   * - 명확한 에러 메시지 반환
+   *
+   * @param params - 차감 파라미터
+   * @returns 차감 결과 (자동 리필 정보 포함)
+   */
+  deductCreditWithAutoRefill: async (
+    params: DeductCreditParams,
+  ): Promise<DeductCreditResponse> => {
+    const { walletId, userId, provider, model, inputTokens, outputTokens } =
+      params;
+
+    // 1) 가격 조회 및 비용 계산
+    const price = await paymentService.getAIPrice(provider, model);
+    const inputCost = (inputTokens / 1000) * Number(price.inputTokenPrice);
+    const outputCost = (outputTokens / 1000) * Number(price.outputTokenPrice);
+    const vendorCostUsd = inputCost + outputCost;
+    const billableCredits = vendorCostUsd * Number(price.markupRate);
+
+    try {
+      // 2) 일반 차감 시도
+      const result = await paymentService.deductCredit(params);
+      const remainingBalance = await paymentService.getBalance(walletId);
+
+      return {
+        ...result,
+        remainingBalance,
+      };
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === "크레딧이 부족합니다") {
+        // 3) 잔액 부족 → 구독 확인
+        const { subscriptionService } = await import("./subscription.service");
+        const subscription =
+          await subscriptionService.getActiveSubscription(userId);
+
+        if (subscription) {
+          // 4) 구독 있음 → 자동 리필 시도
+          const refillResult =
+            await subscriptionService.checkAndRefillCredits(userId);
+
+          if (refillResult.refilled) {
+            // 4-1) 리필 성공 → 재시도
+            const result = await paymentService.deductCredit(params);
+            const remainingBalance = await paymentService.getBalance(walletId);
+
+            return {
+              ...result,
+              autoRefilled: true,
+              refillAmount: refillResult.refillAmount,
+              remainingBalance,
+            };
+          } else {
+            // 4-2) 리필 불가 (대기 중) → 상세 에러
+            const currentBalance = await paymentService.getBalance(walletId);
+            const plan = await subscriptionService.getPlan(subscription.planId);
+
+            const waitTimeMinutes = refillResult.nextRefillAt
+              ? Math.ceil(
+                  (refillResult.nextRefillAt.getTime() - Date.now()) /
+                    (1000 * 60),
+                )
+              : undefined;
+
+            const errorInfo: import("./types").InsufficientCreditsError = {
+              code: "INSUFFICIENT_CREDITS",
+              message: "크레딧이 부족합니다",
+              currentBalance,
+              required: billableCredits.toFixed(6),
+              nextRefillAt: refillResult.nextRefillAt,
+              nextRefillAmount: plan.refillAmount,
+              waitTimeMinutes,
+              hasSubscription: true,
+              suggestions: [
+                {
+                  type: "wait",
+                  message: waitTimeMinutes
+                    ? `${waitTimeMinutes}분 후 ${plan.refillAmount} 크레딧이 자동 충전됩니다`
+                    : "자동 충전 대기 중입니다",
+                },
+                {
+                  type: "purchase",
+                  message: "즉시 크레딧 구매하기",
+                },
+              ],
+            };
+
+            const err = new Error(JSON.stringify(errorInfo));
+            err.name = "InsufficientCreditsError";
+            throw err;
+          }
+        } else {
+          // 5) 구독 없음 → 명확한 안내
+          const currentBalance = await paymentService.getBalance(walletId);
+
+          const errorInfo: import("./types").InsufficientCreditsError = {
+            code: "INSUFFICIENT_CREDITS",
+            message: "크레딧이 부족합니다",
+            currentBalance,
+            required: billableCredits.toFixed(6),
+            hasSubscription: false,
+            suggestions: [
+              {
+                type: "subscribe",
+                message: "구독하고 자동 충전 받기",
+              },
+              {
+                type: "purchase",
+                message: "크레딧 구매하기",
+              },
+            ],
+          };
+
+          const err = new Error(JSON.stringify(errorInfo));
+          err.name = "InsufficientCreditsError";
+          throw err;
+        }
+      }
+
+      // 6) 다른 에러는 그대로 전파
+      throw error;
+    }
+  },
 };

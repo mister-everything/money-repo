@@ -137,6 +137,9 @@ export const TxnKindEnum = pgEnum("credit_txn_kind", [
   "debit", // 사용 차감
   "refund", // 환불(크레딧 복원)
   "adjustment", // 수동 조정(상쇄)
+  "subscription_grant", // 구독 시작 또는 갱신 시 크레딧 지급
+  "subscription_refill", // 정기 자동 충전
+  "subscription_reset", // 월간 갱신 시 기존 잔액 리셋 (rollover=false인 경우)
 ]);
 
 export const CreditLedgerTable = solvesSchema.table(
@@ -385,5 +388,192 @@ export const IdempotencyKeysTable = solvesSchema.table(
   (t) => [
     /** 만료된 키 정리를 위한 인덱스 */
     index("idempotency_expires_at_idx").on(t.expiresAt),
+  ],
+);
+
+/* ============================================================
+   7) 구독 플랜 (Subscription Plans)
+   - 목적: 플랜별 월간 할당량, 정기 충전 설정 정의
+   - 하이브리드 모델: Quota (소진형) + Credit (영구형)
+   ============================================================ */
+export const SubscriptionPlansTable = solvesSchema.table("subscription_plans", {
+  /** 고유 ID */
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  /** 플랜 이름 (시스템 식별자)
+   *  eg: "free", "pro", "business"
+   */
+  name: text("name").notNull().unique(),
+
+  /** 플랜 표시명 (사용자에게 보이는 이름)
+   *  eg: "Free Plan", "Pro Plan"
+   */
+  displayName: text("display_name").notNull(),
+
+  /** 월 구독료 (USD)
+   *  eg: "0.000000" (Free), "10000.000000" (Pro $100)
+   */
+  priceUsd: decimal("price_usd", { precision: 18, scale: 6 }).notNull(),
+
+  /** 매월 지급되는 할당량 (Quota)
+   *  - 매월 초 또는 구독 갱신일에 리셋
+   *  - 미사용 quota는 이월 안됨
+   *  eg: "1000.000000", "10000.000000"
+   */
+  monthlyQuota: decimal("monthly_quota", {
+    precision: 18,
+    scale: 6,
+  }).notNull(),
+
+  /** 정기 충전량 (Quota 소진 시)
+   *  - 할당량을 모두 소진했을 때 자동 충전되는 양
+   *  eg: "50.000000", "500.000000"
+   */
+  refillAmount: decimal("refill_amount", {
+    precision: 18,
+    scale: 6,
+  }).notNull(),
+
+  /** 정기 충전 간격 (시간 단위)
+   *  - 6, 12, 24 등
+   *  eg: 6 (6시간마다), 24 (하루마다)
+   */
+  refillIntervalHours: integer("refill_interval_hours").notNull(),
+
+  /** 정기 충전 최대 누적 잔액
+   *  - 이 금액을 넘으면 자동 충전 중단
+   *  - 무제한 자동 충전 방지
+   *  eg: "200.000000", "2000.000000"
+   */
+  maxRefillBalance: decimal("max_refill_balance", {
+    precision: 18,
+    scale: 6,
+  }).notNull(),
+
+  /** 매월 갱신 시 기존 잔액 이월 여부
+   *  - true: 기존 잔액 + 월간 할당량 (누적)
+   *  - false: 기존 잔액 무시, 월간 할당량으로 리셋
+   *  eg: true (Pro/Business), false (Free)
+   */
+  rolloverEnabled: boolean("rollover_enabled").notNull().default(false),
+
+  /** 활성화 여부 */
+  isActive: boolean("is_active").notNull().default(true),
+
+  /** 생성/수정 시각 */
+  ...timestamps,
+}, (t) => [
+  /** 플랜 이름으로 빠른 조회 */
+  uniqueIndex("subscription_plans_name_idx").on(t.name),
+]);
+
+/* ============================================================
+   8) 사용자 구독 (User Subscriptions)
+   - 목적: 사용자의 현재 구독 상태 및 기간 관리
+   ============================================================ */
+export const SubscriptionStatusEnum = pgEnum("subscription_status", [
+  "active", // 활성 구독
+  "canceled", // 취소됨 (현재 기간 종료 시 만료)
+  "expired", // 만료됨
+]);
+
+export const UserSubscriptionsTable = solvesSchema.table(
+  "user_subscriptions",
+  {
+    /** 고유 ID */
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    /** 사용자 ID */
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+
+    /** 구독 플랜 ID */
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => SubscriptionPlansTable.id, { onDelete: "restrict" }),
+
+    /** 크레딧 지갑 (1개만 사용)
+     *  - 구독 크레딧 + 추가 구매 크레딧 모두 이 지갑에 보관
+     *  - 기존 CreditWallet 시스템과 완전 호환
+     */
+    walletId: uuid("wallet_id")
+      .notNull()
+      .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
+
+    /** 구독 상태 */
+    status: SubscriptionStatusEnum("status").notNull().default("active"),
+
+    /** 현재 구독 기간 시작일 */
+    currentPeriodStart: timestamp("current_period_start").notNull(),
+
+    /** 현재 구독 기간 종료일 */
+    currentPeriodEnd: timestamp("current_period_end").notNull(),
+
+    /** 마지막 정기 충전 시각 */
+    lastRefillAt: timestamp("last_refill_at"),
+
+    /** 구독 취소 시각 (null이면 활성) */
+    canceledAt: timestamp("canceled_at"),
+
+    /** 생성/수정 시각 */
+    ...timestamps,
+  },
+  (t) => [
+    /** 사용자당 하나의 활성 구독만 허용 */
+    uniqueIndex("user_subscriptions_user_active_idx").on(t.userId, t.status),
+
+    /** 만료 체크를 위한 인덱스 */
+    index("user_subscriptions_period_end_idx").on(t.currentPeriodEnd),
+  ],
+);
+
+/* ============================================================
+   9) 구독 정기 충전 이력 (Subscription Refills)
+   - 목적: 정기 충전 내역 추적 및 감사
+   ============================================================ */
+export const SubscriptionRefillsTable = solvesSchema.table(
+  "subscription_refills",
+  {
+    /** 고유 ID */
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    /** 구독 ID */
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => UserSubscriptionsTable.id, { onDelete: "cascade" }),
+
+    /** Quota 지갑 ID */
+    walletId: uuid("wallet_id")
+      .notNull()
+      .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
+
+    /** 충전 금액 */
+    refillAmount: decimal("refill_amount", {
+      precision: 18,
+      scale: 6,
+    }).notNull(),
+
+    /** 충전 전 잔액 */
+    balanceBefore: decimal("balance_before", {
+      precision: 18,
+      scale: 6,
+    }).notNull(),
+
+    /** 충전 후 잔액 */
+    balanceAfter: decimal("balance_after", {
+      precision: 18,
+      scale: 6,
+    }).notNull(),
+
+    /** 생성 시각 */
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    /** 구독별 충전 이력 조회 */
+    index("subscription_refills_sub_created_idx").on(
+      t.subscriptionId,
+      t.createdAt,
+    ),
   ],
 );
