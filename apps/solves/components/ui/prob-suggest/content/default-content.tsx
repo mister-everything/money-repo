@@ -1,4 +1,4 @@
-import type { BlockContent } from "@service/solves/types";
+import { BlockContent } from "@service/solves/shared";
 
 export function DefaultContent({
   content,
