@@ -1,51 +1,255 @@
-# Problem Service
+# @service/solves
 
-## 개요
+문제 출제(Prob) + AI 크레딧 결제(Payment) 서비스
 
-문제집과 문제(Problem)를 관리하는 서비스 패키지입니다. Drizzle ORM 기반으로 데이터베이스를 다루고, 다양한 문제 유형을 `blocks` 모듈로 정의하여 재사용합니다.
+## 📦 Architecture
 
-```bash
-# 의존성 설치
-pnpm install
-
-
-# DB 마이그레이션 및 시드
-pnpm -F @service/solves db:migrate
-pnpm -F @service/solves db:seed
+```
+src/
+├── prob/              # 문제 출제 모듈
+│   ├── types.ts       # 공통 타입/스키마 (Server/Client)
+│   ├── schema.ts      # DB 스키마 (Server only)
+│   ├── blocks.ts      # 블록 타입 정의 (MultipleChoice, ShortAnswer 등)
+│   ├── prob.service.ts
+│   └── seed-prob.ts
+│
+├── payment/           # AI 크레딧 결제 모듈
+│   ├── types.ts       # 공통 타입/스키마 (Server/Client)
+│   ├── schema.ts      # DB 스키마 (Server only)
+│   ├── cache-keys.ts  # Redis/Cache 키 관리
+│   ├── payment.service.ts
+│   └── seed-prices.ts
+│
+├── db.ts              # Drizzle DB 인스턴스
+├── seed.ts            # 통합 Seed 진입점
+└── index.ts           # 전체 Export
 ```
 
-## 디렉터리 구성
+## 🎯 Features
 
-- `src/prob/blocks.ts` : 지원하는 문제 블록 유형 정의 (주관식, 객관식, O/X 등)
-- `src/prob/create-block.ts` : 블록 스키마/체커를 선언적으로 생성하는 빌더
-- `src/prob/mock-data.ts` : 샘플 문제 데이터
-- `src/prob/prob.service.ts` : 문제집/문제 CRUD 서비스 로직
-- `src/prob/types.ts` : 문제집과 문제에 대한 타입 및 생성 스키마
-- `src/prob/utils.ts` : 공통 유틸(타입 가드, 파서, 정답 검증 등)
-- `src/schema.ts` : Drizzle ORM 스키마 정의
-- `src/seed.ts` : 테스트용 시드 스크립트
+### Prob Module
 
-## 문제 블록 구조
+- **문제집(ProbBook) + 문제블록(ProbBlock)** 구조
+- **다양한 블록 타입**: MultipleChoice, ShortAnswer, Essay 등
+- **태그 시스템** 및 공개/비공개 설정
+- **Owner 기반** 권한 관리
 
-각 문제는 세 가지 구성 요소로 이루어집니다.
+### Payment Module
 
-1. **content** – 문제 본문이나 선택지 등 사용자에게 보여줄 내용
-2. **answer** – 정답 데이터 (문제집 생성 시 저장)
-3. **answerSubmit** – 사용자가 제출한 답안을 검증하기 위한 입력 스키마
+- **AI Provider 가격 관리** (OpenAI, Anthropic 등)
+- **크레딧 지갑** + 원장(Ledger) 시스템
+- **멱등성 보장** (Redis + DB 이중화)
+- **동시성 제어** (낙관적 락 + 재시도)
+- **Redis 캐싱** (잔액, 가격표, 멱등성 키)
 
-`create-block.ts`의 `blockBuilder`를 통해 각 블록의 스키마와 정답 체커를 손쉽게 정의할 수 있습니다. 모든 블록은 `contentSchema`, `answerSchema`, `answerSubmitSchema`, `checkAnswer`를 제공하며, `blocks.ts`에서 실제 유형을 등록합니다.
+## 🚀 Quick Start
 
-## utils.ts 소개
+### 1. 환경 설정
 
-`src/prob/utils.ts`는 블록 관련 공통 기능을 모아둔 파일로 다음 기능을 제공합니다.
+```bash
+# Redis (Optional - 없으면 MemoryCache 사용)
+REDIS_URL=redis://localhost:6379
 
-- **타입 가드**
-  - `isContent`, `isAnswer`, `isAnswerSubmit` : 블록 타입별로 content/answer/answerSubmit 형태인지 런타임에 판별합니다.
-- **파서**
-  - `parseContent`, `parseAnswer`, `parseAnswerSubmit` : 블록의 타입을 확인하고 해당 스키마로 파싱하여, 잘못된 데이터는 즉시 예외를 발생시킵니다.
-- **통합 스키마**
-  - `allContentSchemas`, `allAnswerSchemas`, `allAnswerSubmitSchemas` : 모든 블록 유형을 통합한 Zod 스키마로, create 시 입력값 유효성 검증에 사용됩니다.
-- **정답 검증**
-  - `checkAnswer(correctAnswer, submittedAnswer)` : 동일 타입인지 확인하고 각 블록의 `checkAnswer`를 호출해 정답 여부를 판단합니다.
+# PostgreSQL (Required)
+DATABASE_URL=postgresql://...
+```
 
-이 유틸들을 활용하면 문제집 생성/검증 로직에서 타입 안정성과 공통 검증을 일관되게 유지할 수 있습니다.
+### 2. DB 초기화
+
+```bash
+pnpm db:generate  # 마이그레이션 생성
+pnpm db:migrate   # 마이그레이션 실행
+pnpm db:seed      # 샘플 데이터 생성 (interactive)
+```
+
+### 3. Next.js에서 사용
+
+```typescript
+// ✅ Server Component / API Route
+import { probService, paymentService } from "@service/solves";
+
+const books = await probService.getProbBooks({ isPublic: true });
+const balance = await paymentService.getBalance(walletId);
+
+// ✅ Client Component
+import type { ProbBook, AIPrice, DeductCreditParams } from "@service/solves";
+
+const MyComponent = ({ book }: { book: ProbBook }) => { ... };
+```
+
+## 📝 Code Style Guide
+
+### 1. 타입 분리 원칙
+
+**`types.ts`**: Server/Client 공통 사용 (Next.js 환경 고려)
+
+- Interface, Type Alias
+- Zod Schema (validation + type inference)
+
+**`schema.ts`**: Server only (DB 스키마)
+
+- Drizzle ORM 테이블 정의
+- DB 전용 타입
+
+```typescript
+// ✅ types.ts (공통)
+export const createProbBookSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+});
+export type CreateProbBook = z.infer<typeof createProbBookSchema>;
+
+export interface ProbBook {
+  id: string;
+  title: string;
+  // ...
+}
+
+// ✅ schema.ts (Server)
+export const ProbBookTable = pgTable("prob_books", {
+  id: uuid("id").primaryKey(),
+  title: text("title").notNull(),
+  // ...
+});
+```
+
+### 2. Service Layer 패턴
+
+**Object Literal 스타일** (클래스 대신)
+
+```typescript
+// ✅ Good
+export const probService = {
+  getProbBooks: async (filter) => { ... },
+  createProbBook: async (data) => { ... },
+};
+
+// ❌ Avoid
+export class ProbService {
+  async getProbBooks() { ... }
+}
+```
+
+### 3. Redis/Cache 전략
+
+```typescript
+// 1) 읽기: Cache 우선 → DB Fallback
+async getBalance(walletId: string): Promise<string> {
+  const cached = await cache.get(CacheKeys.walletBalance(walletId));
+  if (cached) return cached;
+
+  const wallet = await db.query.CreditWalletTable.findFirst(...);
+  await cache.set(CacheKeys.walletBalance(walletId), wallet.balance, TTL);
+  return wallet.balance;
+}
+
+// 2) 쓰기: DB 메인 → Cache 갱신
+async deductCredit(...) {
+  const result = await db.transaction(...);
+  await cache.set(CacheKeys.walletBalance(walletId), newBalance, TTL); // 갱신
+  return result;
+}
+```
+
+### 4. 트랜잭션 & 동시성
+
+**낙관적 락** (빈번한 업데이트)
+
+```typescript
+// version 필드 사용
+await db
+  .update(CreditWalletTable)
+  .set({ balance: newBalance, version: wallet.version + 1 })
+  .where(
+    and(
+      eq(CreditWalletTable.id, walletId),
+      eq(CreditWalletTable.version, wallet.version) // ← 낙관적 락
+    )
+  );
+```
+
+**비관적 락** (충돌 거의 없음)
+
+```typescript
+const [wallet] = await tx.execute(sql`
+  SELECT * FROM credit_wallet WHERE id = ${walletId} FOR UPDATE
+`);
+```
+
+### 5. 멱등성 보장
+
+```typescript
+const idempotencyKey = `user-${userId}-action-${timestamp}`;
+
+// 1) Redis 빠른 체크
+const cached = await cache.get(CacheKeys.idempotency(idempotencyKey));
+if (cached) return JSON.parse(cached);
+
+// 2) DB 작업
+const result = await db.transaction(...);
+
+// 3) Redis + DB 이중 저장
+await cache.set(CacheKeys.idempotency(idempotencyKey), result, 86400);
+await db.insert(IdempotencyKeysTable).values({ key: idempotencyKey, ... });
+```
+
+## 🛠️ Commands
+
+```bash
+# 개발
+pnpm check-types     # 타입 체크
+pnpm test            # 테스트 실행
+pnpm test:watch      # 테스트 watch 모드
+
+# DB
+pnpm db:generate     # 마이그레이션 파일 생성
+pnpm db:push         # 스키마 푸시 (dev)
+pnpm db:migrate      # 마이그레이션 실행 (prod)
+pnpm db:seed         # 샘플 데이터 생성
+pnpm db:studio       # Drizzle Studio 실행
+
+# 코드 품질
+pnpm lint            # Biome 린트
+```
+
+## 🧪 Testing
+
+```typescript
+// Vitest + Mock 패턴
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@workspace/cache", () => ({
+  createCache: vi.fn(() => mockCache),
+}));
+
+vi.mock("../db", () => ({
+  pgDb: mockDb,
+}));
+
+// 테스트 작성...
+```
+
+## 📊 DB Schema Highlights
+
+### Payment 스키마 특징
+
+1. **비정규화 패턴** (`UsageEventsTable`)
+
+   - `priceId` 있지만 `provider`, `model`, `vendorCostUsd` 중복 저장
+   - 이유: JOIN 없이 빠른 리포팅 + 히스토리 보존
+
+2. **Optimistic Locking** (`CreditWalletTable.version`)
+
+   - 동시 차감 시 충돌 감지 + 재시도
+
+3. **멱등성 키** (Redis + DB 이중화)
+   - Redis: 빠른 체크 (TTL 24시간)
+   - DB: 영구 보관 + Redis 장애 대비
+
+## 🔗 Dependencies
+
+- `@service/auth`: User 인증 (Owner 참조)
+- `@workspace/cache`: Redis/Memory 캐시 추상화
+- `@workspace/util`: 공통 유틸리티
+- `drizzle-orm`: Type-safe ORM
+- `zod`: Schema validation

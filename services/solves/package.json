@@ -16,13 +16,16 @@
     "docker:generate": "drizzle-kit generate"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./shared": "./src/shared.ts"
   },
   "dependencies": {
     "@service/auth": "workspace:*",
+    "@workspace/cache": "workspace:*",
     "@workspace/util": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "inquirer": "^12.9.6",
+    "ioredis": "^5.4.1",
     "pg": "^8.16.3",
     "zod": "^4.1.8"
   },
