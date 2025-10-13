@@ -1,65 +1,46 @@
-"use client";
+import { probService } from "@service/solves";
+import Link from "next/link";
 
-import { useParams, useRouter } from "next/navigation";
 import { ChatDrawer } from "@/components/chat-interface/chat-drawer";
 import { ProblemBook } from "@/components/problem/problem-book";
 import { Button } from "@/components/ui/button";
-import { useBook } from "@/lib/swr/prob";
 
-export default function ProblemBookDetailPage() {
-  const router = useRouter();
-  const params = useParams();
-  const bookId = (params as { id?: string })?.id;
-  const { book, isLoading, isError } = useBook(bookId);
+export default async function ProblemBookDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  console.log(params);
 
-  if (!bookId) {
+  const { id } = await params;
+
+  const hasPermission = await probService.hasProbBookPermission(id, "1");
+
+  const book = await probService.selectProbBookById(id);
+
+  if (!hasPermission || !book)
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto p-6">
           <div className="text-destructive mb-4">잘못된 접근입니다.</div>
-          <Button variant="ghost" onClick={() => router.push("/problem")}>
-            목록으로 이동
-          </Button>
+          <Link href="/prob">
+            <Button variant="ghost">목록으로 이동</Button>
+          </Link>
         </div>
       </div>
     );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto p-6 text-muted-foreground">
-          불러오는 중…
-        </div>
-      </div>
-    );
-  }
-
-  if (isError || !book) {
-    return (
-      <div className="bg-background">
-        <div className="max-w-4xl mx-auto p-6">
-          <Button variant="ghost" onClick={() => router.push("/prob")}>
-            ← 문제집 목록으로 돌아가기
-          </Button>
-          <div className="mt-6 text-destructive">
-            문제집을 불러오지 못했어요.
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-background flex min-h-svh flex-col overflow-hidden">
       <div className="px-6 py-6 flex ">
-        <Button
-          className="text-primary hover:text-primary/90 mr-auto"
-          variant="ghost"
-          onClick={() => router.push("/prob")}
-        >
-          ← 문제집 목록으로 돌아가기
-        </Button>
+        <Link href="/prob">
+          <Button
+            className="text-primary hover:text-primary/90 mr-auto"
+            variant="ghost"
+          >
+            ← 문제집 목록으로 돌아가기
+          </Button>
+        </Link>
         <ChatDrawer />
       </div>
 

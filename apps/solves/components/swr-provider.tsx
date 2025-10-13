@@ -1,19 +1,14 @@
 "use client";
 
-import { fetchJSON } from "@workspace/swr";
-import { SWRConfig } from "swr";
+import { SWRConfig, SWRConfiguration } from "swr";
+import { fetcher } from "@/lib/fetcher";
+
+const defaultSWRConfig: SWRConfiguration = {
+  fetcher: (url: string) => fetcher,
+  dedupingInterval: 1000,
+  errorRetryCount: 2,
+};
 
 export function SwrProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <SWRConfig
-      value={{
-        fetcher: (url: string) => fetchJSON(url),
-        revalidateOnFocus: false,
-        dedupingInterval: 1000,
-        errorRetryCount: 2,
-      }}
-    >
-      {children}
-    </SWRConfig>
-  );
+  return <SWRConfig value={defaultSWRConfig}>{children}</SWRConfig>;
 }

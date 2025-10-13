@@ -1,7 +1,7 @@
 import {
   BlockAnswerSubmit,
   ProbBlockWithoutAnswer,
-} from "@service/solves/types";
+} from "@service/solves/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {

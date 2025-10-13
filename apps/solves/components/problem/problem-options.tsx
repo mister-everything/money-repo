@@ -7,7 +7,7 @@ import {
   isContent,
   type McqBlockContent,
   type OxBlockContent,
-} from "@service/solves/types";
+} from "@service/solves/shared";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 

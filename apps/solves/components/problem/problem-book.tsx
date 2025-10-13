@@ -1,4 +1,6 @@
-import { BlockAnswerSubmit, ProbBook } from "@service/solves/types";
+"use client";
+
+import { BlockAnswerSubmit, ProbBook } from "@service/solves/shared";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {

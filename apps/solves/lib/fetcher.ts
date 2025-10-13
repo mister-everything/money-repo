@@ -1,15 +1,14 @@
-export function dateReviver(key: string, value: unknown) {
+function dateReviver(key: string, value: unknown) {
   if (typeof value === "string" && /\d{4}-\d{2}-\d{2}T/.test(value)) {
     const date = new Date(value);
     if (!Number.isNaN(date.getTime())) return date;
   }
   return value as unknown;
 }
-
-export async function fetchJSON<T>(
+export const fetcher = async <T>(
   input: RequestInfo | URL,
   init?: RequestInit,
-): Promise<T> {
+) => {
   const res = await fetch(input, {
     ...init,
     headers: {
@@ -37,4 +36,4 @@ export async function fetchJSON<T>(
   }
 
   return data as T;
-}
+};

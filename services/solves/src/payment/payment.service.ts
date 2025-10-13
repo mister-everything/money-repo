@@ -18,7 +18,7 @@ import type {
 } from "./types";
 
 // 캐시 인스턴스 (REDIS_URL이 있으면 Redis, 없으면 MemoryCache)
-const cache = createCache();
+const cache = createCache({ forceMemory: true });
 
 /**
  * Payment Service

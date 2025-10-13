@@ -1,4 +1,4 @@
-import { type BlockContent, isContent } from "@service/solves/types";
+import { type BlockContent, isContent } from "@service/solves/shared";
 
 interface ContentRendererProps {
   content: BlockContent;
