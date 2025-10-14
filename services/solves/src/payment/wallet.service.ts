@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { pgDb } from "../db";
-import { cache } from "./cache";
 import { CacheKeys, CacheTTL } from "./cache-keys";
 import { CreditWalletTable } from "./schema";
+import { sharedCache } from "./shared-cache";
 import type { Wallet } from "./types";
 
 /**
@@ -31,7 +31,7 @@ export const walletService = {
       .returning();
 
     // 캐시 저장
-    await cache.setex(
+    await sharedCache.setex(
       CacheKeys.walletBalance(wallet.id),
       CacheTTL.WALLET_BALANCE,
       wallet.balance,
@@ -57,7 +57,7 @@ export const walletService = {
     }
 
     // 잔액 캐시 저장
-    await cache.setex(
+    await sharedCache.setex(
       CacheKeys.walletBalance(wallet.id),
       CacheTTL.WALLET_BALANCE,
       wallet.balance,
@@ -85,7 +85,8 @@ export const walletService = {
       // 동시 생성 시도로 인한 unique constraint 에러 처리
       if (
         error instanceof Error &&
-        error.message.includes("unique constraint")
+        ((error as any).code === "23505" ||
+          error.message.includes("unique constraint"))
       ) {
         // 재조회
         const wallet = await walletService.getWalletByUserId(userId);

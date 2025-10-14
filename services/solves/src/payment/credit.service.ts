@@ -1,6 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
 import { pgDb } from "../db";
-import { cache } from "./cache";
 import { CacheKeys, CacheTTL } from "./cache-keys";
 import {
   AiProviderPricesTable,
@@ -9,6 +8,7 @@ import {
   InvoicesTable,
   UsageEventsTable,
 } from "./schema";
+import { sharedCache } from "./shared-cache";
 import type {
   AIPrice,
   CreditPurchaseParams,
@@ -36,7 +36,7 @@ export const creditService = {
    */
   getBalance: async (walletId: string): Promise<string> => {
     // 1) 캐시에서 먼저 확인
-    const cached = await cache.get(CacheKeys.walletBalance(walletId));
+    const cached = await sharedCache.get(CacheKeys.walletBalance(walletId));
     if (cached) {
       return cached;
     }
@@ -53,7 +53,7 @@ export const creditService = {
     }
 
     // 3) 캐시 저장 (10분)
-    await cache.setex(
+    await sharedCache.setex(
       CacheKeys.walletBalance(walletId),
       CacheTTL.WALLET_BALANCE,
       wallet.balance,
@@ -70,7 +70,7 @@ export const creditService = {
    */
   getAIPrice: async (provider: string, model: string): Promise<AIPrice> => {
     // 1) 캐시 확인
-    const cached = await cache.get(CacheKeys.aiPrice(provider, model));
+    const cached = await sharedCache.get(CacheKeys.aiPrice(provider, model));
     if (cached) {
       return JSON.parse(cached);
     }
@@ -93,7 +93,7 @@ export const creditService = {
     }
 
     // 3) 캐시 저장 (1시간)
-    await cache.setex(
+    await sharedCache.setex(
       CacheKeys.aiPrice(provider, model),
       CacheTTL.AI_PRICE,
       JSON.stringify(price),
@@ -113,7 +113,7 @@ export const creditService = {
     const { walletId, idempotencyKey } = params;
 
     // 1) 멱등성 체크 (빠른 중복 방지)
-    const cached = await cache.get(CacheKeys.idempotency(idempotencyKey));
+    const cached = await sharedCache.get(CacheKeys.idempotency(idempotencyKey));
     if (cached) {
       const response = JSON.parse(cached) as DeductCreditResponse;
       return {
@@ -173,7 +173,7 @@ export const creditService = {
     } = params;
 
     // 1) 캐시에서 멱등성 체크
-    const cachedResponse = await cache.get(
+    const cachedResponse = await sharedCache.get(
       CacheKeys.idempotency(idempotencyKey),
     );
     if (cachedResponse) {
@@ -188,104 +188,72 @@ export const creditService = {
       PriceCalculator.calculateCreditsFromTokens(price, {
         input: inputTokens,
         output: outputTokens,
-        cached: cachedTokens,
       });
 
-    // 4) DB 트랜잭션 (낙관적 락 with 재시도)
-    let retries = 3;
-    let result: { usageId: string; newBalance: string } | undefined;
+    // 4) DB 트랜잭션 (FOR UPDATE로 충분)
+    const result = await pgDb.transaction(async (tx) => {
+      // 4-1) 지갑 조회 (충전/리필 중이면 대기)
+      const queryResult = await tx.execute<{
+        id: string;
+        balance: string;
+        version: number;
+      }>(sql`
+        SELECT id, balance, version FROM ${CreditWalletTable}
+        WHERE id = ${walletId}
+        FOR UPDATE
+      `);
 
-    while (retries > 0) {
-      try {
-        result = await pgDb.transaction(async (tx) => {
-          // 4-1) 지갑 조회 (충전/리필 중이면 대기)
-          const queryResult = await tx.execute<{
-            id: string;
-            balance: string;
-            version: number;
-          }>(sql`
-            SELECT id, balance, version FROM ${CreditWalletTable}
-            WHERE id = ${walletId}
-            FOR UPDATE
-          `);
+      const wallet = queryResult.rows[0];
+      if (!wallet) throw new Error("지갑을 찾을 수 없습니다");
 
-          const wallet = queryResult.rows[0];
-          if (!wallet) throw new Error("지갑을 찾을 수 없습니다");
-
-          const currentBalance = Number(wallet.balance);
-          if (currentBalance < billableCredits) {
-            throw new Error("크레딧이 부족합니다");
-          }
-
-          const newBalance = currentBalance - billableCredits;
-
-          // 4-2) 낙관적 락으로 잔액 차감
-          const updated = await tx
-            .update(CreditWalletTable)
-            .set({
-              balance: toDecimal(newBalance),
-              version: wallet.version + 1,
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(CreditWalletTable.id, walletId),
-                eq(CreditWalletTable.version, wallet.version),
-              ),
-            );
-
-          if (updated.rowCount === 0) {
-            throw new Error("VERSION_CONFLICT");
-          }
-
-          // 4-3) 원장 기록
-          await tx.insert(CreditLedgerTable).values({
-            walletId,
-            kind: "debit",
-            delta: toDecimal(-billableCredits),
-            runningBalance: toDecimal(newBalance),
-            idempotencyKey,
-            reason: `AI usage: ${provider}:${model}`,
-          });
-
-          // 4-4) 사용 이벤트 기록
-          const [usage] = await tx
-            .insert(UsageEventsTable)
-            .values({
-              userId,
-              walletId,
-              priceId: price.id,
-              provider,
-              model,
-              inputTokens,
-              outputTokens,
-              cachedTokens,
-              calls,
-              vendorCostUsd: toDecimal(vendorCostUsd),
-              billableCredits: toDecimal(billableCredits),
-              idempotencyKey,
-            })
-            .returning({ id: UsageEventsTable.id });
-
-          return { usageId: usage.id, newBalance: toDecimal(newBalance) };
-        });
-
-        break; // 성공 시 루프 종료
-      } catch (error: unknown) {
-        if (
-          error instanceof Error &&
-          error.message === "VERSION_CONFLICT" &&
-          retries > 1
-        ) {
-          retries--;
-          await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms 대기
-          continue;
-        }
-        throw error;
+      const currentBalance = Number(wallet.balance);
+      if (currentBalance < billableCredits) {
+        throw new Error("크레딧이 부족합니다");
       }
-    }
 
-    if (!result) throw new Error("크레딧 차감 실패");
+      const newBalance = currentBalance - billableCredits;
+
+      // 4-2) 잔액 차감 (version만 증가)
+      await tx
+        .update(CreditWalletTable)
+        .set({
+          balance: toDecimal(newBalance),
+          version: wallet.version + 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(CreditWalletTable.id, walletId));
+
+      // 4-3) 원장 기록
+      await tx.insert(CreditLedgerTable).values({
+        walletId,
+        kind: "debit",
+        delta: toDecimal(-billableCredits),
+        runningBalance: toDecimal(newBalance),
+        idempotencyKey,
+        reason: `AI usage: ${provider}:${model}`,
+      });
+
+      // 4-4) 사용 이벤트 기록
+      const [usage] = await tx
+        .insert(UsageEventsTable)
+        .values({
+          userId,
+          walletId,
+          priceId: price.id,
+          provider,
+          model,
+          inputTokens,
+          outputTokens,
+          cachedTokens,
+          calls,
+          vendorCostUsd: toDecimal(vendorCostUsd),
+          billableCredits: toDecimal(billableCredits),
+          idempotencyKey,
+        })
+        .returning({ id: UsageEventsTable.id });
+
+      return { usageId: usage.id, newBalance: toDecimal(newBalance) };
+    });
 
     // 5) 캐시 업데이트
     const response: DeductCreditResponse = {
@@ -296,13 +264,13 @@ export const creditService = {
 
     await Promise.all([
       // 5-1) 잔액 캐시 갱신
-      cache.setex(
+      sharedCache.setex(
         CacheKeys.walletBalance(walletId),
         CacheTTL.WALLET_BALANCE,
         result.newBalance,
       ),
       // 5-2) 멱등성 키 저장 (24시간)
-      cache.setex(
+      sharedCache.setex(
         CacheKeys.idempotency(idempotencyKey),
         CacheTTL.IDEMPOTENCY,
         JSON.stringify(response),
@@ -324,7 +292,7 @@ export const creditService = {
     const { walletId, creditAmount, invoiceId, idempotencyKey } = params;
 
     // 1) 멱등성 체크
-    const cached = await cache.get(CacheKeys.idempotency(idempotencyKey));
+    const cached = await sharedCache.get(CacheKeys.idempotency(idempotencyKey));
     if (cached) return JSON.parse(cached);
 
     // 2) DB 트랜잭션 (비관적 락 - 충전은 충돌 거의 없음)
@@ -385,12 +353,12 @@ export const creditService = {
 
     // 3) 캐시 갱신
     await Promise.all([
-      cache.setex(
+      sharedCache.setex(
         CacheKeys.walletBalance(walletId),
         CacheTTL.WALLET_BALANCE,
         toDecimal(result.newBalance),
       ),
-      cache.setex(
+      sharedCache.setex(
         CacheKeys.idempotency(idempotencyKey),
         CacheTTL.IDEMPOTENCY,
         JSON.stringify(response),

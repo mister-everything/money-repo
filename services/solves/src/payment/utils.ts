@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { cache } from "./cache";
+import { sharedCache } from "./shared-cache";
 import type { AIPrice } from "./types";
 
 /**
@@ -55,12 +55,12 @@ export class DistributedLock {
    * @returns 획득 성공 여부
    */
   async acquire(): Promise<boolean> {
-    const existing = await cache.get(this.lockKey);
+    const existing = await sharedCache.get(this.lockKey);
     if (existing) {
       return false; // 이미 락이 있음
     }
 
-    await cache.setex(this.lockKey, this.ttl, this.lockValue);
+    await sharedCache.setex(this.lockKey, this.ttl, this.lockValue);
     return true;
   }
 
@@ -69,9 +69,9 @@ export class DistributedLock {
    * 자신이 획득한 락만 해제 가능
    */
   async release(): Promise<void> {
-    const existing = await cache.get(this.lockKey);
+    const existing = await sharedCache.get(this.lockKey);
     if (existing === this.lockValue) {
-      await cache.del(this.lockKey);
+      await sharedCache.del(this.lockKey);
     }
   }
 }
@@ -91,17 +91,14 @@ export const PriceCalculator = {
     tokens: {
       input: number;
       output: number;
-      cached?: number;
     },
   ): number => {
     const inputCost =
       (tokens.input / 1_000_000) * Number(price.inputTokenPrice);
     const outputCost =
       (tokens.output / 1_000_000) * Number(price.outputTokenPrice);
-    const cachedCost =
-      ((tokens.cached || 0) / 1_000_000) * Number(price.cachedTokenPrice);
 
-    return inputCost + outputCost + cachedCost;
+    return inputCost + outputCost;
   },
 
   /**
@@ -128,7 +125,6 @@ export const PriceCalculator = {
     tokens: {
       input: number;
       output: number;
-      cached?: number;
     },
   ): { vendorCostUsd: number; billableCredits: number } => {
     const vendorCostUsd = PriceCalculator.calculateVendorCost(price, tokens);

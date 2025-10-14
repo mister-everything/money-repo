@@ -1,6 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
 import { pgDb } from "../db";
-import { cache } from "./cache";
 import { CacheKeys, CacheTTL } from "./cache-keys";
 import { creditService } from "./credit.service";
 import {
@@ -10,6 +9,7 @@ import {
   SubscriptionPlansTable,
   SubscriptionsTable,
 } from "./schema";
+import { sharedCache } from "./shared-cache";
 import type {
   CancelSubscriptionResponse,
   CheckRefillResponse,
@@ -34,7 +34,7 @@ export const subscriptionService = {
    * 구독 플랜 조회 (Cache 우선)
    */
   getPlan: async (planId: string): Promise<SubscriptionPlan> => {
-    const cached = await cache.get(CacheKeys.subscriptionPlan(planId));
+    const cached = await sharedCache.get(CacheKeys.subscriptionPlan(planId));
     if (cached) {
       return JSON.parse(cached);
     }
@@ -49,7 +49,7 @@ export const subscriptionService = {
       throw new Error(`플랜을 찾을 수 없습니다: ${planId}`);
     }
 
-    await cache.setex(
+    await sharedCache.setex(
       CacheKeys.subscriptionPlan(planId),
       CacheTTL.SUBSCRIPTION_PLAN,
       JSON.stringify(plan),
@@ -64,7 +64,7 @@ export const subscriptionService = {
   getActiveSubscription: async (
     userId: string,
   ): Promise<Subscription | null> => {
-    const cached = await cache.get(CacheKeys.subscription(userId));
+    const cached = await sharedCache.get(CacheKeys.subscription(userId));
     if (cached) {
       return JSON.parse(cached);
     }
@@ -84,7 +84,7 @@ export const subscriptionService = {
       return null;
     }
 
-    await cache.setex(
+    await sharedCache.setex(
       CacheKeys.subscription(userId),
       CacheTTL.SUBSCRIPTION,
       JSON.stringify(subscription),
@@ -201,8 +201,8 @@ export const subscriptionService = {
 
     // 4) 캐시 무효화
     await Promise.all([
-      cache.del(CacheKeys.subscription(userId)),
-      cache.del(CacheKeys.walletBalance(result.walletId)),
+      sharedCache.del(CacheKeys.subscription(userId)),
+      sharedCache.del(CacheKeys.walletBalance(result.walletId)),
     ]);
 
     return {
@@ -334,14 +334,13 @@ export const subscriptionService = {
           reason: `정기 자동 충전 (${plan.refillIntervalHours}시간마다)`,
         });
 
-        // 7-4) 구독 기간 업데이트 (refillCount, lastRefillAt)
-        await tx
-          .update(SubscriptionPeriodsTable)
-          .set({
-            refillCount: currentPeriod.refillCount + 1,
-            lastRefillAt: now,
-          })
-          .where(eq(SubscriptionPeriodsTable.id, currentPeriod.id));
+        // 7-4) 구독 기간 업데이트 (refillCount, lastRefillAt) - SQL INCREMENT 사용
+        await tx.execute(sql`
+          UPDATE ${SubscriptionPeriodsTable}
+          SET refill_count = refill_count + 1,
+              last_refill_at = ${now}
+          WHERE id = ${currentPeriod.id}
+        `);
 
         return {
           refillAmount: toDecimal(refillAmount),
@@ -351,8 +350,8 @@ export const subscriptionService = {
 
       // 8) 캐시 무효화
       await Promise.all([
-        cache.del(CacheKeys.subscription(userId)),
-        cache.del(CacheKeys.walletBalance(subscription.walletId)),
+        sharedCache.del(CacheKeys.subscription(userId)),
+        sharedCache.del(CacheKeys.walletBalance(subscription.walletId)),
       ]);
 
       const nextRefillAt = new Date(
@@ -538,8 +537,8 @@ export const subscriptionService = {
 
     if (subscription[0]) {
       await Promise.all([
-        cache.del(CacheKeys.subscription(subscription[0].userId)),
-        cache.del(CacheKeys.walletBalance(subscription[0].walletId)),
+        sharedCache.del(CacheKeys.subscription(subscription[0].userId)),
+        sharedCache.del(CacheKeys.walletBalance(subscription[0].walletId)),
       ]);
     }
 
@@ -594,7 +593,7 @@ export const subscriptionService = {
       .limit(1);
 
     if (subscription) {
-      await cache.del(CacheKeys.subscription(subscription.userId));
+      await sharedCache.del(CacheKeys.subscription(subscription.userId));
     }
 
     return {
