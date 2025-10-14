@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { DashboardMetrics } from "@/components/dashboard-metrics";
-import { UsersTable } from "./components/users-table";
+import { UsersTable } from "@/components/users/users-table";
 
 // 사용자 타입 정의
 interface User {
@@ -77,7 +77,6 @@ export default function UsersPage() {
       <div className="mt-8">
         <UsersTable users={users} onRefresh={refreshUsers} />
       </div>
-      낄낄
     </div>
   );
 }
