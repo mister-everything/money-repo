@@ -10,6 +10,7 @@ export interface AIPrice {
   modelType: string;
   inputTokenPrice: string;
   outputTokenPrice: string;
+  cachedTokenPrice: string; // 캐싱된 토큰 가격 추가
   markupRate: string;
   isActive: boolean;
 }
@@ -45,14 +46,23 @@ export const creditPurchaseSchema = z.object({
 export type CreditPurchaseParams = z.infer<typeof creditPurchaseSchema>;
 
 /**
- * 크레딧 차감 응답
+ * 크레딧 차감 응답 (백그라운드)
+ */
+export interface DeductCreditAsyncResponse {
+  success: true;
+  estimatedBalance: string;
+  jobId?: string; // 백그라운드 작업 ID (optional)
+}
+
+/**
+ * 크레딧 차감 응답 (동기)
  */
 export interface DeductCreditResponse {
   success: true;
   usageId: string;
+  newBalance: string;
   autoRefilled?: boolean; // 자동 충전 여부
   refillAmount?: string; // 충전된 금액
-  remainingBalance?: string; // 남은 잔액 (optional)
 }
 
 /**
@@ -195,7 +205,16 @@ export type CreateInvoice = z.infer<typeof createInvoiceSchema>;
 /**
  * 구독 상태
  */
-export type SubscriptionStatus = "active" | "canceled" | "expired";
+export type SubscriptionStatus = "active" | "past_due" | "canceled" | "expired";
+
+/**
+ * 구독 기간 상태
+ */
+export type SubscriptionPeriodStatus =
+  | "active"
+  | "completed"
+  | "failed"
+  | "refunded";
 
 /**
  * 구독 플랜 정보
@@ -204,11 +223,13 @@ export interface SubscriptionPlan {
   id: string;
   name: string;
   displayName: string;
+  description: string | null;
+  content: string | null;
   priceUsd: string;
   monthlyQuota: string;
   refillAmount: string;
   refillIntervalHours: number;
-  maxRefillBalance: string;
+  maxRefillCount: number; // maxRefillBalance → maxRefillCount 변경
   rolloverEnabled: boolean;
   isActive: boolean;
   createdAt: Date;
@@ -216,20 +237,44 @@ export interface SubscriptionPlan {
 }
 
 /**
- * 사용자 구독 정보
+ * 구독 정보 (UserSubscription → Subscription으로 이름 변경)
  */
-export interface UserSubscription {
+export interface Subscription {
   id: string;
   userId: string;
   planId: string;
   walletId: string;
   status: SubscriptionStatus;
+  startedAt: Date;
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
-  lastRefillAt: Date | null;
   canceledAt: Date | null;
+  expiredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// 하위 호환성을 위한 별칭
+export type UserSubscription = Subscription;
+
+/**
+ * 구독 기간 정보
+ */
+export interface SubscriptionPeriod {
+  id: string;
+  subscriptionId: string;
+  planId: string;
+  periodStart: Date;
+  periodEnd: Date;
+  status: SubscriptionPeriodStatus;
+  periodType: string;
+  creditsGranted: string | null;
+  refillCount: number;
+  lastRefillAt: Date | null;
+  invoiceId: string | null;
+  amountPaid: string | null;
+  metadata: string | null;
+  createdAt: Date;
 }
 
 /**
@@ -328,11 +373,13 @@ export interface CancelSubscriptionResponse {
 export const createSubscriptionPlanSchema = z.object({
   name: z.string(),
   displayName: z.string(),
+  description: z.string().optional(),
+  content: z.string().optional(),
   priceUsd: z.string(),
   monthlyQuota: z.string(),
   refillAmount: z.string(),
   refillIntervalHours: z.number().int().positive(),
-  maxRefillBalance: z.string(),
+  maxRefillCount: z.number().int().nonnegative(), // maxRefillBalance → maxRefillCount
   rolloverEnabled: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });

@@ -42,34 +42,69 @@ export const seedPlans = async () => {
     {
       name: "free",
       displayName: "Free Plan",
+      description: "개인 개발자와 취미 프로젝트를 위한 무료 플랜",
+      content: `## 포함된 기능
+- 월 1,000 크레딧 제공
+- 자동 충전: 6시간마다 50 크레딧 (월 최대 10회)
+- 기본 AI 모델 사용 가능
+- 커뮤니티 지원
+
+## 제한사항
+- 미사용 크레딧 이월 불가 (매월 리셋)
+- 고급 모델 사용 제한`,
       priceUsd: "0.000000",
-      monthlyQuota: "1000.000000", // 월 1,000 크레딧
-      refillAmount: "50.000000", // 6시간마다 50 크레딧 충전
+      monthlyQuota: "1000.000000",
+      refillAmount: "50.000000",
       refillIntervalHours: 6,
-      maxRefillBalance: "200.000000", // 최대 200까지 누적
-      rolloverEnabled: false, // 미사용 크레딧 이월 안됨 (매월 리셋)
+      maxRefillCount: 10,
+      rolloverEnabled: false,
       isActive: true,
     },
     {
       name: "pro",
       displayName: "Pro Plan",
-      priceUsd: "10000.000000", // 월 $100 (또는 10,000원)
-      monthlyQuota: "10000.000000", // 월 10,000 크레딧
-      refillAmount: "500.000000", // 6시간마다 500 크레딧 충전
+      description: "전문가와 스타트업을 위한 프로 플랜",
+      content: `## 포함된 기능
+- 월 10,000 크레딧 제공
+- 자동 충전: 6시간마다 500 크레딧 (월 최대 20회)
+- 모든 AI 모델 사용 가능
+- 우선 지원
+- 크레딧 이월 가능 (누적)
+
+## 추가 혜택
+- 사용 통계 및 분석
+- API 접근
+- 월간 리포트 제공`,
+      priceUsd: "10000.000000",
+      monthlyQuota: "10000.000000",
+      refillAmount: "500.000000",
       refillIntervalHours: 6,
-      maxRefillBalance: "2000.000000", // 최대 2,000까지 누적
-      rolloverEnabled: true, // 미사용 크레딧 이월 (누적 가능)
+      maxRefillCount: 20,
+      rolloverEnabled: true,
       isActive: true,
     },
     {
       name: "business",
       displayName: "Business Plan",
-      priceUsd: "50000.000000", // 월 $500 (또는 50,000원)
-      monthlyQuota: "100000.000000", // 월 100,000 크레딧
-      refillAmount: "5000.000000", // 6시간마다 5,000 크레딧 충전
+      description: "대규모 팀과 엔터프라이즈를 위한 비즈니스 플랜",
+      content: `## 포함된 기능
+- 월 100,000 크레딧 제공
+- 자동 충전: 6시간마다 5,000 크레딧 (월 최대 50회)
+- 모든 AI 모델 무제한 사용
+- 전담 지원팀
+- 크레딧 이월 가능 (누적)
+
+## 추가 혜택
+- 커스텀 모델 파인튜닝
+- SLA 보장
+- 전용 인프라
+- 컨설팅 서비스`,
+      priceUsd: "50000.000000",
+      monthlyQuota: "100000.000000",
+      refillAmount: "5000.000000",
       refillIntervalHours: 6,
-      maxRefillBalance: "20000.000000", // 최대 20,000까지 누적
-      rolloverEnabled: true, // 미사용 크레딧 이월 (누적 가능)
+      maxRefillCount: 50,
+      rolloverEnabled: true,
       isActive: true,
     },
   ];
@@ -92,7 +127,7 @@ export const seedPlans = async () => {
       console.log(
         `    - 정기 충전: ${plan.refillAmount} 크레딧 / ${plan.refillIntervalHours}시간마다`,
       );
-      console.log(`    - 최대 누적: ${plan.maxRefillBalance} 크레딧까지`);
+      console.log(`    - 최대 충전 횟수: 월 ${plan.maxRefillCount}회`);
       console.log(
         `    - 이월 여부: ${plan.rolloverEnabled ? "이월 가능 (누적)" : "이월 안됨 (리셋)"}`,
       );
