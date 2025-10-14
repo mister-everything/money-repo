@@ -6,7 +6,6 @@ import {
   numeric as decimal,
   index,
   integer,
-  pgEnum,
   text,
   timestamp,
   uniqueIndex,
@@ -409,13 +408,13 @@ export const UsageEventsTable = solvesSchema.table(
  * - externalRef: PG사 거래 ID (카카오페이, 토스페이 등)
  * - externalOrderId: PG사 주문 ID
  */
-export const InvoiceStatusEnum = pgEnum("invoice_status", [
+export const InvoiceStatusEnum = solvesSchema.enum("invoice_status", [
   "pending",
   "paid",
   "failed",
 ]);
 
-export const InvoiceTypeEnum = pgEnum("invoice_type", [
+export const InvoiceTypeEnum = solvesSchema.enum("invoice_type", [
   "subscription",
   "credit_purchase",
 ]);
@@ -640,7 +639,7 @@ export const SubscriptionPlansTable = solvesSchema.table(
  * - 구독 크레딧 + 추가 구매 크레딧 모두 1개 지갑 사용
  * - 기존 CreditWallet 시스템과 완전 호환
  */
-export const SubscriptionStatusEnum = pgEnum("subscription_status", [
+export const SubscriptionStatusEnum = solvesSchema.enum("subscription_status", [
   "active",
   "past_due",
   "canceled",
@@ -751,7 +750,7 @@ export const SubscriptionsTable = solvesSchema.table(
  * - 리포팅: 월별 매출, 이탈율, 사용량
  * - 디버깅: 크레딧 지급/차감 추적
  */
-export const SubscriptionPeriodStatusEnum = pgEnum(
+export const SubscriptionPeriodStatusEnum = solvesSchema.enum(
   "subscription_period_status",
   ["active", "completed", "failed", "refunded"],
 );
