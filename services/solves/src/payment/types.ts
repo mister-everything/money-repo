@@ -10,6 +10,7 @@ export interface AIPrice {
   modelType: string;
   inputTokenPrice: string;
   outputTokenPrice: string;
+  cachedTokenPrice: string; // 캐싱된 토큰 가격 추가
   markupRate: string;
   isActive: boolean;
 }
@@ -45,11 +46,41 @@ export const creditPurchaseSchema = z.object({
 export type CreditPurchaseParams = z.infer<typeof creditPurchaseSchema>;
 
 /**
- * 크레딧 차감 응답
+ * 크레딧 차감 응답 (백그라운드)
+ */
+export interface DeductCreditAsyncResponse {
+  success: true;
+  estimatedBalance: string;
+  jobId?: string; // 백그라운드 작업 ID (optional)
+}
+
+/**
+ * 크레딧 차감 응답 (동기)
  */
 export interface DeductCreditResponse {
   success: true;
   usageId: string;
+  newBalance: string;
+  autoRefilled?: boolean; // 자동 충전 여부
+  refillAmount?: string; // 충전된 금액
+}
+
+/**
+ * 크레딧 부족 에러 상세 정보
+ */
+export interface InsufficientCreditsError {
+  code: "INSUFFICIENT_CREDITS";
+  message: string;
+  currentBalance: string;
+  required: string;
+  nextRefillAt?: Date; // 다음 자동 충전 시각
+  nextRefillAmount?: string; // 다음 충전 금액
+  waitTimeMinutes?: number; // 대기 시간 (분)
+  hasSubscription: boolean;
+  suggestions: Array<{
+    type: "wait" | "subscribe" | "purchase";
+    message: string;
+  }>;
 }
 
 /**
@@ -95,7 +126,15 @@ export interface UsageEvent {
 /**
  * 원장 트랜잭션 종류
  */
-export type TxnKind = "purchase" | "grant" | "debit" | "refund" | "adjustment";
+export type TxnKind =
+  | "purchase"
+  | "grant"
+  | "debit"
+  | "refund"
+  | "adjustment"
+  | "subscription_grant"
+  | "subscription_refill"
+  | "subscription_reset";
 
 /**
  * 크레딧 원장
@@ -162,3 +201,212 @@ export const createInvoiceSchema = z.object({
 });
 
 export type CreateInvoice = z.infer<typeof createInvoiceSchema>;
+
+/**
+ * 구독 상태
+ */
+export type SubscriptionStatus = "active" | "past_due" | "canceled" | "expired";
+
+/**
+ * 구독 기간 상태
+ */
+export type SubscriptionPeriodStatus =
+  | "active"
+  | "completed"
+  | "failed"
+  | "refunded";
+
+/**
+ * 구독 플랜 정보
+ */
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string | null;
+  content: string | null;
+  priceUsd: string;
+  monthlyQuota: string;
+  refillAmount: string;
+  refillIntervalHours: number;
+  maxRefillCount: number; // maxRefillBalance → maxRefillCount 변경
+  rolloverEnabled: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * 구독 정보 (UserSubscription → Subscription으로 이름 변경)
+ */
+export interface Subscription {
+  id: string;
+  userId: string;
+  planId: string;
+  walletId: string;
+  status: SubscriptionStatus;
+  startedAt: Date;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  canceledAt: Date | null;
+  expiredAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 하위 호환성을 위한 별칭
+export type UserSubscription = Subscription;
+
+/**
+ * 구독 기간 정보
+ */
+export interface SubscriptionPeriod {
+  id: string;
+  subscriptionId: string;
+  planId: string;
+  periodStart: Date;
+  periodEnd: Date;
+  status: SubscriptionPeriodStatus;
+  periodType: string;
+  creditsGranted: string | null;
+  refillCount: number;
+  lastRefillAt: Date | null;
+  invoiceId: string | null;
+  amountPaid: string | null;
+  metadata: string | null;
+  createdAt: Date;
+}
+
+/**
+ * 구독 정기 충전 이력
+ */
+export interface SubscriptionRefill {
+  id: string;
+  subscriptionId: string;
+  walletId: string;
+  refillAmount: string;
+  balanceBefore: string;
+  balanceAfter: string;
+  createdAt: Date;
+}
+
+/**
+ * 구독 생성 파라미터 스키마
+ */
+export const createSubscriptionSchema = z.object({
+  userId: z.string(),
+  planId: z.string().uuid(),
+});
+
+export type CreateSubscriptionParams = z.infer<typeof createSubscriptionSchema>;
+
+/**
+ * 구독 생성 응답
+ */
+export interface CreateSubscriptionResponse {
+  success: true;
+  subscriptionId: string;
+  walletId: string;
+  initialCredits: string;
+}
+
+/**
+ * 구독 갱신 파라미터
+ */
+export const renewSubscriptionSchema = z.object({
+  subscriptionId: z.string().uuid(),
+});
+
+export type RenewSubscriptionParams = z.infer<typeof renewSubscriptionSchema>;
+
+/**
+ * 구독 갱신 응답
+ */
+export interface RenewSubscriptionResponse {
+  success: true;
+  newPeriodStart: Date;
+  newPeriodEnd: Date;
+  creditsGranted: string;
+  newBalance: string;
+}
+
+/**
+ * 정기 충전 체크 파라미터
+ */
+export const checkRefillSchema = z.object({
+  userId: z.string(),
+});
+
+export type CheckRefillParams = z.infer<typeof checkRefillSchema>;
+
+/**
+ * 정기 충전 응답
+ */
+export interface CheckRefillResponse {
+  refilled: boolean;
+  refillAmount?: string;
+  newBalance?: string;
+  nextRefillAt?: Date;
+}
+
+/**
+ * 구독 취소 파라미터
+ */
+export const cancelSubscriptionSchema = z.object({
+  subscriptionId: z.string().uuid(),
+});
+
+export type CancelSubscriptionParams = z.infer<typeof cancelSubscriptionSchema>;
+
+/**
+ * 구독 취소 응답
+ */
+export interface CancelSubscriptionResponse {
+  success: true;
+  canceledAt: Date;
+  validUntil: Date;
+}
+
+/**
+ * 구독 플랜 생성 스키마
+ */
+export const createSubscriptionPlanSchema = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string().optional(),
+  content: z.string().optional(),
+  priceUsd: z.string(),
+  monthlyQuota: z.string(),
+  refillAmount: z.string(),
+  refillIntervalHours: z.number().int().positive(),
+  maxRefillCount: z.number().int().nonnegative(), // maxRefillBalance → maxRefillCount
+  rolloverEnabled: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+});
+
+export type CreateSubscriptionPlan = z.infer<
+  typeof createSubscriptionPlanSchema
+>;
+
+/**
+ * 플랜 업그레이드 파라미터
+ */
+export const upgradeSubscriptionSchema = z.object({
+  userId: z.string(),
+  newPlanId: z.string().uuid(),
+});
+
+export type UpgradeSubscriptionParams = z.infer<
+  typeof upgradeSubscriptionSchema
+>;
+
+/**
+ * 플랜 업그레이드 응답
+ */
+export interface UpgradeSubscriptionResponse {
+  success: true;
+  subscriptionId: string;
+  newPlanId: string;
+  creditAdjustment: string; // 양수면 추가, 음수면 차감
+  newBalance: string;
+}

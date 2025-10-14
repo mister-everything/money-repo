@@ -26,11 +26,25 @@ export const CacheKeys = {
   idempotency: (key: string) => `idemp:${key}`,
 
   /**
-   * 사용자별 최근 사용 내역 캐시
+   * 구독 정보 캐시
    * @param userId - 사용자 UUID
-   * @returns Redis key: usage:{userId}:recent
+   * @returns Redis key: subscription:{userId}
    */
-  recentUsages: (userId: string) => `usage:${userId}:recent`,
+  subscription: (userId: string) => `subscription:${userId}`,
+
+  /**
+   * 구독 플랜 캐시
+   * @param planId - 플랜 UUID
+   * @returns Redis key: plan:{planId}
+   */
+  subscriptionPlan: (planId: string) => `plan:${planId}`,
+
+  /**
+   * 정기 충전 잠금 (중복 충전 방지)
+   * @param userId - 사용자 UUID
+   * @returns Redis key: refill:lock:{userId}
+   */
+  refillLock: (userId: string) => `refill:lock:${userId}`,
 } as const;
 
 /**
@@ -47,6 +61,12 @@ export const CacheTTL = {
   /** 멱등성 키 - 24시간 (하루 동안 중복 방지) */
   IDEMPOTENCY: 86400,
 
-  /** 최근 사용 내역 - 5분 */
-  RECENT_USAGES: 300,
+  /** 구독 정보 캐시 - 10분 */
+  SUBSCRIPTION: 600,
+
+  /** 구독 플랜 캐시 - 1시간 (플랜 정보는 자주 변경되지 않음) */
+  SUBSCRIPTION_PLAN: 3600,
+
+  /** 정기 충전 잠금 - 1분 (충전 중복 방지) */
+  REFILL_LOCK: 60,
 } as const;
