@@ -79,3 +79,7 @@ export const createProbBlockSchema = z.object({
   answer: allAnswerSchemas,
 });
 export type CreateProbBlock = z.infer<typeof createProbBlockSchema>;
+
+export type SubmitProbBookResponse = {
+  score: number;
+};

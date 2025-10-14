@@ -1,6 +1,7 @@
 import { userTable } from "@service/auth";
 import { eq, inArray, sql } from "drizzle-orm";
 import { pgDb } from "../db";
+import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
   probBlocksTable,
   probBooksTable,
@@ -15,6 +16,7 @@ import {
   ProbBlock,
   ProbBook,
   ProbBookWithoutBlocks,
+  SubmitProbBookResponse,
 } from "./types";
 
 export const probService = {
@@ -257,5 +259,42 @@ export const probService = {
    */
   deleteProbBlock: async (id: string): Promise<void> => {
     await pgDb.delete(probBlocksTable).where(eq(probBlocksTable.id, id));
+  },
+
+  /**
+   * 문제집 답안 제출
+   * @param probBookId 문제집 ID
+   * @param answer 답안
+   * @returns 제출 결과
+   */
+  submitProbBook: async (
+    probBookId: string,
+    answer: Record<string, BlockAnswerSubmit>,
+    userId: string,
+  ): Promise<SubmitProbBookResponse> => {
+    let score = 0;
+    const probBook = await pgDb
+      .select()
+      .from(probBlocksTable)
+      .where(eq(probBlocksTable.probBookId, probBookId));
+    probBook.map((block) => {
+      const correctAnswer = block.answer;
+      const submittedAnswer = answer[block.id];
+      console.log(correctAnswer, submittedAnswer);
+      console.log(
+        All_BLOCKS[block.type].checkAnswer(correctAnswer, submittedAnswer),
+      );
+      if (All_BLOCKS[block.type].checkAnswer(correctAnswer, submittedAnswer)) {
+        score++;
+      }
+    });
+    // await pgDb.insert(probBookSubmitsTable).values({
+    //   probBookId,
+    //   answer,
+    //   userId,
+    // });
+    return {
+      score: Math.round((score / probBook.length) * 100),
+    };
   },
 };

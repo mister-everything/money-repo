@@ -107,7 +107,7 @@ export const ProblemOptions = <T extends BlockType>({
     }
 
     if (isOxContent && isAnswer.ox(submitted)) {
-      const value = submitted.answer;
+      const value = submitted;
       setOxAnswer(value === "o" || value === "x" ? value : null);
     } else {
       setOxAnswer(null);

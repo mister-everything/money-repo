@@ -1,5 +1,4 @@
 "use client";
-
 import { BlockAnswerSubmit, ProbBook } from "@service/solves/shared";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { fetcher } from "@/lib/fetcher";
 import { ProblemBlock } from "./problem-block";
 
 interface ProblemBookProps {
@@ -35,7 +35,18 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
       console.log("제출된 답안:", answers);
     }
     // 여기에 제출 로직 추가
-    alert("답안이 제출되었습니다! (콘솔 확인)");
+    fetcher(`/api/prob/${probBook.id}/submit`, {
+      method: "POST",
+      body: JSON.stringify({
+        answer: answers,
+      }),
+    })
+      .then((response) => {
+        alert(`답안이 제출되었슬니다! 점수: ${response?.data?.score ?? 0}`);
+      })
+      .catch((error) => {
+        alert("답안 제출 중 오류가 발생했습니다.");
+      });
   };
 
   return (
