@@ -1,6 +1,6 @@
-import { createCache } from "@workspace/cache";
 import { and, eq, sql } from "drizzle-orm";
 import { pgDb } from "../db";
+import { cache } from "./cache";
 import { CacheKeys, CacheTTL } from "./cache-keys";
 import { creditService } from "./credit.service";
 import {
@@ -20,9 +20,6 @@ import type {
 } from "./types";
 import { DistributedLock, IdempotencyKeys, toDecimal } from "./utils";
 import { walletService } from "./wallet.service";
-
-// 캐시 인스턴스
-const cache = createCache({ forceMemory: true });
 
 /**
  * Subscription Service
