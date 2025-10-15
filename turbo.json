@@ -15,6 +15,9 @@
     "check-types": {
       "dependsOn": ["^check-types"]
     },
+    "check": {
+      "dependsOn": ["^check"]
+    },
     "test": {
       "dependsOn": ["^test"]
     },
@@ -24,10 +27,15 @@
     "test:e2e": {
       "dependsOn": ["^test:e2e"]
     },
+    "db:seed": {
+      "cache": false,
+      "dependsOn": ["^db:seed"]
+    },
     "test:ui": {
       "dependsOn": ["^test:ui"]
     },
     "db:migrate": {
+      "cache": false,
       "dependsOn": ["^db:migrate"]
     },
     "dev": {

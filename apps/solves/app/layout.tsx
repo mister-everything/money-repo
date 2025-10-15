@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@workspace/env";
 import { ThemeProvider } from "next-themes";
+import { SwrProvider } from "@/components/swr-provider";
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -29,7 +30,9 @@ export default function RootLayout({
           themes={["light", "dark"]}
           disableTransitionOnChange
         >
-          <div id="root">{children}</div>
+          <SwrProvider>
+            <div id="root">{children}</div>
+          </SwrProvider>
         </ThemeProvider>
       </body>
     </html>
