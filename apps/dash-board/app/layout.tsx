@@ -28,7 +28,9 @@ export default function RootLayout({
           themes={["light", "dark"]}
           disableTransitionOnChange
         >
-          <main className="flex flex-1 flex-col gap-4 ">{children}</main>
+          <main className="flex flex-1 flex-col gap-4" id="root">
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>
