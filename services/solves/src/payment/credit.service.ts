@@ -269,7 +269,7 @@ export const creditService = {
         CacheTTL.WALLET_BALANCE,
         result.newBalance,
       ),
-      // 5-2) 멱등성 키 저장 (24시간)
+      // 5-2) 멱등성 키 저장
       sharedCache.setex(
         CacheKeys.idempotency(idempotencyKey),
         CacheTTL.IDEMPOTENCY,

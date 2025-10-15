@@ -58,8 +58,8 @@ export const CacheTTL = {
   /** AI 가격표 캐시 - 1시간 (가격이 자주 변경되지 않음) */
   AI_PRICE: 3600,
 
-  /** 멱등성 키 - 24시간 (하루 동안 중복 방지) */
-  IDEMPOTENCY: 86400,
+  /** 멱등성 키 - 10분 */
+  IDEMPOTENCY: 600,
 
   /** 구독 정보 캐시 - 10분 */
   SUBSCRIPTION: 600,

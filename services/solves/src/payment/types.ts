@@ -19,7 +19,7 @@ export interface AIPrice {
  * 크레딧 차감 파라미터 스키마
  */
 export const deductCreditSchema = z.object({
-  walletId: z.string().uuid(),
+  walletId: z.uuid(),
   userId: z.string(),
   provider: z.string(),
   model: z.string(),
@@ -36,10 +36,10 @@ export type DeductCreditParams = z.infer<typeof deductCreditSchema>;
  * 크레딧 충전 파라미터 스키마
  */
 export const creditPurchaseSchema = z.object({
-  walletId: z.string().uuid(),
+  walletId: z.uuid(),
   userId: z.string(),
   creditAmount: z.number().positive(),
-  invoiceId: z.string().uuid(),
+  invoiceId: z.uuid(),
   idempotencyKey: z.string(),
 });
 
@@ -192,7 +192,7 @@ export type CreateAIPrice = z.infer<typeof createAIPriceSchema>;
  */
 export const createInvoiceSchema = z.object({
   userId: z.string(),
-  walletId: z.string().uuid(),
+  walletId: z.uuid(),
   title: z.string(),
   amountUsd: z.string(),
   purchasedCredits: z.string(),
@@ -295,7 +295,7 @@ export interface SubscriptionRefill {
  */
 export const createSubscriptionSchema = z.object({
   userId: z.string(),
-  planId: z.string().uuid(),
+  planId: z.uuid(),
 });
 
 export type CreateSubscriptionParams = z.infer<typeof createSubscriptionSchema>;
@@ -314,7 +314,7 @@ export interface CreateSubscriptionResponse {
  * 구독 갱신 파라미터
  */
 export const renewSubscriptionSchema = z.object({
-  subscriptionId: z.string().uuid(),
+  subscriptionId: z.uuid(),
 });
 
 export type RenewSubscriptionParams = z.infer<typeof renewSubscriptionSchema>;
@@ -353,7 +353,7 @@ export interface CheckRefillResponse {
  * 구독 취소 파라미터
  */
 export const cancelSubscriptionSchema = z.object({
-  subscriptionId: z.string().uuid(),
+  subscriptionId: z.uuid(),
 });
 
 export type CancelSubscriptionParams = z.infer<typeof cancelSubscriptionSchema>;
@@ -393,7 +393,7 @@ export type CreateSubscriptionPlan = z.infer<
  */
 export const upgradeSubscriptionSchema = z.object({
   userId: z.string(),
-  newPlanId: z.string().uuid(),
+  newPlanId: z.uuid(),
 });
 
 export type UpgradeSubscriptionParams = z.infer<
