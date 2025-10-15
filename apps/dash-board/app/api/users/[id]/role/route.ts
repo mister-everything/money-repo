@@ -1,4 +1,5 @@
-import { RoleSchema, userService } from "@service/auth";
+import { userService } from "@service/auth";
+import { RoleSchema } from "@service/auth/shared";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(

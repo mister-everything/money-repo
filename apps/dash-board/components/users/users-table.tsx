@@ -1,7 +1,9 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { mutate } from "swr";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,14 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -25,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { notify } from "@/components/ui/notify";
 import {
   Select,
   SelectContent,
@@ -32,9 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { notify } from "@/components/ui/notify";
-import { MoreVertical, Trash2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface User {
   id: string;
@@ -97,9 +97,7 @@ export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
       notify.alert({
         title: "Update Failed",
         description:
-          error instanceof Error
-            ? error.message
-            : "Failed to update role.",
+          error instanceof Error ? error.message : "Failed to update role.",
       });
     }
   };
@@ -130,9 +128,7 @@ export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
       notify.alert({
         title: "Delete Failed",
         description:
-          error instanceof Error
-            ? error.message
-            : "Failed to delete user.",
+          error instanceof Error ? error.message : "Failed to delete user.",
       });
     }
   };
@@ -145,7 +141,8 @@ export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
             No users registered
           </h3>
           <p className="text-gray-400">
-            There are no registered users yet. New users will appear here when they sign up.
+            There are no registered users yet. New users will appear here when
+            they sign up.
           </p>
         </CardContent>
       </Card>
@@ -158,7 +155,8 @@ export const UsersTable = ({ users, onRefresh }: UsersTableProps) => {
         <CardHeader>
           <CardTitle className="text-white">User Management</CardTitle>
           <CardDescription className="text-gray-400">
-            Manage and view registered users. Click the action button next to each role to edit or delete users.
+            Manage and view registered users. Click the action button next to
+            each role to edit or delete users.
           </CardDescription>
         </CardHeader>
         <CardContent>
