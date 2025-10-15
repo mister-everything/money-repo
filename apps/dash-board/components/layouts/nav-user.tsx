@@ -1,6 +1,7 @@
 "use client";
 
 import { LogOutIcon, MoreHorizontalIcon } from "lucide-react";
+import { useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -28,6 +29,12 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+
+  const handleSignOut = useCallback(() => {
+    authClient.signOut().finally(() => {
+      window.location.href = "/sign-in";
+    });
+  }, []);
 
   return (
     <SidebarMenu>
@@ -76,7 +83,7 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => authClient.signOut()}>
+            <DropdownMenuItem onClick={handleSignOut}>
               <LogOutIcon />
               Log out
             </DropdownMenuItem>
