@@ -1,10 +1,6 @@
-import "@workspace/env";
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/layouts/app-sidebar";
+import { SiteHeader } from "@/components/layouts/site-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function DashBoardLayout({
   children,
@@ -13,13 +9,22 @@ export default function DashBoardLayout({
 }>) {
   return (
     <div>
-      <SidebarProvider>
-        <AppSidebar />
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar variant="inset" />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-          </header>
-          <main className="flex flex-1 flex-col gap-4 p-4">{children}</main>
+          <SiteHeader />
+          <main className="flex flex-1 flex-col">
+            <div className="@container/main flex flex-1 flex-col gap-2 p-6">
+              {children}
+            </div>
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </div>

@@ -1,6 +1,3 @@
-import { redirect } from "next/navigation";
-
 export default async function Home() {
-  redirect("/users");
-  return null;
+  return <div>메인 화면 미정</div>;
 }
