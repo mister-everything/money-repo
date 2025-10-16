@@ -44,9 +44,9 @@ export const seedPrices = async () => {
       provider: "openai",
       model: "gpt-4o",
       modelType: "text",
-      inputTokenPrice: "0.00250000", // $2.50 per 1M tokens
-      outputTokenPrice: "0.01000000", // $10.00 per 1M tokens
-      cachedTokenPrice: "0.00125000", // $1.25 per 1M tokens (50% discount)
+      inputTokenPrice: "3250.00", // 3250원 per 1M tokens
+      outputTokenPrice: "13000.00", // 13000원 per 1M tokens
+      cachedTokenPrice: "1625.00", // 1625원 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -54,9 +54,9 @@ export const seedPrices = async () => {
       provider: "openai",
       model: "gpt-4o-mini",
       modelType: "text",
-      inputTokenPrice: "0.00015000", // $0.15 per 1M tokens
-      outputTokenPrice: "0.00060000", // $0.60 per 1M tokens
-      cachedTokenPrice: "0.00007500", // $0.075 per 1M tokens (50% discount)
+      inputTokenPrice: "195.00", // 195원 per 1M tokens
+      outputTokenPrice: "780.00", // 780원 per 1M tokens
+      cachedTokenPrice: "97.50", // 97.5원 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -64,9 +64,9 @@ export const seedPrices = async () => {
       provider: "openai",
       model: "gpt-4-turbo",
       modelType: "text",
-      inputTokenPrice: "0.01000000", // $10.00 per 1M tokens
-      outputTokenPrice: "0.03000000", // $30.00 per 1M tokens
-      cachedTokenPrice: "0.00500000", // $5.00 per 1M tokens (50% discount)
+      inputTokenPrice: "13000.00", // 13000원 per 1M tokens
+      outputTokenPrice: "39000.00", // 39000원 per 1M tokens
+      cachedTokenPrice: "6500.00", // 6500원 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -76,9 +76,9 @@ export const seedPrices = async () => {
       provider: "anthropic",
       model: "claude-3-5-sonnet-20241022",
       modelType: "text",
-      inputTokenPrice: "0.00300000", // $3.00 per 1M tokens
-      outputTokenPrice: "0.01500000", // $15.00 per 1M tokens
-      cachedTokenPrice: "0.00030000", // $0.30 per 1M tokens (90% discount)
+      inputTokenPrice: "3900.00", // 3900원 per 1M tokens
+      outputTokenPrice: "19500.00", // 19500원 per 1M tokens
+      cachedTokenPrice: "390.00", // 390원 per 1M tokens (90% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -86,9 +86,9 @@ export const seedPrices = async () => {
       provider: "anthropic",
       model: "claude-3-5-haiku-20241022",
       modelType: "text",
-      inputTokenPrice: "0.00100000", // $1.00 per 1M tokens
-      outputTokenPrice: "0.00500000", // $5.00 per 1M tokens
-      cachedTokenPrice: "0.00010000", // $0.10 per 1M tokens (90% discount)
+      inputTokenPrice: "1300.00", // 1300원 per 1M tokens
+      outputTokenPrice: "6500.00", // 6500원 per 1M tokens
+      cachedTokenPrice: "130.00", // 130원 per 1M tokens (90% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -96,9 +96,9 @@ export const seedPrices = async () => {
       provider: "anthropic",
       model: "claude-3-opus-20240229",
       modelType: "text",
-      inputTokenPrice: "0.01500000", // $15.00 per 1M tokens
-      outputTokenPrice: "0.07500000", // $75.00 per 1M tokens
-      cachedTokenPrice: "0.00150000", // $1.50 per 1M tokens (90% discount)
+      inputTokenPrice: "19500.00", // 19500원 per 1M tokens
+      outputTokenPrice: "97500.00", // 97500원 per 1M tokens
+      cachedTokenPrice: "1950.00", // 1950원 per 1M tokens (90% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -108,9 +108,9 @@ export const seedPrices = async () => {
       provider: "google",
       model: "gemini-1.5-pro",
       modelType: "text",
-      inputTokenPrice: "0.00125000", // $1.25 per 1M tokens
-      outputTokenPrice: "0.00500000", // $5.00 per 1M tokens
-      cachedTokenPrice: "0.00062500", // $0.625 per 1M tokens (50% discount)
+      inputTokenPrice: "1625.00", // 1625원 per 1M tokens
+      outputTokenPrice: "6500.00", // 6500원 per 1M tokens
+      cachedTokenPrice: "812.50", // 812.5원 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -118,9 +118,9 @@ export const seedPrices = async () => {
       provider: "google",
       model: "gemini-1.5-flash",
       modelType: "text",
-      inputTokenPrice: "0.00007500", // $0.075 per 1M tokens
-      outputTokenPrice: "0.00030000", // $0.30 per 1M tokens
-      cachedTokenPrice: "0.00003750", // $0.0375 per 1M tokens (50% discount)
+      inputTokenPrice: "97.50", // 97.5원 per 1M tokens
+      outputTokenPrice: "390.00", // 390원 per 1M tokens
+      cachedTokenPrice: "48.75", // 48.75원 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -128,9 +128,9 @@ export const seedPrices = async () => {
       provider: "google",
       model: "gemini-2.0-flash-exp",
       modelType: "text",
-      inputTokenPrice: "0.00000000", // Free during preview
-      outputTokenPrice: "0.00000000",
-      cachedTokenPrice: "0.00000000",
+      inputTokenPrice: "0.00", // 무료 프리뷰
+      outputTokenPrice: "0.00",
+      cachedTokenPrice: "0.00",
       markupRate: "1.60",
       isActive: true,
     },
@@ -140,9 +140,9 @@ export const seedPrices = async () => {
       provider: "xai",
       model: "grok-beta",
       modelType: "text",
-      inputTokenPrice: "0.00500000", // $5.00 per 1M tokens
-      outputTokenPrice: "0.01500000", // $15.00 per 1M tokens
-      cachedTokenPrice: "0.00250000", // $2.50 per 1M tokens (50% discount)
+      inputTokenPrice: "6500.00", // 6500원 per 1M tokens
+      outputTokenPrice: "19500.00", // 19500원 per 1M tokens
+      cachedTokenPrice: "3250.00", // 3250원 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -161,7 +161,7 @@ export const seedPrices = async () => {
     console.log("\n📊 Price Summary:");
     for (const price of inserted) {
       console.log(
-        `  ${price.provider}/${price.model}: $${price.inputTokenPrice}/1M in, $${price.outputTokenPrice}/1M out (${Number(price.markupRate) * 100 - 100}% markup)`,
+        `  ${price.provider}/${price.model}: ${price.inputTokenPrice}원/1M in, ${price.outputTokenPrice}원/1M out (${Number(price.markupRate) * 100 - 100}% markup)`,
       );
     }
   }

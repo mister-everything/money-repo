@@ -15,7 +15,6 @@ import type {
   CheckRefillResponse,
   CreateSubscriptionResponse,
   RenewSubscriptionResponse,
-  Subscription,
   SubscriptionPlan,
 } from "./types";
 import { DistributedLock, IdempotencyKeys, toDecimal } from "./utils";
@@ -31,14 +30,9 @@ import { walletService } from "./wallet.service";
  */
 export const subscriptionService = {
   /**
-   * 구독 플랜 조회 (Cache 우선)
+   * 구독 플랜 조회 (DB 직접 조회) - 어드민용
    */
   getPlan: async (planId: string): Promise<SubscriptionPlan> => {
-    const cached = await sharedCache.get(CacheKeys.subscriptionPlan(planId));
-    if (cached) {
-      return JSON.parse(cached);
-    }
-
     const [plan] = await pgDb
       .select()
       .from(SubscriptionPlansTable)
@@ -49,21 +43,13 @@ export const subscriptionService = {
       throw new Error(`플랜을 찾을 수 없습니다: ${planId}`);
     }
 
-    await sharedCache.setex(
-      CacheKeys.subscriptionPlan(planId),
-      CacheTTL.SUBSCRIPTION_PLAN,
-      JSON.stringify(plan),
-    );
-
     return plan as SubscriptionPlan;
   },
 
   /**
    * 사용자의 활성 구독 조회
    */
-  getActiveSubscription: async (
-    userId: string,
-  ): Promise<Subscription | null> => {
+  getActiveSubscription: async (userId: string): Promise<any | null> => {
     const cached = await sharedCache.get(CacheKeys.subscription(userId));
     if (cached) {
       return JSON.parse(cached);
@@ -90,7 +76,7 @@ export const subscriptionService = {
       JSON.stringify(subscription),
     );
 
-    return subscription as Subscription;
+    return subscription as any;
   },
 
   /**
@@ -185,6 +171,7 @@ export const subscriptionService = {
       // 3-6) 원장 기록
       await tx.insert(CreditLedgerTable).values({
         walletId: wallet.id,
+        userId,
         kind: "subscription_grant",
         delta: toDecimal(monthlyQuota),
         runningBalance: toDecimal(newBalance),
@@ -239,7 +226,7 @@ export const subscriptionService = {
         return { refilled: false };
       }
 
-      // 3) 플랜 정보 조회
+      // 3) 플랜 정보 조회 (캐시 사용)
       const plan = await subscriptionService.getPlan(subscription.planId);
 
       // 4) 현재 기간 조회
@@ -327,6 +314,7 @@ export const subscriptionService = {
 
         await tx.insert(CreditLedgerTable).values({
           walletId: subscription.walletId,
+          userId,
           kind: "subscription_refill",
           delta: toDecimal(refillAmount),
           runningBalance: toDecimal(newBalance),
@@ -370,8 +358,7 @@ export const subscriptionService = {
   },
 
   /**
-   * 구독 갱신 (매월 자동 호출)
-   * - rolloverEnabled에 따라 이월 또는 리셋
+   * 구독 갱신
    * - 기존 Period 완료 처리, 새 Period 생성
    */
   renewSubscription: async (
@@ -407,7 +394,7 @@ export const subscriptionService = {
         throw new Error("활성 구독이 아닙니다.");
       }
 
-      // 2) 플랜 정보 조회
+      // 2) 플랜 정보 조회 (캐시 사용)
       const plan = await subscriptionService.getPlan(subscription.planId);
 
       // 3) 현재 기간 완료 처리
@@ -449,44 +436,31 @@ export const subscriptionService = {
         newPeriodStart,
       );
 
-      if (plan.rolloverEnabled) {
-        // 5-1) 이월 활성화: 기존 잔액 + 월간 크레딧
-        newBalance = oldBalance + monthlyQuota;
-        creditsGranted = toDecimal(monthlyQuota);
-
+      // 5) 월간 크레딧 지급 (이월 비활성화: 기존 잔액 리셋)
+      if (oldBalance > 0) {
         await tx.insert(CreditLedgerTable).values({
           walletId: subscription.walletId,
-          kind: "subscription_grant",
-          delta: toDecimal(monthlyQuota),
-          runningBalance: toDecimal(newBalance),
-          idempotencyKey,
-          reason: `월간 구독 갱신 (이월 + 새 크레딧)`,
-        });
-      } else {
-        // 5-2) 이월 비활성화: 기존 잔액 리셋
-        if (oldBalance > 0) {
-          await tx.insert(CreditLedgerTable).values({
-            walletId: subscription.walletId,
-            kind: "subscription_reset",
-            delta: toDecimal(-oldBalance),
-            runningBalance: "0",
-            idempotencyKey: `reset:${idempotencyKey}`,
-            reason: "월간 갱신 시 잔액 리셋 (미사용 크레딧 소멸)",
-          });
-        }
-
-        newBalance = monthlyQuota;
-        creditsGranted = toDecimal(monthlyQuota);
-
-        await tx.insert(CreditLedgerTable).values({
-          walletId: subscription.walletId,
-          kind: "subscription_grant",
-          delta: toDecimal(monthlyQuota),
-          runningBalance: toDecimal(newBalance),
-          idempotencyKey,
-          reason: "월간 구독 갱신 (새 크레딧)",
+          userId: subscription.userId,
+          kind: "subscription_reset",
+          delta: toDecimal(-oldBalance),
+          runningBalance: "0",
+          idempotencyKey: `reset:${idempotencyKey}`,
+          reason: "월간 갱신 시 잔액 리셋 (미사용 크레딧 소멸)",
         });
       }
+
+      newBalance = monthlyQuota;
+      creditsGranted = toDecimal(monthlyQuota);
+
+      await tx.insert(CreditLedgerTable).values({
+        walletId: subscription.walletId,
+        userId: subscription.userId,
+        kind: "subscription_grant",
+        delta: toDecimal(monthlyQuota),
+        runningBalance: toDecimal(newBalance),
+        idempotencyKey,
+        reason: "월간 구독 갱신 (새 크레딧)",
+      });
 
       // 6) 지갑 업데이트
       await tx

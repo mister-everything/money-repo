@@ -167,7 +167,7 @@ export const creditService = {
       model,
       inputTokens,
       outputTokens,
-      cachedTokens = 0,
+
       calls = 0,
       idempotencyKey,
     } = params;
@@ -184,11 +184,13 @@ export const creditService = {
     const price = await creditService.getAIPrice(provider, model);
 
     // 3) 비용 계산
-    const { vendorCostUsd, billableCredits } =
-      PriceCalculator.calculateCreditsFromTokens(price, {
+    const { billableCredits } = PriceCalculator.calculateCreditsFromTokens(
+      price,
+      {
         input: inputTokens,
         output: outputTokens,
-      });
+      },
+    );
 
     // 4) DB 트랜잭션 (FOR UPDATE로 충분)
     const result = await pgDb.transaction(async (tx) => {
@@ -226,6 +228,7 @@ export const creditService = {
       // 4-3) 원장 기록
       await tx.insert(CreditLedgerTable).values({
         walletId,
+        userId,
         kind: "debit",
         delta: toDecimal(-billableCredits),
         runningBalance: toDecimal(newBalance),
@@ -238,15 +241,10 @@ export const creditService = {
         .insert(UsageEventsTable)
         .values({
           userId,
-          walletId,
           priceId: price.id,
           provider,
           model,
-          inputTokens,
-          outputTokens,
-          cachedTokens,
           calls,
-          vendorCostUsd: toDecimal(vendorCostUsd),
           billableCredits: toDecimal(billableCredits),
           idempotencyKey,
         })
@@ -289,7 +287,8 @@ export const creditService = {
   creditPurchase: async (
     params: CreditPurchaseParams,
   ): Promise<CreditPurchaseResponse> => {
-    const { walletId, creditAmount, invoiceId, idempotencyKey } = params;
+    const { walletId, userId, creditAmount, invoiceId, idempotencyKey } =
+      params;
 
     // 1) 멱등성 체크
     const cached = await sharedCache.get(CacheKeys.idempotency(idempotencyKey));
@@ -327,6 +326,7 @@ export const creditService = {
       // 2-3) 원장 기록
       await tx.insert(CreditLedgerTable).values({
         walletId,
+        userId,
         kind: "purchase",
         delta: toDecimal(creditAmount),
         runningBalance: toDecimal(newBalance),

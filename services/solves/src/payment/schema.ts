@@ -6,12 +6,14 @@ import {
   numeric as decimal,
   index,
   integer,
+  jsonb,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { solvesSchema } from "../prob/schema";
+import { PlanContentBlock, TxnKind } from "./types";
 
 const timestamps = {
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -19,7 +21,6 @@ const timestamps = {
     .notNull()
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date()),
-  deletedAt: timestamp("deleted_at"),
 };
 
 /**
@@ -55,26 +56,26 @@ export const AiProviderPricesTable = solvesSchema.table(
      */
     modelType: text("model_type").notNull(),
 
-    /** 입력 토큰 단가 (USD, 1M 토큰 기준)
-     *  eg: "0.00150000" ($1.50 per 1M tokens)
+    /** 입력 토큰 단가 (원화, 1M 토큰 기준)
+     *  eg: "1950.00" (1950원 per 1M tokens)
      */
     inputTokenPrice: decimal("input_token_price", {
       precision: 12,
       scale: 8,
     }).notNull(),
 
-    /** 출력 토큰 단가 (USD, 1M 토큰 기준)
-     *  eg: "0.00600000" ($6.00 per 1M tokens)
+    /** 출력 토큰 단가 (원화, 1M 토큰 기준)
+     *  eg: "7800.00" (7800원 per 1M tokens)
      */
     outputTokenPrice: decimal("output_token_price", {
       precision: 12,
       scale: 8,
     }).notNull(),
 
-    /** 캐시 토큰 단가 (USD, 1M 토큰 기준)
+    /** 캐시 토큰 단가 (원화, 1M 토큰 기준)
      *  프롬프트 캐싱 사용 시 할인된 가격
      *  일반적으로 입력 토큰의 10-50% 수준
-     *  eg: "0.00075000" (입력 토큰 50% 할인)
+     *  eg: "975.00" (입력 토큰 50% 할인)
      */
     cachedTokenPrice: decimal("cached_token_price", {
       precision: 12,
@@ -93,8 +94,8 @@ export const AiProviderPricesTable = solvesSchema.table(
      *  eg: true, false
      */
     isActive: boolean("is_active").notNull().default(true),
-
     ...timestamps,
+    deletedAt: timestamp("deleted_at"),
   },
   (t) => [
     /** 가격 조회 최적화 (provider + model 조합으로 조회) */
@@ -153,7 +154,6 @@ export const CreditWalletTable = solvesSchema.table(
      *  eg: 0 → 1 → 2 → ...
      */
     version: integer("version").notNull().default(0),
-
     ...timestamps,
   },
   (t) => [
@@ -174,16 +174,6 @@ export const CreditWalletTable = solvesSchema.table(
  * 목적: 모든 크레딧 변동 기록 (append-only, 불변)
  * 패턴: Event Sourcing - 지갑 잔액의 신뢰할 수 있는 출처
  *
- * 트랜잭션 종류 (kind):
- * - "purchase": 결제 충전 (Invoice 확정)
- * - "grant": 이벤트/프로모션/관리자 지급
- * - "debit": AI 사용 차감
- * - "refund": 환불 (크레딧 복원)
- * - "adjustment": 수동 조정
- * - "subscription_grant": 구독 시작/갱신 시 크레딧 지급
- * - "subscription_refill": 정기 자동 충전
- * - "subscription_reset": 월간 갱신 시 잔액 리셋 (rollover=false)
- *
  * 멱등성 보장:
  * - uniqueIndex(walletId, idempotencyKey)로 중복 방지
  * - 캐시 실패 시에도 DB 레벨에서 보장
@@ -200,18 +190,16 @@ export const CreditLedgerTable = solvesSchema.table(
      */
     id: uuid("id").primaryKey().defaultRandom(),
 
-    /** 지갑 ID
-     *  FK: CreditWalletTable.id (cascade delete)
-     *  eg: "wallet_xyz123..."
-     */
     walletId: uuid("wallet_id")
       .notNull()
-      .references(() => CreditWalletTable.id, { onDelete: "cascade" }),
-
+      .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "restrict" }),
     /** 트랜잭션 종류
      *  eg: "purchase", "debit", "subscription_refill"
      */
-    kind: text("kind").notNull(),
+    kind: text("kind").$type<TxnKind>().notNull(),
 
     /** 증감 크레딧
      *  양수: 적립 (purchase, grant, refill)
@@ -244,9 +232,10 @@ export const CreditLedgerTable = solvesSchema.table(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
-    /** 지갑별 타임라인 조회 최적화 (최근 거래 내역) */
-    index("credit_ledger_wallet_created_idx").on(t.walletId, t.createdAt),
-
+    /** 트랜잭션 종류별 조회 최적화 */
+    index("credit_ledger_kind_created_idx").on(t.kind, t.createdAt),
+    /** 사용자별 거래 내역 조회 */
+    index("credit_ledger_user_idx").on(t.userId),
     /** 멱등성 보장 (지갑당 중복 키 방지) */
     uniqueIndex("credit_ledger_wallet_idemp_uniq").on(
       t.walletId,
@@ -292,16 +281,6 @@ export const UsageEventsTable = solvesSchema.table(
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "restrict" }),
-
-    /** 지갑 ID (크레딧 차감 대상)
-     *  개인/팀 지갑 모두 가능
-     *  FK: CreditWalletTable.id (restrict - 사용 기록 보존)
-     *  eg: "wallet_xyz789..."
-     */
-    walletId: uuid("wallet_id")
-      .notNull()
-      .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
-
     /** 가격 정보 ID
      *  사용 시점의 가격 스냅샷 참조
      *  FK: AiProviderPricesTable.id (restrict)
@@ -323,39 +302,11 @@ export const UsageEventsTable = solvesSchema.table(
      */
     model: text("model").notNull(),
 
-    /** 입력 토큰 수
-     *  단위: 개별 토큰 (1k 아님)
-     *  eg: 3000, 15000
-     */
-    inputTokens: integer("input_tokens"),
-
-    /** 출력 토큰 수
-     *  단위: 개별 토큰
-     *  eg: 1200, 8000
-     */
-    outputTokens: integer("output_tokens"),
-
-    /** 캐시된 토큰 수
-     *  프롬프트 캐싱으로 할인받은 토큰
-     *  eg: 1000, 5000
-     */
-    cachedTokens: integer("cached_tokens"),
-
     /** API 호출 횟수
      *  이미지/오디오 등 per-request 과금용
      *  eg: 1, 5
      */
     calls: integer("calls"),
-
-    /** 공급자 원가 (비정규화)
-     *  당시 실제 원가 불변 보존
-     *  가격 변경 시에도 히스토리 유지
-     *  eg: "0.012500" ($0.0125)
-     */
-    vendorCostUsd: decimal("vendor_cost_usd", {
-      precision: 18,
-      scale: 6,
-    }).notNull(),
 
     /** 고객 청구 크레딧
      *  실제 차감된 크레딧 (원가 × markup)
@@ -376,17 +327,12 @@ export const UsageEventsTable = solvesSchema.table(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
-    /** 지갑별 사용 내역 조회 (시간 역순) */
-    index("usage_events_wallet_created_idx").on(t.walletId, t.createdAt),
-
     /** 사용자별 활동 내역 조회 */
     index("usage_events_user_created_idx").on(t.userId, t.createdAt),
-
-    /** 멱등성 보장 (지갑당 중복 키 방지) */
-    uniqueIndex("usage_events_wallet_idemp_uniq").on(
-      t.walletId,
-      t.idempotencyKey,
-    ),
+    /** 가격 정보별 조회 */
+    index("usage_events_price_idx").on(t.priceId),
+    /** 멱등성 보장 (사용자당 중복 키 방지) */
+    uniqueIndex("usage_events_user_idemp_uniq").on(t.userId, t.idempotencyKey),
   ],
 );
 
@@ -456,10 +402,10 @@ export const InvoicesTable = solvesSchema.table(
      */
     title: text("title").notNull(),
 
-    /** 청구 금액 (USD)
-     *  eg: "100.000000" ($100), "19.990000" ($19.99)
+    /** 청구 금액 (원 기준)
+     *  eg: "100000원"
      */
-    amountUsd: decimal("amount_usd", { precision: 18, scale: 6 }).notNull(),
+    amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
 
     /** 구매 크레딧
      *  결제 완료 시 지갑에 적립되는 크레딧
@@ -499,9 +445,8 @@ export const InvoicesTable = solvesSchema.table(
     paidAt: timestamp("paid_at"),
   },
   (t) => [
-    /** 사용자별 결제 내역 조회 (시간 역순) */
-    index("invoices_user_created_idx").on(t.userId, t.createdAt),
-
+    /** 사용자별 결제 내역 조회 */
+    index("invoices_user_created_idx").on(t.userId),
     /** PG사 웹훅 처리 시 빠른 조회 */
     index("invoices_external_ref_idx").on(t.externalRef),
   ],
@@ -523,9 +468,6 @@ export const InvoicesTable = solvesSchema.table(
  * - 한 달에 maxRefillCount회까지만 자동 충전
  * - 매월 1일 또는 구독 갱신일에 충전 횟수 리셋
  *
- * 월간 갱신:
- * - rolloverEnabled=true: 기존 잔액 + 월간 크레딧 (누적)
- * - rolloverEnabled=false: 기존 잔액 리셋, 월간 크레딧만 지급
  */
 export const SubscriptionPlansTable = solvesSchema.table(
   "subscription_plans",
@@ -554,16 +496,15 @@ export const SubscriptionPlansTable = solvesSchema.table(
     description: text("description"),
 
     /** 플랜 상세 내용
-     *  마크다운 또는 HTML 형태의 상세 설명
-     *  에디터로 편집 가능
-     *  eg: "## 포함된 기능\n- 월 1,000 크레딧\n- 기본 모델 사용"
+     *  JSON 배열 형태의 구조화된 컨텐츠
+     *  [{type: 'text', text: '월 1,000 크레딧'}, {type: 'text', text: '기본 모델 사용'}]
      */
-    content: text("content"),
+    plans: jsonb("plans").$type<PlanContentBlock[]>(),
 
-    /** 월 구독료 (USD)
-     *  eg: "0.000000" (Free), "100.000000" (Pro)
+    /** 월 구독료 원 단위 (소수점 가능)
+     *  eg: "0.00", "1000000.50"
      */
-    priceUsd: decimal("price_usd", { precision: 18, scale: 6 }).notNull(),
+    price: decimal("price", { precision: 18, scale: 6 }).notNull(),
 
     /** 월간 크레딧 할당량
      *  매월 초 또는 구독 갱신일에 지급
@@ -597,19 +538,11 @@ export const SubscriptionPlansTable = solvesSchema.table(
      */
     maxRefillCount: integer("max_refill_count").notNull(),
 
-    /** 월간 잔액 이월 여부
-     *  true: 기존 잔액 유지 + 새 월간 크레딧 (누적)
-     *  false: 기존 잔액 리셋, 새 월간 크레딧만 지급
-     *  eg: true (Pro/Business), false (Free)
-     */
-    rolloverEnabled: boolean("rollover_enabled").notNull().default(false),
-
     /** 플랜 활성화 여부
      *  비활성 플랜은 신규 구독 불가
      *  eg: true, false
      */
     isActive: boolean("is_active").notNull().default(true),
-
     ...timestamps,
   },
   (t) => [
@@ -763,27 +696,23 @@ export const SubscriptionPeriodsTable = solvesSchema.table(
      */
     id: uuid("id").primaryKey().defaultRandom(),
 
-    /** 구독 ID
-     *  FK: SubscriptionsTable.id (cascade delete)
-     *  eg: "sub_abc123..."
-     */
-    subscriptionId: uuid("subscription_id")
-      .notNull()
-      .references(() => SubscriptionsTable.id, { onDelete: "cascade" }),
-
     /** 이 기간의 플랜 ID
      *  플랜 변경 추적용
      *  FK: SubscriptionPlansTable.id (restrict)
      *  eg: "plan_pro_001"
      */
-    planId: uuid("plan_id")
-      .notNull()
-      .references(() => SubscriptionPlansTable.id, { onDelete: "restrict" }),
+    planId: uuid("plan_id").notNull(),
 
     /** 기간 시작일 (불변)
      *  eg: 2025-10-01T00:00:00Z
      */
     periodStart: timestamp("period_start").notNull(),
+
+    /** 구독 ID
+     *  FK: SubscriptionsTable.id (cascade delete)
+     *  eg: "sub_abc123..."
+     */
+    subscriptionId: uuid("subscription_id").notNull(),
 
     /** 기간 종료일 (불변)
      *  eg: 2025-11-01T00:00:00Z
@@ -825,18 +754,14 @@ export const SubscriptionPeriodsTable = solvesSchema.table(
     lastRefillAt: timestamp("last_refill_at"),
 
     /** 결제 정보 */
-    invoiceId: uuid("invoice_id"),
+    invoiceId: uuid("invoice_id").references(() => InvoicesTable.id, {
+      onDelete: "restrict",
+    }),
 
-    /** 결제 금액 (USD)
-     *  eg: "100.000000"
+    /** 결제 금액 (원, 소수점 가능)
+     *  eg: "10000.50"
      */
     amountPaid: decimal("amount_paid", { precision: 18, scale: 6 }),
-
-    /** 메타데이터 (JSON)
-     *  추가 정보 저장용
-     *  eg: {"planChanged": {"from": "free", "to": "pro"}}
-     */
-    metadata: text("metadata"),
 
     /** 생성 시각 (불변) */
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -844,10 +769,8 @@ export const SubscriptionPeriodsTable = solvesSchema.table(
   (t) => [
     /** 구독별 기간 조회 (시간 역순) */
     index("subscription_periods_sub_idx").on(t.subscriptionId, t.periodStart),
-
     /** 상태별 조회 (Cron Job용) */
     index("subscription_periods_status_idx").on(t.status, t.periodEnd),
-
     /** 리포팅용 (월별 집계) */
     index("subscription_periods_date_idx").on(t.periodStart),
   ],

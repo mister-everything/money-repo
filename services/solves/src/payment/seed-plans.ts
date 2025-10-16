@@ -10,6 +10,7 @@ import { count } from "drizzle-orm";
 import inquirer from "inquirer";
 import { pgDb } from "../db";
 import { SubscriptionPlansTable } from "./schema";
+import { CreateSubscriptionPlan } from "./types";
 
 /**
  * 구독 플랜 시드 데이터 생성
@@ -38,73 +39,75 @@ export const seedPlans = async () => {
     }
   }
 
-  const plans = [
+  const plans: CreateSubscriptionPlan[] = [
     {
       name: "free",
       displayName: "Free Plan",
       description: "개인 개발자와 취미 프로젝트를 위한 무료 플랜",
-      content: `## 포함된 기능
-- 월 1,000 크레딧 제공
-- 자동 충전: 6시간마다 50 크레딧 (월 최대 10회)
-- 기본 AI 모델 사용 가능
-- 커뮤니티 지원
-
-## 제한사항
-- 미사용 크레딧 이월 불가 (매월 리셋)
-- 고급 모델 사용 제한`,
-      priceUsd: "0.000000",
+      plans: [
+        { type: "text", text: "월 1,000 크레딧 제공" },
+        { type: "text", text: "자동 충전: 6시간마다 50 크레딧 (월 최대 10회)" },
+        { type: "text", text: "기본 AI 모델 사용 가능" },
+        { type: "text", text: "커뮤니티 지원" },
+        { type: "text", text: "미사용 크레딧 이월 불가 (매월 리셋)" },
+        { type: "text", text: "고급 모델 사용 제한" },
+      ],
+      price: "0.00",
       monthlyQuota: "1000.000000",
       refillAmount: "50.000000",
       refillIntervalHours: 6,
       maxRefillCount: 10,
-      rolloverEnabled: false,
+
       isActive: true,
     },
     {
       name: "pro",
       displayName: "Pro Plan",
       description: "전문가와 스타트업을 위한 프로 플랜",
-      content: `## 포함된 기능
-- 월 10,000 크레딧 제공
-- 자동 충전: 6시간마다 500 크레딧 (월 최대 20회)
-- 모든 AI 모델 사용 가능
-- 우선 지원
-- 크레딧 이월 가능 (누적)
-
-## 추가 혜택
-- 사용 통계 및 분석
-- API 접근
-- 월간 리포트 제공`,
-      priceUsd: "10000.000000",
+      plans: [
+        { type: "text", text: "월 10,000 크레딧 제공" },
+        {
+          type: "text",
+          text: "자동 충전: 6시간마다 500 크레딧 (월 최대 20회)",
+        },
+        { type: "text", text: "모든 AI 모델 사용 가능" },
+        { type: "text", text: "우선 지원" },
+        { type: "text", text: "크레딧 이월 가능 (누적)" },
+        { type: "text", text: "사용 통계 및 분석" },
+        { type: "text", text: "API 접근" },
+        { type: "text", text: "월간 리포트 제공" },
+      ],
+      price: "130000.00",
       monthlyQuota: "10000.000000",
       refillAmount: "500.000000",
       refillIntervalHours: 6,
       maxRefillCount: 20,
-      rolloverEnabled: true,
+
       isActive: true,
     },
     {
       name: "business",
       displayName: "Business Plan",
       description: "대규모 팀과 엔터프라이즈를 위한 비즈니스 플랜",
-      content: `## 포함된 기능
-- 월 100,000 크레딧 제공
-- 자동 충전: 6시간마다 5,000 크레딧 (월 최대 50회)
-- 모든 AI 모델 무제한 사용
-- 전담 지원팀
-- 크레딧 이월 가능 (누적)
-
-## 추가 혜택
-- 커스텀 모델 파인튜닝
-- SLA 보장
-- 전용 인프라
-- 컨설팅 서비스`,
-      priceUsd: "50000.000000",
+      plans: [
+        { type: "text", text: "월 100,000 크레딧 제공" },
+        {
+          type: "text",
+          text: "자동 충전: 6시간마다 5,000 크레딧 (월 최대 50회)",
+        },
+        { type: "text", text: "모든 AI 모델 무제한 사용" },
+        { type: "text", text: "전담 지원팀" },
+        { type: "text", text: "크레딧 이월 가능 (누적)" },
+        { type: "text", text: "커스텀 모델 파인튜닝" },
+        { type: "text", text: "SLA 보장" },
+        { type: "text", text: "전용 인프라" },
+        { type: "text", text: "컨설팅 서비스" },
+      ],
+      price: "650000.00",
       monthlyQuota: "100000.000000",
       refillAmount: "5000.000000",
       refillIntervalHours: 6,
       maxRefillCount: 50,
-      rolloverEnabled: true,
       isActive: true,
     },
   ];
@@ -122,15 +125,12 @@ export const seedPlans = async () => {
     console.log("\n📊 Plan Summary:");
     for (const plan of inserted) {
       console.log(`\n  ${plan.displayName} (${plan.name}):`);
-      console.log(`    - 월 구독료: $${plan.priceUsd}`);
+      console.log(`    - 월 구독료: ${plan.price}원`);
       console.log(`    - 월간 할당량: ${plan.monthlyQuota} 크레딧`);
       console.log(
         `    - 정기 충전: ${plan.refillAmount} 크레딧 / ${plan.refillIntervalHours}시간마다`,
       );
       console.log(`    - 최대 충전 횟수: 월 ${plan.maxRefillCount}회`);
-      console.log(
-        `    - 이월 여부: ${plan.rolloverEnabled ? "이월 가능 (누적)" : "이월 안됨 (리셋)"}`,
-      );
     }
   }
 
