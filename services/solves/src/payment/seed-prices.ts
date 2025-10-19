@@ -46,6 +46,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00250000", // $2.50 per 1M tokens
       outputTokenPrice: "0.01000000", // $10.00 per 1M tokens
+      cachedTokenPrice: "0.00125000", // $1.25 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -55,6 +56,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00015000", // $0.15 per 1M tokens
       outputTokenPrice: "0.00060000", // $0.60 per 1M tokens
+      cachedTokenPrice: "0.00007500", // $0.075 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -64,6 +66,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.01000000", // $10.00 per 1M tokens
       outputTokenPrice: "0.03000000", // $30.00 per 1M tokens
+      cachedTokenPrice: "0.00500000", // $5.00 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -75,6 +78,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00300000", // $3.00 per 1M tokens
       outputTokenPrice: "0.01500000", // $15.00 per 1M tokens
+      cachedTokenPrice: "0.00030000", // $0.30 per 1M tokens (90% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -84,6 +88,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00100000", // $1.00 per 1M tokens
       outputTokenPrice: "0.00500000", // $5.00 per 1M tokens
+      cachedTokenPrice: "0.00010000", // $0.10 per 1M tokens (90% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -93,6 +98,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.01500000", // $15.00 per 1M tokens
       outputTokenPrice: "0.07500000", // $75.00 per 1M tokens
+      cachedTokenPrice: "0.00150000", // $1.50 per 1M tokens (90% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -104,6 +110,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00125000", // $1.25 per 1M tokens
       outputTokenPrice: "0.00500000", // $5.00 per 1M tokens
+      cachedTokenPrice: "0.00062500", // $0.625 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -113,6 +120,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00007500", // $0.075 per 1M tokens
       outputTokenPrice: "0.00030000", // $0.30 per 1M tokens
+      cachedTokenPrice: "0.00003750", // $0.0375 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },
@@ -122,6 +130,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00000000", // Free during preview
       outputTokenPrice: "0.00000000",
+      cachedTokenPrice: "0.00000000",
       markupRate: "1.60",
       isActive: true,
     },
@@ -133,6 +142,7 @@ export const seedPrices = async () => {
       modelType: "text",
       inputTokenPrice: "0.00500000", // $5.00 per 1M tokens
       outputTokenPrice: "0.01500000", // $15.00 per 1M tokens
+      cachedTokenPrice: "0.00250000", // $2.50 per 1M tokens (50% discount)
       markupRate: "1.60",
       isActive: true,
     },

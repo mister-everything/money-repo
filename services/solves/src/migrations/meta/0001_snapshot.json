@@ -1,5 +1,5 @@
 {
-  "id": "3e1df6a3-0aab-46be-b997-98e33e051b87",
+  "id": "0c2a9b0a-17ff-4dad-9a49-6d298af18604",
   "prevId": "4184b56d-d63b-4559-b336-628e796545fb",
   "version": "7",
   "dialect": "postgresql",
@@ -41,6 +41,12 @@
         },
         "output_token_price": {
           "name": "output_token_price",
+          "type": "numeric(12, 8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cached_token_price": {
+          "name": "cached_token_price",
           "type": "numeric(12, 8)",
           "primaryKey": false,
           "notNull": true
@@ -129,8 +135,7 @@
         },
         "kind": {
           "name": "kind",
-          "type": "credit_txn_kind",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -328,93 +333,6 @@
       },
       "isRLSEnabled": false
     },
-    "solves.idempotency_keys": {
-      "name": "idempotency_keys",
-      "schema": "solves",
-      "columns": {
-        "key": {
-          "name": "key",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "resource_type": {
-          "name": "resource_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "resource_id": {
-          "name": "resource_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "response": {
-          "name": "response",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "idempotency_expires_at_idx": {
-          "name": "idempotency_expires_at_idx",
-          "columns": [
-            {
-              "expression": "expires_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "idempotency_keys_user_id_user_id_fk": {
-          "name": "idempotency_keys_user_id_user_id_fk",
-          "tableFrom": "idempotency_keys",
-          "tableTo": "user",
-          "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "solves.invoices": {
       "name": "invoices",
       "schema": "solves",
@@ -438,6 +356,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "type": {
+          "name": "type",
+          "type": "invoice_type",
+          "typeSchema": "solves",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'credit_purchase'"
+        },
         "title": {
           "name": "title",
           "type": "text",
@@ -459,7 +385,7 @@
         "status": {
           "name": "status",
           "type": "invoice_status",
-          "typeSchema": "public",
+          "typeSchema": "solves",
           "primaryKey": false,
           "notNull": true,
           "default": "'pending'"
@@ -546,6 +472,520 @@
         "invoices_wallet_id_credit_wallet_id_fk": {
           "name": "invoices_wallet_id_credit_wallet_id_fk",
           "tableFrom": "invoices",
+          "tableTo": "credit_wallet",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "wallet_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.subscription_periods": {
+      "name": "subscription_periods",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "subscription_id": {
+          "name": "subscription_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plan_id": {
+          "name": "plan_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "subscription_period_status",
+          "typeSchema": "solves",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "period_type": {
+          "name": "period_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'renewal'"
+        },
+        "credits_granted": {
+          "name": "credits_granted",
+          "type": "numeric(18, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refill_count": {
+          "name": "refill_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_refill_at": {
+          "name": "last_refill_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount_paid": {
+          "name": "amount_paid",
+          "type": "numeric(18, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "subscription_periods_sub_idx": {
+          "name": "subscription_periods_sub_idx",
+          "columns": [
+            {
+              "expression": "subscription_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "subscription_periods_status_idx": {
+          "name": "subscription_periods_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "subscription_periods_date_idx": {
+          "name": "subscription_periods_date_idx",
+          "columns": [
+            {
+              "expression": "period_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "subscription_periods_subscription_id_subscriptions_id_fk": {
+          "name": "subscription_periods_subscription_id_subscriptions_id_fk",
+          "tableFrom": "subscription_periods",
+          "tableTo": "subscriptions",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "subscription_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "subscription_periods_plan_id_subscription_plans_id_fk": {
+          "name": "subscription_periods_plan_id_subscription_plans_id_fk",
+          "tableFrom": "subscription_periods",
+          "tableTo": "subscription_plans",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "plan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.subscription_plans": {
+      "name": "subscription_plans",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_usd": {
+          "name": "price_usd",
+          "type": "numeric(18, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "monthly_quota": {
+          "name": "monthly_quota",
+          "type": "numeric(18, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refill_amount": {
+          "name": "refill_amount",
+          "type": "numeric(18, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refill_interval_hours": {
+          "name": "refill_interval_hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_refill_count": {
+          "name": "max_refill_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rollover_enabled": {
+          "name": "rollover_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "subscription_plans_name_idx": {
+          "name": "subscription_plans_name_idx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "subscription_plans_name_unique": {
+          "name": "subscription_plans_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.subscriptions": {
+      "name": "subscriptions",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plan_id": {
+          "name": "plan_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wallet_id": {
+          "name": "wallet_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "subscription_status",
+          "typeSchema": "solves",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "current_period_start": {
+          "name": "current_period_start",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_period_end": {
+          "name": "current_period_end",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canceled_at": {
+          "name": "canceled_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expired_at": {
+          "name": "expired_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "subscriptions_user_idx": {
+          "name": "subscriptions_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "subscriptions_status_idx": {
+          "name": "subscriptions_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "subscriptions_period_end_idx": {
+          "name": "subscriptions_period_end_idx",
+          "columns": [
+            {
+              "expression": "current_period_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "subscriptions_user_id_user_id_fk": {
+          "name": "subscriptions_user_id_user_id_fk",
+          "tableFrom": "subscriptions",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "subscriptions_plan_id_subscription_plans_id_fk": {
+          "name": "subscriptions_plan_id_subscription_plans_id_fk",
+          "tableFrom": "subscriptions",
+          "tableTo": "subscription_plans",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "plan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "subscriptions_wallet_id_credit_wallet_id_fk": {
+          "name": "subscriptions_wallet_id_credit_wallet_id_fk",
+          "tableFrom": "subscriptions",
           "tableTo": "credit_wallet",
           "schemaTo": "solves",
           "columnsFrom": [
@@ -1208,24 +1648,41 @@
     }
   },
   "enums": {
-    "public.invoice_status": {
+    "solves.invoice_status": {
       "name": "invoice_status",
-      "schema": "public",
+      "schema": "solves",
       "values": [
         "pending",
         "paid",
         "failed"
       ]
     },
-    "public.credit_txn_kind": {
-      "name": "credit_txn_kind",
-      "schema": "public",
+    "solves.invoice_type": {
+      "name": "invoice_type",
+      "schema": "solves",
       "values": [
-        "purchase",
-        "grant",
-        "debit",
-        "refund",
-        "adjustment"
+        "subscription",
+        "credit_purchase"
+      ]
+    },
+    "solves.subscription_period_status": {
+      "name": "subscription_period_status",
+      "schema": "solves",
+      "values": [
+        "active",
+        "completed",
+        "failed",
+        "refunded"
+      ]
+    },
+    "solves.subscription_status": {
+      "name": "subscription_status",
+      "schema": "solves",
+      "values": [
+        "active",
+        "past_due",
+        "canceled",
+        "expired"
       ]
     }
   },

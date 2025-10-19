@@ -12,7 +12,6 @@ const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 });
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,11 +24,13 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           themes={["light", "dark"]}
           disableTransitionOnChange
         >
-          <div id="root">{children}</div>
+          <main className="flex flex-1 flex-col gap-4" id="root">
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>

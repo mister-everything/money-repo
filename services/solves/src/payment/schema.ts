@@ -6,7 +6,6 @@ import {
   numeric as decimal,
   index,
   integer,
-  pgEnum,
   text,
   timestamp,
   uniqueIndex,
@@ -23,63 +22,82 @@ const timestamps = {
   deletedAt: timestamp("deleted_at"),
 };
 
-/* ============================================================
-   1) AI Provider 가격 테이블 (모델별 원가/마진/활성화)
-   - 목적: 사용 시점의 단가 참조 및 리포팅
-   ============================================================ */
+/**
+ * AI Provider 가격 테이블
+ *
+ * 목적: AI 모델별 원가 및 마진 관리
+ * 캐싱: 1시간 TTL (가격 변동 거의 없음)
+ *
+ * 사용 시나리오:
+ * - 크레딧 차감 시 실시간 가격 조회 (캐시 우선)
+ * - 관리자 가격 업데이트 (캐시 무효화 필수)
+ */
 export const AiProviderPricesTable = solvesSchema.table(
   "ai_provider_prices",
   {
     /** 고유 ID
-     *  eg: 1c0c1b1e-2e0d-4c60-9e2d-0af5a8d9c1aa
+     *  eg: "1c0c1b1e-2e0d-4c60-9e2d-0af5a8d9c1aa"
      */
     id: uuid("id").primaryKey().defaultRandom(),
 
     /** AI 제공자 (벤더)
-     *  eg: "openai" | "gemini" | "claude" | "xai"
+     *  eg: "openai", "gemini", "claude", "xai"
      */
     provider: text("provider").notNull(),
 
     /** 모델명
-     *  eg: "gpt-4o-mini", "claude-3-5-sonnet", "gpt-4.1", "grok-2"
+     *  eg: "gpt-4o-mini", "claude-3-5-sonnet-20241022", "grok-2-latest"
      */
     model: text("model").notNull(),
 
-    /** 모델 타입 - 과금 방식 구분용 */
-    modelType: text("model_type").notNull(), // text, image, audio, video, embedding
+    /** 모델 타입 (과금 방식 구분)
+     *  eg: "text", "image", "audio", "video", "embedding"
+     */
+    modelType: text("model_type").notNull(),
 
-    /** 입력 토큰 단가(USD) — 1M 토큰 기준
-     *  eg: "0.00150000"
+    /** 입력 토큰 단가 (USD, 1M 토큰 기준)
+     *  eg: "0.00150000" ($1.50 per 1M tokens)
      */
     inputTokenPrice: decimal("input_token_price", {
       precision: 12,
       scale: 8,
     }).notNull(),
 
-    /** 출력 토큰 단가(USD) — 1M 토큰 기준
-     *  eg: "0.00500000"
+    /** 출력 토큰 단가 (USD, 1M 토큰 기준)
+     *  eg: "0.00600000" ($6.00 per 1M tokens)
      */
     outputTokenPrice: decimal("output_token_price", {
       precision: 12,
       scale: 8,
     }).notNull(),
 
-    /** 마진율(곱) — 청구금액 = 원가 * markupRate
-     *  eg: "1.60"  // 60% 마진
+    /** 캐시 토큰 단가 (USD, 1M 토큰 기준)
+     *  프롬프트 캐싱 사용 시 할인된 가격
+     *  일반적으로 입력 토큰의 10-50% 수준
+     *  eg: "0.00075000" (입력 토큰 50% 할인)
+     */
+    cachedTokenPrice: decimal("cached_token_price", {
+      precision: 12,
+      scale: 8,
+    }).notNull(),
+
+    /** 마진율 (청구금액 = 원가 × markupRate)
+     *  eg: "1.60" (60% 마진), "2.00" (100% 마진)
      */
     markupRate: decimal("markup_rate", { precision: 6, scale: 3 })
       .notNull()
       .default("1.60"),
 
-    /** 활성화 여부 (비활성 모델은 가격 조회/추천에서 제외)
-     *  eg: true
+    /** 활성화 여부
+     *  비활성 모델은 가격 조회에서 제외됨
+     *  eg: true, false
      */
     isActive: boolean("is_active").notNull().default(true),
 
-    /** 생성/수정 시각 */
     ...timestamps,
   },
   (t) => [
+    /** 가격 조회 최적화 (provider + model 조합으로 조회) */
     uniqueIndex("ai_provider_prices_provider_model_idx").on(
       t.provider,
       t.model,
@@ -87,78 +105,123 @@ export const AiProviderPricesTable = solvesSchema.table(
   ],
 );
 
-/* ============================================================
-   2) 유저별 크레딧 지갑 (Optimistic Locking: version)
-   - 목적: 현재 남은 크레딧(O(1) 조회), 낙관적 CAS 업데이트
-   ============================================================ */
+/**
+ * 크레딧 지갑 테이블
+ *
+ * 목적: 사용자별 현재 크레딧 잔액 관리 (빠른 조회)
+ * 캐싱: 10분 TTL (빠른 응답 우선)
+ *
+ * 동시성 제어:
+ * - 차감: Optimistic Lock (version 컬럼 활용, 3회 재시도)
+ * - 충전: Pessimistic Lock (FOR UPDATE)
+ *
+ * 빠른 응답 전략:
+ * - 채팅 시 balance > 0만 체크 (캐시)
+ * - 백그라운드 차감 (비동기)
+ * - 일시적 음수 허용 후 0으로 처리 가능
+ *
+ * 데이터 정합성:
+ * balance = SUM(CreditLedger.delta) (원장 기반 복구 가능)
+ */
 export const CreditWalletTable = solvesSchema.table(
   "credit_wallet",
   {
-    /** 고유 ID */
+    /** 고유 ID
+     *  eg: "3a5b6c7d-8e9f-4011-a1b2-3c4d5e6f7a8b"
+     */
     id: uuid("id").primaryKey().defaultRandom(),
 
-    /** 지갑 소유자(개인) — FK(User.id)
-     *  eg: 3a5b6c7d-8e9f-4011-a1b2-3c4d5e6f7a8b
+    /** 지갑 소유자
+     *  FK: userTable.id (cascade delete)
+     *  eg: "user_abc123..."
      */
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
 
-    /** 현재 남은 크레딧(캐시) — 금액/크레딧은 decimal로 정밀 보존
-     *  eg: "1250.000000"
+    /** 현재 크레딧 잔액
+     *  정밀도: decimal(18, 6) - 소수점 6자리까지
+     *  eg: "1250.000000", "0.500000"
      */
     balance: decimal("balance", { precision: 18, scale: 6 })
       .notNull()
       .default("0"),
 
-    /** 낙관적 갱신(CAS) 버전
-     *  - UPDATE ... WHERE version = :prevVersion 으로 충돌 감지
-     *  eg: 0, 1, 2, ...
+    /** 낙관적 락 버전
+     *  동시성 제어: UPDATE WHERE version = :expected
+     *  충돌 시 재시도 (최대 3회)
+     *  eg: 0 → 1 → 2 → ...
      */
     version: integer("version").notNull().default(0),
 
     ...timestamps,
   },
   (t) => [
-    /** 사용자당 1 지갑 보장 */
+    /** 사용자당 1개 지갑만 허용 */
     uniqueIndex("credit_wallet_user_unique").on(t.userId),
-    /** 음수 잔액 방지 — 조건부 UPDATE로도 막지만, 방어적으로 체크 추가 */
+
+    /** 음수 잔액 방지 (일반적으로)
+     *  Note: 백그라운드 차감 시 일시적 음수 허용 가능 (빠른 응답 우선)
+     *  애플리케이션 레벨에서 0으로 보정
+     */
     check("balance_non_negative", sql`${t.balance} >= 0`),
   ],
 );
 
-/* ============================================================
-   3) 원장(불변 트랜잭션 로그)
-   - 목적: 모든 크레딧 변동에 대한 감사 추적(append-only)
-   ============================================================ */
-export const TxnKindEnum = pgEnum("credit_txn_kind", [
-  "purchase", // 결제 충전 (Invoice 확정)
-  "grant", // 이벤트/프로모션/관리자 지급
-  "debit", // 사용 차감
-  "refund", // 환불(크레딧 복원)
-  "adjustment", // 수동 조정(상쇄)
-]);
-
+/**
+ * 크레딧 원장 테이블 (Immutable Ledger)
+ *
+ * 목적: 모든 크레딧 변동 기록 (append-only, 불변)
+ * 패턴: Event Sourcing - 지갑 잔액의 신뢰할 수 있는 출처
+ *
+ * 트랜잭션 종류 (kind):
+ * - "purchase": 결제 충전 (Invoice 확정)
+ * - "grant": 이벤트/프로모션/관리자 지급
+ * - "debit": AI 사용 차감
+ * - "refund": 환불 (크레딧 복원)
+ * - "adjustment": 수동 조정
+ * - "subscription_grant": 구독 시작/갱신 시 크레딧 지급
+ * - "subscription_refill": 정기 자동 충전
+ * - "subscription_reset": 월간 갱신 시 잔액 리셋 (rollover=false)
+ *
+ * 멱등성 보장:
+ * - uniqueIndex(walletId, idempotencyKey)로 중복 방지
+ * - 캐시 실패 시에도 DB 레벨에서 보장
+ *
+ * 데이터 라이프사이클:
+ * - Hot: 1년 (PostgreSQL 메인 테이블)
+ * - Cold: 1년+ (S3 아카이브, 추후 구현)
+ */
 export const CreditLedgerTable = solvesSchema.table(
   "credit_ledger",
   {
-    /** 고유 ID */
+    /** 고유 ID
+     *  eg: "8f9e1a2b-3c4d-5e6f-7a8b-9c0d1e2f3a4b"
+     */
     id: uuid("id").primaryKey().defaultRandom(),
 
-    /** 어떤 지갑의 트랜잭션인지 — FK(credit_wallet.id) */
+    /** 지갑 ID
+     *  FK: CreditWalletTable.id (cascade delete)
+     *  eg: "wallet_xyz123..."
+     */
     walletId: uuid("wallet_id")
       .notNull()
       .references(() => CreditWalletTable.id, { onDelete: "cascade" }),
 
-    /** 트랜잭션 종류 */
-    kind: TxnKindEnum("kind").notNull(),
+    /** 트랜잭션 종류
+     *  eg: "purchase", "debit", "subscription_refill"
+     */
+    kind: text("kind").notNull(),
 
-    /** 증감 크레딧 — +적립 / -차감
-     *  eg: "+100.000000" (purchase/grant), "-12.500000" (debit)
+    /** 증감 크레딧
+     *  양수: 적립 (purchase, grant, refill)
+     *  음수: 차감 (debit, reset)
+     *  eg: "+100.000000", "-12.500000"
      */
     delta: decimal("delta", { precision: 18, scale: 6 }).notNull(),
 
-    /** 적용 직후 지갑 잔액 스냅샷 — 리포팅/복구 용이
+    /** 트랜잭션 직후 잔액 스냅샷
+     *  복구/감사/리포팅에 유용
      *  eg: "987.500000"
      */
     runningBalance: decimal("running_balance", {
@@ -166,23 +229,25 @@ export const CreditLedgerTable = solvesSchema.table(
       scale: 6,
     }).notNull(),
 
-    /** 멱등키 — 재시도/중복 처리 방지 (지갑 단위로 유니크)
-     *  eg: "ue_2025-10-10T12:00:00Z_req123"
+    /** 멱등성 키
+     *  중복 요청 방지 (재시도, 네트워크 오류 등)
+     *  eg: "req_20251014_abc123", "usage_event_xyz"
      */
     idempotencyKey: text("idempotency_key"),
 
-    /** 출처/사유 — invoice:xxx, promo:SPRING-25, usage:ue_xxx 등
-     *  eg: "invoice:inv_20251010_001"
+    /** 트랜잭션 사유/출처
+     *  eg: "invoice:inv_001", "promo:WELCOME20", "AI usage: gpt-4o-mini"
      */
     reason: text("reason"),
 
-    /** 생성 시각 */
+    /** 생성 시각 (수정 없음 - immutable) */
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
-    /** 조회(지갑별 타임라인) 최적화 */
+    /** 지갑별 타임라인 조회 최적화 (최근 거래 내역) */
     index("credit_ledger_wallet_created_idx").on(t.walletId, t.createdAt),
-    /** (wallet_id, idempotency_key) 중복 방지 — 멱등 보장 */
+
+    /** 멱등성 보장 (지갑당 중복 키 방지) */
     uniqueIndex("credit_ledger_wallet_idemp_uniq").on(
       t.walletId,
       t.idempotencyKey,
@@ -190,80 +255,120 @@ export const CreditLedgerTable = solvesSchema.table(
   ],
 );
 
-/* ============================================================
-   4) 사용(원가/청구) 이벤트
-   - 목적: 모델/프라이스 기준의 사용 1건 기록(원가·차감 크레딧 보존)
-   - 설계: 비정규화 패턴 (성능 + 히스토리 보존)
-     * priceId: 가격 스냅샷 참조
-     * provider/model: JOIN 없이 빠른 리포팅 쿼리 (GROUP BY)
-     * vendorCostUsd: 당시 실제 원가 보존 (가격 변경되어도 히스토리 유지)
-   ============================================================ */
+/**
+ * AI 사용 이벤트 테이블
+ *
+ * 목적: AI API 사용 내역 상세 기록 (히스토리 보존)
+ * 패턴: 비정규화 (성능 + 불변성)
+ *
+ * 비정규화 이유:
+ * - priceId는 있지만 provider, model, vendorCostUsd 중복 저장
+ * 1. 성능: JOIN 없이 빠른 리포팅 (GROUP BY provider, model)
+ * 2. 히스토리: 가격 변경 시에도 과거 원가 불변
+ * 3. 무결성: 모델 삭제 시에도 사용 기록 보존
+ *
+ * 멱등성 보장:
+ * - uniqueIndex(walletId, idempotencyKey)로 중복 방지
+ * - 동일 요청 재시도 시 중복 기록 방지
+ *
+ * 데이터 라이프사이클:
+ * - Hot: 3개월 (PostgreSQL 메인 테이블)
+ * - Warm: 1년 (집계 테이블로 요약, 추후 구현)
+ * - Cold: 1년+ (S3 아카이브, 추후 구현)
+ */
 export const UsageEventsTable = solvesSchema.table(
   "usage_events",
   {
-    /** 고유 ID */
+    /** 고유 ID
+     *  eg: "7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d"
+     */
     id: uuid("id").primaryKey().defaultRandom(),
 
-    /** 호출한 사용자 — 팀 지갑을 쓰더라도 "누가 썼는지" 추적 용
-     *  eg: user UUID
+    /** 사용자 ID (실제 호출자)
+     *  팀 지갑 사용 시에도 개인 추적 가능
+     *  FK: userTable.id (restrict - 사용 기록 보존)
+     *  eg: "user_abc123..."
      */
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "restrict" }),
 
-    /** 차감이 일어난 지갑 — 개인/팀 지갑 모두 가능
-     *  eg: wallet UUID
+    /** 지갑 ID (크레딧 차감 대상)
+     *  개인/팀 지갑 모두 가능
+     *  FK: CreditWalletTable.id (restrict - 사용 기록 보존)
+     *  eg: "wallet_xyz789..."
      */
     walletId: uuid("wallet_id")
       .notNull()
       .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
 
-    /** 가격 스냅샷 참조 — 사용 시점의 단가(모델/벤더/마진)
-     *  NOTE: priceId가 있지만 provider/model/vendorCostUsd를 중복 저장하는 이유:
-     *  1. 성능: JOIN 없이 리포팅 쿼리 가능 (provider, model로 GROUP BY)
-     *  2. 히스토리: 가격 변경 시에도 과거 원가 보존
-     *  3. 무결성: 구모델 삭제해도 사용 기록 유지
+    /** 가격 정보 ID
+     *  사용 시점의 가격 스냅샷 참조
+     *  FK: AiProviderPricesTable.id (restrict)
+     *  eg: "price_def456..."
      */
     priceId: uuid("price_id")
       .notNull()
       .references(() => AiProviderPricesTable.id, { onDelete: "restrict" }),
-    /** 공급자/모델명 (비정규화)
-     *  priceId로 JOIN 가능하지만 리포팅 성능을 위해 중복 저장
-     *  eg: provider="openai", model="gpt-4o-mini"
+
+    /** AI 제공자 (비정규화)
+     *  리포팅 쿼리 성능 최적화
+     *  eg: "openai", "anthropic", "google"
      */
     provider: text("provider").notNull(),
+
+    /** AI 모델명 (비정규화)
+     *  리포팅 쿼리 성능 최적화
+     *  eg: "gpt-4o-mini", "claude-3-5-sonnet-20241022"
+     */
     model: text("model").notNull(),
 
-    /** 토큰/호출량
-     *  - inputTokens / outputTokens: 1 토큰 단위(애플리케이션에서 1k단위 환산)
-     *  - cachedTokens: 캐시/리유즈로 원가가 발생하지 않은(혹은 할인) 토큰 수
-     *  - calls: per-request 과금(이미지, 비전, 오디오, 임베딩 벌크콜 등)
-     *  eg: input=3000, output=1200, cached=1000, calls=1
+    /** 입력 토큰 수
+     *  단위: 개별 토큰 (1k 아님)
+     *  eg: 3000, 15000
      */
     inputTokens: integer("input_tokens"),
+
+    /** 출력 토큰 수
+     *  단위: 개별 토큰
+     *  eg: 1200, 8000
+     */
     outputTokens: integer("output_tokens"),
+
+    /** 캐시된 토큰 수
+     *  프롬프트 캐싱으로 할인받은 토큰
+     *  eg: 1000, 5000
+     */
     cachedTokens: integer("cached_tokens"),
+
+    /** API 호출 횟수
+     *  이미지/오디오 등 per-request 과금용
+     *  eg: 1, 5
+     */
     calls: integer("calls"),
 
-    /** 공급자 원가(USD) — 당시 실제 원가 (히스토리 보존용)
-     *  가격이 변경되어도 이 레코드의 원가는 불변
-     *  eg: "0.012500"
+    /** 공급자 원가 (비정규화)
+     *  당시 실제 원가 불변 보존
+     *  가격 변경 시에도 히스토리 유지
+     *  eg: "0.012500" ($0.0125)
      */
     vendorCostUsd: decimal("vendor_cost_usd", {
       precision: 18,
       scale: 6,
     }).notNull(),
 
-    /** 고객에게 실제로 차감된 크레딧 — (원가 * markup)
-     *  eg: "1.250000"
+    /** 고객 청구 크레딧
+     *  실제 차감된 크레딧 (원가 × markup)
+     *  eg: "0.020000" (원가 $0.0125 × 1.6)
      */
     billableCredits: decimal("billable_credits", {
       precision: 18,
       scale: 6,
     }).notNull(),
 
-    /** 멱등키(요청ID) — 동일 사용 보고 중복 방지
-     *  eg: "req_01J9E1Y9J7ABCDEF"
+    /** 멱등성 키
+     *  중복 요청 방지
+     *  eg: "req_20251014_xyz123", "chat_msg_abc"
      */
     idempotencyKey: text("request_id"),
 
@@ -271,13 +376,13 @@ export const UsageEventsTable = solvesSchema.table(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
-    /** (지갑 ID, 시간) 인덱스 — 월별/기간별 페이징 리포트에 유용 */
+    /** 지갑별 사용 내역 조회 (시간 역순) */
     index("usage_events_wallet_created_idx").on(t.walletId, t.createdAt),
 
-    /** (사용자 ID, 시간) 인덱스 — 개별 사용자 활동 조회 시 유용 */
+    /** 사용자별 활동 내역 조회 */
     index("usage_events_user_created_idx").on(t.userId, t.createdAt),
 
-    /** (wallet_id, idempotencyKey) 유니크 — 멱등 보장 */
+    /** 멱등성 보장 (지갑당 중복 키 방지) */
     uniqueIndex("usage_events_wallet_idemp_uniq").on(
       t.walletId,
       t.idempotencyKey,
@@ -285,105 +390,465 @@ export const UsageEventsTable = solvesSchema.table(
   ],
 );
 
-/* ============================================================
-   5) 인보이스(결제) 기록
-   - 목적: 결제 단위 기록(확정 시 purchase로 지갑 적립)
-   ============================================================ */
-export const InvoiceStatusEnum = pgEnum("invoice_status", [
+/**
+ * 인보이스 (결제 기록) 테이블
+ *
+ * 목적: 모든 결제 내역 기록 (구독 결제 + 크레딧 구매)
+ *
+ * 결제 타입:
+ * - "subscription": 월간 구독료 결제
+ * - "credit_purchase": 추가 크레딧 구매
+ *
+ * 결제 흐름:
+ * 1. pending: 결제 요청 생성
+ * 2. paid: 결제 완료 → CreditLedgerTable에 purchase 기록
+ * 3. failed: 결제 실패
+ *
+ * 외부 연동:
+ * - externalRef: PG사 거래 ID (카카오페이, 토스페이 등)
+ * - externalOrderId: PG사 주문 ID
+ */
+export const InvoiceStatusEnum = solvesSchema.enum("invoice_status", [
   "pending",
   "paid",
   "failed",
 ]);
 
+export const InvoiceTypeEnum = solvesSchema.enum("invoice_type", [
+  "subscription",
+  "credit_purchase",
+]);
+
 export const InvoicesTable = solvesSchema.table(
   "invoices",
   {
-    /** 고유 ID */
+    /** 고유 ID
+     *  eg: "inv_abc123..."
+     */
     id: uuid("id").primaryKey().defaultRandom(),
 
-    /** 결제자 — 개인/팀 결제에서도 "누가 결제했는지" 추적 */
+    /** 결제자 ID
+     *  누가 결제했는지 추적
+     *  FK: userTable.id (restrict - 결제 기록 보존)
+     *  eg: "user_xyz789..."
+     */
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "restrict" }),
 
-    /** 적립 대상 지갑 — 개인/팀 지갑 모두 가능 */
+    /** 지갑 ID
+     *  크레딧이 적립될 지갑
+     *  FK: CreditWalletTable.id (restrict - 결제 기록 보존)
+     *  eg: "wallet_def456..."
+     */
     walletId: uuid("wallet_id")
       .notNull()
       .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
 
-    /** 인보이스/패키지 이름
-     *  eg: "Credit Pack 1,000"
+    /** 결제 타입
+     *  구독 결제 vs 크레딧 구매 구분
+     *  eg: "subscription", "credit_purchase"
+     */
+    type: InvoiceTypeEnum("type").notNull().default("credit_purchase"),
+
+    /** 인보이스 제목
+     *  eg: "Pro Plan 월간 구독", "Credit Pack 10,000"
      */
     title: text("title").notNull(),
 
-    /** 청구 금액(USD)
-     *  eg: "19.990000"
+    /** 청구 금액 (USD)
+     *  eg: "100.000000" ($100), "19.990000" ($19.99)
      */
     amountUsd: decimal("amount_usd", { precision: 18, scale: 6 }).notNull(),
 
-    /** 구매로 적립된 크레딧
-     *  eg: "1000.000000"
+    /** 구매 크레딧
+     *  결제 완료 시 지갑에 적립되는 크레딧
+     *  구독: 월간 할당량, 구매: 패키지 크레딧
+     *  eg: "10000.000000", "1000.000000"
      */
     purchasedCredits: decimal("purchased_credits", {
       precision: 18,
       scale: 6,
     }).notNull(),
 
-    /** 상태: pending → paid/failed */
+    /** 결제 상태
+     *  pending → paid (성공) / failed (실패)
+     *  eg: "pending", "paid", "failed"
+     */
     status: InvoiceStatusEnum("status").notNull().default("pending"),
 
-    /** PG사 결제/세션 ID 등 외부 참조
-     *  eg: "kakaopay"
+    /** 외부 결제 참조 ID
+     *  PG사 거래 ID (웹훅 매칭용)
+     *  eg: "kakaopay_tid_abc", "tosspay_orderId_xyz"
      */
     externalRef: text("external_ref"),
-    /** 외부 주문 ID: orderId, partner_order_id 등 */
+
+    /** 외부 주문 ID
+     *  PG사 주문 번호
+     *  eg: "partner_order_id_20251014_001"
+     */
     externalOrderId: text("external_order_id"),
-
-    /** 생성/결제 시각 */
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    paidAt: timestamp("paid_at"),
-  },
-  (t) => [
-    /** 결제 히스토리 조회(사용자/기간 필터) */
-    index("invoices_user_created_idx").on(t.userId, t.createdAt),
-
-    /** 외부 결제 참조로 단건 조회 속도 개선 */
-    index("invoices_external_ref_idx").on(t.externalRef),
-  ],
-);
-
-/* ============================================================
-   6) 멱등성 키 테이블 (Redis로 대체 가능하지만 DB에도 보관)
-   - 목적: Redis 장애 시에도 멱등성 보장
-   ============================================================ */
-export const IdempotencyKeysTable = solvesSchema.table(
-  "idempotency_keys",
-  {
-    /** 멱등성 키 (Primary Key) */
-    key: text("key").primaryKey(),
-
-    /** 요청한 사용자 */
-    userId: text("user_id")
-      .notNull()
-      .references(() => userTable.id, { onDelete: "set null" }),
-
-    /** 리소스 타입 (usage_event, invoice, etc.) */
-    resourceType: text("resource_type").notNull(),
-
-    /** 생성된 리소스 ID */
-    resourceId: uuid("resource_id").notNull(),
-
-    /** 응답 내용 (JSON) */
-    response: text("response").notNull(),
 
     /** 생성 시각 */
     createdAt: timestamp("created_at").notNull().defaultNow(),
 
-    /** 만료 시각 (자동 정리용) */
-    expiresAt: timestamp("expires_at").notNull(),
+    /** 결제 완료 시각
+     *  paid 상태일 때만 기록
+     *  eg: 2025-10-14T12:34:56Z
+     */
+    paidAt: timestamp("paid_at"),
   },
   (t) => [
-    /** 만료된 키 정리를 위한 인덱스 */
-    index("idempotency_expires_at_idx").on(t.expiresAt),
+    /** 사용자별 결제 내역 조회 (시간 역순) */
+    index("invoices_user_created_idx").on(t.userId, t.createdAt),
+
+    /** PG사 웹훅 처리 시 빠른 조회 */
+    index("invoices_external_ref_idx").on(t.externalRef),
+  ],
+);
+
+/**
+ * 구독 플랜 테이블
+ *
+ * 목적: 구독 플랜별 가격 및 크레딧 정책 정의
+ * 캐싱: 1시간 TTL (변경 거의 없음)
+ *
+ * 플랜 구조:
+ * - Free: $0/월, 1K 크레딧, 50 자동충전/6시간, 최대 10회/월
+ * - Pro: $100/월, 10K 크레딧, 500 자동충전/6시간, 최대 20회/월
+ * - Business: $500/월, 100K 크레딧, 5K 자동충전/6시간, 최대 50회/월
+ *
+ * 자동 충전 메커니즘:
+ * - 잔액 소진 시 refillIntervalHours마다 refillAmount 충전
+ * - 한 달에 maxRefillCount회까지만 자동 충전
+ * - 매월 1일 또는 구독 갱신일에 충전 횟수 리셋
+ *
+ * 월간 갱신:
+ * - rolloverEnabled=true: 기존 잔액 + 월간 크레딧 (누적)
+ * - rolloverEnabled=false: 기존 잔액 리셋, 월간 크레딧만 지급
+ */
+export const SubscriptionPlansTable = solvesSchema.table(
+  "subscription_plans",
+  {
+    /** 고유 ID
+     *  eg: "plan_abc123..."
+     */
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    /** 플랜 식별자
+     *  시스템 내부 키 (unique)
+     *  eg: "free", "pro", "business"
+     */
+    name: text("name").notNull().unique(),
+
+    /** 플랜 표시명
+     *  사용자에게 보이는 이름
+     *  eg: "Free Plan", "Pro Plan", "Business Plan"
+     */
+    displayName: text("display_name").notNull(),
+
+    /** 플랜 설명
+     *  간단한 플랜 소개 (1-2문장)
+     *  eg: "개인 개발자를 위한 무료 플랜"
+     */
+    description: text("description"),
+
+    /** 플랜 상세 내용
+     *  마크다운 또는 HTML 형태의 상세 설명
+     *  에디터로 편집 가능
+     *  eg: "## 포함된 기능\n- 월 1,000 크레딧\n- 기본 모델 사용"
+     */
+    content: text("content"),
+
+    /** 월 구독료 (USD)
+     *  eg: "0.000000" (Free), "100.000000" (Pro)
+     */
+    priceUsd: decimal("price_usd", { precision: 18, scale: 6 }).notNull(),
+
+    /** 월간 크레딧 할당량
+     *  매월 초 또는 구독 갱신일에 지급
+     *  eg: "1000.000000" (1K), "10000.000000" (10K)
+     */
+    monthlyQuota: decimal("monthly_quota", {
+      precision: 18,
+      scale: 6,
+    }).notNull(),
+
+    /** 정기 자동 충전량
+     *  잔액 소진 시 자동 충전되는 크레딧
+     *  eg: "50.000000", "500.000000"
+     */
+    refillAmount: decimal("refill_amount", {
+      precision: 18,
+      scale: 6,
+    }).notNull(),
+
+    /** 자동 충전 간격 (시간)
+     *  마지막 충전 후 대기 시간
+     *  eg: 6 (6시간), 12 (12시간), 24 (24시간)
+     */
+    refillIntervalHours: integer("refill_interval_hours").notNull(),
+
+    /** 월간 최대 자동 충전 횟수
+     *  한 달에 자동 충전 가능한 최대 횟수
+     *  매월 1일에 리셋 (또는 구독 갱신일)
+     *  예측 가능한 비용: maxRefillCount × refillAmount
+     *  eg: 10 (Free), 20 (Pro), 50 (Business)
+     */
+    maxRefillCount: integer("max_refill_count").notNull(),
+
+    /** 월간 잔액 이월 여부
+     *  true: 기존 잔액 유지 + 새 월간 크레딧 (누적)
+     *  false: 기존 잔액 리셋, 새 월간 크레딧만 지급
+     *  eg: true (Pro/Business), false (Free)
+     */
+    rolloverEnabled: boolean("rollover_enabled").notNull().default(false),
+
+    /** 플랜 활성화 여부
+     *  비활성 플랜은 신규 구독 불가
+     *  eg: true, false
+     */
+    isActive: boolean("is_active").notNull().default(true),
+
+    ...timestamps,
+  },
+  (t) => [
+    /** 플랜명으로 빠른 조회 (unique) */
+    uniqueIndex("subscription_plans_name_idx").on(t.name),
+  ],
+);
+
+/**
+ * 구독 테이블
+ *
+ * 목적: 사용자-플랜 관계 + 현재 상태 관리
+ * 캐싱: 5분 TTL (빠른 조회 필요)
+ *
+ * 설계 철학:
+ * - 구독 시작 시 1번 생성
+ * - 상태/플랜 변경 시 UPDATE
+ * - 삭제 안 함 (soft delete - status='expired')
+ *
+ * 구독 상태:
+ * - active: 활성 구독 (정상 사용 중)
+ * - past_due: 결제 실패 (재시도 중)
+ * - canceled: 취소됨 (현재 기간까지 사용 가능)
+ * - expired: 만료됨 (서비스 중단)
+ *
+ * 지갑 통합:
+ * - 구독 크레딧 + 추가 구매 크레딧 모두 1개 지갑 사용
+ * - 기존 CreditWallet 시스템과 완전 호환
+ */
+export const SubscriptionStatusEnum = solvesSchema.enum("subscription_status", [
+  "active",
+  "past_due",
+  "canceled",
+  "expired",
+]);
+
+export const SubscriptionsTable = solvesSchema.table(
+  "subscriptions",
+  {
+    /** 고유 ID
+     *  eg: "sub_abc123..."
+     */
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    /** 사용자 ID
+     *  FK: userTable.id (cascade delete - 사용자 삭제 시 구독도 삭제)
+     *  eg: "user_xyz789..."
+     */
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+
+    /** 현재 플랜 ID
+     *  플랜 변경 시 UPDATE
+     *  FK: SubscriptionPlansTable.id (restrict - 플랜 보존)
+     *  eg: "plan_pro_001"
+     */
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => SubscriptionPlansTable.id, { onDelete: "restrict" }),
+
+    /** 지갑 ID
+     *  구독 크레딧 + 구매 크레딧 모두 저장 (통합)
+     *  FK: CreditWalletTable.id (restrict - 지갑 보존)
+     *  eg: "wallet_def456..."
+     */
+    walletId: uuid("wallet_id")
+      .notNull()
+      .references(() => CreditWalletTable.id, { onDelete: "restrict" }),
+
+    /** 구독 상태
+     *  eg: "active", "past_due", "canceled", "expired"
+     */
+    status: SubscriptionStatusEnum("status").notNull().default("active"),
+
+    /** 구독 시작일 (불변)
+     *  최초 구독 시작 시각
+     *  eg: 2025-10-14T00:00:00Z
+     */
+    startedAt: timestamp("started_at").notNull().defaultNow(),
+
+    /** 현재 구독 기간 시작일
+     *  월간 갱신 시 업데이트
+     *  eg: 2025-10-01T00:00:00Z
+     */
+    currentPeriodStart: timestamp("current_period_start").notNull(),
+
+    /** 현재 구독 기간 종료일
+     *  이 날짜 이후 자동 갱신 또는 만료
+     *  eg: 2025-11-01T00:00:00Z
+     */
+    currentPeriodEnd: timestamp("current_period_end").notNull(),
+
+    /** 구독 취소 시각
+     *  null: 활성 구독
+     *  값: 취소됨 (기간까지는 사용 가능)
+     *  eg: 2025-10-14T15:30:00Z
+     */
+    canceledAt: timestamp("canceled_at"),
+
+    /** 구독 만료 시각
+     *  status='expired'로 변경된 시각
+     *  eg: 2025-11-01T00:00:00Z
+     */
+    expiredAt: timestamp("expired_at"),
+
+    ...timestamps,
+  },
+  (t) => [
+    /** 사용자당 1개의 구독만 허용 */
+    uniqueIndex("subscriptions_user_idx").on(t.userId),
+
+    /** 상태별 조회 최적화 */
+    index("subscriptions_status_idx").on(t.status),
+
+    /** 만료 체크용 (Cron Job) */
+    index("subscriptions_period_end_idx").on(t.currentPeriodEnd, t.status),
+  ],
+);
+
+/**
+ * 구독 청구 기간 테이블
+ *
+ * 목적: 각 청구 기간의 상세 정보 및 히스토리 추적
+ *
+ * 설계 철학:
+ * - 매월 1개 row INSERT (불변)
+ * - 구독의 시계열 데이터
+ * - 리포팅, 히스토리 조회, 감사 추적용
+ *
+ * 생명주기:
+ * 1. 구독 시작/갱신 → INSERT (status='active')
+ * 2. 기간 종료 → UPDATE (status='completed')
+ * 3. 결제 실패 → UPDATE (status='failed')
+ *
+ * 활용:
+ * - 사용자: 월별 사용 내역 확인
+ * - 리포팅: 월별 매출, 이탈율, 사용량
+ * - 디버깅: 크레딧 지급/차감 추적
+ */
+export const SubscriptionPeriodStatusEnum = solvesSchema.enum(
+  "subscription_period_status",
+  ["active", "completed", "failed", "refunded"],
+);
+
+export const SubscriptionPeriodsTable = solvesSchema.table(
+  "subscription_periods",
+  {
+    /** 고유 ID
+     *  eg: "period_xyz123..."
+     */
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    /** 구독 ID
+     *  FK: SubscriptionsTable.id (cascade delete)
+     *  eg: "sub_abc123..."
+     */
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => SubscriptionsTable.id, { onDelete: "cascade" }),
+
+    /** 이 기간의 플랜 ID
+     *  플랜 변경 추적용
+     *  FK: SubscriptionPlansTable.id (restrict)
+     *  eg: "plan_pro_001"
+     */
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => SubscriptionPlansTable.id, { onDelete: "restrict" }),
+
+    /** 기간 시작일 (불변)
+     *  eg: 2025-10-01T00:00:00Z
+     */
+    periodStart: timestamp("period_start").notNull(),
+
+    /** 기간 종료일 (불변)
+     *  eg: 2025-11-01T00:00:00Z
+     */
+    periodEnd: timestamp("period_end").notNull(),
+
+    /** 기간 상태
+     *  eg: "active", "completed", "failed", "refunded"
+     */
+    status: SubscriptionPeriodStatusEnum("status").notNull().default("active"),
+
+    /** 기간 타입
+     *  initial: 첫 구독
+     *  renewal: 월간 갱신
+     *  trial: 무료 체험
+     *  eg: "renewal"
+     */
+    periodType: text("period_type").notNull().default("renewal"),
+
+    /** 이 기간에 지급된 크레딧
+     *  월간 할당량
+     *  eg: "10000.000000"
+     */
+    creditsGranted: decimal("credits_granted", {
+      precision: 18,
+      scale: 6,
+    }),
+
+    /** 이 기간 동안 자동 충전 횟수
+     *  maxRefillCount 추적용
+     *  eg: 0, 5, 10
+     */
+    refillCount: integer("refill_count").notNull().default(0),
+
+    /** 마지막 자동 충전 시각
+     *  이 기간 내에서만 유효
+     *  eg: 2025-10-14T12:00:00Z
+     */
+    lastRefillAt: timestamp("last_refill_at"),
+
+    /** 결제 정보 */
+    invoiceId: uuid("invoice_id"),
+
+    /** 결제 금액 (USD)
+     *  eg: "100.000000"
+     */
+    amountPaid: decimal("amount_paid", { precision: 18, scale: 6 }),
+
+    /** 메타데이터 (JSON)
+     *  추가 정보 저장용
+     *  eg: {"planChanged": {"from": "free", "to": "pro"}}
+     */
+    metadata: text("metadata"),
+
+    /** 생성 시각 (불변) */
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    /** 구독별 기간 조회 (시간 역순) */
+    index("subscription_periods_sub_idx").on(t.subscriptionId, t.periodStart),
+
+    /** 상태별 조회 (Cron Job용) */
+    index("subscription_periods_status_idx").on(t.status, t.periodEnd),
+
+    /** 리포팅용 (월별 집계) */
+    index("subscription_periods_date_idx").on(t.periodStart),
   ],
 );

@@ -1,6 +1,7 @@
 import "@workspace/env";
 import inquirer from "inquirer";
 import { SERVICE_NAME } from "./const";
+import { seedPlans } from "./payment/seed-plans";
 import { seedPrices } from "./payment/seed-prices";
 import { seedProb } from "./prob/seed-prob";
 
@@ -14,6 +15,11 @@ const answer = await inquirer.prompt([
     choices: [
       { name: "📝 Prob (문제집 & 문제)", value: "prob", checked: true },
       { name: "💰 Payment (AI 가격 정보)", value: "payment", checked: true },
+      {
+        name: "📋 Subscription (구독 플랜)",
+        value: "subscription",
+        checked: true,
+      },
     ],
   },
 ]);
@@ -32,6 +38,11 @@ try {
   // Payment 모듈 시드
   if (answer.modules.includes("payment")) {
     await seedPrices();
+  }
+
+  // Subscription 모듈 시드
+  if (answer.modules.includes("subscription")) {
+    await seedPlans();
   }
 
   console.log(`✅ [${SERVICE_NAME}] 모든 시드 데이터 생성 완료! 🎉`);
