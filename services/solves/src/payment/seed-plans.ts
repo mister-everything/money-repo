@@ -6,8 +6,6 @@
  * - Pro Plan: 유료 플랜 (대량 할당량 + 정기 충전)
  */
 
-import { count } from "drizzle-orm";
-import inquirer from "inquirer";
 import { pgDb } from "../db";
 import { SubscriptionPlansTable } from "./schema";
 import { CreateSubscriptionPlan } from "./types";
@@ -17,27 +15,6 @@ import { CreateSubscriptionPlan } from "./types";
  */
 export const seedPlans = async () => {
   console.log("🌱 Seeding Subscription Plans...");
-
-  // 기존 플랜 데이터 확인
-  const hasPlans = await pgDb
-    .select({ count: count() })
-    .from(SubscriptionPlansTable)
-    .then((res) => res[0].count);
-
-  if (hasPlans > 0) {
-    const answer = await inquirer.prompt([
-      {
-        type: "select",
-        name: "answer",
-        message: `구독 플랜이 이미 ${hasPlans}개 있습니다. 추가로 생성하시겠습니까?`,
-        choices: ["생성", "건너뛰기"],
-      },
-    ]);
-    if (answer.answer === "건너뛰기") {
-      console.log("⏭️  플랜 시드 생성 건너뛰기\n");
-      return;
-    }
-  }
 
   const plans: CreateSubscriptionPlan[] = [
     {
@@ -53,8 +30,8 @@ export const seedPlans = async () => {
         { type: "text", text: "고급 모델 사용 제한" },
       ],
       price: "0.00",
-      monthlyQuota: "1000.000000",
-      refillAmount: "50.000000",
+      monthlyQuota: "1000.00",
+      refillAmount: "50.00",
       refillIntervalHours: 6,
       maxRefillCount: 10,
 
@@ -78,8 +55,8 @@ export const seedPlans = async () => {
         { type: "text", text: "월간 리포트 제공" },
       ],
       price: "130000.00",
-      monthlyQuota: "10000.000000",
-      refillAmount: "500.000000",
+      monthlyQuota: "10000.00",
+      refillAmount: "500.00",
       refillIntervalHours: 6,
       maxRefillCount: 20,
 
@@ -104,8 +81,8 @@ export const seedPlans = async () => {
         { type: "text", text: "컨설팅 서비스" },
       ],
       price: "650000.00",
-      monthlyQuota: "100000.000000",
-      refillAmount: "5000.000000",
+      monthlyQuota: "100000.00",
+      refillAmount: "5000.00",
       refillIntervalHours: 6,
       maxRefillCount: 50,
       isActive: true,

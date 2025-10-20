@@ -5,8 +5,6 @@
  * 출처: 각 AI 제공자의 공식 가격 페이지
  */
 
-import { count } from "drizzle-orm";
-import inquirer from "inquirer";
 import { pgDb } from "../db";
 import { AiProviderPricesTable } from "./schema";
 
@@ -17,28 +15,7 @@ import { AiProviderPricesTable } from "./schema";
 export const seedPrices = async () => {
   console.log("🌱 Seeding AI Provider Prices...");
 
-  // 기존 가격 데이터 확인
-  const hasPrices = await pgDb
-    .select({ count: count() })
-    .from(AiProviderPricesTable)
-    .then((res) => res[0].count);
-
-  if (hasPrices > 0) {
-    const answer = await inquirer.prompt([
-      {
-        type: "select",
-        name: "answer",
-        message: `가격 데이터가 이미 ${hasPrices}개 있습니다. 추가로 생성하시겠습니까?`,
-        choices: ["생성", "건너뛰기"],
-      },
-    ]);
-    if (answer.answer === "건너뛰기") {
-      console.log("⏭️  가격 시드 생성 건너뛰기\n");
-      return;
-    }
-  }
-
-  const prices = [
+  const prices: (typeof AiProviderPricesTable.$inferInsert)[] = [
     // OpenAI
     {
       provider: "openai",

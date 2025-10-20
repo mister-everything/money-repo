@@ -60,16 +60,16 @@ export const AiProviderPricesTable = solvesSchema.table(
      *  eg: "1950.00" (1950원 per 1M tokens)
      */
     inputTokenPrice: decimal("input_token_price", {
-      precision: 12,
-      scale: 8,
+      precision: 15,
+      scale: 2,
     }).notNull(),
 
     /** 출력 토큰 단가 (원화, 1M 토큰 기준)
      *  eg: "7800.00" (7800원 per 1M tokens)
      */
     outputTokenPrice: decimal("output_token_price", {
-      precision: 12,
-      scale: 8,
+      precision: 15,
+      scale: 2,
     }).notNull(),
 
     /** 캐시 토큰 단가 (원화, 1M 토큰 기준)
@@ -78,8 +78,8 @@ export const AiProviderPricesTable = solvesSchema.table(
      *  eg: "975.00" (입력 토큰 50% 할인)
      */
     cachedTokenPrice: decimal("cached_token_price", {
-      precision: 12,
-      scale: 8,
+      precision: 15,
+      scale: 2,
     }).notNull(),
 
     /** 마진율 (청구금액 = 원가 × markupRate)
@@ -141,12 +141,12 @@ export const CreditWalletTable = solvesSchema.table(
       .references(() => userTable.id, { onDelete: "cascade" }),
 
     /** 현재 크레딧 잔액
-     *  정밀도: decimal(18, 6) - 소수점 6자리까지
-     *  eg: "1250.000000", "0.500000"
+     *  정밀도: decimal(15, 2) - 소수점 2자리
+     *  eg: "1250.00", "1.50"
      */
-    balance: decimal("balance", { precision: 18, scale: 6 })
+    balance: decimal("balance", { precision: 15, scale: 2 })
       .notNull()
-      .default("0"),
+      .default("0.00"),
 
     /** 낙관적 락 버전
      *  동시성 제어: UPDATE WHERE version = :expected
@@ -204,24 +204,24 @@ export const CreditLedgerTable = solvesSchema.table(
     /** 증감 크레딧
      *  양수: 적립 (purchase, grant, refill)
      *  음수: 차감 (debit, reset)
-     *  eg: "+100.000000", "-12.500000"
+     *  eg: "+100.00", "-13.50"
      */
-    delta: decimal("delta", { precision: 18, scale: 6 }).notNull(),
+    delta: decimal("delta", { precision: 15, scale: 2 }).notNull(),
 
     /** 트랜잭션 직후 잔액 스냅샷
      *  복구/감사/리포팅에 유용
-     *  eg: "987.500000"
+     *  eg: "987.50"
      */
     runningBalance: decimal("running_balance", {
-      precision: 18,
-      scale: 6,
+      precision: 15,
+      scale: 2,
     }).notNull(),
 
     /** 멱등성 키
      *  중복 요청 방지 (재시도, 네트워크 오류 등)
      *  eg: "req_20251014_abc123", "usage_event_xyz"
      */
-    idempotencyKey: text("idempotency_key"),
+    idempotencyKey: text("idempotency_key").notNull(),
 
     /** 트랜잭션 사유/출처
      *  eg: "invoice:inv_001", "promo:WELCOME20", "AI usage: gpt-4o-mini"
@@ -310,11 +310,11 @@ export const UsageEventsTable = solvesSchema.table(
 
     /** 고객 청구 크레딧
      *  실제 차감된 크레딧 (원가 × markup)
-     *  eg: "0.020000" (원가 $0.0125 × 1.6)
+     *  eg: "1.60" (원가 1.00원 × 1.6)
      */
     billableCredits: decimal("billable_credits", {
-      precision: 18,
-      scale: 6,
+      precision: 15,
+      scale: 2,
     }).notNull(),
 
     /** 멱등성 키
@@ -403,18 +403,18 @@ export const InvoicesTable = solvesSchema.table(
     title: text("title").notNull(),
 
     /** 청구 금액 (원 기준)
-     *  eg: "100000원"
+     *  eg: "100000.00원"
      */
-    amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
+    amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
 
     /** 구매 크레딧
      *  결제 완료 시 지갑에 적립되는 크레딧
      *  구독: 월간 할당량, 구매: 패키지 크레딧
-     *  eg: "10000.000000", "1000.000000"
+     *  eg: "10000.00", "1000.00"
      */
     purchasedCredits: decimal("purchased_credits", {
-      precision: 18,
-      scale: 6,
+      precision: 15,
+      scale: 2,
     }).notNull(),
 
     /** 결제 상태
@@ -469,87 +469,80 @@ export const InvoicesTable = solvesSchema.table(
  * - 매월 1일 또는 구독 갱신일에 충전 횟수 리셋
  *
  */
-export const SubscriptionPlansTable = solvesSchema.table(
-  "subscription_plans",
-  {
-    /** 고유 ID
-     *  eg: "plan_abc123..."
-     */
-    id: uuid("id").primaryKey().defaultRandom(),
+export const SubscriptionPlansTable = solvesSchema.table("subscription_plans", {
+  /** 고유 ID
+   *  eg: "plan_abc123..."
+   */
+  id: uuid("id").primaryKey().defaultRandom(),
 
-    /** 플랜 식별자
-     *  시스템 내부 키 (unique)
-     *  eg: "free", "pro", "business"
-     */
-    name: text("name").notNull().unique(),
+  /** 플랜 식별자
+   *  시스템 내부 키 (unique)
+   *  eg: "free", "pro", "business"
+   */
+  name: text("name").notNull().unique(),
 
-    /** 플랜 표시명
-     *  사용자에게 보이는 이름
-     *  eg: "Free Plan", "Pro Plan", "Business Plan"
-     */
-    displayName: text("display_name").notNull(),
+  /** 플랜 표시명
+   *  사용자에게 보이는 이름
+   *  eg: "Free Plan", "Pro Plan", "Business Plan"
+   */
+  displayName: text("display_name").notNull(),
 
-    /** 플랜 설명
-     *  간단한 플랜 소개 (1-2문장)
-     *  eg: "개인 개발자를 위한 무료 플랜"
-     */
-    description: text("description"),
+  /** 플랜 설명
+   *  간단한 플랜 소개 (1-2문장)
+   *  eg: "개인 개발자를 위한 무료 플랜"
+   */
+  description: text("description"),
 
-    /** 플랜 상세 내용
-     *  JSON 배열 형태의 구조화된 컨텐츠
-     *  [{type: 'text', text: '월 1,000 크레딧'}, {type: 'text', text: '기본 모델 사용'}]
-     */
-    plans: jsonb("plans").$type<PlanContentBlock[]>(),
+  /** 플랜 상세 내용
+   *  JSON 배열 형태의 구조화된 컨텐츠
+   *  [{type: 'text', text: '월 1,000 크레딧'}, {type: 'text', text: '기본 모델 사용'}]
+   */
+  plans: jsonb("plans").$type<PlanContentBlock[]>(),
 
-    /** 월 구독료 원 단위 (소수점 가능)
-     *  eg: "0.00", "1000000.50"
-     */
-    price: decimal("price", { precision: 18, scale: 6 }).notNull(),
+  /** 월 구독료 원 단위 (소수점 2자리)
+   *  eg: "0.00", "1000000.00"
+   */
+  price: decimal("price", { precision: 15, scale: 2 }).notNull(),
 
-    /** 월간 크레딧 할당량
-     *  매월 초 또는 구독 갱신일에 지급
-     *  eg: "1000.000000" (1K), "10000.000000" (10K)
-     */
-    monthlyQuota: decimal("monthly_quota", {
-      precision: 18,
-      scale: 6,
-    }).notNull(),
+  /** 월간 크레딧 할당량
+   *  매월 초 또는 구독 갱신일에 지급
+   *  eg: "1000.00" (1K), "10000.00" (10K)
+   */
+  monthlyQuota: decimal("monthly_quota", {
+    precision: 15,
+    scale: 2,
+  }).notNull(),
 
-    /** 정기 자동 충전량
-     *  잔액 소진 시 자동 충전되는 크레딧
-     *  eg: "50.000000", "500.000000"
-     */
-    refillAmount: decimal("refill_amount", {
-      precision: 18,
-      scale: 6,
-    }).notNull(),
+  /** 정기 자동 충전량
+   *  잔액 소진 시 자동 충전되는 크레딧
+   *  eg: "50.00", "500.00"
+   */
+  refillAmount: decimal("refill_amount", {
+    precision: 15,
+    scale: 2,
+  }).notNull(),
 
-    /** 자동 충전 간격 (시간)
-     *  마지막 충전 후 대기 시간
-     *  eg: 6 (6시간), 12 (12시간), 24 (24시간)
-     */
-    refillIntervalHours: integer("refill_interval_hours").notNull(),
+  /** 자동 충전 간격 (시간)
+   *  마지막 충전 후 대기 시간
+   *  eg: 6 (6시간), 12 (12시간), 24 (24시간)
+   */
+  refillIntervalHours: integer("refill_interval_hours").notNull(),
 
-    /** 월간 최대 자동 충전 횟수
-     *  한 달에 자동 충전 가능한 최대 횟수
-     *  매월 1일에 리셋 (또는 구독 갱신일)
-     *  예측 가능한 비용: maxRefillCount × refillAmount
-     *  eg: 10 (Free), 20 (Pro), 50 (Business)
-     */
-    maxRefillCount: integer("max_refill_count").notNull(),
+  /** 월간 최대 자동 충전 횟수
+   *  한 달에 자동 충전 가능한 최대 횟수
+   *  매월 1일에 리셋 (또는 구독 갱신일)
+   *  예측 가능한 비용: maxRefillCount × refillAmount
+   *  eg: 10 (Free), 20 (Pro), 50 (Business)
+   */
+  maxRefillCount: integer("max_refill_count").notNull(),
 
-    /** 플랜 활성화 여부
-     *  비활성 플랜은 신규 구독 불가
-     *  eg: true, false
-     */
-    isActive: boolean("is_active").notNull().default(true),
-    ...timestamps,
-  },
-  (t) => [
-    /** 플랜명으로 빠른 조회 (unique) */
-    uniqueIndex("subscription_plans_name_idx").on(t.name),
-  ],
-);
+  /** 플랜 활성화 여부
+   *  비활성 플랜은 신규 구독 불가
+   *  eg: true, false
+   */
+  isActive: boolean("is_active").notNull().default(true),
+  ...timestamps,
+});
 
 /**
  * 구독 테이블
@@ -734,11 +727,11 @@ export const SubscriptionPeriodsTable = solvesSchema.table(
 
     /** 이 기간에 지급된 크레딧
      *  월간 할당량
-     *  eg: "10000.000000"
+     *  eg: "10000.00"
      */
     creditsGranted: decimal("credits_granted", {
-      precision: 18,
-      scale: 6,
+      precision: 15,
+      scale: 2,
     }),
 
     /** 이 기간 동안 자동 충전 횟수
@@ -758,10 +751,10 @@ export const SubscriptionPeriodsTable = solvesSchema.table(
       onDelete: "restrict",
     }),
 
-    /** 결제 금액 (원, 소수점 가능)
-     *  eg: "10000.50"
+    /** 결제 금액 (원, 소수점 2자리)
+     *  eg: "10000.00"
      */
-    amountPaid: decimal("amount_paid", { precision: 18, scale: 6 }),
+    amountPaid: decimal("amount_paid", { precision: 15, scale: 2 }),
 
     /** 생성 시각 (불변) */
     createdAt: timestamp("created_at").notNull().defaultNow(),
