@@ -1,6 +1,9 @@
 "use client";
 
-import type { ProbBlockWithoutAnswer } from "@service/solves/shared";
+import type {
+  McqBlockContent,
+  ProbBlockWithoutAnswer,
+} from "@service/solves/shared";
 import { motion } from "framer-motion";
 import { Edit, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,10 +17,11 @@ export function MultipleChoiceProblem({
   problem,
   index,
 }: MultipleChoiceProblemProps) {
-  // mcq 타입의 content만 처리
+  // mcq 타입이 아니면 렌더링하지 않음
   if (problem.type !== "mcq") return null;
 
-  const options = problem.content.options;
+  const content = problem.content as McqBlockContent;
+  const options = content.options;
 
   return (
     <motion.div

@@ -11,7 +11,7 @@ interface OpenEndedProblemProps {
 }
 
 export function OpenEndedProblem({ problem, index }: OpenEndedProblemProps) {
-  // default 타입만 처리
+  // default 타입이 아니면 렌더링하지 않음
   if (problem.type !== "default") return null;
   return (
     <motion.div
