@@ -37,6 +37,31 @@ export const planAdminService = {
   },
 
   /**
+   * 플랜 ID로 단일 플랜 조회
+   */
+  getPlanById: async (
+    planId: string,
+  ): Promise<SubscriptionPlanWithCount | null> => {
+    const [plan] = await pgDb
+      .select({
+        ...getTableColumns(SubscriptionPlansTable),
+        count: count(SubscriptionsTable.id).as("count"),
+      })
+      .from(SubscriptionPlansTable)
+      .leftJoin(
+        SubscriptionsTable,
+        and(
+          eq(SubscriptionPlansTable.id, SubscriptionsTable.planId),
+          eq(SubscriptionsTable.status, "active"),
+        ),
+      )
+      .where(eq(SubscriptionPlansTable.id, planId))
+      .groupBy(SubscriptionPlansTable.id);
+
+    return plan ?? null;
+  },
+
+  /**
    * 플랜 생성
    */
   createPlan: async (data: CreateSubscriptionPlan): Promise<any> => {
