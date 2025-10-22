@@ -1,6 +1,6 @@
 import { planAdminService } from "@service/solves";
-import Link from "next/link";
 
+import Link from "next/link";
 import { PlanCard } from "@/components/solves/plan-card";
 import { Button } from "@/components/ui/button";
 
@@ -10,7 +10,7 @@ export default async function PlanItemsPage() {
   const plans = await planAdminService.getAllPlans();
 
   return (
-    <main className="flex flex-1 flex-col ">
+    <main className="flex flex-1 flex-col">
       <div className="flex items-center p-2">
         <p className="text-muted-foreground">
           구독 플랜을 생성, 수정하고 관리할 수 있습니다.

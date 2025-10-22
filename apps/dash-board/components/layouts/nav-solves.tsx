@@ -1,6 +1,6 @@
 "use client";
 
-import { SquareChartGanttIcon } from "lucide-react";
+import { DollarSignIcon, SquareChartGanttIcon } from "lucide-react";
 import Link from "next/link";
 import {
   SidebarGroup,
@@ -15,6 +15,11 @@ const menuItems = [
     title: "구독 상품",
     url: "/solves/plan",
     icon: SquareChartGanttIcon,
+  },
+  {
+    title: "AI Model 관리",
+    url: "/solves/ai-prices",
+    icon: DollarSignIcon,
   },
 ];
 

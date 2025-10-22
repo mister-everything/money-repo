@@ -1,3 +1,4 @@
+export * from "./payment/ai-price-admin.service";
 export * from "./payment/plan-admin.service";
 export * from "./payment/schema";
 export * from "./payment/subscription.service";

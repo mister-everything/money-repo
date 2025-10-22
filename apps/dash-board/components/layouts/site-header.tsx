@@ -46,6 +46,10 @@ const urls: Menu[] = [
       },
     ],
   },
+  {
+    title: "AI Model 관리",
+    urlPattern: "/solves/ai-prices",
+  },
 ];
 
 function findMenuByPattern(

@@ -192,6 +192,9 @@ export const createAIPriceSchema = z.object({
   outputTokenPrice: z.string().refine((val) => Number(val) >= 0, {
     message: "출력 토큰 가격은 0 이상이어야 합니다",
   }),
+  cachedTokenPrice: z.string().refine((val) => Number(val) >= 0, {
+    message: "캐시 토큰 가격은 0 이상이어야 합니다",
+  }),
   markupRate: z
     .string()
     .refine((val) => Number(val) > 0, {
@@ -202,6 +205,13 @@ export const createAIPriceSchema = z.object({
 });
 
 export type CreateAIPrice = z.infer<typeof createAIPriceSchema>;
+
+/**
+ * AI 제공자 가격 업데이트 스키마
+ */
+export const updateAIPriceSchema = createAIPriceSchema.partial();
+
+export type UpdateAIPrice = z.infer<typeof updateAIPriceSchema>;
 
 /**
  * 인보이스 생성 스키마
