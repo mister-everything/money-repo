@@ -1,4 +1,4 @@
-import { LayoutGridIcon, ShieldCheckIcon, TestTube } from "lucide-react";
+import { LayoutGridIcon, ShieldCheckIcon } from "lucide-react";
 import Link from "next/link";
 import {
   SidebarGroup,
@@ -17,11 +17,6 @@ const menuItems = [
     title: "사용자 관리",
     url: "/users",
     icon: ShieldCheckIcon,
-  },
-  {
-    title: "TEST화면",
-    url: "/test-view",
-    icon: TestTube,
   },
 ];
 
