@@ -1,6 +1,6 @@
-import { AUTH_COOKIE_PREFIX } from "@service/auth/const";
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
+import { AUTH_COOKIE_PREFIX } from "@/lib/const";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

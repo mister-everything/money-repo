@@ -1,9 +1,10 @@
 "use server";
-import { nextBetterAuthForAdmin, userService } from "@service/auth";
+import { userService } from "@service/auth";
 import { headers } from "next/headers";
+import { adminBetterAuth } from "@/lib/auth/server";
 
 export async function checkSession() {
-  const session = await nextBetterAuthForAdmin.api
+  const session = await adminBetterAuth.api
     .getSession({
       headers: await headers(),
     })
