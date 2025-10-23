@@ -18,10 +18,10 @@ export default function DashBoardLayout({
         }
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
-          <SiteHeader />
-          <main className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2 p-6">
+        <SidebarInset className="flex flex-col h-[calc(100vh-1rem)] overflow-hidden">
+          <SiteHeader className="flex-shrink-0" />
+          <main className="flex-1 overflow-y-auto">
+            <div className="@container/main flex h-full flex-col gap-2 p-6">
               {children}
             </div>
           </main>

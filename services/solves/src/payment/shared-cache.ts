@@ -1,16 +1,14 @@
 import { createCache } from "@workspace/cache";
+import { IS_PROD } from "@workspace/util/const";
 
-const isProduction = process.env.NODE_ENV === "production";
 const cacheInstance = createCache({
-  forceMemory: process.env.FORCE_MEMORY_CACHE === "true",
+  forceMemory: !IS_PROD, // dev only
 });
 
 // Production 환경에서 Redis 필수 검증
-if (isProduction && cacheInstance.constructor.name === "MemoryCache") {
+if (IS_PROD && cacheInstance.constructor.name === "MemoryCache") {
   throw new Error(
-    "[Payment/SharedCache] CRITICAL: Redis is REQUIRED in production.\n" +
-      "MemoryCache does not work in multi-instance serverless environments.\n" +
-      "Please set REDIS_URL environment variable.",
+    "[Payment/SharedCache] CRITICAL: 프로덕션에서 cache redis 는 필수 입니다.",
   );
 }
 

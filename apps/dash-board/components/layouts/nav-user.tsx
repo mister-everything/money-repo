@@ -1,7 +1,10 @@
 "use client";
 
+import { TIME } from "@workspace/util";
 import { LogOutIcon, MoreHorizontalIcon } from "lucide-react";
 import { useCallback } from "react";
+import useSWR from "swr";
+import { checkSession } from "@/app/api/auth/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -19,22 +22,30 @@ import {
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth/client";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string;
-    email: string;
-    image?: string | null;
-  };
-}) {
-  const { isMobile } = useSidebar();
+type User = {
+  name: string;
+  email: string;
+  image?: string | null;
+};
 
+export function NavUser({ user: initialUser }: { user: User }) {
+  const { isMobile } = useSidebar();
   const handleSignOut = useCallback(() => {
     authClient.signOut().finally(() => {
       window.location.href = "/sign-in";
     });
   }, []);
+
+  const { data: user = initialUser } = useSWR<User>(
+    "checkSession",
+    checkSession,
+    {
+      fallbackData: initialUser,
+      onError: handleSignOut,
+      revalidateOnFocus: false,
+      refreshInterval: TIME.MINUTES(15),
+    },
+  );
 
   return (
     <SidebarMenu>

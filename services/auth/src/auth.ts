@@ -1,3 +1,4 @@
+import { IS_PROD } from "@workspace/util/const";
 import { BetterAuthOptions, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -91,24 +92,26 @@ export const nextBetterAuthForAdmin: ReturnType<typeof betterAuth> = betterAuth(
     session,
     account,
     emailAndPassword: {
-      enabled: true,
+      enabled: false,
       disableSignUp: true,
     },
     socialProviders: {
       google: {
         ...(socialProviders.google as GoogleOptions),
-        disableSignUp: true,
+        disableSignUp: IS_PROD,
       },
     },
     databaseHooks: {
       session: {
         create: {
           before: async (session) => {
+            if (!IS_PROD) return true;
             return checkAdmin(session.userId);
           },
         },
         update: {
           before: async (session) => {
+            if (!IS_PROD) return true;
             return checkAdmin(session.userId);
           },
         },
