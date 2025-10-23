@@ -2,6 +2,7 @@ import { eq, getTableColumns } from "drizzle-orm";
 import { pgDb } from "../db";
 import { AiProviderPricesTable } from "./schema";
 import {
+  AIPrice,
   type CreateAIPrice,
   createAIPriceSchema,
   type UpdateAIPrice,
@@ -17,7 +18,7 @@ export const aiPriceAdminService = {
   /**
    * 모든 AI 가격 조회
    */
-  getAllPrices: async () => {
+  getAllPrices: async (): Promise<AIPrice[]> => {
     const prices = await pgDb
       .select(getTableColumns(AiProviderPricesTable))
       .from(AiProviderPricesTable)

@@ -5,12 +5,12 @@ import {
   createAIPriceSchema,
   updateAIPriceSchema,
 } from "@service/solves/shared";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
+
+import { flattenError, z } from "zod";
 
 type FormState = {
   success: boolean;
-  errors?: Record<string, string[]>;
+  errors?: ReturnType<typeof flattenError>;
   message?: string;
 };
 
@@ -42,7 +42,6 @@ export async function createAIPriceAction(
     const validated = createAIPriceSchema.parse(data);
 
     await aiPriceAdminService.createPrice(validated);
-    revalidatePath("/solves/ai-prices");
 
     return {
       success: true,
@@ -52,7 +51,7 @@ export async function createAIPriceAction(
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        errors: error.flatten().fieldErrors,
+        errors: flattenError(error),
         message: "입력값을 확인해주세요.",
       };
     }
@@ -93,7 +92,6 @@ export async function updateAIPriceAction(
     const validated = updateAIPriceSchema.parse(data);
 
     await aiPriceAdminService.updatePrice(priceId, validated);
-    revalidatePath("/solves/ai-prices");
 
     return {
       success: true,
@@ -103,7 +101,7 @@ export async function updateAIPriceAction(
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        errors: error.flatten().fieldErrors,
+        errors: flattenError(error),
         message: "입력값을 확인해주세요.",
       };
     }
@@ -124,9 +122,12 @@ export async function toggleAIPriceActiveAction(
 ) {
   try {
     await aiPriceAdminService.setPriceActive(priceId, isActive);
-    revalidatePath("/solves/ai-prices");
   } catch (error) {
     console.error("AI 가격 상태 변경 실패:", error);
     throw new Error("AI 가격 상태 변경에 실패했습니다.");
   }
+}
+
+export async function fetchAIPrices() {
+  return aiPriceAdminService.getAllPrices();
 }

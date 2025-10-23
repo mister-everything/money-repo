@@ -2,13 +2,12 @@
 
 import { planAdminService } from "@service/solves";
 import { createSubscriptionPlanSchema } from "@service/solves/shared";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { treeifyError, z } from "zod";
+import { flattenError, z } from "zod";
 
 type FormState = {
   success: boolean;
-  errors?: Record<string, string[]>;
+  errors?: ReturnType<typeof flattenError>;
   message?: string;
 };
 
@@ -41,12 +40,11 @@ export async function createPlanAction(
     const validated = createSubscriptionPlanSchema.parse(data);
 
     await planAdminService.createPlan(validated);
-    revalidatePath("/solves/plan");
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        errors: treeifyError(error),
+        errors: flattenError(error),
         message: "입력값을 확인해주세요.",
       };
     }
@@ -86,16 +84,16 @@ export async function updatePlanAction(
       isActive: formData.get("isActive") === "true",
     };
 
+    console.log(data);
     // Validation
     const validated = createSubscriptionPlanSchema.partial().parse(data);
 
     await planAdminService.updatePlan(planId, validated);
-    revalidatePath("/solves/plan");
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        errors: error.flatten().fieldErrors,
+        errors: flattenError(error),
         message: "입력값을 확인해주세요.",
       };
     }
@@ -118,7 +116,6 @@ export async function togglePlanActiveAction(
 ) {
   try {
     await planAdminService.setPlanActive(planId, isActive);
-    revalidatePath("/solves/plan");
     // redirect는 클라이언트에서 처리
   } catch (error) {
     console.error("플랜 상태 변경 실패:", error);

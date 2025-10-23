@@ -1,8 +1,24 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, gte, or, sql } from "drizzle-orm";
 import { pgDb } from "./db";
-import { userTable } from "./schema";
+import { sessionTable, userTable } from "./schema";
 import { Role } from "./shared";
 export const userService = {
+  isSessionValid: async (session: string, userId: string) => {
+    const [sessionData] = await pgDb
+      .select({ id: sessionTable.id })
+      .from(sessionTable)
+      .where(
+        and(
+          eq(sessionTable.id, session),
+          eq(sessionTable.userId, userId),
+          gte(sessionTable.expiresAt, sql`now()`),
+        ),
+      );
+    if (!sessionData) {
+      return false;
+    }
+    return true;
+  },
   createUser: async (user: typeof userTable.$inferInsert) => {
     return await pgDb.insert(userTable).values(user).returning();
   },

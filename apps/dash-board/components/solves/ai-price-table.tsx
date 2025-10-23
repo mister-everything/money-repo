@@ -76,6 +76,12 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
     });
   };
 
+  const calculateFinalPrice = (basePrice: string, markupRate: string) => {
+    const base = Number(basePrice);
+    const markup = Number(markupRate);
+    return (base * markup).toFixed(2);
+  };
+
   const getModelTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       text: "텍스트",
@@ -96,12 +102,12 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
               <TableHead>제공자</TableHead>
               <TableHead>모델</TableHead>
               <TableHead>타입</TableHead>
-              <TableHead className="text-right">입력 토큰</TableHead>
-              <TableHead className="text-right">출력 토큰</TableHead>
-              <TableHead className="text-right">캐시 토큰</TableHead>
-              <TableHead className="text-right">마진율</TableHead>
-              <TableHead className="text-center">활성화</TableHead>
-              <TableHead className="text-right">작업</TableHead>
+              <TableHead>입력 토큰</TableHead>
+              <TableHead>출력 토큰</TableHead>
+              <TableHead>캐시 토큰</TableHead>
+              <TableHead>마진율</TableHead>
+              <TableHead>활성화</TableHead>
+              <TableHead>작업</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -116,12 +122,12 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
             ) : (
               prices.map((price) => (
                 <TableRow key={price.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium text-center">
                     {price.provider}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">{price.model}</span>
+                      <span className="text-sm">{price.model}</span>
                       {!price.isActive && (
                         <Badge variant="secondary" className="text-xs">
                           비활성
@@ -134,16 +140,58 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                       {getModelTypeLabel(price.modelType)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    ₩{formatPrice(price.inputTokenPrice)}
+                  <TableCell className="text-right">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        원가: {formatPrice(price.inputTokenPrice)}원
+                      </span>
+                      <span className="text-sm font-medium">
+                        판매:{" "}
+                        {formatPrice(
+                          calculateFinalPrice(
+                            price.inputTokenPrice,
+                            price.markupRate,
+                          ),
+                        )}
+                        원
+                      </span>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    ₩{formatPrice(price.outputTokenPrice)}
+                  <TableCell className="text-right">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        원가: {formatPrice(price.outputTokenPrice)}원
+                      </span>
+                      <span className="text-sm font-medium">
+                        판매:{" "}
+                        {formatPrice(
+                          calculateFinalPrice(
+                            price.outputTokenPrice,
+                            price.markupRate,
+                          ),
+                        )}
+                        원
+                      </span>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    ₩{formatPrice(price.cachedTokenPrice)}
+                  <TableCell className="text-right">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        원가: {formatPrice(price.cachedTokenPrice)}원
+                      </span>
+                      <span className="text-sm font-medium">
+                        판매:{" "}
+                        {formatPrice(
+                          calculateFinalPrice(
+                            price.cachedTokenPrice,
+                            price.markupRate,
+                          ),
+                        )}
+                        원
+                      </span>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
+                  <TableCell className="text-right text-sm">
                     {price.markupRate}×
                   </TableCell>
                   <TableCell className="text-center">

@@ -2,7 +2,7 @@
 
 import type { AIPrice } from "@service/solves/shared";
 import { Loader } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { ReactNode, useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,8 +28,9 @@ import { Switch } from "@/components/ui/switch";
 interface AIPriceDialogProps {
   mode: "create" | "edit";
   initialData?: AIPrice;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  children?: ReactNode;
+  onOpenChange?: (open: boolean) => void;
   action: (
     prevState: any,
     formData: FormData,
@@ -39,6 +41,7 @@ export function AIPriceDialog({
   mode,
   initialData,
   open,
+  children,
   onOpenChange,
   action,
 }: AIPriceDialogProps) {
@@ -52,7 +55,7 @@ export function AIPriceDialog({
   useEffect(() => {
     if (state?.success) {
       toast.success(state.message);
-      onOpenChange(false);
+      onOpenChange?.(false);
     } else if (state?.message) {
       toast.error(state.message);
     }
@@ -64,6 +67,8 @@ export function AIPriceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
+
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -246,7 +251,7 @@ export function AIPriceDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => onOpenChange?.(false)}
               disabled={isPending}
             >
               취소

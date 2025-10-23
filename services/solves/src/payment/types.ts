@@ -399,7 +399,7 @@ export type PlanContentBlock = z.infer<typeof planContentBlockSchema>;
  * 구독 플랜 생성 스키마
  */
 export const createSubscriptionPlanSchema = z.object({
-  name: z.string(),
+  name: z.string("필수 입력 항목 입니다."),
   displayName: z.string(),
   description: z.string().optional(),
   plans: z.array(planContentBlockSchema).optional(),

@@ -2,8 +2,15 @@
 
 import type { SubscriptionPlanWithCount } from "@service/solves/shared";
 import { AlertTriangle, Loader, Plus, Trash2 } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { toast } from "sonner";
+import { flattenError } from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +30,11 @@ interface PlanFormProps {
   action: (
     prevState: any,
     formData: FormData,
-  ) => Promise<{ success: boolean; errors?: any; message?: string }>;
+  ) => Promise<{
+    success: boolean;
+    errors?: ReturnType<typeof flattenError>;
+    message?: string;
+  }>;
   onDelete?: () => Promise<void>;
 }
 
@@ -90,10 +101,16 @@ export function PlanForm({
       }
     }
   };
+  const hasFieldError = useMemo(() => {
+    return Object.keys(state?.errors?.fieldErrors ?? {}).length > 0;
+  }, [state?.errors?.fieldErrors]);
 
-  const getFieldError = (fieldName: string) => {
-    return state?.errors?.[fieldName]?.[0];
-  };
+  const getFieldError = useCallback(
+    (fieldName: string) => {
+      return state?.errors?.fieldErrors?.[fieldName]?.[0];
+    },
+    [state?.errors?.fieldErrors],
+  );
 
   return (
     <form action={formAction} className="space-y-8">
@@ -112,7 +129,7 @@ export function PlanForm({
             disabled={mode === "edit"}
             required
           />
-          {getFieldError("name") && (
+          {hasFieldError && (
             <p className="text-sm text-destructive">{getFieldError("name")}</p>
           )}
           <p className="text-sm text-muted-foreground">
@@ -130,7 +147,7 @@ export function PlanForm({
             defaultValue={initialData?.displayName}
             required
           />
-          {getFieldError("displayName") && (
+          {hasFieldError && (
             <p className="text-sm text-destructive">
               {getFieldError("displayName")}
             </p>
@@ -152,7 +169,7 @@ export function PlanForm({
           rows={3}
           className="resize-none"
         />
-        {getFieldError("description") && (
+        {hasFieldError && (
           <p className="text-sm text-destructive">
             {getFieldError("description")}
           </p>
@@ -172,7 +189,7 @@ export function PlanForm({
             defaultValue={initialData?.price ?? "0.00"}
             required
           />
-          {getFieldError("price") && (
+          {hasFieldError && (
             <p className="text-sm text-destructive">{getFieldError("price")}</p>
           )}
           <p className="text-sm text-muted-foreground">
@@ -191,7 +208,7 @@ export function PlanForm({
             defaultValue={initialData?.monthlyQuota ?? "0.00"}
             required
           />
-          {getFieldError("monthlyQuota") && (
+          {hasFieldError && (
             <p className="text-sm text-destructive">
               {getFieldError("monthlyQuota")}
             </p>
@@ -215,7 +232,7 @@ export function PlanForm({
             defaultValue={initialData?.refillAmount ?? "0.00"}
             required
           />
-          {getFieldError("refillAmount") && (
+          {hasFieldError && (
             <p className="text-sm text-destructive">
               {getFieldError("refillAmount")}
             </p>
@@ -235,7 +252,7 @@ export function PlanForm({
             defaultValue={initialData?.refillIntervalHours ?? 6}
             required
           />
-          {getFieldError("refillIntervalHours") && (
+          {hasFieldError && (
             <p className="text-sm text-destructive">
               {getFieldError("refillIntervalHours")}
             </p>
@@ -255,7 +272,7 @@ export function PlanForm({
             defaultValue={initialData?.maxRefillCount ?? 0}
             required
           />
-          {getFieldError("maxRefillCount") && (
+          {hasFieldError && (
             <p className="text-sm text-destructive">
               {getFieldError("maxRefillCount")}
             </p>
