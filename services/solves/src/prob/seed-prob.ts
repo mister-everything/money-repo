@@ -1,12 +1,9 @@
 import { Role } from "@service/auth/shared";
 import { userService } from "@service/auth/user.service";
 import { generateUUID } from "@workspace/util";
-import { count } from "drizzle-orm";
-import inquirer from "inquirer";
-import { pgDb } from "../db";
+
 import { mockData } from "./mock-data";
 import { probService } from "./prob.service";
-import { probBooksTable } from "./schema";
 
 /**
  * Prob 모듈 시드 데이터 생성
@@ -14,26 +11,6 @@ import { probBooksTable } from "./schema";
  */
 export const seedProb = async () => {
   console.log("🌱 Seeding Prob data...");
-
-  const hasProbBooks = await pgDb
-    .select({ count: count() })
-    .from(probBooksTable)
-    .then((res) => res[0].count);
-
-  if (hasProbBooks > 0) {
-    const answer = await inquirer.prompt([
-      {
-        type: "select",
-        name: "answer",
-        message: "문제집이 이미 있습니다. 문제집을 생성하시겠습니까?",
-        choices: ["생성", "종료"],
-      },
-    ]);
-    if (answer.answer === "종료") {
-      console.log("⏭️  Prob 시드 생성 건너뛰기");
-      return;
-    }
-  }
 
   // 랜덤 테스트 유저 생성
   const randomEmail = `test${Math.random().toString(36).substring(2, 10)}@test.com`;

@@ -8,3 +8,5 @@ if (!process.env.POSTGRES_URL) {
 }
 
 export const pgDb = drizzlePg(process.env.POSTGRES_URL!);
+
+export const authDataBase = pgDb; // alias
