@@ -220,10 +220,7 @@ export const userService = {
   consumeInvitation: async (token: string, userId: string) => {
     // First validate the invitation
     const invitation = await userService.validateInvitation(token);
-    if (!invitation) {
-      return false;
-    }
-
+    if (!invitation) throw new Error("Invalid or expired invitation");
     // Mark invitation as used
     await pgDb
       .update(invitationTable)
@@ -235,8 +232,6 @@ export const userService = {
 
     // Grant admin role
     await userService.updateUserRole(userId, Role.ADMIN);
-
-    return true;
   },
   getInvitationsByUser: async (userId: string) => {
     const invitations = await pgDb

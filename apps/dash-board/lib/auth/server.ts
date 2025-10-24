@@ -8,7 +8,7 @@ import {
 } from "@service/auth";
 
 import { IS_PROD } from "@workspace/util/const";
-import { betterAuth } from "better-auth";
+import { betterAuth, Session } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
@@ -49,6 +49,22 @@ const database = drizzleAdapter(authDataBase, {
   },
 });
 
+const sessionHook = async (session: Partial<Session>) => {
+  const cookieStore = await cookies();
+  const inviteToken = cookieStore.get("admin_invite_token")?.value;
+  if (inviteToken) {
+    try {
+      await userService.consumeInvitation(inviteToken, session.userId!);
+    } catch (error) {
+      console.error("Failed to consume invite token:", error);
+    } finally {
+      cookieStore.delete("admin_invite_token");
+    }
+  }
+  if (!IS_PROD) return true;
+  return checkAdmin(session.userId);
+};
+
 export const adminBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
   database,
   advanced: {
@@ -78,47 +94,14 @@ export const adminBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
-  databaseHooks: {
-    user: {
-      create: {
-        after: async (user) => {
-          // Check for invite token and consume it
-          const cookieStore = await cookies();
-          const inviteToken = cookieStore.get("admin_invite_token")?.value;
 
-          if (inviteToken) {
-            try {
-              const consumed = await userService.consumeInvitation(
-                inviteToken,
-                user.id,
-              );
-              if (consumed) {
-                console.log(
-                  `Successfully consumed invite token for user ${user.id}`,
-                );
-              }
-            } catch (error) {
-              console.error("Failed to consume invite token:", error);
-            } finally {
-              // Clear the cookie regardless of success/failure
-              cookieStore.delete("admin_invite_token");
-            }
-          }
-        },
-      },
-    },
+  databaseHooks: {
     session: {
       create: {
-        before: async (session) => {
-          if (!IS_PROD) return true;
-          return checkAdmin(session.userId);
-        },
+        before: sessionHook,
       },
       update: {
-        before: async (session) => {
-          if (!IS_PROD) return true;
-          return checkAdmin(session.userId);
-        },
+        before: sessionHook,
       },
     },
   },

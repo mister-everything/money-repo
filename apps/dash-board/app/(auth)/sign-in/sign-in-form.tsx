@@ -69,16 +69,7 @@ export default function SignInForm({ inviteToken }: SignInFormProps) {
   }, [inviteToken, isSettingCookie]);
 
   const handleSocialSignIn = useCallback((provider: string) => {
-    console.log(`start sign in with ${provider}`);
-    authClient.signIn
-      .social({ provider })
-      .catch((e: any) => {
-        console.log(`authClient.signIn.social error ${provider}`, e);
-        toast.warning(`${provider} 로그인에 실패했습니다.`);
-      })
-      .finally(() => {
-        console.log(`end sign in with ${provider}`);
-      });
+    authClient.signIn.social({ provider });
   }, []);
 
   return (
