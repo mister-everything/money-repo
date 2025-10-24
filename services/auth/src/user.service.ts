@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, gte, isNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, isNull, or, sql } from "drizzle-orm";
 import { pgDb } from "./db";
 import { invitationTable, sessionTable, userTable } from "./schema";
 import { Role } from "./shared";
@@ -68,6 +68,122 @@ export const userService = {
       .from(userTable)
       .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)));
     return user?.role === Role.ADMIN;
+  },
+  // User management methods
+  getUsersWithPagination: async ({
+    page = 1,
+    limit = 20,
+    search = "",
+  }: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) => {
+    const offset = (page - 1) * limit;
+
+    // Build where conditions
+    const whereConditions = [eq(userTable.isDeleted, false)];
+
+    if (search.trim()) {
+      whereConditions.push(
+        or(
+          ilike(userTable.name, `%${search}%`),
+          ilike(userTable.email, `%${search}%`),
+        ) as any,
+      );
+    }
+
+    // Get users with pagination
+    const users = await pgDb
+      .select({
+        id: userTable.id,
+        name: userTable.name,
+        email: userTable.email,
+        image: userTable.image,
+        role: userTable.role,
+        banned: userTable.banned,
+        banReason: userTable.banReason,
+        banExpires: userTable.banExpires,
+        emailVerified: userTable.emailVerified,
+        createdAt: userTable.createdAt,
+        updatedAt: userTable.updatedAt,
+      })
+      .from(userTable)
+      .where(and(...whereConditions))
+      .orderBy(desc(userTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count
+    const [{ value: totalCount }] = await pgDb
+      .select({ value: count() })
+      .from(userTable)
+      .where(and(...whereConditions));
+
+    return {
+      users,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    };
+  },
+  getUserById: async (id: string) => {
+    const [user] = await pgDb
+      .select({
+        id: userTable.id,
+        name: userTable.name,
+        email: userTable.email,
+        image: userTable.image,
+        role: userTable.role,
+        banned: userTable.banned,
+        banReason: userTable.banReason,
+        banExpires: userTable.banExpires,
+        emailVerified: userTable.emailVerified,
+        isAnonymous: userTable.isAnonymous,
+        createdAt: userTable.createdAt,
+        updatedAt: userTable.updatedAt,
+      })
+      .from(userTable)
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)));
+
+    return user || null;
+  },
+  banUser: async (
+    id: string,
+    reason: string,
+    expiresAt?: Date | null,
+  ): Promise<void> => {
+    await pgDb
+      .update(userTable)
+      .set({
+        banned: true,
+        banReason: reason,
+        banExpires: expiresAt,
+      })
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)));
+  },
+  unbanUser: async (id: string): Promise<void> => {
+    await pgDb
+      .update(userTable)
+      .set({
+        banned: false,
+        banReason: null,
+        banExpires: null,
+      })
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)));
+  },
+  updateUser: async (
+    id: string,
+    data: Partial<typeof userTable.$inferInsert>,
+  ) => {
+    const [updated] = await pgDb
+      .update(userTable)
+      .set(data)
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
+      .returning();
+
+    return updated;
   },
   // Invitation methods
   createInvitation: async (createdBy: string) => {

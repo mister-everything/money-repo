@@ -1,82 +1,282 @@
-"use client";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Search, ShieldCheck, ShieldX } from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { getUsers } from "./actions";
 
-import useSWR from "swr";
-import { DashboardMetrics } from "@/components/dashboard-metrics";
-import { UsersTable } from "@/components/users/users-table";
+export const dynamic = "force-dynamic";
 
-// 사용자 타입 정의
-interface User {
-  id: string;
-  name?: string;
-  email: string;
-  role: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
-// SWR fetcher 함수
-const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("사용자 목록을 가져오는데 실패했습니다.");
-  }
-  const data = await response.json();
+export default async function UsersPage(props: { searchParams: SearchParams }) {
+  const searchParams = await props.searchParams;
+  const page = Number(searchParams.page) || 1;
+  const search = (searchParams.search as string) || "";
 
-  // Date 타입으로 변환
-  return data.map((user: any) => ({
-    ...user,
-    createdAt: new Date(user.createdAt),
-    updatedAt: new Date(user.updatedAt),
-  }));
-};
-
-export default function UsersPage() {
-  const {
-    data: users = [],
-    error,
-    isLoading,
-    mutate: refreshUsers,
-  } = useSWR<User[]>("/api/users", fetcher, {
-    revalidateOnFocus: false, // 포커스할 때 자동 재검증 비활성화
-    revalidateOnReconnect: true, // 네트워크 재연결 시 재검증
-    dedupingInterval: 60000, // 1분간 중복 요청 방지
-  });
-
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6 bg-black min-h-screen">
-        <DashboardMetrics />
-        <div className="mt-8 text-center">
-          <p className="text-white">사용자 목록을 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 space-y-6 bg-black min-h-screen">
-        <DashboardMetrics />
-        <div className="mt-8 text-center">
-          <p className="text-red-400">오류: {error.message}</p>
-          <button
-            onClick={() => refreshUsers()}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            다시 시도
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const { users, totalCount, totalPages } = await getUsers(page, search);
 
   return (
-    <div className="p-6 space-y-6 bg-black min-h-screen">
-      <DashboardMetrics />
-      {/* 나중에 검색영역 추가 ㅇㅇ */}
-      <div className="mt-8">
-        <UsersTable users={users} onRefresh={refreshUsers} />
+    <div className="container mx-auto py-8 space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">사용자 관리</h1>
+          <p className="text-muted-foreground mt-2">
+            전체 사용자를 조회하고 관리할 수 있습니다.
+          </p>
+        </div>
       </div>
+
+      {/* Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            사용자 검색
+          </CardTitle>
+          <CardDescription>이름 또는 이메일로 검색하세요.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action="/users" method="get">
+            <div className="flex gap-2">
+              <Input
+                name="search"
+                placeholder="이름 또는 이메일 입력..."
+                defaultValue={search}
+                className="flex-1"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              >
+                검색
+              </button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Users Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>사용자 목록 ({totalCount.toLocaleString()}명)</CardTitle>
+          <CardDescription>
+            사용자를 클릭하면 상세 정보를 확인할 수 있습니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {users.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              사용자가 없습니다.
+            </p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>이름</TableHead>
+                    <TableHead>이메일</TableHead>
+                    <TableHead>역할</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead>가입일</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                    >
+                      <TableCell>
+                        <Link
+                          href={`/users/${user.id}`}
+                          className="block w-full"
+                        >
+                          <div className="flex items-center gap-2">
+                            {user.image && (
+                              <img
+                                src={user.image}
+                                alt={user.name}
+                                className="w-8 h-8 rounded-full"
+                              />
+                            )}
+                            <span className="font-medium">{user.name}</span>
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/users/${user.id}`}
+                          className="block w-full"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{user.email}</span>
+                            {user.emailVerified && (
+                              <ShieldCheck className="h-4 w-4 text-green-500" />
+                            )}
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/users/${user.id}`}
+                          className="block w-full"
+                        >
+                          <RoleBadge role={user.role} />
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/users/${user.id}`}
+                          className="block w-full"
+                        >
+                          <StatusBadge
+                            banned={user.banned}
+                            banExpires={user.banExpires}
+                          />
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/users/${user.id}`}
+                          className="block w-full"
+                        >
+                          {formatDistanceToNow(new Date(user.createdAt), {
+                            addSuffix: true,
+                            locale: ko,
+                          })}
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      {page > 1 && (
+                        <PaginationItem>
+                          <PaginationPrevious
+                            href={`/users?page=${page - 1}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
+                          />
+                        </PaginationItem>
+                      )}
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(
+                          (p) =>
+                            p === 1 ||
+                            p === totalPages ||
+                            (p >= page - 2 && p <= page + 2),
+                        )
+                        .map((p, idx, arr) => {
+                          // Add ellipsis
+                          if (idx > 0 && p - arr[idx - 1] > 1) {
+                            return (
+                              <>
+                                <PaginationItem key={`ellipsis-${p}`}>
+                                  <PaginationEllipsis />
+                                </PaginationItem>
+                                <PaginationItem key={p}>
+                                  <PaginationLink
+                                    href={`/users?page=${p}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
+                                    isActive={p === page}
+                                  >
+                                    {p}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              </>
+                            );
+                          }
+
+                          return (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href={`/users?page=${p}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
+                                isActive={p === page}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+
+                      {page < totalPages && (
+                        <PaginationItem>
+                          <PaginationNext
+                            href={`/users?page=${page + 1}${search ? `&search=${encodeURIComponent(search)}` : ""}`}
+                          />
+                        </PaginationItem>
+                      )}
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
+}
+
+function RoleBadge({ role }: { role: string | null }) {
+  if (role === "admin") {
+    return (
+      <Badge className="bg-purple-500">
+        <ShieldCheck className="mr-1 h-3 w-3" />
+        관리자
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary">
+      <ShieldX className="mr-1 h-3 w-3" />
+      사용자
+    </Badge>
+  );
+}
+
+function StatusBadge({
+  banned,
+  banExpires,
+}: {
+  banned: boolean | null;
+  banExpires: string | null;
+}) {
+  if (banned) {
+    if (banExpires && new Date(banExpires) < new Date()) {
+      return <Badge variant="outline">밴 만료</Badge>;
+    }
+    return <Badge variant="destructive">밴됨</Badge>;
+  }
+  return <Badge className="bg-green-500">활성</Badge>;
 }
