@@ -12,7 +12,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE_PREFIX } from "../const";
 
@@ -79,6 +79,34 @@ export const adminBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
     },
   },
   databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          // Check for invite token and consume it
+          const cookieStore = await cookies();
+          const inviteToken = cookieStore.get("admin_invite_token")?.value;
+
+          if (inviteToken) {
+            try {
+              const consumed = await userService.consumeInvitation(
+                inviteToken,
+                user.id,
+              );
+              if (consumed) {
+                console.log(
+                  `Successfully consumed invite token for user ${user.id}`,
+                );
+              }
+            } catch (error) {
+              console.error("Failed to consume invite token:", error);
+            } finally {
+              // Clear the cookie regardless of success/failure
+              cookieStore.delete("admin_invite_token");
+            }
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {

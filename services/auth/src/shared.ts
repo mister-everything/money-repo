@@ -12,3 +12,16 @@ export type Owner = {
   name: string;
   profile?: string;
 };
+
+export type Invitation = {
+  id: string;
+  token: string;
+  createdAt: string;
+  expiresAt: string;
+  usedAt: string | null;
+  usedBy: string | null;
+  usedByUser: {
+    name: string;
+    email: string;
+  } | null;
+};
