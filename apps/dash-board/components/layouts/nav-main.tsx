@@ -1,4 +1,4 @@
-import { LayoutGridIcon, ShieldCheckIcon } from "lucide-react";
+import { LayoutGridIcon, MailIcon, ShieldCheckIcon } from "lucide-react";
 import Link from "next/link";
 import {
   SidebarGroup,
@@ -17,6 +17,11 @@ const menuItems = [
     title: "사용자 관리",
     url: "/users",
     icon: ShieldCheckIcon,
+  },
+  {
+    title: "초대 관리",
+    url: "/invitations",
+    icon: MailIcon,
   },
 ];
 
