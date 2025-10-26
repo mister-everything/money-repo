@@ -81,10 +81,10 @@ export class DistributedLock {
  */
 export const PriceCalculator = {
   /**
-   * AI 사용량을 USD 원가로 계산
+   * AI 사용량을 원화 원가로 계산
    * @param price - AI 가격 정보
    * @param tokens - 토큰 사용량
-   * @returns USD 원가
+   * @returns 원화 원가
    */
   calculateVendorCost: (
     price: AIPrice,
@@ -103,15 +103,15 @@ export const PriceCalculator = {
 
   /**
    * 원가를 청구 크레딧으로 변환 (마진 적용)
-   * @param vendorCostUsd - USD 원가
+   * @param vendorCostKrw - 원화 원가
    * @param markupRate - 마진율
    * @returns 청구 크레딧
    */
   calculateBillableCredits: (
-    vendorCostUsd: number,
+    vendorCostKrw: number,
     markupRate: string,
   ): number => {
-    return vendorCostUsd * Number(markupRate);
+    return vendorCostKrw * Number(markupRate);
   },
 
   /**
@@ -126,15 +126,15 @@ export const PriceCalculator = {
       input: number;
       output: number;
     },
-  ): { vendorCostUsd: number; billableCredits: number } => {
-    const vendorCostUsd = PriceCalculator.calculateVendorCost(price, tokens);
+  ): { vendorCostKrw: number; billableCredits: number } => {
+    const vendorCostKrw = PriceCalculator.calculateVendorCost(price, tokens);
     const billableCredits = PriceCalculator.calculateBillableCredits(
-      vendorCostUsd,
+      vendorCostKrw,
       price.markupRate,
     );
 
     return {
-      vendorCostUsd,
+      vendorCostKrw,
       billableCredits,
     };
   },

@@ -1,43 +1,20 @@
-import {
-  LayoutGridIcon,
-  ShieldCheckIcon,
-  TentTreeIcon,
-  TestTube,
-} from "lucide-react";
-import Link from "next/link";
+import { TentTreeIcon } from "lucide-react";
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
+  SidebarLink,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { getUser } from "@/lib/auth/server";
-import { NavItem } from "./nav-item";
-import { NavUser } from "./nav-user";
 
-const menuItems = [
-  {
-    title: "대시보드",
-    url: "/",
-    icon: LayoutGridIcon,
-  },
-  {
-    title: "사용자 관리",
-    url: "/users",
-    icon: ShieldCheckIcon,
-  },
-  {
-    title: "TEST화면",
-    url: "/test-view",
-    icon: TestTube,
-  },
-];
+import { NavMain } from "./nav-main";
+import { NavSolves } from "./nav-solves";
+import { NavUser } from "./nav-user";
 
 export async function AppSidebar({
   ...props
@@ -52,30 +29,18 @@ export async function AppSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <Link href="/" className="p-2">
+              <SidebarLink href="/" className="p-2">
                 <TentTreeIcon className="size-4" />
                 <span className="text-base font-semibold">Money Repo</span>
-              </Link>
+              </SidebarLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <Link href={item.url} key={item.url}>
-                  <NavItem title={item.title} url={item.url}>
-                    {item.icon && <item.icon />}
-                    <span>{item.title}</span>
-                  </NavItem>
-                </Link>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavMain />
+        <NavSolves />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

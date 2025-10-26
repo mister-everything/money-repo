@@ -19,7 +19,7 @@ export interface AIPrice {
  * 크레딧 차감 파라미터 스키마
  */
 export const deductCreditSchema = z.object({
-  walletId: z.string().uuid(),
+  walletId: z.uuid(),
   userId: z.string(),
   provider: z.string(),
   model: z.string(),
@@ -36,10 +36,10 @@ export type DeductCreditParams = z.infer<typeof deductCreditSchema>;
  * 크레딧 충전 파라미터 스키마
  */
 export const creditPurchaseSchema = z.object({
-  walletId: z.string().uuid(),
+  walletId: z.uuid(),
   userId: z.string(),
   creditAmount: z.number().positive(),
-  invoiceId: z.string().uuid(),
+  invoiceId: z.uuid(),
   idempotencyKey: z.string(),
 });
 
@@ -109,7 +109,6 @@ export interface Wallet {
 export interface UsageEvent {
   id: string;
   userId: string;
-  walletId: string;
   priceId: string;
   provider: string;
   model: string;
@@ -117,7 +116,6 @@ export interface UsageEvent {
   outputTokens: number | null;
   cachedTokens: number | null;
   calls: number | null;
-  vendorCostUsd: string;
   billableCredits: string;
   idempotencyKey: string | null;
   createdAt: Date;
@@ -125,6 +123,15 @@ export interface UsageEvent {
 
 /**
  * 원장 트랜잭션 종류
+ * 트랜잭션 종류 (kind):
+ * - "purchase": 결제 충전 (Invoice 확정)
+ * - "grant": 이벤트/프로모션/관리자 지급
+ * - "debit": AI 사용 차감
+ * - "refund": 환불 (크레딧 복원)
+ * - "adjustment": 수동 조정
+ * - "subscription_grant": 구독 시작/갱신 시 크레딧 지급
+ * - "subscription_refill": 정기 자동 충전
+ * - "subscription_reset": 월간 갱신 시 잔액 리셋 (rollover=false)
  */
 export type TxnKind =
   | "purchase"
@@ -163,7 +170,7 @@ export interface Invoice {
   userId: string;
   walletId: string;
   title: string;
-  amountUsd: string;
+  amount: string;
   purchasedCredits: string;
   status: InvoiceStatus;
   externalRef: string | null;
@@ -179,23 +186,46 @@ export const createAIPriceSchema = z.object({
   provider: z.string(),
   model: z.string(),
   modelType: z.enum(["text", "image", "audio", "video", "embedding"]),
-  inputTokenPrice: z.string(),
-  outputTokenPrice: z.string(),
-  markupRate: z.string().default("1.60"),
+  inputTokenPrice: z.string().refine((val) => Number(val) >= 0, {
+    message: "입력 토큰 가격은 0 이상이어야 합니다",
+  }),
+  outputTokenPrice: z.string().refine((val) => Number(val) >= 0, {
+    message: "출력 토큰 가격은 0 이상이어야 합니다",
+  }),
+  cachedTokenPrice: z.string().refine((val) => Number(val) >= 0, {
+    message: "캐시 토큰 가격은 0 이상이어야 합니다",
+  }),
+  markupRate: z
+    .string()
+    .refine((val) => Number(val) > 0, {
+      message: "마진율은 0보다 커야 합니다",
+    })
+    .default("1.60"),
   isActive: z.boolean().default(true),
 });
 
 export type CreateAIPrice = z.infer<typeof createAIPriceSchema>;
 
 /**
+ * AI 제공자 가격 업데이트 스키마
+ */
+export const updateAIPriceSchema = createAIPriceSchema.partial();
+
+export type UpdateAIPrice = z.infer<typeof updateAIPriceSchema>;
+
+/**
  * 인보이스 생성 스키마
  */
 export const createInvoiceSchema = z.object({
   userId: z.string(),
-  walletId: z.string().uuid(),
+  walletId: z.uuid(),
   title: z.string(),
-  amountUsd: z.string(),
-  purchasedCredits: z.string(),
+  amount: z.string().refine((val) => Number(val) >= 0, {
+    message: "금액은 0 이상이어야 합니다",
+  }),
+  purchasedCredits: z.string().refine((val) => Number(val) >= 0, {
+    message: "구매 크레딧은 0 이상이어야 합니다",
+  }),
   externalRef: z.string().optional(),
   externalOrderId: z.string().optional(),
 });
@@ -224,38 +254,24 @@ export interface SubscriptionPlan {
   name: string;
   displayName: string;
   description: string | null;
-  content: string | null;
-  priceUsd: string;
+  plans: PlanContentBlock[] | null;
+  price: string;
   monthlyQuota: string;
   refillAmount: string;
   refillIntervalHours: number;
   maxRefillCount: number; // maxRefillBalance → maxRefillCount 변경
-  rolloverEnabled: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * 구독 정보 (UserSubscription → Subscription으로 이름 변경)
+ * 이용자수 포함 구독 플랜 정보
  */
-export interface Subscription {
-  id: string;
-  userId: string;
-  planId: string;
-  walletId: string;
-  status: SubscriptionStatus;
-  startedAt: Date;
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  canceledAt: Date | null;
-  expiredAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
-// 하위 호환성을 위한 별칭
-export type UserSubscription = Subscription;
+export interface SubscriptionPlanWithCount extends SubscriptionPlan {
+  count: number;
+}
 
 /**
  * 구독 기간 정보
@@ -295,7 +311,7 @@ export interface SubscriptionRefill {
  */
 export const createSubscriptionSchema = z.object({
   userId: z.string(),
-  planId: z.string().uuid(),
+  planId: z.uuid(),
 });
 
 export type CreateSubscriptionParams = z.infer<typeof createSubscriptionSchema>;
@@ -314,7 +330,7 @@ export interface CreateSubscriptionResponse {
  * 구독 갱신 파라미터
  */
 export const renewSubscriptionSchema = z.object({
-  subscriptionId: z.string().uuid(),
+  subscriptionId: z.uuid(),
 });
 
 export type RenewSubscriptionParams = z.infer<typeof renewSubscriptionSchema>;
@@ -353,7 +369,7 @@ export interface CheckRefillResponse {
  * 구독 취소 파라미터
  */
 export const cancelSubscriptionSchema = z.object({
-  subscriptionId: z.string().uuid(),
+  subscriptionId: z.uuid(),
 });
 
 export type CancelSubscriptionParams = z.infer<typeof cancelSubscriptionSchema>;
@@ -368,19 +384,36 @@ export interface CancelSubscriptionResponse {
 }
 
 /**
+ * 플랜 컨텐츠 블록 타입
+ */
+export const planContentBlockSchema = z.union([
+  z.object({
+    type: z.literal("text"),
+    text: z.string(),
+  }),
+]);
+
+export type PlanContentBlock = z.infer<typeof planContentBlockSchema>;
+
+/**
  * 구독 플랜 생성 스키마
  */
 export const createSubscriptionPlanSchema = z.object({
-  name: z.string(),
+  name: z.string("필수 입력 항목 입니다."),
   displayName: z.string(),
   description: z.string().optional(),
-  content: z.string().optional(),
-  priceUsd: z.string(),
-  monthlyQuota: z.string(),
-  refillAmount: z.string(),
+  plans: z.array(planContentBlockSchema).optional(),
+  price: z.string().refine((val) => Number(val) >= 0, {
+    message: "가격은 0 이상이어야 합니다",
+  }),
+  monthlyQuota: z.string().refine((val) => Number(val) >= 0, {
+    message: "월간 할당량은 0 이상이어야 합니다",
+  }),
+  refillAmount: z.string().refine((val) => Number(val) >= 0, {
+    message: "충전량은 0 이상이어야 합니다",
+  }),
   refillIntervalHours: z.number().int().positive(),
   maxRefillCount: z.number().int().nonnegative(), // maxRefillBalance → maxRefillCount
-  rolloverEnabled: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
 
@@ -389,11 +422,21 @@ export type CreateSubscriptionPlan = z.infer<
 >;
 
 /**
+ * 구독 플랜 업데이트 스키마
+ */
+export const updateSubscriptionPlanSchema =
+  createSubscriptionPlanSchema.partial();
+
+export type UpdateSubscriptionPlan = z.infer<
+  typeof updateSubscriptionPlanSchema
+>;
+
+/**
  * 플랜 업그레이드 파라미터
  */
 export const upgradeSubscriptionSchema = z.object({
   userId: z.string(),
-  newPlanId: z.string().uuid(),
+  newPlanId: z.uuid(),
 });
 
 export type UpgradeSubscriptionParams = z.infer<
