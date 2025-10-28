@@ -2,7 +2,7 @@
 
 import type { ProbBlock } from "@service/solves/shared";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { ProbHeader } from "@/components/prob-create/prob-header";
 import { ProblemSetDisplay } from "@/components/prob-create/problem-set-display";
 import { ResizableChatPanel } from "@/components/prob-create/resizable-chat-panel";
@@ -10,7 +10,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProbCreateStore } from "@/store/prob-create";
 
-export default function ProbEditPage({ params }: { params: { id: string } }) {
+export default function ProbEditPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+
+  useEffect(() => {
+    console.log(">", id);
+  }, [id]);
+
   const router = useRouter();
   const { formData } = useProbCreateStore();
   const [problems, setProblems] = useState<ProbBlock[]>([
