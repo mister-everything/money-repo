@@ -1,15 +1,41 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React from "react";
+import { ProbCreateForm } from "@/components/prob-create/prob-create-form";
+import { ProbHeader } from "@/components/prob-create/prob-header";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 export default function ProbCreatePage() {
   const router = useRouter();
 
-  React.useEffect(() => {
-    // 새로운 문제집 생성 페이지로 리다이렉트
-    router.push("/prob-create/new");
-  }, [router]);
+  const handleSubmit = (data: any) => {
+    console.log("문제 생성 데이터:", data);
+    // TODO: API 호출 후 생성된 문제집 ID로 이동
+    router.push(`/prob-create/edit/new-id`);
+  };
 
-  return null;
+  return (
+    <div className="flex h-screen flex-col relative">
+      <ProbHeader />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main Panel - Form */}
+        <div className="overflow-y-auto w-full ml-20 mr-20">
+          <div className="p-6">
+            <Tabs defaultValue="create" className="w-full">
+              <div className="mb-4">
+                <h1 className="text-2xl font-semibold text-foreground">
+                  어떤 문제집을 만들고 싶나요?
+                </h1>
+              </div>
+
+              <TabsContent value="create">
+                <ProbCreateForm onSubmit={handleSubmit} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

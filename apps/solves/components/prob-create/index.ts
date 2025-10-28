@@ -1,9 +1,18 @@
-export { ChatInterface } from "./chat-interface";
-export { HiddenIconBar } from "./hidden-icon-bar";
-export { InitialPromptBox } from "./initial-prompt-box";
-export { MessageBubble } from "./message-bubble";
-export { ProbCreateHeader } from "./prob-create-header";
+// Layout & Header
+
+// Chat
+export { ChatPanel } from "./chat-panel";
+export { ChatToggle } from "./chat-toggle";
+export { OptionGroup } from "./option-group";
+// Form
+export { ProbCreateForm } from "./prob-create-form";
+export { ProbFormLayout } from "./prob-form-layout";
+export { ProbHeader } from "./prob-header";
+export { ProblemCard } from "./problem-card";
+
+// Problem Display & Edit
 export { ProblemSetDisplay } from "./problem-set-display";
-export * from "./problem-types";
-export { ResizeBar } from "./resize-bar";
+export { ResizeHandle } from "./resize-handle";
+
+// Types
 export type { Message } from "./types";

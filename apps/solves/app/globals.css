@@ -1,3 +1,9 @@
 @import "tailwindcss";
 @import "@workspace/tailwind-config";
 @import "tw-animate-css";
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}
