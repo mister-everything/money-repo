@@ -1,7 +1,9 @@
 import {
+  BlockAnswer,
   BlockAnswerSubmit,
   ProbBlockWithoutAnswer,
 } from "@service/solves/shared";
+import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -21,6 +23,10 @@ interface ProblemBlockProps {
   problemNumber: number;
   submittedAnswer?: BlockAnswerSubmit;
   onAnswerChange?: (problemId: string, answer: BlockAnswerSubmit) => void;
+  blockResult?: {
+    isCorrect: boolean;
+    correctAnswer: BlockAnswer;
+  };
 }
 
 export const ProblemBlock: React.FC<ProblemBlockProps> = ({
@@ -28,14 +34,23 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
   problemNumber,
   submittedAnswer,
   onAnswerChange,
+  blockResult,
 }) => {
   return (
     <Card>
       <CardHeader>
         <div className="mb-2 flex items-start justify-between gap-3">
-          <span className="mb-4 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
-            문제 {problemNumber}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="mb-4 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+              문제 {problemNumber}
+            </span>
+            {blockResult &&
+              (blockResult.isCorrect ? (
+                <Check className="h-5 w-5 text-primary" />
+              ) : (
+                <X className="h-5 w-5 text-destructive" />
+              ))}
+          </div>
 
           <Dialog>
             <DialogTrigger asChild>
@@ -82,6 +97,8 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
             submitted={submittedAnswer}
             onAnswerChange={(answer) => onAnswerChange?.(problem.id, answer)}
             groupName={`problem-option-${problem.id}`}
+            correctAnswer={blockResult?.correctAnswer}
+            isCorrect={blockResult?.isCorrect}
           />
         </div>
 
