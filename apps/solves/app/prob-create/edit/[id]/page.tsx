@@ -1,11 +1,11 @@
 "use client";
 
-import type { ProbBlockWithoutAnswer } from "@service/solves/shared";
+import type { ProbBlock } from "@service/solves/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChatPanel } from "@/components/prob-create/chat-panel";
 import { ProbHeader } from "@/components/prob-create/prob-header";
 import { ProblemSetDisplay } from "@/components/prob-create/problem-set-display";
+import { ResizableChatPanel } from "@/components/prob-create/resizable-chat-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProbCreateStore } from "@/store/prob-create";
@@ -13,7 +13,7 @@ import { useProbCreateStore } from "@/store/prob-create";
 export default function ProbEditPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { formData } = useProbCreateStore();
-  const [problems, setProblems] = useState<ProbBlockWithoutAnswer[]>([
+  const [problems, setProblems] = useState<ProbBlock[]>([
     {
       id: crypto.randomUUID(),
       question: "핀란드의 수도는 어디인가요?",
@@ -24,14 +24,28 @@ export default function ProbEditPage({ params }: { params: { id: string } }) {
           {
             id: "opt-1",
             type: "text" as const,
-            text: "1시간 전 • 우리 팀이 외근으로 이동중에 30분 동안 즐길 수 있는...",
+            text: "헬싱키",
           },
           {
             id: "opt-2",
             type: "text" as const,
-            text: "1시간 전 • 문제집 수정",
+            text: "스톡홀름",
+          },
+          {
+            id: "opt-3",
+            type: "text" as const,
+            text: "오슬로",
+          },
+          {
+            id: "opt-4",
+            type: "text" as const,
+            text: "코펜하겐",
           },
         ],
+      },
+      answer: {
+        type: "mcq",
+        answer: ["opt-1"],
       },
       order: 0,
     },
@@ -43,55 +57,89 @@ export default function ProbEditPage({ params }: { params: { id: string } }) {
         type: "mcq",
         options: [
           {
-            id: "opt-3",
+            id: "opt-5",
             type: "text" as const,
-            text: "참부한 그 스타일로 치면 이미지를 추가해서",
+            text: "서울",
           },
           {
-            id: "opt-4",
+            id: "opt-6",
             type: "text" as const,
-            text: "추가로 제공해 주기로 출제해줘",
+            text: "부산",
+          },
+          {
+            id: "opt-7",
+            type: "text" as const,
+            text: "인천",
+          },
+          {
+            id: "opt-8",
+            type: "text" as const,
+            text: "대전",
           },
         ],
+      },
+      answer: {
+        type: "mcq",
+        answer: ["opt-5"],
       },
       order: 1,
     },
     {
       id: crypto.randomUUID(),
       question: "펭귄은 북극에 산다",
-      type: "default",
+      type: "ox",
       content: {
-        type: "default",
+        type: "ox",
+        oOption: {
+          id: "ox-o-1",
+          type: "text" as const,
+          text: "O",
+        },
+        xOption: {
+          id: "ox-x-1",
+          type: "text" as const,
+          text: "X",
+        },
+      },
+      answer: {
+        type: "ox",
+        answer: "x",
       },
       order: 2,
     },
     {
       id: crypto.randomUUID(),
-      question: "이 배우의 이름은?",
-      type: "mcq",
+      question: "세종대왕이 창제한 한글의 원래 이름은 무엇인가요?",
+      type: "default",
       content: {
-        type: "mcq",
-        options: [
-          {
-            id: "opt-5",
-            type: "text" as const,
-            text: "디한민국 배우 출신 타이어 이미지로 추가해서",
-          },
-          {
-            id: "opt-6",
-            type: "text" as const,
-            text: "추가로 3초 타이어 출제해줘",
-          },
-        ],
+        type: "default",
+      },
+      answer: {
+        type: "default",
+        answer: ["훈민정음"],
       },
       order: 3,
     },
     {
       id: crypto.randomUUID(),
-      question: "이 노래의 제목은?",
-      type: "default",
+      question: "지구는 태양계에서 세 번째 행성이다",
+      type: "ox",
       content: {
-        type: "default",
+        type: "ox",
+        oOption: {
+          id: "ox-o-2",
+          type: "text" as const,
+          text: "O",
+        },
+        xOption: {
+          id: "ox-x-2",
+          type: "text" as const,
+          text: "X",
+        },
+      },
+      answer: {
+        type: "ox",
+        answer: "o",
       },
       order: 4,
     },
@@ -127,55 +175,58 @@ export default function ProbEditPage({ params }: { params: { id: string } }) {
     : [];
 
   return (
-    <div className="flex h-screen flex-col relative">
-      <ProbHeader showBackButton onBack={() => router.push("/prob-create")} />
-
+    <div className="flex h-screen flex-col">
       <div className="flex flex-1 overflow-hidden">
         {/* Main Panel - Problem Set Info and Cards */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            <div className="mb-8 space-y-4">
-              <div>
-                <h1 className="mb-2 text-2xl font-bold text-foreground">
-                  문제집 제목
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  문제집 한줄 설명 어쩌구
-                </p>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <ProbHeader
+            showBackButton
+            onBack={() => router.push("/prob-create")}
+          />
+
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-6">
+              <div className="mb-8 space-y-4">
+                <div>
+                  <h1 className="mb-2 text-2xl font-bold text-foreground">
+                    문제집 제목
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    문제집 한줄 설명 어쩌구
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="rounded-md">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="rounded-md">
-                    {tag}
-                  </Badge>
-                ))}
+              <ProblemSetDisplay
+                problems={problems}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onView={handleView}
+              />
+
+              <div className="mt-8 flex justify-end">
+                <Button
+                  size="lg"
+                  className="rounded-lg px-8"
+                  onClick={() => console.log("전체 미리보기")}
+                >
+                  전체 미리보기
+                </Button>
               </div>
-            </div>
-
-            <ProblemSetDisplay
-              problems={problems}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-            />
-
-            <div className="mt-8 flex justify-end">
-              <Button
-                size="lg"
-                className="rounded-lg px-8"
-                onClick={() => console.log("전체 미리보기")}
-              >
-                전체 미리보기
-              </Button>
             </div>
           </div>
         </div>
 
-        {/* Chat Panel */}
-        <div className="w-[35%] border-l border-border bg-background overflow-hidden">
-          <ChatPanel />
-        </div>
+        {/* Resizable Chat Panel */}
+        <ResizableChatPanel />
       </div>
     </div>
   );

@@ -1,13 +1,17 @@
 "use client";
 
-import type { ProbBlockWithoutAnswer } from "@service/solves/shared";
+import type { ProbBlock } from "@service/solves/shared";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ProblemHistory } from "./problem-history";
+import { DefaultCardContent } from "./problem-type-cards/default-card";
+import { McqCardContent } from "./problem-type-cards/mcq-card";
+import { OxCardContent } from "./problem-type-cards/ox-card";
 
 interface ProblemCardProps {
-  problem: ProbBlockWithoutAnswer;
+  problem: ProbBlock;
   index: number;
   onEdit?: (problemId: string) => void;
   onDelete?: (problemId: string) => void;
@@ -26,6 +30,7 @@ export function ProblemCard({
       mcq: "객관식",
       default: "주관식",
       ox: "OX",
+      ranking: "순위",
     };
     return labels[type] || type;
   };
@@ -33,25 +38,36 @@ export function ProblemCard({
   const renderContent = () => {
     if (problem.type === "mcq" && problem.content.type === "mcq") {
       return (
-        <div className="mt-3 space-y-2">
-          <div className="text-sm text-muted-foreground">선택 내역</div>
-          <div className="space-y-1">
-            {problem.content.options.map((option, idx) => (
-              <div key={option.id} className="text-sm text-foreground">
-                {idx + 1}.{" "}
-                {option.type === "text" ? option.text : `${option.type} 파일`}
-              </div>
-            ))}
-          </div>
-        </div>
+        <McqCardContent
+          content={problem.content}
+          answer={problem.answer?.type === "mcq" ? problem.answer : undefined}
+        />
+      );
+    }
+    if (problem.type === "ox" && problem.content.type === "ox") {
+      return (
+        <OxCardContent
+          content={problem.content}
+          answer={problem.answer?.type === "ox" ? problem.answer : undefined}
+        />
+      );
+    }
+    if (problem.type === "default") {
+      return (
+        <DefaultCardContent
+          question={problem.question}
+          answer={
+            problem.answer?.type === "default" ? problem.answer : undefined
+          }
+        />
       );
     }
     return null;
   };
 
   return (
-    <Card className="group relative overflow-hidden transition-all hover:shadow-md">
-      <div className="p-6">
+    <Card className="group relative overflow-hidden ">
+      <div className="p-6 pt-0">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-2">
@@ -94,6 +110,8 @@ export function ProblemCard({
         </div>
 
         {renderContent()}
+
+        <ProblemHistory problemId={problem.id} />
       </div>
     </Card>
   );

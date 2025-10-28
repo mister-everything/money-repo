@@ -1,10 +1,10 @@
 "use client";
 
-import type { ProbBlockWithoutAnswer } from "@service/solves/shared";
+import type { ProbBlock } from "@service/solves/shared";
 import { ProblemCard } from "./problem-card";
 
 interface ProblemSetDisplayProps {
-  problems: ProbBlockWithoutAnswer[];
+  problems: ProbBlock[];
   onEdit?: (problemId: string) => void;
   onDelete?: (problemId: string) => void;
   onView?: (problemId: string) => void;

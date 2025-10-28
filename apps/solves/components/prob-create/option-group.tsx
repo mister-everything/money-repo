@@ -1,6 +1,7 @@
 "use client";
 
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 interface OptionGroupProps {
@@ -20,34 +21,59 @@ export function OptionGroup({
   type = "single",
   className,
 }: OptionGroupProps) {
-  const handleValueChange = (newValue: string[]) => {
+  const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
+
+  const handleOptionClick = (option: string) => {
     if (type === "single") {
-      // Single 타입: 마지막 선택된 값만 유지
-      onValueChange?.(newValue[newValue.length - 1] || "");
+      onValueChange?.(option);
     } else {
-      // Multiple 타입: 배열 전체 전달
-      onValueChange?.(newValue);
+      const newValues = selectedValues.includes(option)
+        ? selectedValues.filter((v) => v !== option)
+        : [...selectedValues, option];
+      onValueChange?.(newValues);
     }
   };
+
+  const isSelected = (option: string) => selectedValues.includes(option);
+
   return (
     <div className={cn("space-y-3", className)}>
       <label className="text-sm font-medium text-foreground">{label}</label>
-      <ToggleGroup
-        type="multiple"
-        value={Array.isArray(value) ? value : value ? [value] : []}
-        onValueChange={handleValueChange}
-        className="flex-wrap justify-start"
-      >
-        {options.map((option) => (
-          <ToggleGroupItem
-            key={option}
-            value={option}
-            className="rounded-lg px-4 py-2"
-          >
-            {option}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const checked = isSelected(option);
+          return (
+            <Label
+              key={option}
+              htmlFor={option}
+              className={cn(
+                "group/field-label peer/field-label flex w-fit items-center gap-2 cursor-pointer select-none",
+                "rounded-md border px-3 py-1.5 transition-all duration-100 ease-linear",
+                "hover:bg-accent/50",
+                checked
+                  ? "bg-primary/5 border-primary dark:bg-primary/10"
+                  : "border-input bg-background",
+              )}
+            >
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                <Checkbox
+                  id={option}
+                  checked={checked}
+                  onCheckedChange={() => handleOptionClick(option)}
+                  className={cn(
+                    "rounded-full shadow-xs transition-all duration-100 ease-linear",
+                    "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
+                    checked ? "ml-0 translate-x-0" : "-ml-5 -translate-x-1",
+                  )}
+                />
+                <span className="text-sm font-medium leading-snug">
+                  {option}
+                </span>
+              </div>
+            </Label>
+          );
+        })}
+      </div>
     </div>
   );
 }

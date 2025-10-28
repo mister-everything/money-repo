@@ -115,7 +115,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
           더 정확한 문제 생성을 위해 구체적으로 설명해주세요
         </label>
         <Textarea
-          placeholder="예: 우리 팀이 외근으로 이동중에 30분 동안 즐길 수 있는 가벼운 퀴즈 워게임? 팀 규모는 6명이고, 경쟁적인거 보다는 그냥 함께 웃으면서 즐기는 온도모옫으로 좋겠어. 진짜 밥상은 한 명이 읽어주고 나머지는 손들어서 답하는 것도 좋고, 혹은 각자의 핸드폰을 갖이 사용할 수 있는 방식도 좋아. 3040 연령대가 친숙적으로 알 수 있는 범위를 출제해줘"
+          placeholder="예: 중학교 3학년 수학 문제집을 만들어주는데, 아이가 풀 때 지루함이 없게 중간 중간에 환기시켜줄만한 문제를 넣어주고 어쩌구 저쩌구 "
           className="min-h-[200px] resize-none"
           value={formData.description}
           onChange={(e) =>
