@@ -1,6 +1,6 @@
 import { probService } from "@service/solves";
+import { SubmitProbBookResponse } from "@service/solves/shared";
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/server";
 import { ErrorResponse, errorResponse } from "@/lib/response";
 
 /**
@@ -36,6 +36,7 @@ export async function GET(
 /**
  * POST /api/prob/[id]/submit
  * 특정 문제집 제출
+ * submitId가 있으면 세션 기반 제출, 없으면 기존 방식 (하위 호환성)
  */
 export async function POST(
   request: NextRequest,
@@ -44,28 +45,25 @@ export async function POST(
   NextResponse<
     | {
         success: true;
-        data: {
-          score: number;
-        };
+        data: SubmitProbBookResponse;
       }
     | ErrorResponse
   >
 > {
   try {
     const { id } = await params;
-    const { answer } = await request.json();
+    const { answer, submitId } = await request.json();
 
-    const session = await getSession();
-    const { score } = await probService.submitProbBook(
-      id,
-      answer,
-      session.user.id,
-    );
+    let result;
+
+    if (submitId) {
+      // 세션 기반 제출
+      result = await probService.submitProbBookSession(submitId, id, answer);
+    }
+
     return NextResponse.json({
       success: true,
-      data: {
-        score,
-      },
+      data: result,
     });
   } catch (error) {
     console.error("Error submitting prob book:", error);
