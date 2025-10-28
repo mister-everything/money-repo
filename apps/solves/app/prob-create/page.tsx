@@ -4,12 +4,15 @@ import { useRouter } from "next/navigation";
 import { ProbCreateForm } from "@/components/prob-create/prob-create-form";
 import { ProbHeader } from "@/components/prob-create/prob-header";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useProbCreateStore } from "@/store/prob-create";
 
 export default function ProbCreatePage() {
   const router = useRouter();
+  const { setFormData } = useProbCreateStore();
 
   const handleSubmit = (data: any) => {
     console.log("문제 생성 데이터:", data);
+    setFormData(data);
     // TODO: API 호출 후 생성된 문제집 ID로 이동
     router.push(`/prob-create/edit/new-id`);
   };

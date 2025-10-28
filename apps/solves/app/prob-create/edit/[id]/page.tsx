@@ -8,9 +8,11 @@ import { ProbHeader } from "@/components/prob-create/prob-header";
 import { ProblemSetDisplay } from "@/components/prob-create/problem-set-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useProbCreateStore } from "@/store/prob-create";
 
 export default function ProbEditPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { formData } = useProbCreateStore();
   const [problems, setProblems] = useState<ProbBlockWithoutAnswer[]>([
     {
       id: crypto.randomUUID(),
@@ -112,16 +114,17 @@ export default function ProbEditPage({ params }: { params: { id: string } }) {
     // TODO: 문제 상세 보기 모달 또는 페이지 열기
   };
 
-  const tags = [
-    "#3인 이상",
-    "#진득",
-    "#OX개입",
-    "#날말퀴즈",
-    "#하이브리드",
-    "#성인",
-    "#일반상식",
-    "#보통",
-  ];
+  const tags = formData
+    ? [
+        `#${formData.people}`,
+        `#${formData.situation}`,
+        `#${formData.format}`,
+        `#${formData.platform}`,
+        `#${formData.ageGroup}`,
+        ...formData.topic.map((t) => `#${t}`),
+        `#${formData.difficulty}`,
+      ]
+    : [];
 
   return (
     <div className="flex h-screen flex-col relative">
