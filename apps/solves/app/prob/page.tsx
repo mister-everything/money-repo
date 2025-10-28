@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default async function ProblemBookPage() {
+export default async function Page() {
   const probBooks = await probService.searchProbBooks();
 
   return (

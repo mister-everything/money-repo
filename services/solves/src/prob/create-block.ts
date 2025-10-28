@@ -17,7 +17,7 @@ export interface Block<
   contentSchema: ZodType<Content>;
   answerSchema: ZodType<Answer>;
   answerSubmitSchema: ZodType<AnswerSubmit>;
-  checkAnswer: (correctAnswer: unknown, submittedAnswer: unknown) => void; // 오답 시 예외 발생
+  checkAnswer: (correctAnswer: unknown, submittedAnswer: unknown) => boolean; // 오답 시 예외 발생
   isMaybeContent: (block: any) => block is Content;
   isMaybeAnswer: (block: any) => block is Answer;
   isMaybeAnswerSubmit: (block: any) => block is AnswerSubmit;
@@ -133,9 +133,12 @@ export function blockBuilder<BlockType extends string>(
             throw new ProbInvalidAnswerSubmitError();
           }
           try {
+            // TODO: 배점 처리 추가
+            console.log(correct.data, submitted.data);
+            console.log(checkerFn(correct.data, submitted.data));
             const isOk = checkerFn(correct.data, submitted.data);
             if (!isOk) {
-              throw new ProbWrongAnswerError();
+              return false;
             }
           } catch (error) {
             if (error instanceof ProbWrongAnswerError) {
@@ -148,6 +151,7 @@ export function blockBuilder<BlockType extends string>(
               submittedAnswer: submitted.data,
             });
           }
+          return true;
         },
         isMaybeContent(block: any): block is unknown {
           return block?.type === type;

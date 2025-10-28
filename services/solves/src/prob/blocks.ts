@@ -78,8 +78,9 @@ const mcqBlock = blockBuilder("mcq")
   .checker((correctAnswer, submittedAnswer) => {
     const submitted = submittedAnswer.answer;
     return (
-      submitted.length === correctAnswer.answer.length &&
-      correctAnswer.answer.every((answer) => submitted.includes(answer))
+      // TODO: 다중 정답 체크 로직 추가 필요
+      // submitted.length === correctAnswer.answer.length &&
+      correctAnswer.answer.some((answer) => submitted.includes(answer))
     );
   })
   .build();
