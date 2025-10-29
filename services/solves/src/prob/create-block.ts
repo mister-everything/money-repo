@@ -134,8 +134,6 @@ export function blockBuilder<BlockType extends string>(
           }
           try {
             // TODO: 배점 처리 추가
-            console.log(correct.data, submitted.data);
-            console.log(checkerFn(correct.data, submitted.data));
             const isOk = checkerFn(correct.data, submitted.data);
             if (!isOk) {
               return false;
@@ -144,7 +142,6 @@ export function blockBuilder<BlockType extends string>(
             if (error instanceof ProbWrongAnswerError) {
               throw error;
             }
-            console.error(error);
             throw new ProbCheckerError({
               originalError: error,
               correctAnswer: correct.data,

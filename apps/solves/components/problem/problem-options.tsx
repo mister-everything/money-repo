@@ -171,7 +171,7 @@ export const ProblemOptions = <T extends BlockType>({
 
     return (
       <div className="space-y-3">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground mb-4">
           {correctAnswer
             ? "결과"
             : allowMultiple
@@ -213,9 +213,6 @@ export const ProblemOptions = <T extends BlockType>({
                 disabled={!!correctAnswer}
               />
               <div className="flex w-full items-center justify-between gap-4">
-                <span className="text-sm font-semibold text-foreground">
-                  {index + 1}.
-                </span>
                 <div className="flex-1 text-sm text-foreground">
                   {getMcqOptionLabel(option)}
                 </div>
@@ -315,14 +312,13 @@ export const ProblemOptions = <T extends BlockType>({
 
     return (
       <div className="space-y-2">
-        <div className="flex justify-between text-sm text-muted-foreground">
+        <div className="flex justify-between text-sm text-muted-foreground mb-4">
           <span>{correctAnswer ? "결과" : "답안을 작성하세요"}</span>
           {!correctAnswer && <span>{textAnswer.length}자</span>}
         </div>
         <Textarea
           value={textAnswer}
           onChange={(event) => handleChange(event.target.value)}
-          placeholder="답을 입력하세요."
           rows={4}
           className="resize-none"
           disabled={!!correctAnswer}
@@ -340,7 +336,7 @@ export const ProblemOptions = <T extends BlockType>({
   if (isRankingContent && isContent.ranking(content)) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-4">
           드래그 앤 드롭 정렬 기능은 준비 중입니다. 아래 항목들의 순서를 메모해
           두세요.
         </p>

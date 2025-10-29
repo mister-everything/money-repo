@@ -37,19 +37,19 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
   blockResult,
 }) => {
   return (
-    <Card>
+    <Card className="bg-secondary">
       <CardHeader>
-        <div className="mb-2 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="mb-4 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
-              문제 {problemNumber}
-            </span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 mb-4 py-1">
             {blockResult &&
               (blockResult.isCorrect ? (
-                <Check className="h-5 w-5 text-primary" />
+                <Check className="h-8 w-8 text-primary" />
               ) : (
-                <X className="h-5 w-5 text-destructive" />
+                <X className="h-8 w-8 text-destructive" />
               ))}
+            <span className="rounded-full px-2 py-1 text-sm font-semibold bg-border">
+              문제 {problemNumber}
+            </span>
           </div>
 
           <Dialog>
@@ -60,9 +60,6 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
                 variant="ghost"
                 className="mt-1 rounded-full px-3 py-1 text-primary hover:bg-primary/10 sm:h-8"
               >
-                <span className="sr-only">
-                  문제 {problemNumber} 도움말 보기
-                </span>
                 <span className="ml-1 text-xs">?</span>
               </Button>
             </DialogTrigger>
@@ -100,14 +97,6 @@ export const ProblemBlock: React.FC<ProblemBlockProps> = ({
             correctAnswer={blockResult?.correctAnswer}
             isCorrect={blockResult?.isCorrect}
           />
-        </div>
-
-        {/* 문제 스타일 표시 (개발용) */}
-        <div className="pt-4 border-t">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            {/* <span>스타일: {problem.style}</span> */}
-            {/* <span>유형: {problem.answerMeta.kind}</span> */}
-          </div>
         </div>
       </CardContent>
     </Card>

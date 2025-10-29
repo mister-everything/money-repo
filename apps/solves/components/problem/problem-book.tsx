@@ -130,7 +130,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* 문제집 헤더 */}
-      <Card className="mb-8 text-primary border-none">
+      <Card className="mb-8 text-primary border-none bg-secondary">
         <CardHeader>
           {/* 결과 요약 섹션 */}
           {submitResult && (
@@ -227,7 +227,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
             onClick={handleSubmit}
             size="lg"
             variant="outline"
-            className="px-8 py-3 hover:bg-primary! hover:text-primary-foreground!"
+            className="px-8 py-3 bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground/90 hover:border-primary/90"
           >
             답안 제출
           </Button>

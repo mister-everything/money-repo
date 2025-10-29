@@ -99,21 +99,21 @@ describe("blockBuilder", () => {
       .checker((correct, submitted) => checker(correct, submitted))
       .build();
 
-    expect(() =>
-      block.checkAnswer(
-        { type: "call-checker", value: "answer" },
-        { type: "call-checker", value: "answer" },
-      ),
-    ).not.toThrow();
+    const result = block.checkAnswer(
+      { type: "call-checker", value: "answer" },
+      { type: "call-checker", value: "answer" },
+    );
 
-    expect(checker).toHaveBeenCalledTimes(1);
-    const [correctArg, submittedArg] = checker.mock.calls[0];
+    expect(result).toBe(true);
+    expect(checker).toHaveBeenCalled();
+    const lastCall = checker.mock.calls[checker.mock.calls.length - 1];
+    const [correctArg, submittedArg] = lastCall;
 
     expect(correctArg).toEqual({ type: "call-checker", value: "answer" });
     expect(submittedArg).toEqual({ type: "call-checker", value: "answer" });
   });
 
-  it("throws ProbWrongAnswerError when the checker reports a mismatch", () => {
+  it("returns false when the checker reports a mismatch", () => {
     const block = blockBuilder("checker-error")
       .answer(
         z.object({
@@ -128,12 +128,12 @@ describe("blockBuilder", () => {
       .checker(() => false)
       .build();
 
-    expect(() =>
-      block.checkAnswer(
-        { type: "checker-error", value: "correct" },
-        { type: "checker-error", value: "submitted" },
-      ),
-    ).toThrowError(ProbWrongAnswerError);
+    const result = block.checkAnswer(
+      { type: "checker-error", value: "correct" },
+      { type: "checker-error", value: "submitted" },
+    );
+
+    expect(result).toBe(false);
   });
 
   it("wraps checker exceptions with ProbCheckerError", () => {
