@@ -225,7 +225,7 @@ export default function ProbEditPage({
               <div className="mt-8 flex justify-end">
                 <Button
                   size="lg"
-                  className="rounded-lg px-8"
+                  className="rounded-lg w-full"
                   onClick={() => console.log("전체 미리보기")}
                 >
                   전체 미리보기

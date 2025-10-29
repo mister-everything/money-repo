@@ -49,7 +49,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
 
       <OptionGroup
         label="상황"
-        options={["진득", "콘텐츠", "교육"]}
+        options={["친목", "콘텐츠", "교육"]}
         value={formData.situation}
         onValueChange={(value) =>
           setFormData({ ...formData, situation: value as string })
@@ -58,7 +58,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
 
       <OptionGroup
         label="형식"
-        options={["객관식", "주관식", "OX개입", "날말퀴즈", "이미지/오디오"]}
+        options={["객관식", "주관식", "OX 게임", "날말퀴즈", "이미지/오디오"]}
         value={formData.format}
         onValueChange={(value) =>
           setFormData({ ...formData, format: value as string })
@@ -92,7 +92,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
           "브랜드",
           "MBTI/성향",
           "업무",
-          "팀/트렌드",
+          "밈/트렌드",
         ]}
         value={formData.topic}
         onValueChange={(value) =>

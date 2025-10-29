@@ -38,7 +38,14 @@ export function OptionGroup({
 
   return (
     <div className={cn("space-y-3", className)}>
-      <label className="text-sm font-medium text-foreground">{label}</label>
+      <div className="flex flex-cols gap-2">
+        <label className="text-sm font-medium text-foreground">{label}</label>
+        {label === "인원" && (
+          <p className="text-sm text-muted-foreground">
+            (* 1인 문제는 풀이 후 문제집 별 개인 랭킹이 노출됩니다.)
+          </p>
+        )}
+      </div>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => {
           const checked = isSelected(option);
