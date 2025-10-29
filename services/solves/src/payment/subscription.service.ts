@@ -29,6 +29,16 @@ import { walletService } from "./wallet.service";
  * - 기존 CreditWallet 시스템 완전 호환
  */
 export const subscriptionService = {
+  getAllPlans: async (): Promise<SubscriptionPlan[]> => {
+    const plans = await pgDb
+      .select()
+      .from(SubscriptionPlansTable)
+      .where(eq(SubscriptionPlansTable.isActive, true))
+      .orderBy(SubscriptionPlansTable.price);
+
+    return plans as SubscriptionPlan[];
+  },
+
   /**
    * 구독 플랜 조회 (DB 직접 조회) - 어드민용
    */
