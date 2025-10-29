@@ -14,7 +14,7 @@ export default function ProbCreatePage() {
     console.log("문제 생성 데이터:", data);
     setFormData(data);
     // TODO: API 호출 후 생성된 문제집 ID로 이동
-    router.push(`/prob-create/edit/new-id`);
+    router.push(`/workbooks/[임시아이디]/edit`);
   };
 
   return (
