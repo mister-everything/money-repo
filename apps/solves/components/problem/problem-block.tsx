@@ -2,6 +2,7 @@ import {
   BlockAnswerSubmit,
   ProbBlockWithoutAnswer,
 } from "@service/solves/shared";
+import { AIInput } from "@/components/ui/ai-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -12,7 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AIInput } from "../ui/ai-input";
 import { ContentRenderer } from "./content-renderer";
 import { ProblemOptions } from "./problem-options";
 
