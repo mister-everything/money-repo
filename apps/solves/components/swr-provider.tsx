@@ -4,7 +4,7 @@ import { SWRConfig, SWRConfiguration } from "swr";
 import { fetcher } from "@/lib/fetcher";
 
 const defaultSWRConfig: SWRConfiguration = {
-  fetcher: (url: string) => fetcher,
+  fetcher: (url: string) => fetcher(url),
   dedupingInterval: 1000,
   errorRetryCount: 2,
 };
