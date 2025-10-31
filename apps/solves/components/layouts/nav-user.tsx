@@ -21,7 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth/client";
 
 export const NavUser = memo(function NavUser() {
-  const { data, isPending } = authClient.useSession();
+  const { data, isPending, isRefetching } = authClient.useSession();
 
   const handleSignOut = useCallback(() => {
     authClient.signOut().finally(() => {
@@ -32,8 +32,8 @@ export const NavUser = memo(function NavUser() {
   const { resolvedTheme, setTheme } = useTheme();
 
   const isAnonymous = useMemo(() => {
-    return !isPending && !data;
-  }, [data, isPending]);
+    return !isPending && !data && !isRefetching;
+  }, [data, isPending, isRefetching]);
 
   if (isAnonymous) return null;
 
