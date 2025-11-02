@@ -3,6 +3,7 @@
 import { Slot } from "@radix-ui/react-slot";
 import { cva, VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -697,7 +698,30 @@ function SidebarMenuSubButton({
   );
 }
 
+function SidebarLink({
+  href,
+  children,
+  className,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const { setOpenMobile } = useSidebar();
+
+  return (
+    <Link
+      href={href}
+      onClick={() => setOpenMobile(false)}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export {
+  SidebarLink,
   Sidebar,
   SidebarContent,
   SidebarFooter,

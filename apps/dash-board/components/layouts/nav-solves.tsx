@@ -1,11 +1,11 @@
 "use client";
 
 import { SquareChartGanttIcon, TrendingUpDownIcon } from "lucide-react";
-import Link from "next/link";
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarLink,
   SidebarMenu,
 } from "@/components/ui/sidebar";
 import { NavItem } from "./nav-item";
@@ -30,12 +30,12 @@ export function NavSolves() {
       <SidebarGroupContent>
         <SidebarMenu>
           {menuItems.map((item) => (
-            <Link href={item.url} key={item.url}>
+            <SidebarLink href={item.url} key={item.url}>
               <NavItem title={item.title} url={item.url}>
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
               </NavItem>
-            </Link>
+            </SidebarLink>
           ))}
         </SidebarMenu>
       </SidebarGroupContent>

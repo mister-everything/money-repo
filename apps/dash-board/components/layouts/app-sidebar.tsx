@@ -1,11 +1,11 @@
 import { TentTreeIcon } from "lucide-react";
-import Link from "next/link";
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarLink,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -29,10 +29,10 @@ export async function AppSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <Link href="/" className="p-2">
+              <SidebarLink href="/" className="p-2">
                 <TentTreeIcon className="size-4" />
                 <span className="text-base font-semibold">Money Repo</span>
-              </Link>
+              </SidebarLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
