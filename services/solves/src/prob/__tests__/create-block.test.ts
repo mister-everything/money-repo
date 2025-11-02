@@ -5,7 +5,6 @@ import {
   ProbCheckerError,
   ProbInvalidAnswerError,
   ProbInvalidAnswerSubmitError,
-  ProbWrongAnswerError,
 } from "../error";
 
 describe("blockBuilder", () => {
