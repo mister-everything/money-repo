@@ -1,5 +1,5 @@
 import { userTable } from "@service/auth";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
@@ -286,7 +286,7 @@ export const probService = {
         and(
           eq(probBookSubmitsTable.probBookId, probBookId),
           eq(probBookSubmitsTable.ownerId, userId),
-          sql`${probBookSubmitsTable.endTime} IS NULL`,
+          isNull(probBookSubmitsTable.endTime),
         ),
       )
       .limit(1);
