@@ -79,3 +79,48 @@ export const createProbBlockSchema = z.object({
   answer: allAnswerSchemas,
 });
 export type CreateProbBlock = z.infer<typeof createProbBlockSchema>;
+
+/**
+ * probBookSubmitsTable에 대응하는 타입
+ */
+export type ProbBookSubmit = {
+  id: string;
+  probBookId: string;
+  ownerId: string;
+  startTime: Date;
+  endTime: Date | null;
+  score: number;
+};
+
+/**
+ * probBlockAnswerSubmitsTable에 대응하는 타입
+ */
+export type ProbBlockAnswerSubmitRecord = {
+  blockId: string;
+  submitId: string;
+  answer: BlockAnswerSubmit;
+  isCorrect: boolean;
+  createdAt: Date;
+};
+
+/**
+ * 세션 시작/재개 응답 타입
+ */
+export type ProbBookSubmitSession = {
+  submitId: string;
+  startTime: Date;
+  savedAnswers: Record<string, BlockAnswerSubmit>;
+};
+
+/**
+ * 문제집 제출 결과 타입
+ */
+export type SubmitProbBookResponse = {
+  score: number;
+  correctAnswerIds: string[];
+  totalProblems: number;
+  blockResults: Array<{
+    blockId: string;
+    answer: BlockAnswer;
+  }>;
+};
