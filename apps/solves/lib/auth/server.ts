@@ -7,12 +7,12 @@ import {
 } from "@service/auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+
 import { nextCookies } from "better-auth/next-js";
-import { anonymous } from "better-auth/plugins";
+import { anonymous, customSession } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE_PREFIX } from "../const";
-
 export const getSession = async () => {
   "use server";
   const session = await solvesBetterAuth.api
@@ -82,5 +82,14 @@ export const solvesBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
-  plugins: [anonymous(), nextCookies()],
+  plugins: [
+    customSession(async ({ session, user }) => {
+      return {
+        session,
+        user,
+      };
+    }),
+    anonymous(),
+    nextCookies(),
+  ],
 });

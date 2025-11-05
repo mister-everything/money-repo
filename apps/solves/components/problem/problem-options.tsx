@@ -17,6 +17,8 @@ interface ProblemOptionsProps<T extends BlockType = BlockType> {
   submitted?: BlockAnswerSubmit<T>;
   onAnswerChange?: (answer: BlockAnswerSubmit<T>) => void;
   groupName?: string;
+  correctAnswer?: BlockAnswer<T>;
+  isCorrect?: boolean;
 }
 
 const getMcqOptionLabel = (
@@ -81,6 +83,8 @@ export const ProblemOptions = <T extends BlockType>({
   submitted,
   onAnswerChange,
   groupName,
+  correctAnswer,
+  isCorrect,
 }: ProblemOptionsProps<T>) => {
   const isMcqContent = useMemo(() => isContent.mcq(content), [content]);
   const isOxContent = useMemo(() => isContent.ox(content), [content]);
@@ -124,6 +128,11 @@ export const ProblemOptions = <T extends BlockType>({
       : false;
 
     const handleOptionSelect = (optionId: string) => {
+      // 결과 모드에서는 선택 불가
+      if (correctAnswer) {
+        return;
+      }
+
       if (allowMultiple) {
         const exists = selectedOptions.includes(optionId);
         if (exists && selectedOptions.length === 1) {
@@ -156,22 +165,44 @@ export const ProblemOptions = <T extends BlockType>({
       }
     };
 
+    // 정답 옵션 ID 목록
+    const correctOptionIds =
+      correctAnswer && isAnswer.mcq(correctAnswer) ? correctAnswer.answer : [];
+
     return (
       <div className="space-y-3">
-        <div className="text-sm text-muted-foreground">
-          {allowMultiple ? "복수 선택 가능" : "한 개의 답을 선택하세요"}
+        <div className="text-sm text-muted-foreground mb-4">
+          {correctAnswer
+            ? "결과"
+            : allowMultiple
+              ? "복수 선택 가능"
+              : "한 개의 답을 선택하세요"}
         </div>
 
         {content.options.map((option, index) => {
           const checked = selectedOptions.includes(option.id);
+          const isCorrectOption = correctOptionIds.includes(option.id);
+          const isWrongSelection = correctAnswer && checked && !isCorrectOption;
+
+          // 결과 모드 스타일
+          let resultClassName = "";
+          if (correctAnswer) {
+            if (isCorrectOption) {
+              resultClassName = "border-primary bg-primary/10";
+            } else if (isWrongSelection) {
+              resultClassName = "border-destructive bg-destructive/10";
+            }
+          }
+
           return (
             <label
               key={option.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors ${
-                checked
+              className={`flex items-center gap-3 rounded-lg border p-4 transition-colors ${
+                resultClassName ||
+                (checked
                   ? "border-primary bg-primary/5"
-                  : "border-border bg-card hover:bg-accent"
-              }`}
+                  : "border-border bg-card hover:bg-accent")
+              } ${correctAnswer ? "" : "cursor-pointer"}`}
             >
               <input
                 type={allowMultiple ? "checkbox" : "radio"}
@@ -179,11 +210,9 @@ export const ProblemOptions = <T extends BlockType>({
                 checked={checked}
                 onChange={() => handleOptionSelect(option.id)}
                 className="accent-primary"
+                disabled={!!correctAnswer}
               />
               <div className="flex w-full items-center justify-between gap-4">
-                <span className="text-sm font-semibold text-foreground">
-                  {index + 1}.
-                </span>
                 <div className="flex-1 text-sm text-foreground">
                   {getMcqOptionLabel(option)}
                 </div>
@@ -197,6 +226,11 @@ export const ProblemOptions = <T extends BlockType>({
 
   if (isOxContent && isContent.ox(content)) {
     const handleSelect = (value: "o" | "x") => {
+      // 결과 모드에서는 선택 불가
+      if (correctAnswer) {
+        return;
+      }
+
       const nextValue = oxAnswer === value ? null : value;
       setOxAnswer(nextValue);
 
@@ -210,6 +244,9 @@ export const ProblemOptions = <T extends BlockType>({
       }
     };
 
+    const correctOxAnswer =
+      correctAnswer && isAnswer.ox(correctAnswer) ? correctAnswer.answer : null;
+
     return (
       <div className="grid grid-cols-2 gap-4">
         {[
@@ -217,15 +254,30 @@ export const ProblemOptions = <T extends BlockType>({
           { key: "x" as const, label: "X", option: content.xOption },
         ].map(({ key, label, option }) => {
           const checked = oxAnswer === key;
+          const isCorrectOption = correctOxAnswer === key;
+          const isWrongSelection = correctAnswer && checked && !isCorrectOption;
+
+          // 결과 모드 스타일
+          let resultClassName = "";
+          if (correctAnswer) {
+            if (isCorrectOption) {
+              resultClassName = "border-primary bg-primary/10";
+            } else if (isWrongSelection) {
+              resultClassName = "border-destructive bg-destructive/10";
+            }
+          }
+
           return (
             <button
               key={key}
               type="button"
               onClick={() => handleSelect(key)}
+              disabled={!!correctAnswer}
               className={`flex h-full w-full flex-col items-center gap-3 rounded-lg border p-5 text-center transition-colors ${
-                checked
+                resultClassName ||
+                (checked
                   ? "border-primary bg-primary/5"
-                  : "border-border bg-card hover:bg-accent"
+                  : "border-border bg-card hover:bg-accent")
               }`}
             >
               <span className="text-xl font-bold text-foreground">{label}</span>
@@ -253,19 +305,30 @@ export const ProblemOptions = <T extends BlockType>({
       }
     };
 
+    const correctTextAnswer =
+      correctAnswer && isAnswer.default(correctAnswer)
+        ? correctAnswer.answer
+        : null;
+
     return (
       <div className="space-y-2">
-        <div className="flex justify-between text-sm text-muted-foreground">
-          <span>답안을 작성하세요</span>
-          <span>{textAnswer.length}자</span>
+        <div className="flex justify-between text-sm text-muted-foreground mb-4">
+          <span>{correctAnswer ? "결과" : "답안을 작성하세요"}</span>
+          {!correctAnswer && <span>{textAnswer.length}자</span>}
         </div>
         <Textarea
           value={textAnswer}
           onChange={(event) => handleChange(event.target.value)}
-          placeholder="답을 입력하세요."
           rows={4}
           className="resize-none"
+          disabled={!!correctAnswer}
         />
+        {correctAnswer && correctTextAnswer && (
+          <div className="mt-3 rounded-lg border border-primary bg-primary/10 p-4">
+            <div className="text-sm font-semibold text-primary mb-2">정답</div>
+            <div className="text-sm text-foreground">{correctTextAnswer}</div>
+          </div>
+        )}
       </div>
     );
   }
@@ -273,7 +336,7 @@ export const ProblemOptions = <T extends BlockType>({
   if (isRankingContent && isContent.ranking(content)) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-4">
           드래그 앤 드롭 정렬 기능은 준비 중입니다. 아래 항목들의 순서를 메모해
           두세요.
         </p>

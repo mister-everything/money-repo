@@ -1,5 +1,6 @@
 import { probService } from "@service/solves";
 import Link from "next/link";
+
 import {
   Card,
   CardContent,
@@ -8,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default async function ProblemBookPage() {
+export default async function Page() {
   const probBooks = await probService.searchProbBooks();
 
   return (
@@ -30,7 +31,7 @@ export default async function ProblemBookPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {probBooks.length > 0 ? (
             probBooks.map((book) => (
-              <Link href={`/prob/${book.id}`} key={book.id}>
+              <Link href={`/workbooks/${book.id}/solve`} key={book.id}>
                 <Card className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
