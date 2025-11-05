@@ -5,13 +5,11 @@ import { ChatDrawer } from "@/components/chat-interface/chat-drawer";
 import { ProblemBook } from "@/components/problem/problem-book";
 import { Button } from "@/components/ui/button";
 
-export default async function ProblemBookDetailPage({
+export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  console.log(params);
-
   const { id } = await params;
 
   const hasPermission = await probService.hasProbBookPermission(id, "1");
@@ -33,7 +31,7 @@ export default async function ProblemBookDetailPage({
   return (
     <div className="bg-background flex min-h-svh flex-col overflow-hidden">
       <div className="px-6 py-6 flex ">
-        <Link href="/prob">
+        <Link className="mr-auto" href="/prob">
           <Button
             className="text-primary hover:text-primary/90 mr-auto"
             variant="ghost"

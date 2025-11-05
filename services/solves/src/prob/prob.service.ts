@@ -1,8 +1,11 @@
 import { userTable } from "@service/auth";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
+import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
+  probBlockAnswerSubmitsTable,
   probBlocksTable,
+  probBookSubmitsTable,
   probBooksTable,
   probBookTagsTable,
   tagsTable,
@@ -14,7 +17,9 @@ import {
   createProbBookSchema,
   ProbBlock,
   ProbBook,
+  ProbBookSubmitSession,
   ProbBookWithoutBlocks,
+  SubmitProbBookResponse,
 } from "./types";
 
 export const probService = {
@@ -257,5 +262,197 @@ export const probService = {
    */
   deleteProbBlock: async (id: string): Promise<void> => {
     await pgDb.delete(probBlocksTable).where(eq(probBlocksTable.id, id));
+  },
+
+  /**
+   * 문제집 세션 시작 또는 재개
+   * 진행 중인 세션이 있으면 해당 세션을 반환하고, 없으면 새로 생성
+   * @param probBookId 문제집 I
+   * @param userId 사용자 ID
+   * @returns 세션 정보 (submitId, startTime, savedAnswer
+   */
+  startOrResumeProbBookSession: async (
+    probBookId: string,
+    userId: string,
+  ): Promise<ProbBookSubmitSession> => {
+    // 진행 중인 세션 조회 (endTime이 null인 세션)
+    const [existingSession] = await pgDb
+      .select({
+        id: probBookSubmitsTable.id,
+        startTime: probBookSubmitsTable.startTime,
+      })
+      .from(probBookSubmitsTable)
+      .where(
+        and(
+          eq(probBookSubmitsTable.probBookId, probBookId),
+          eq(probBookSubmitsTable.ownerId, userId),
+          isNull(probBookSubmitsTable.endTime),
+        ),
+      )
+      .limit(1);
+
+    let submitId: string;
+    let startTime: Date;
+
+    if (existingSession) {
+      // 기존 세션 재개
+      submitId = existingSession.id;
+      startTime = existingSession.startTime;
+    } else {
+      // 새 세션 생성
+      const [newSession] = await pgDb
+        .insert(probBookSubmitsTable)
+        .values({
+          probBookId,
+          ownerId: userId,
+          startTime: new Date(),
+        })
+        .returning({
+          id: probBookSubmitsTable.id,
+          startTime: probBookSubmitsTable.startTime,
+        });
+      submitId = newSession.id;
+      startTime = newSession.startTime;
+    }
+
+    // 저장된 답안 조회
+    const savedAnswerRecords = await pgDb
+      .select({
+        blockId: probBlockAnswerSubmitsTable.blockId,
+        answer: probBlockAnswerSubmitsTable.answer,
+      })
+      .from(probBlockAnswerSubmitsTable)
+      .where(eq(probBlockAnswerSubmitsTable.submitId, submitId));
+
+    const savedAnswers: Record<string, BlockAnswerSubmit> = {};
+    for (const record of savedAnswerRecords) {
+      savedAnswers[record.blockId] = record.answer;
+    }
+
+    return {
+      submitId,
+      startTime,
+      savedAnswers,
+    } as ProbBookSubmitSession;
+  },
+
+  /**
+   * 답안 진행 상황 저장 (자동 저장)
+   * @param submitId 세션 ID
+   * @param answers 답안 목록 (blockId -> answer)
+   */
+  saveAnswerProgress: async (
+    submitId: string,
+    answers: Record<string, BlockAnswerSubmit>,
+  ): Promise<void> => {
+    const answerEntries = Object.entries(answers);
+
+    if (answerEntries.length === 0) {
+      return;
+    }
+
+    // upsert: composite primary key (blockId, submitId)로 중복 시 업데이트
+    for (const [blockId, answer] of answerEntries) {
+      await pgDb
+        .insert(probBlockAnswerSubmitsTable)
+        .values({
+          blockId,
+          submitId,
+          answer,
+          isCorrect: false, // 자동 저장 시에는 아직 채점 안 함
+        })
+        .onConflictDoUpdate({
+          target: [
+            probBlockAnswerSubmitsTable.blockId,
+            probBlockAnswerSubmitsTable.submitId,
+          ],
+          set: {
+            answer,
+          },
+        });
+    }
+  },
+
+  /**
+   * 문제집 세션 제출 및 채점
+   * @param submitId 세션 ID
+   * @param probBookId 문제집 ID
+   * @param answers 최종 답안
+   * @returns 제출 결과
+   */
+  submitProbBookSession: async (
+    submitId: string,
+    probBookId: string,
+    answers: Record<string, BlockAnswerSubmit>,
+  ): Promise<SubmitProbBookResponse> => {
+    // 문제 목록 조회
+    const probBlocks = await pgDb
+      .select()
+      .from(probBlocksTable)
+      .where(eq(probBlocksTable.probBookId, probBookId));
+
+    let score = 0;
+    const correctAnswerIds: string[] = [];
+
+    // 채점 및 답안 업데이트
+    for (const block of probBlocks) {
+      // 제출된 답안
+      const submittedAnswer = answers[block.id];
+
+      if (!submittedAnswer) {
+        continue;
+      }
+
+      // 정답 여부 체크
+      const isCorrect = All_BLOCKS[block.type].checkAnswer(
+        block.answer,
+        submittedAnswer,
+      );
+
+      // 정답 여부 체크 결과가 참이면 정답 리스트에 추가하고 점수 증가
+      if (isCorrect) {
+        correctAnswerIds.push(block.id);
+        score++;
+      }
+
+      // 답안 제출 기록 업데이트
+      await pgDb
+        .insert(probBlockAnswerSubmitsTable)
+        .values({
+          blockId: block.id,
+          submitId,
+          answer: submittedAnswer,
+          isCorrect,
+        })
+        .onConflictDoUpdate({
+          target: [
+            probBlockAnswerSubmitsTable.blockId,
+            probBlockAnswerSubmitsTable.submitId,
+          ],
+          set: {
+            answer: submittedAnswer,
+            isCorrect,
+          },
+        });
+    }
+
+    // 세션 종료 (endTime, score 업데이트)
+    await pgDb
+      .update(probBookSubmitsTable)
+      .set({
+        endTime: new Date(),
+        score,
+      })
+      .where(eq(probBookSubmitsTable.id, submitId));
+
+    return {
+      score: Math.round((score / probBlocks.length) * 100),
+      correctAnswerIds,
+      totalProblems: probBlocks.length,
+      blockResults: probBlocks.map((block) => ({
+        blockId: block.id,
+        answer: block.answer,
+      })),
+    } as SubmitProbBookResponse;
   },
 };
