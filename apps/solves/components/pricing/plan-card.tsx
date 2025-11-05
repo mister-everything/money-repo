@@ -44,7 +44,7 @@ export function PlanCard({ plan, className, onClick }: PlanCardProps) {
   return (
     <Card
       className={cn(
-        "shadow-none relative transition-all duration-200 group",
+        "shadow-none relative transition-all duration-200 group h-full",
         {
           "opacity-40 hover:opacity-100": !plan.isActive,
           "hover:bg-primary/5 hover:border-primary": plan.isActive,
