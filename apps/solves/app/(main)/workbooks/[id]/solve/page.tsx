@@ -2,6 +2,7 @@ import { probService } from "@service/solves";
 import Link from "next/link";
 
 import { ChatDrawer } from "@/components/chat-interface/chat-drawer";
+import { GoBackButton } from "@/components/layouts/go-back-button";
 import { ProblemBook } from "@/components/problem/problem-book";
 import { Button } from "@/components/ui/button";
 
@@ -21,7 +22,7 @@ export default async function Page({
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto p-6">
           <div className="text-destructive mb-4">잘못된 접근입니다.</div>
-          <Link href="/prob">
+          <Link href="/">
             <Button variant="ghost">목록으로 이동</Button>
           </Link>
         </div>
@@ -30,15 +31,8 @@ export default async function Page({
 
   return (
     <div className="bg-background flex min-h-svh flex-col overflow-hidden">
-      <div className="px-6 py-6 flex ">
-        <Link className="mr-auto" href="/prob">
-          <Button
-            className="text-primary hover:text-primary/90 mr-auto"
-            variant="ghost"
-          >
-            ← 문제집 목록으로 돌아가기
-          </Button>
-        </Link>
+      <div className="px-6 py-6 flex justify-between">
+        <GoBackButton />
         <ChatDrawer />
       </div>
 
