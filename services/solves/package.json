@@ -19,17 +19,18 @@
     ".": "./src/index.ts",
     "./shared": "./src/shared.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@service/auth": "workspace:*",
     "@workspace/cache": "workspace:*",
     "@workspace/util": "workspace:*",
+    "ai": "^5.0.41",
     "drizzle-orm": "^0.44.5",
-    "inquirer": "^12.9.6",
     "ioredis": "^5.4.1",
     "pg": "^8.16.3",
     "zod": "^4.1.8"
   },
   "devDependencies": {
+    "inquirer": "^12.9.6",
     "@biomejs/biome": "2.2.2",
     "@types/node": "^22.13.0",
     "@types/pg": "^8.15.5",

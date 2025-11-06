@@ -12,7 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { solvesSchema } from "../prob/schema";
+import { solvesSchema } from "../db";
 import { PlanContentBlock, TxnKind } from "./types";
 
 const timestamps = {
