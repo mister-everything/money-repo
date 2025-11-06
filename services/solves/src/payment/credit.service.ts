@@ -18,6 +18,7 @@ import type {
   DeductCreditResponse,
 } from "./types";
 import { PriceCalculator, toDecimal } from "./utils";
+import { walletService } from "./wallet.service";
 
 /**
  * Credit Service
@@ -31,31 +32,24 @@ import { PriceCalculator, toDecimal } from "./utils";
 export const creditService = {
   /**
    * 잔액 조회 (Cache 우선 → DB Fallback)
-   * @param walletId - 지갑 UUID
+   * userId 기반으로 조회하며, 지갑이 없는 경우 자동 생성
+   * @param userId - 사용자 ID
    * @returns 잔액 (문자열)
    */
-  getBalance: async (walletId: string): Promise<string> => {
-    // 1) 캐시에서 먼저 확인
-    const cached = await sharedCache.get(CacheKeys.walletBalance(walletId));
+  getBalance: async (userId: string): Promise<string> => {
+    // 1) 캐시에서 먼저 확인 (userId 기반)
+    const cached = await sharedCache.get(CacheKeys.userBalance(userId));
     if (cached) {
       return cached;
     }
 
-    // 2) 캐시 미스 → DB 조회
-    const [wallet] = await pgDb
-      .select({ balance: CreditWalletTable.balance })
-      .from(CreditWalletTable)
-      .where(eq(CreditWalletTable.id, walletId))
-      .limit(1);
-
-    if (!wallet) {
-      throw new Error("지갑을 찾을 수 없습니다");
-    }
+    // 2) 캐시 미스 → 지갑 조회 또는 생성 (초기 밸런스 포함)
+    const wallet = await walletService.getOrCreateWallet(userId);
 
     // 3) 캐시 저장 (10분)
     await sharedCache.setex(
-      CacheKeys.walletBalance(walletId),
-      CacheTTL.WALLET_BALANCE,
+      CacheKeys.userBalance(userId),
+      CacheTTL.USER_BALANCE,
       wallet.balance,
     );
 
@@ -110,7 +104,7 @@ export const creditService = {
   deductCreditAsync: async (
     params: DeductCreditParams,
   ): Promise<DeductCreditAsyncResponse> => {
-    const { walletId, idempotencyKey } = params;
+    const { userId, idempotencyKey } = params;
 
     // 1) 멱등성 체크 (빠른 중복 방지)
     const cached = await sharedCache.get(CacheKeys.idempotency(idempotencyKey));
@@ -122,8 +116,8 @@ export const creditService = {
       };
     }
 
-    // 2) 잔액 체크 (캐시 우선)
-    const balance = await creditService.getBalance(walletId);
+    // 2) 잔액 체크 (캐시 우선, userId 기반)
+    const balance = await creditService.getBalance(userId);
     if (Number(balance) <= 0) {
       throw new Error("크레딧이 부족합니다");
     }
@@ -261,10 +255,10 @@ export const creditService = {
     };
 
     await Promise.all([
-      // 5-1) 잔액 캐시 갱신
+      // 5-1) 잔액 캐시 갱신 (userId 기반)
       sharedCache.setex(
-        CacheKeys.walletBalance(walletId),
-        CacheTTL.WALLET_BALANCE,
+        CacheKeys.userBalance(userId),
+        CacheTTL.USER_BALANCE,
         result.newBalance,
       ),
       // 5-2) 멱등성 키 저장
@@ -351,11 +345,11 @@ export const creditService = {
       newBalance: result.newBalance,
     };
 
-    // 3) 캐시 갱신
+    // 3) 캐시 갱신 (userId 기반)
     await Promise.all([
       sharedCache.setex(
-        CacheKeys.walletBalance(walletId),
-        CacheTTL.WALLET_BALANCE,
+        CacheKeys.userBalance(userId),
+        CacheTTL.USER_BALANCE,
         toDecimal(result.newBalance),
       ),
       sharedCache.setex(

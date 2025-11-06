@@ -199,7 +199,7 @@ export const subscriptionService = {
     // 4) 캐시 무효화
     await Promise.all([
       sharedCache.del(CacheKeys.subscription(userId)),
-      sharedCache.del(CacheKeys.walletBalance(result.walletId)),
+      sharedCache.del(CacheKeys.userBalance(userId)),
     ]);
 
     return {
@@ -260,7 +260,7 @@ export const subscriptionService = {
       if (currentPeriod.refillCount >= plan.maxRefillCount) {
         return {
           refilled: false,
-          newBalance: await creditService.getBalance(subscription.walletId),
+          newBalance: await creditService.getBalance(userId),
         };
       }
 
@@ -349,7 +349,7 @@ export const subscriptionService = {
       // 8) 캐시 무효화
       await Promise.all([
         sharedCache.del(CacheKeys.subscription(userId)),
-        sharedCache.del(CacheKeys.walletBalance(subscription.walletId)),
+        sharedCache.del(CacheKeys.userBalance(userId)),
       ]);
 
       const nextRefillAt = new Date(
@@ -522,7 +522,7 @@ export const subscriptionService = {
     if (subscription[0]) {
       await Promise.all([
         sharedCache.del(CacheKeys.subscription(subscription[0].userId)),
-        sharedCache.del(CacheKeys.walletBalance(subscription[0].walletId)),
+        sharedCache.del(CacheKeys.userBalance(subscription[0].userId)),
       ]);
     }
 

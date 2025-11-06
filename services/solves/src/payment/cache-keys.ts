@@ -4,11 +4,18 @@
  */
 export const CacheKeys = {
   /**
-   * 지갑 잔액 캐시
-   * @param walletId - 지갑 UUID
-   * @returns Redis key: wallet:{walletId}:balance
+   * 사용자 지갑 ID 캐시 (userId → walletId 매핑)
+   * @param userId - 사용자 ID
+   * @returns Redis key: user:{userId}:wallet
    */
-  walletBalance: (walletId: string) => `wallet:${walletId}:balance`,
+  userWallet: (userId: string) => `user:${userId}:wallet`,
+
+  /**
+   * 사용자 잔액 캐시 (userId 기반)
+   * @param userId - 사용자 ID
+   * @returns Redis key: user:{userId}:balance
+   */
+  userBalance: (userId: string) => `user:${userId}:balance`,
 
   /**
    * AI 가격표 캐시
@@ -45,8 +52,11 @@ export const CacheKeys = {
  * 캐시의 유효 기간을 정의
  */
 export const CacheTTL = {
-  /** 지갑 잔액 캐시 - 10분 */
-  WALLET_BALANCE: 600,
+  /** 사용자 지갑 ID 캐시 - 1시간 (지갑은 변경되지 않음) */
+  USER_WALLET: 3600,
+
+  /** 사용자 잔액 캐시 - 10분 */
+  USER_BALANCE: 600,
 
   /** AI 가격표 캐시 - 1시간 (가격이 자주 변경되지 않음) */
   AI_PRICE: 3600,
