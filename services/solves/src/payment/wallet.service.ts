@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
+import { INITIAL_CREDIT_BALANCE } from "../const";
 import { pgDb } from "../db";
 import { CacheKeys, CacheTTL } from "./cache-keys";
 import { CreditWalletTable } from "./schema";
 import { sharedCache } from "./shared-cache";
 import type { Wallet } from "./types";
+import { toDecimal } from "./utils";
 
 /**
  * Wallet Service
@@ -18,24 +20,37 @@ export const walletService = {
   /**
    * 사용자 지갑 생성
    * @param userId - 사용자 ID
+   * @param initialBalance - 초기 밸런스 (선택적, 기본값은 env에서)
    * @returns 생성된 지갑
    */
-  createWallet: async (userId: string): Promise<Wallet> => {
+  createWallet: async (
+    userId: string,
+    initialBalance?: number,
+  ): Promise<Wallet> => {
+    const balance = toDecimal(initialBalance ?? INITIAL_CREDIT_BALANCE);
+
     const [wallet] = await pgDb
       .insert(CreditWalletTable)
       .values({
         userId,
-        balance: "0",
+        balance,
         version: 0,
       })
       .returning();
 
-    // 캐시 저장
-    await sharedCache.setex(
-      CacheKeys.walletBalance(wallet.id),
-      CacheTTL.WALLET_BALANCE,
-      wallet.balance,
-    );
+    // 캐시 저장 (userId 기반)
+    await Promise.all([
+      sharedCache.setex(
+        CacheKeys.userBalance(userId),
+        CacheTTL.USER_BALANCE,
+        wallet.balance,
+      ),
+      sharedCache.setex(
+        CacheKeys.userWallet(userId),
+        CacheTTL.USER_WALLET,
+        wallet.id,
+      ),
+    ]);
 
     return wallet as Wallet;
   },
@@ -56,12 +71,19 @@ export const walletService = {
       return null;
     }
 
-    // 잔액 캐시 저장
-    await sharedCache.setex(
-      CacheKeys.walletBalance(wallet.id),
-      CacheTTL.WALLET_BALANCE,
-      wallet.balance,
-    );
+    // 캐시 저장 (userId 기반)
+    await Promise.all([
+      sharedCache.setex(
+        CacheKeys.userBalance(userId),
+        CacheTTL.USER_BALANCE,
+        wallet.balance,
+      ),
+      sharedCache.setex(
+        CacheKeys.userWallet(userId),
+        CacheTTL.USER_WALLET,
+        wallet.id,
+      ),
+    ]);
 
     return wallet as Wallet;
   },
@@ -69,9 +91,13 @@ export const walletService = {
   /**
    * 지갑 조회 또는 생성 (없으면 자동 생성)
    * @param userId - 사용자 ID
+   * @param initialBalance - 초기 밸런스 (선택적, 기본값은 env에서)
    * @returns 지갑
    */
-  getOrCreateWallet: async (userId: string): Promise<Wallet> => {
+  getOrCreateWallet: async (
+    userId: string,
+    initialBalance?: number,
+  ): Promise<Wallet> => {
     // 1) 기존 지갑 조회
     const existing = await walletService.getWalletByUserId(userId);
     if (existing) {
@@ -80,7 +106,7 @@ export const walletService = {
 
     // 2) 없으면 생성
     try {
-      return await walletService.createWallet(userId);
+      return await walletService.createWallet(userId, initialBalance);
     } catch (error: unknown) {
       // 동시 생성 시도로 인한 unique constraint 에러 처리
       if (
