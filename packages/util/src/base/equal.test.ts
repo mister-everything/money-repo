@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import equal from "./equal";
+import { equal } from "./equal";
 
 describe("equal function", () => {
   describe("primitive values", () => {

@@ -12,3 +12,8 @@ export type ChatMessage = {
   metadata?: ChatMetadata;
   createdAt: Date;
 };
+
+export type ChatModel = {
+  provider: string;
+  model: string;
+};
