@@ -1,6 +1,6 @@
 import { probService } from "@service/solves";
 import Link from "next/link";
-
+import Chat from "@/components/chat/chatbot";
 import {
   Card,
   CardContent,
@@ -25,7 +25,7 @@ export default async function Page() {
           </p>
         </div>
       </div>
-
+      <Chat />
       {/* 문제집 목록 */}
       <div className="max-w-6xl mx-auto p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
