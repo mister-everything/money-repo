@@ -4,23 +4,24 @@ import {
   ProbBook,
   SubmitProbBookResponse,
 } from "@service/solves/shared";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetcher } from "@/lib/fetcher";
 import { ProblemBlock } from "./problem-block";
+import { ProblemBookSequential } from "./problem-book-sequential";
+import { ProblemHeader } from "./problem-header";
+import { SolveModeSelector } from "./solve-mode-selector";
 
 interface ProblemBookProps {
   probBook: ProbBook;
 }
 
 export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") as "all" | "sequential" | null;
   const [submitId, setSubmitId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, BlockAnswerSubmit>>({});
   const [lastSavedAnswers, setLastSavedAnswers] = useState<
@@ -38,7 +39,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
             startTime: Date;
             savedAnswers: Record<string, BlockAnswerSubmit>;
           };
-        }>(`/api/prob/${probBook.id}/session`, {
+        }>(`/api/workbooks/${probBook.id}/session`, {
           method: "GET",
         });
 
@@ -70,7 +71,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
       }
 
       try {
-        await fetcher(`/api/prob/${probBook.id}/save`, {
+        await fetcher(`/api/workbooks/${probBook.id}/save`, {
           method: "POST",
           body: JSON.stringify({
             submitId,
@@ -109,7 +110,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     await fetcher<{
       success: boolean;
       data: SubmitProbBookResponse;
-    }>(`/api/prob/${probBook.id}/submit`, {
+    }>(`/api/workbooks/${probBook.id}/submit`, {
       method: "POST",
       body: JSON.stringify({
         submitId,
@@ -127,15 +128,25 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
       });
   };
 
-  return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* 문제집 헤더 */}
-      <Card className="mb-8 text-primary border-none bg-secondary">
-        <CardHeader>
-          {/* 결과 요약 섹션 */}
-          {submitResult && (
-            // 가운데 정렬
-            <div className="flex items-center justify-center mb-6 pb-6 border-b border-border">
+  const handleModeSelect = (selectedMode: "all" | "sequential") => {
+    router.replace(`/workbooks/${probBook.id}/solve?mode=${selectedMode}`);
+  };
+
+  // 모드가 선택되지 않았으면 모드 선택 화면 표시
+  if (!mode) {
+    return (
+      <SolveModeSelector probBook={probBook} onModeSelect={handleModeSelect} />
+    );
+  }
+
+  // 공통 헤더 및 결과 요약 UI
+  const renderHeader = () => (
+    <>
+      {/* 결과 요약 섹션 */}
+      {submitResult && (
+        <Card className="mb-8 text-primary border-none">
+          <CardHeader>
+            <div className="flex items-center justify-center">
               <div className="space-y-2 text-center">
                 <h3 className="text-3xl font-bold text-foreground">
                   문제 풀이 결과
@@ -156,39 +167,33 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
                 </p>
               </div>
             </div>
-          )}
+          </CardHeader>
+        </Card>
+      )}
+      <ProblemHeader probBook={probBook} />
+    </>
+  );
 
-          <CardTitle className="text-3xl text-foreground">
-            {probBook.title}
-          </CardTitle>
-          {probBook.description && (
-            <CardDescription className="text-foreground">
-              {probBook.description}
-            </CardDescription>
-          )}
-        </CardHeader>
+  // 한 문제씩 풀이 모드
+  if (mode === "sequential") {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        {renderHeader()}
+        <ProblemBookSequential
+          probBook={probBook}
+          answers={answers}
+          onAnswerChange={handleAnswerChange}
+          onSubmit={handleSubmit}
+          submitResult={submitResult}
+        />
+      </div>
+    );
+  }
 
-        <CardContent>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4 text-sm text-foreground">
-              <span>총 {probBook.blocks.length}문제</span>
-            </div>
-
-            {probBook.tags && probBook.tags.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {probBook.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-sm "
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+  // 전체 풀이 모드 (기존 방식)
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      {renderHeader()}
 
       {/* 문제들 */}
       <div className="space-y-6">
