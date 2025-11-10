@@ -52,8 +52,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
         ...price,
         providerInputTokenPrice: gatewayPrice?.pricing?.input,
         providerOutputTokenPrice: gatewayPrice?.pricing?.output,
-        providerCachedTokenPrice:
-          gatewayPrice?.pricing?.cacheCreationInputTokens,
+        providerCachedTokenPrice: gatewayPrice?.pricing?.cachedInputTokens,
       };
     });
   }, [prices, gatewayPricesMap]);

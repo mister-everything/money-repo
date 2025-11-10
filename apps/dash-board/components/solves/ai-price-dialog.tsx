@@ -2,7 +2,7 @@
 
 import type { GatewayLanguageModelEntry } from "@ai-sdk/gateway";
 import type { AIPrice } from "@service/solves/shared";
-import { Loader, Search } from "lucide-react";
+import { ChevronLeft, Loader, Search } from "lucide-react";
 import { ReactNode, useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -114,8 +114,8 @@ export function AIPriceDialog({
     setInputTokenPrice(gatewayModel.pricing?.input || "0");
     setOutputTokenPrice(gatewayModel.pricing?.output || "0");
     setCachedTokenPrice(
-      gatewayModel.pricing?.cachedInputTokens ||
-        gatewayModel.pricing?.cacheCreationInputTokens ||
+      gatewayModel.pricing?.cacheCreationInputTokens ||
+        gatewayModel.pricing?.cachedInputTokens ||
         "0",
     );
     setModelType(mapModelType(gatewayModel.modelType || "language"));
@@ -151,86 +151,79 @@ export function AIPriceDialog({
                 ? "AI 가격 생성"
                 : "AI 가격 수정"}
           </DialogTitle>
-          <DialogDescription>
-            {isSearchMode
-              ? "Vercel Gateway에서 모델을 검색하고 선택하세요."
-              : mode === "create"
-                ? "새로운 AI 모델의 가격 정보를 입력하세요."
-                : "AI 모델의 가격 정보를 수정하세요."}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <DialogDescription>
+              새로운 AI 모델의 가격 정보를 입력하세요.
+            </DialogDescription>
+
+            <Button
+              type="button"
+              variant={isSearchMode ? "ghost" : "outline"}
+              size="sm"
+              onClick={() => setIsSearchMode((prev) => !prev)}
+              disabled={isPending}
+            >
+              {isSearchMode ? (
+                <>
+                  <ChevronLeft />
+                  뒤로가기
+                </>
+              ) : (
+                <>
+                  <Search className="size-4 mr-2" />
+                  모델 불러오기
+                </>
+              )}
+            </Button>
+          </div>
         </DialogHeader>
 
         {isSearchMode ? (
           /* 검색 모드 */
-          <div className="space-y-4">
-            <Command className="rounded-lg border">
-              <CommandInput placeholder="모델명 또는 제공자로 검색..." />
-              <CommandList className="max-h-[500px]">
-                <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
-                <CommandGroup heading="Available Models">
-                  {gatewayPrices?.map((model) => (
-                    <CommandItem
-                      key={model.id}
-                      onSelect={() => handleSelectModel(model)}
-                      className="flex items-start gap-3 py-3 cursor-pointer"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">
-                            {model.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {model.id}
-                          </span>
-                        </div>
-                        {model.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {model.description}
-                          </p>
+          <Command className="rounded-lg bg-background">
+            <CommandInput placeholder="모델명 또는 제공자로 검색..." />
+            <CommandList className="max-h-[500px]">
+              <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+              <CommandGroup>
+                {gatewayPrices?.map((model) => (
+                  <CommandItem
+                    key={model.id}
+                    onSelect={() => handleSelectModel(model)}
+                    className="flex items-start gap-3 py-3 cursor-pointer"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {model.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {model.id}
+                        </span>
+                      </div>
+                      {model.description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {model.description}
+                        </p>
+                      )}
+                    </div>
+                    {model.pricing && (
+                      <div className="flex flex-col text-xs text-muted-foreground text-right">
+                        {model.pricing.input && (
+                          <span>In: ${model.pricing.input}/M</span>
+                        )}
+                        {model.pricing.output && (
+                          <span>Out: ${model.pricing.output}/M</span>
                         )}
                       </div>
-                      {model.pricing && (
-                        <div className="flex flex-col text-xs text-muted-foreground text-right">
-                          {model.pricing.input && (
-                            <span>In: ${model.pricing.input}/M</span>
-                          )}
-                          {model.pricing.output && (
-                            <span>Out: ${model.pricing.output}/M</span>
-                          )}
-                        </div>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsSearchMode(false)}
-              >
-                취소
-              </Button>
-            </div>
-          </div>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
         ) : (
           /* 폼 모드 */
           <form action={formAction} className="space-y-6">
-            {/* 모델 불러오기 버튼 */}
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSearchMode(true)}
-                disabled={isPending}
-              >
-                <Search className="size-4 mr-2" />
-                Vercel Gateway에서 모델 불러오기
-              </Button>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Provider */}
               <div className="grid gap-2">
