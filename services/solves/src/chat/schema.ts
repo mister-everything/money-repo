@@ -7,7 +7,7 @@ import { ChatMetadata } from "./types";
 export const ChatThreadTable = solvesSchema.table("chat_thread", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   title: text("title").notNull(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),

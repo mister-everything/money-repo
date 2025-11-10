@@ -69,17 +69,14 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
     }
   };
 
-  const formatPrice = (price: string) => {
-    return Number(price).toLocaleString("ko-KR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+  const formatPrice = (price: number) => {
+    return price.toFixed(8);
   };
 
   const calculateFinalPrice = (basePrice: string, markupRate: string) => {
     const base = Number(basePrice);
     const markup = Number(markupRate);
-    return (base * markup).toFixed(2);
+    return base * markup;
   };
 
   const getModelTypeLabel = (type: string) => {
@@ -143,7 +140,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                   <TableCell className="text-right">
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-muted-foreground">
-                        원가: {formatPrice(price.inputTokenPrice)}원
+                        원가: {formatPrice(Number(price.inputTokenPrice))}$
                       </span>
                       <span className="text-sm font-medium">
                         판매:{" "}
@@ -153,14 +150,14 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                             price.markupRate,
                           ),
                         )}
-                        원
+                        $
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-muted-foreground">
-                        원가: {formatPrice(price.outputTokenPrice)}원
+                        원가: {formatPrice(Number(price.outputTokenPrice))}$
                       </span>
                       <span className="text-sm font-medium">
                         판매:{" "}
@@ -170,14 +167,14 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                             price.markupRate,
                           ),
                         )}
-                        원
+                        $
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-muted-foreground">
-                        원가: {formatPrice(price.cachedTokenPrice)}원
+                        원가: {formatPrice(Number(price.cachedTokenPrice))}$
                       </span>
                       <span className="text-sm font-medium">
                         판매:{" "}
@@ -187,7 +184,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                             price.markupRate,
                           ),
                         )}
-                        원
+                        $
                       </span>
                     </div>
                   </TableCell>

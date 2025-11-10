@@ -26,14 +26,32 @@ CREATE TYPE "solves"."subscription_status" AS ENUM('active', 'past_due', 'cancel
 END IF;
 END $$;
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."chat_message" (
+	"id" text PRIMARY KEY NOT NULL,
+	"thread_id" uuid NOT NULL,
+	"role" text NOT NULL,
+	"parts" json[],
+	"metadata" json,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."chat_thread" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"title" text NOT NULL,
+	"user_id" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."ai_provider_prices" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"provider" text NOT NULL,
 	"model" text NOT NULL,
+	"display_name" text NOT NULL,
 	"model_type" text NOT NULL,
-	"input_token_price" numeric(15, 2) NOT NULL,
-	"output_token_price" numeric(15, 2) NOT NULL,
-	"cached_token_price" numeric(15, 2) NOT NULL,
+	"input_token_price" numeric(15, 8) NOT NULL,
+	"output_token_price" numeric(15, 8) NOT NULL,
+	"cached_token_price" numeric(15, 8) NOT NULL,
 	"markup_rate" numeric(6, 3) DEFAULT '1.60' NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -46,8 +64,8 @@ CREATE TABLE IF NOT EXISTS "solves"."credit_ledger" (
 	"wallet_id" uuid NOT NULL,
 	"user_id" text NOT NULL,
 	"kind" text NOT NULL,
-	"delta" numeric(15, 2) NOT NULL,
-	"running_balance" numeric(15, 2) NOT NULL,
+	"delta" numeric(15, 8) NOT NULL,
+	"running_balance" numeric(15, 8) NOT NULL,
 	"idempotency_key" text NOT NULL,
 	"reason" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
@@ -56,7 +74,7 @@ CREATE TABLE IF NOT EXISTS "solves"."credit_ledger" (
 CREATE TABLE IF NOT EXISTS "solves"."credit_wallet" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
-	"balance" numeric(15, 2) DEFAULT '0.00' NOT NULL,
+	"balance" numeric(15, 8) DEFAULT '0.00000000' NOT NULL,
 	"version" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -70,7 +88,7 @@ CREATE TABLE IF NOT EXISTS "solves"."invoices" (
 	"type" "solves"."invoice_type" DEFAULT 'credit_purchase' NOT NULL,
 	"title" text NOT NULL,
 	"amount" numeric(15, 2) NOT NULL,
-	"purchased_credits" numeric(15, 2) NOT NULL,
+	"purchased_credits" numeric(15, 8) NOT NULL,
 	"status" "solves"."invoice_status" DEFAULT 'pending' NOT NULL,
 	"external_ref" text,
 	"external_order_id" text,
@@ -86,7 +104,7 @@ CREATE TABLE IF NOT EXISTS "solves"."subscription_periods" (
 	"period_end" timestamp NOT NULL,
 	"status" "solves"."subscription_period_status" DEFAULT 'active' NOT NULL,
 	"period_type" text DEFAULT 'renewal' NOT NULL,
-	"credits_granted" numeric(15, 2),
+	"credits_granted" numeric(15, 8),
 	"refill_count" integer DEFAULT 0 NOT NULL,
 	"last_refill_at" timestamp,
 	"invoice_id" uuid,
@@ -101,8 +119,8 @@ CREATE TABLE IF NOT EXISTS "solves"."subscription_plans" (
 	"description" text,
 	"plans" jsonb,
 	"price" numeric(15, 2) NOT NULL,
-	"monthly_quota" numeric(15, 2) NOT NULL,
-	"refill_amount" numeric(15, 2) NOT NULL,
+	"monthly_quota" numeric(15, 8) NOT NULL,
+	"refill_amount" numeric(15, 8) NOT NULL,
 	"refill_interval_hours" integer NOT NULL,
 	"max_refill_count" integer NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
@@ -133,7 +151,7 @@ CREATE TABLE IF NOT EXISTS "solves"."usage_events" (
 	"provider" text NOT NULL,
 	"model" text NOT NULL,
 	"calls" integer,
-	"billable_credits" numeric(15, 2) NOT NULL,
+	"billable_credits" numeric(15, 8) NOT NULL,
 	"request_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
@@ -194,6 +212,18 @@ CREATE TABLE IF NOT EXISTS "solves"."tags" (
 );
 --> statement-breakpoint
 DO $$ BEGIN
+ALTER TABLE "solves"."chat_message" ADD CONSTRAINT "chat_message_thread_id_chat_thread_id_fk" FOREIGN KEY ("thread_id") REFERENCES "solves"."chat_thread"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."chat_thread" ADD CONSTRAINT "chat_thread_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
 ALTER TABLE "solves"."credit_ledger" ADD CONSTRAINT "credit_ledger_wallet_id_credit_wallet_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "solves"."credit_wallet"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
@@ -207,6 +237,12 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
 ALTER TABLE "solves"."credit_wallet" ADD CONSTRAINT "credit_wallet_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."invoices" ADD CONSTRAINT "invoices_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;

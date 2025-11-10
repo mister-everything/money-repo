@@ -7,13 +7,16 @@ import {
   index,
   integer,
   jsonb,
+  pgSchema,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { solvesSchema } from "../db";
+import { SCHEMA_NAME } from "../const";
 import { PlanContentBlock, TxnKind } from "./types";
+
+export const solvesSchema = pgSchema(SCHEMA_NAME);
 
 const timestamps = {
   createdAt: timestamp("created_at").notNull().defaultNow(),

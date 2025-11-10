@@ -1,9 +1,135 @@
 {
-  "id": "a55f4908-e755-4447-94e1-3bdbd998da2a",
+  "id": "3da04199-3fde-48b0-8a78-4f9c7f7d7b9c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "solves.chat_message": {
+      "name": "chat_message",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parts": {
+          "name": "parts",
+          "type": "json[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "chat_message_thread_id_chat_thread_id_fk": {
+          "name": "chat_message_thread_id_chat_thread_id_fk",
+          "tableFrom": "chat_message",
+          "tableTo": "chat_thread",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "thread_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.chat_thread": {
+      "name": "chat_thread",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "chat_thread_user_id_user_id_fk": {
+          "name": "chat_thread_user_id_user_id_fk",
+          "tableFrom": "chat_thread",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "solves.ai_provider_prices": {
       "name": "ai_provider_prices",
       "schema": "solves",
@@ -27,6 +153,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "model_type": {
           "name": "model_type",
           "type": "text",
@@ -35,19 +167,19 @@
         },
         "input_token_price": {
           "name": "input_token_price",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "output_token_price": {
           "name": "output_token_price",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "cached_token_price": {
           "name": "cached_token_price",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -147,13 +279,13 @@
         },
         "delta": {
           "name": "delta",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "running_balance": {
           "name": "running_balance",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -291,10 +423,10 @@
         },
         "balance": {
           "name": "balance",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true,
-          "default": "'0.00'"
+          "default": "'0.00000000'"
         },
         "version": {
           "name": "version",
@@ -407,7 +539,7 @@
         },
         "purchased_credits": {
           "name": "purchased_credits",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -565,7 +697,7 @@
         },
         "credits_granted": {
           "name": "credits_granted",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": false
         },
@@ -726,13 +858,13 @@
         },
         "monthly_quota": {
           "name": "monthly_quota",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "refill_amount": {
           "name": "refill_amount",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1015,7 +1147,7 @@
         },
         "billable_credits": {
           "name": "billable_credits",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },

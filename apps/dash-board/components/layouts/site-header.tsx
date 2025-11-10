@@ -1,9 +1,10 @@
 "use client";
+
 import { ArrowLeft, MoonIcon, SunIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -102,6 +103,12 @@ export function SiteHeader(props: { className?: string }) {
   const pathname = usePathname();
   const params = useParams();
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { parent, breadcrumbs } = useMemo(() => {
     // params를 [key] 형태로 변환하기 위한 맵 생성
     const inverted = Object.entries(params).reduce(
@@ -186,14 +193,16 @@ export function SiteHeader(props: { className?: string }) {
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            variant="ghost"
-            size="icon"
-            className="hidden sm:flex"
-          >
-            {theme === "light" ? <SunIcon /> : <MoonIcon />}
-          </Button>
+          {mounted && (
+            <Button
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              variant="ghost"
+              size="icon"
+              className="hidden sm:flex"
+            >
+              {theme === "light" ? <SunIcon /> : <MoonIcon />}
+            </Button>
+          )}
         </div>
       </div>
     </header>
