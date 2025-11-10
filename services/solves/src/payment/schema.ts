@@ -122,7 +122,6 @@ export const AiProviderPricesTable = solvesSchema.table(
  * 캐싱: 10분 TTL (빠른 응답 우선)
  *
  * 동시성 제어:
- * - 차감: Optimistic Lock (version 컬럼 활용, 3회 재시도)
  * - 충전: Pessimistic Lock (FOR UPDATE)
  *
  * 빠른 응답 전략:
@@ -156,13 +155,6 @@ export const CreditWalletTable = solvesSchema.table(
     balance: decimal("balance", { precision: 15, scale: 8 })
       .notNull()
       .default("0.00000000"),
-
-    /** 낙관적 락 버전
-     *  동시성 제어: UPDATE WHERE version = :expected
-     *  충돌 시 재시도 (최대 3회)
-     *  eg: 0 → 1 → 2 → ...
-     */
-    version: integer("version").notNull().default(0),
     ...timestamps,
   },
   (t) => [

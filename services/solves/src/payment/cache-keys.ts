@@ -4,13 +4,6 @@
  */
 export const CacheKeys = {
   /**
-   * 사용자 지갑 ID 캐시 (userId → walletId 매핑)
-   * @param userId - 사용자 ID
-   * @returns Redis key: user:{userId}:wallet
-   */
-  userWallet: (userId: string) => `user:${userId}:wallet`,
-
-  /**
    * 사용자 잔액 캐시 (userId 기반)
    * @param userId - 사용자 ID
    * @returns Redis key: user:{userId}:balance
@@ -31,20 +24,6 @@ export const CacheKeys = {
    * @returns Redis key: idemp:{key}
    */
   idempotency: (key: string) => `idemp:${key}`,
-
-  /**
-   * 구독 정보 캐시
-   * @param userId - 사용자 UUID
-   * @returns Redis key: subscription:{userId}
-   */
-  subscription: (userId: string) => `subscription:${userId}`,
-
-  /**
-   * 정기 충전 잠금 (중복 충전 방지)
-   * @param userId - 사용자 UUID
-   * @returns Redis key: refill:lock:{userId}
-   */
-  refillLock: (userId: string) => `refill:lock:${userId}`,
 } as const;
 
 /**
@@ -52,9 +31,6 @@ export const CacheKeys = {
  * 캐시의 유효 기간을 정의
  */
 export const CacheTTL = {
-  /** 사용자 지갑 ID 캐시 - 1시간 (지갑은 변경되지 않음) */
-  USER_WALLET: 3600,
-
   /** 사용자 잔액 캐시 - 10분 */
   USER_BALANCE: 600,
 
@@ -63,10 +39,4 @@ export const CacheTTL = {
 
   /** 멱등성 키 - 10분 */
   IDEMPOTENCY: 600,
-
-  /** 구독 정보 캐시 - 10분 */
-  SUBSCRIPTION: 600,
-
-  /** 정기 충전 잠금 - 1분 (충전 중복 방지) */
-  REFILL_LOCK: 60,
 } as const;

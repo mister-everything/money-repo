@@ -3,39 +3,6 @@ import { sharedCache } from "./shared-cache";
 import type { AIPrice } from "./types";
 
 /**
- * 멱등성 키 생성 유틸리티
- * 구독 시스템에서 사용하는 멱등성 키 생성
- */
-export const IdempotencyKeys = {
-  /**
-   * 구독 리필용 멱등성 키 생성
-   * @param subscriptionId - 구독 ID
-   * @param periodStart - 기간 시작일
-   * @param refillCount - 리필 횟수
-   * @returns refill:{subscriptionId}:{periodStart}:{refillCount}
-   */
-  forRefill: (
-    subscriptionId: string,
-    periodStart: Date,
-    refillCount: number,
-  ): string => {
-    const periodKey = periodStart.toISOString().split("T")[0];
-    return `refill:${subscriptionId}:${periodKey}:${refillCount}`;
-  },
-
-  /**
-   * 구독 월간 크레딧 지급용 멱등성 키 생성
-   * @param subscriptionId - 구독 ID
-   * @param periodStart - 기간 시작일
-   * @returns grant:{subscriptionId}:{periodStart}
-   */
-  forGrant: (subscriptionId: string, periodStart: Date): string => {
-    const periodKey = periodStart.toISOString().split("T")[0];
-    return `grant:${subscriptionId}:${periodKey}`;
-  },
-};
-
-/**
  * 분산 락 헬퍼
  * Redis 기반 락 획득/해제 (중복 작업 방지)
  */
@@ -76,66 +43,26 @@ export class DistributedLock {
   }
 }
 
-/**
- * 가격 계산 유틸리티
- */
-export const PriceCalculator = {
-  /**
-   * AI 사용량을 USD 원가로 계산
-   * @param price - AI 가격 정보 (USD per token)
-   * @param tokens - 토큰 사용량
-   * @returns USD 원가
-   */
-  calculateVendorCost: (
-    price: AIPrice,
-    tokens: {
-      input: number;
-      output: number;
-    },
-  ): number => {
-    const inputCost = tokens.input * Number(price.inputTokenPrice);
-    const outputCost = tokens.output * Number(price.outputTokenPrice);
-
-    return inputCost + outputCost;
+export const calculateCost = (
+  price: AIPrice,
+  useage: {
+    input: number;
+    output: number;
   },
+) => {
+  const inputCost = useage.input * Number(price.inputTokenPrice);
+  const outputCost = useage.output * Number(price.outputTokenPrice);
 
-  /**
-   * 원가를 청구 크레딧으로 변환 (마진 적용)
-   * @param vendorCostUsd - USD 원가
-   * @param markupRate - 마진율
-   * @returns 청구 크레딧 (USD)
-   */
-  calculateBillableCredits: (
-    vendorCostUsd: number,
-    markupRate: string,
-  ): number => {
-    return vendorCostUsd * Number(markupRate);
-  },
-
-  /**
-   * AI 사용량을 청구 크레딧으로 직접 계산
-   * @param price - AI 가격 정보 (USD per token)
-   * @param tokens - 토큰 사용량
-   * @returns 청구 크레딧 (USD)
-   */
-  calculateCreditsFromTokens: (
-    price: AIPrice,
-    tokens: {
-      input: number;
-      output: number;
-    },
-  ): { vendorCostKrw: number; billableCredits: number } => {
-    const vendorCostKrw = PriceCalculator.calculateVendorCost(price, tokens);
-    const billableCredits = PriceCalculator.calculateBillableCredits(
-      vendorCostKrw,
-      price.markupRate,
-    );
-
-    return {
-      vendorCostKrw,
-      billableCredits,
-    };
-  },
+  const inputMarketCost = inputCost * Number(price.markupRate);
+  const outputMarketCost = outputCost * Number(price.markupRate);
+  return {
+    inputCost,
+    outputCost,
+    totalCost: inputCost + outputCost,
+    inputMarketCost,
+    outputMarketCost,
+    totalMarketCost: inputMarketCost + outputMarketCost,
+  };
 };
 
 /**

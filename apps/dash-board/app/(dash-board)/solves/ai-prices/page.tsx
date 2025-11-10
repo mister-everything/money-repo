@@ -1,11 +1,11 @@
-import { aiPriceAdminService } from "@service/solves";
+import { aiPriceService } from "@service/solves";
 
 import { AIPriceTable } from "@/components/solves/ai-price-table";
 import { AIPricesClient } from "./ai-prices-client";
 export const dynamic = "force-dynamic";
 
 export default async function AIPricesPage() {
-  const prices = await aiPriceAdminService.getAllPrices().catch((e) => {
+  const prices = await aiPriceService.getAllPrices().catch((e) => {
     console.error(e);
     return [];
   });

@@ -18,85 +18,6 @@ export interface AIPrice {
 }
 
 /**
- * 크레딧 차감 파라미터 스키마
- */
-export const deductCreditSchema = z.object({
-  walletId: z.uuid(),
-  userId: z.string(),
-  provider: z.string(),
-  model: z.string(),
-  inputTokens: z.number().int().nonnegative(),
-  outputTokens: z.number().int().nonnegative(),
-  cachedTokens: z.number().int().nonnegative().optional(),
-  calls: z.number().int().nonnegative().optional(),
-  idempotencyKey: z.string(),
-});
-
-export type DeductCreditParams = z.infer<typeof deductCreditSchema>;
-
-/**
- * 크레딧 충전 파라미터 스키마
- */
-export const creditPurchaseSchema = z.object({
-  walletId: z.uuid(),
-  userId: z.string(),
-  creditAmount: z.number().positive(),
-  invoiceId: z.uuid(),
-  idempotencyKey: z.string(),
-});
-
-export type CreditPurchaseParams = z.infer<typeof creditPurchaseSchema>;
-
-/**
- * 크레딧 차감 응답 (백그라운드)
- * 모든 금액은 USD
- */
-export interface DeductCreditAsyncResponse {
-  success: true;
-  estimatedBalance: string; // USD
-  jobId?: string; // 백그라운드 작업 ID (optional)
-}
-
-/**
- * 크레딧 차감 응답 (동기)
- * 모든 금액은 USD
- */
-export interface DeductCreditResponse {
-  success: true;
-  usageId: string;
-  newBalance: string; // USD
-  autoRefilled?: boolean; // 자동 충전 여부
-  refillAmount?: string; // 충전된 금액 (USD)
-}
-
-/**
- * 크레딧 부족 에러 상세 정보
- * 모든 금액은 USD
- */
-export interface InsufficientCreditsError {
-  code: "INSUFFICIENT_CREDITS";
-  message: string;
-  currentBalance: string; // USD
-  required: string; // USD
-  nextRefillAt?: Date; // 다음 자동 충전 시각
-  nextRefillAmount?: string; // 다음 충전 금액 (USD)
-  waitTimeMinutes?: number; // 대기 시간 (분)
-  hasSubscription: boolean;
-  suggestions: Array<{
-    type: "wait" | "subscribe" | "purchase";
-    message: string;
-  }>;
-}
-
-/**
- * 크레딧 충전 응답
- */
-export interface CreditPurchaseResponse {
-  success: true;
-  newBalance: number;
-}
-
-/**
  * 지갑 정보
  * balance는 USD 단위
  */
@@ -104,7 +25,6 @@ export interface Wallet {
   id: string;
   userId: string;
   balance: string; // USD (예: "1250.50000000")
-  version: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -446,27 +366,3 @@ export const updateSubscriptionPlanSchema =
 export type UpdateSubscriptionPlan = z.infer<
   typeof updateSubscriptionPlanSchema
 >;
-
-/**
- * 플랜 업그레이드 파라미터
- */
-export const upgradeSubscriptionSchema = z.object({
-  userId: z.string(),
-  newPlanId: z.uuid(),
-});
-
-export type UpgradeSubscriptionParams = z.infer<
-  typeof upgradeSubscriptionSchema
->;
-
-/**
- * 플랜 업그레이드 응답
- * 모든 금액은 USD
- */
-export interface UpgradeSubscriptionResponse {
-  success: true;
-  subscriptionId: string;
-  newPlanId: string;
-  creditAdjustment: string; // USD (양수면 추가, 음수면 차감)
-  newBalance: string; // USD
-}

@@ -12,7 +12,8 @@ export const getBalance = async () => {
 
 export const checkHasEnoughBalance = async () => {
   const balance = await getBalance();
-  if (balance > 0) {
-    throw new Error("");
+  console.log(`check balance ${balance}`);
+  if (balance <= 0) {
+    throw new Error("크레딧이 부족합니다");
   }
 };

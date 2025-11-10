@@ -1,0 +1,18 @@
+{
+  "id": "openai/gpt-4o",
+  "d": "gateway",
+  "params": {
+    "prompt": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "hello f?"
+          }
+        ]
+      }
+    ],
+    "includeRawChunks": false
+  }
+}
