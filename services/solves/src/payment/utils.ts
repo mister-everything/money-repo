@@ -81,10 +81,10 @@ export class DistributedLock {
  */
 export const PriceCalculator = {
   /**
-   * AI 사용량을 원화 원가로 계산
-   * @param price - AI 가격 정보
+   * AI 사용량을 USD 원가로 계산
+   * @param price - AI 가격 정보 (USD per token)
    * @param tokens - 토큰 사용량
-   * @returns 원화 원가
+   * @returns USD 원가
    */
   calculateVendorCost: (
     price: AIPrice,
@@ -93,32 +93,30 @@ export const PriceCalculator = {
       output: number;
     },
   ): number => {
-    const inputCost =
-      (tokens.input / 1_000_000) * Number(price.inputTokenPrice);
-    const outputCost =
-      (tokens.output / 1_000_000) * Number(price.outputTokenPrice);
+    const inputCost = tokens.input * Number(price.inputTokenPrice);
+    const outputCost = tokens.output * Number(price.outputTokenPrice);
 
     return inputCost + outputCost;
   },
 
   /**
    * 원가를 청구 크레딧으로 변환 (마진 적용)
-   * @param vendorCostKrw - 원화 원가
+   * @param vendorCostUsd - USD 원가
    * @param markupRate - 마진율
-   * @returns 청구 크레딧
+   * @returns 청구 크레딧 (USD)
    */
   calculateBillableCredits: (
-    vendorCostKrw: number,
+    vendorCostUsd: number,
     markupRate: string,
   ): number => {
-    return vendorCostKrw * Number(markupRate);
+    return vendorCostUsd * Number(markupRate);
   },
 
   /**
    * AI 사용량을 청구 크레딧으로 직접 계산
-   * @param price - AI 가격 정보
+   * @param price - AI 가격 정보 (USD per token)
    * @param tokens - 토큰 사용량
-   * @returns 청구 크레딧
+   * @returns 청구 크레딧 (USD)
    */
   calculateCreditsFromTokens: (
     price: AIPrice,
@@ -143,9 +141,9 @@ export const PriceCalculator = {
 /**
  * 숫자를 고정 소수점 문자열로 변환
  * @param value - 숫자
- * @param scale - 소수점 자리수 (기본 6)
- * @returns 문자열 (예: "123.456789")
+ * @param scale - 소수점 자리수 (기본 8)
+ * @returns 문자열 (예: "123.45678900")
  */
-export const toDecimal = (value: number, scale: number = 6): string => {
+export const toDecimal = (value: number, scale: number = 8): string => {
   return value.toFixed(scale);
 };

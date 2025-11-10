@@ -22,16 +22,19 @@ export const seedPlans = async () => {
       displayName: "Free Plan",
       description: "개인 개발자와 취미 프로젝트를 위한 무료 플랜",
       plans: [
-        { type: "text", text: "월 1,000 크레딧 제공" },
-        { type: "text", text: "자동 충전: 6시간마다 50 크레딧 (월 최대 10회)" },
+        { type: "text", text: "월 $10 크레딧 제공" },
+        {
+          type: "text",
+          text: "자동 충전: 6시간마다 $0.50 크레딧 (월 최대 10회)",
+        },
         { type: "text", text: "기본 AI 모델 사용 가능" },
         { type: "text", text: "커뮤니티 지원" },
         { type: "text", text: "미사용 크레딧 이월 불가 (매월 리셋)" },
         { type: "text", text: "고급 모델 사용 제한" },
       ],
       price: "0.00",
-      monthlyQuota: "1000.00",
-      refillAmount: "50.00",
+      monthlyQuota: "10.00000000",
+      refillAmount: "0.50000000",
       refillIntervalHours: 6,
       maxRefillCount: 10,
 
@@ -42,10 +45,10 @@ export const seedPlans = async () => {
       displayName: "Pro Plan",
       description: "전문가와 스타트업을 위한 프로 플랜",
       plans: [
-        { type: "text", text: "월 10,000 크레딧 제공" },
+        { type: "text", text: "월 $100 크레딧 제공" },
         {
           type: "text",
-          text: "자동 충전: 6시간마다 500 크레딧 (월 최대 20회)",
+          text: "자동 충전: 6시간마다 $5 크레딧 (월 최대 20회)",
         },
         { type: "text", text: "모든 AI 모델 사용 가능" },
         { type: "text", text: "우선 지원" },
@@ -55,8 +58,8 @@ export const seedPlans = async () => {
         { type: "text", text: "월간 리포트 제공" },
       ],
       price: "130000.00",
-      monthlyQuota: "10000.00",
-      refillAmount: "500.00",
+      monthlyQuota: "100.00000000",
+      refillAmount: "5.00000000",
       refillIntervalHours: 6,
       maxRefillCount: 20,
 
@@ -67,10 +70,10 @@ export const seedPlans = async () => {
       displayName: "Business Plan",
       description: "대규모 팀과 엔터프라이즈를 위한 비즈니스 플랜",
       plans: [
-        { type: "text", text: "월 100,000 크레딧 제공" },
+        { type: "text", text: "월 $1,000 크레딧 제공" },
         {
           type: "text",
-          text: "자동 충전: 6시간마다 5,000 크레딧 (월 최대 50회)",
+          text: "자동 충전: 6시간마다 $50 크레딧 (월 최대 50회)",
         },
         { type: "text", text: "모든 AI 모델 무제한 사용" },
         { type: "text", text: "전담 지원팀" },
@@ -81,8 +84,8 @@ export const seedPlans = async () => {
         { type: "text", text: "컨설팅 서비스" },
       ],
       price: "650000.00",
-      monthlyQuota: "100000.00",
-      refillAmount: "5000.00",
+      monthlyQuota: "1000.00000000",
+      refillAmount: "50.00000000",
       refillIntervalHours: 6,
       maxRefillCount: 50,
       isActive: true,
@@ -103,9 +106,9 @@ export const seedPlans = async () => {
     for (const plan of inserted) {
       console.log(`\n  ${plan.displayName} (${plan.name}):`);
       console.log(`    - 월 구독료: ${plan.price}원`);
-      console.log(`    - 월간 할당량: ${plan.monthlyQuota} 크레딧`);
+      console.log(`    - 월간 할당량: $${plan.monthlyQuota} 크레딧`);
       console.log(
-        `    - 정기 충전: ${plan.refillAmount} 크레딧 / ${plan.refillIntervalHours}시간마다`,
+        `    - 정기 충전: $${plan.refillAmount} 크레딧 / ${plan.refillIntervalHours}시간마다`,
       );
       console.log(`    - 최대 충전 횟수: 월 ${plan.maxRefillCount}회`);
     }

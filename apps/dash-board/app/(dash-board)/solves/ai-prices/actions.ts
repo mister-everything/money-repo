@@ -25,6 +25,7 @@ export async function createAIPriceAction(
     const data = {
       provider: formData.get("provider") as string,
       model: formData.get("model") as string,
+      displayName: formData.get("displayName") as string,
       modelType: formData.get("modelType") as
         | "text"
         | "image"
@@ -75,6 +76,7 @@ export async function updateAIPriceAction(
     const data = {
       provider: formData.get("provider") as string,
       model: formData.get("model") as string,
+      displayName: formData.get("displayName") as string,
       modelType: formData.get("modelType") as
         | "text"
         | "image"

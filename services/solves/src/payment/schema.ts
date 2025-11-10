@@ -51,35 +51,41 @@ export const AiProviderPricesTable = solvesSchema.table(
      */
     model: text("model").notNull(),
 
+    /** 모델 표시명
+     *  사용자에게 보이는 이름
+     *  eg: "GPT-4o mini", "Claude 3.5 Sonnet", "Grok 2"
+     */
+    displayName: text("display_name").notNull(),
+
     /** 모델 타입 (과금 방식 구분)
      *  eg: "text", "image", "audio", "video", "embedding"
      */
     modelType: text("model_type").notNull(),
 
-    /** 입력 토큰 단가 (원화, 1M 토큰 기준)
-     *  eg: "1950.00" (1950원 per 1M tokens)
+    /** 입력 토큰 단가 (USD, per token)
+     *  eg: "0.00000250" ($0.0000025 per token)
      */
     inputTokenPrice: decimal("input_token_price", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
-    /** 출력 토큰 단가 (원화, 1M 토큰 기준)
-     *  eg: "7800.00" (7800원 per 1M tokens)
+    /** 출력 토큰 단가 (USD, per token)
+     *  eg: "0.00001000" ($0.00001 per token)
      */
     outputTokenPrice: decimal("output_token_price", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
-    /** 캐시 토큰 단가 (원화, 1M 토큰 기준)
+    /** 캐시 토큰 단가 (USD, per token)
      *  프롬프트 캐싱 사용 시 할인된 가격
      *  일반적으로 입력 토큰의 10-50% 수준
-     *  eg: "975.00" (입력 토큰 50% 할인)
+     *  eg: "0.00000125" (입력 토큰 50% 할인)
      */
     cachedTokenPrice: decimal("cached_token_price", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
     /** 마진율 (청구금액 = 원가 × markupRate)
@@ -140,13 +146,13 @@ export const CreditWalletTable = solvesSchema.table(
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
 
-    /** 현재 크레딧 잔액
-     *  정밀도: decimal(15, 2) - 소수점 2자리
-     *  eg: "1250.00", "1.50"
+    /** 현재 크레딧 잔액 (USD)
+     *  정밀도: decimal(15, 8) - 소수점 8자리
+     *  eg: "1250.50000000", "1.50000000"
      */
-    balance: decimal("balance", { precision: 15, scale: 2 })
+    balance: decimal("balance", { precision: 15, scale: 8 })
       .notNull()
-      .default("0.00"),
+      .default("0.00000000"),
 
     /** 낙관적 락 버전
      *  동시성 제어: UPDATE WHERE version = :expected
@@ -201,20 +207,20 @@ export const CreditLedgerTable = solvesSchema.table(
      */
     kind: text("kind").$type<TxnKind>().notNull(),
 
-    /** 증감 크레딧
+    /** 증감 크레딧 (USD)
      *  양수: 적립 (purchase, grant, refill)
      *  음수: 차감 (debit, reset)
-     *  eg: "+100.00", "-13.50"
+     *  eg: "+100.00000000", "-13.50000000"
      */
-    delta: decimal("delta", { precision: 15, scale: 2 }).notNull(),
+    delta: decimal("delta", { precision: 15, scale: 8 }).notNull(),
 
-    /** 트랜잭션 직후 잔액 스냅샷
+    /** 트랜잭션 직후 잔액 스냅샷 (USD)
      *  복구/감사/리포팅에 유용
-     *  eg: "987.50"
+     *  eg: "987.50000000"
      */
     runningBalance: decimal("running_balance", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
     /** 멱등성 키
@@ -308,13 +314,13 @@ export const UsageEventsTable = solvesSchema.table(
      */
     calls: integer("calls"),
 
-    /** 고객 청구 크레딧
+    /** 고객 청구 크레딧 (USD)
      *  실제 차감된 크레딧 (원가 × markup)
-     *  eg: "1.60" (원가 1.00원 × 1.6)
+     *  eg: "1.60000000" (원가 $1.00 × 1.6)
      */
     billableCredits: decimal("billable_credits", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
     /** 멱등성 키
@@ -407,14 +413,14 @@ export const InvoicesTable = solvesSchema.table(
      */
     amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
 
-    /** 구매 크레딧
+    /** 구매 크레딧 (USD)
      *  결제 완료 시 지갑에 적립되는 크레딧
      *  구독: 월간 할당량, 구매: 패키지 크레딧
-     *  eg: "10000.00", "1000.00"
+     *  eg: "10000.00000000", "1000.00000000"
      */
     purchasedCredits: decimal("purchased_credits", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
     /** 결제 상태
@@ -504,22 +510,22 @@ export const SubscriptionPlansTable = solvesSchema.table("subscription_plans", {
    */
   price: decimal("price", { precision: 15, scale: 2 }).notNull(),
 
-  /** 월간 크레딧 할당량
+  /** 월간 크레딧 할당량 (USD)
    *  매월 초 또는 구독 갱신일에 지급
-   *  eg: "1000.00" (1K), "10000.00" (10K)
+   *  eg: "1000.00000000" (1K), "10000.00000000" (10K)
    */
   monthlyQuota: decimal("monthly_quota", {
     precision: 15,
-    scale: 2,
+    scale: 8,
   }).notNull(),
 
-  /** 정기 자동 충전량
+  /** 정기 자동 충전량 (USD)
    *  잔액 소진 시 자동 충전되는 크레딧
-   *  eg: "50.00", "500.00"
+   *  eg: "50.00000000", "500.00000000"
    */
   refillAmount: decimal("refill_amount", {
     precision: 15,
-    scale: 2,
+    scale: 8,
   }).notNull(),
 
   /** 자동 충전 간격 (시간)
@@ -725,13 +731,13 @@ export const SubscriptionPeriodsTable = solvesSchema.table(
      */
     periodType: text("period_type").notNull().default("renewal"),
 
-    /** 이 기간에 지급된 크레딧
+    /** 이 기간에 지급된 크레딧 (USD)
      *  월간 할당량
-     *  eg: "10000.00"
+     *  eg: "10000.00000000"
      */
     creditsGranted: decimal("credits_granted", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }),
 
     /** 이 기간 동안 자동 충전 횟수

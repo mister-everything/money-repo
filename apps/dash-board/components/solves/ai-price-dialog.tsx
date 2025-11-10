@@ -118,6 +118,26 @@ export function AIPriceDialog({
             </div>
           </div>
 
+          {/* Display Name */}
+          <div className="grid gap-2">
+            <Label htmlFor="displayName">모델 표시명</Label>
+            <Input
+              id="displayName"
+              name="displayName"
+              placeholder="GPT-4o mini"
+              defaultValue={initialData?.displayName}
+              required
+            />
+            {getFieldError("displayName") && (
+              <p className="text-sm text-destructive">
+                {getFieldError("displayName")}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              사용자에게 보이는 모델 이름
+            </p>
+          </div>
+
           {/* Model Type */}
           <div className="grid gap-2">
             <Label htmlFor="modelType">모델 타입</Label>
@@ -144,13 +164,13 @@ export function AIPriceDialog({
           {/* Token Prices */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="inputTokenPrice">입력 토큰 가격 (원/1M)</Label>
+              <Label htmlFor="inputTokenPrice">입력 토큰 가격 ($/token)</Label>
               <Input
                 id="inputTokenPrice"
                 name="inputTokenPrice"
                 type="number"
-                step="0.01"
-                placeholder="1950.00"
+                step="0.00000001"
+                placeholder="0.00000250"
                 defaultValue={initialData?.inputTokenPrice}
                 required
               />
@@ -159,19 +179,17 @@ export function AIPriceDialog({
                   {getFieldError("inputTokenPrice")}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                1M 토큰당 원화 단가
-              </p>
+              <p className="text-xs text-muted-foreground">토큰당 USD 단가</p>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="outputTokenPrice">출력 토큰 가격 (원/1M)</Label>
+              <Label htmlFor="outputTokenPrice">출력 토큰 가격 ($/token)</Label>
               <Input
                 id="outputTokenPrice"
                 name="outputTokenPrice"
                 type="number"
-                step="0.01"
-                placeholder="7800.00"
+                step="0.00000001"
+                placeholder="0.00001000"
                 defaultValue={initialData?.outputTokenPrice}
                 required
               />
@@ -180,19 +198,17 @@ export function AIPriceDialog({
                   {getFieldError("outputTokenPrice")}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                1M 토큰당 원화 단가
-              </p>
+              <p className="text-xs text-muted-foreground">토큰당 USD 단가</p>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="cachedTokenPrice">캐시 토큰 가격 (원/1M)</Label>
+              <Label htmlFor="cachedTokenPrice">캐시 토큰 가격 ($/token)</Label>
               <Input
                 id="cachedTokenPrice"
                 name="cachedTokenPrice"
                 type="number"
-                step="0.01"
-                placeholder="975.00"
+                step="0.00000001"
+                placeholder="0.00000125"
                 defaultValue={initialData?.cachedTokenPrice}
                 required
               />
@@ -202,7 +218,7 @@ export function AIPriceDialog({
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                프롬프트 캐싱 할인가
+                프롬프트 캐싱 할인가 (USD/token)
               </p>
             </div>
           </div>

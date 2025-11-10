@@ -2,15 +2,17 @@ import { z } from "zod";
 
 /**
  * AI 제공자 가격 정보
+ * 모든 가격은 USD per token 단위
  */
 export interface AIPrice {
   id: string;
   provider: string;
   model: string;
+  displayName: string; // 사용자에게 보이는 모델명
   modelType: string;
-  inputTokenPrice: string;
-  outputTokenPrice: string;
-  cachedTokenPrice: string; // 캐싱된 토큰 가격 추가
+  inputTokenPrice: string; // USD per token (예: "0.00000250")
+  outputTokenPrice: string; // USD per token (예: "0.00001000")
+  cachedTokenPrice: string; // USD per token (캐싱 할인가)
   markupRate: string;
   isActive: boolean;
 }
@@ -47,34 +49,37 @@ export type CreditPurchaseParams = z.infer<typeof creditPurchaseSchema>;
 
 /**
  * 크레딧 차감 응답 (백그라운드)
+ * 모든 금액은 USD
  */
 export interface DeductCreditAsyncResponse {
   success: true;
-  estimatedBalance: string;
+  estimatedBalance: string; // USD
   jobId?: string; // 백그라운드 작업 ID (optional)
 }
 
 /**
  * 크레딧 차감 응답 (동기)
+ * 모든 금액은 USD
  */
 export interface DeductCreditResponse {
   success: true;
   usageId: string;
-  newBalance: string;
+  newBalance: string; // USD
   autoRefilled?: boolean; // 자동 충전 여부
-  refillAmount?: string; // 충전된 금액
+  refillAmount?: string; // 충전된 금액 (USD)
 }
 
 /**
  * 크레딧 부족 에러 상세 정보
+ * 모든 금액은 USD
  */
 export interface InsufficientCreditsError {
   code: "INSUFFICIENT_CREDITS";
   message: string;
-  currentBalance: string;
-  required: string;
+  currentBalance: string; // USD
+  required: string; // USD
   nextRefillAt?: Date; // 다음 자동 충전 시각
-  nextRefillAmount?: string; // 다음 충전 금액
+  nextRefillAmount?: string; // 다음 충전 금액 (USD)
   waitTimeMinutes?: number; // 대기 시간 (분)
   hasSubscription: boolean;
   suggestions: Array<{
@@ -93,11 +98,12 @@ export interface CreditPurchaseResponse {
 
 /**
  * 지갑 정보
+ * balance는 USD 단위
  */
 export interface Wallet {
   id: string;
   userId: string;
-  balance: string;
+  balance: string; // USD (예: "1250.50000000")
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -105,6 +111,7 @@ export interface Wallet {
 
 /**
  * 사용 이벤트
+ * billableCredits는 USD
  */
 export interface UsageEvent {
   id: string;
@@ -116,7 +123,7 @@ export interface UsageEvent {
   outputTokens: number | null;
   cachedTokens: number | null;
   calls: number | null;
-  billableCredits: string;
+  billableCredits: string; // USD
   idempotencyKey: string | null;
   createdAt: Date;
 }
@@ -145,13 +152,14 @@ export type TxnKind =
 
 /**
  * 크레딧 원장
+ * 모든 금액은 USD
  */
 export interface CreditLedger {
   id: string;
   walletId: string;
   kind: TxnKind;
-  delta: string;
-  runningBalance: string;
+  delta: string; // USD
+  runningBalance: string; // USD
   idempotencyKey: string | null;
   reason: string | null;
   createdAt: Date;
@@ -164,14 +172,15 @@ export type InvoiceStatus = "pending" | "paid" | "failed";
 
 /**
  * 인보이스
+ * amount는 KRW, purchasedCredits는 USD
  */
 export interface Invoice {
   id: string;
   userId: string;
   walletId: string;
   title: string;
-  amount: string;
-  purchasedCredits: string;
+  amount: string; // KRW (원화 결제)
+  purchasedCredits: string; // USD (지급 크레딧)
   status: InvoiceStatus;
   externalRef: string | null;
   externalOrderId: string | null;
@@ -185,6 +194,7 @@ export interface Invoice {
 export const createAIPriceSchema = z.object({
   provider: z.string(),
   model: z.string(),
+  displayName: z.string(),
   modelType: z.enum(["text", "image", "audio", "video", "embedding"]),
   inputTokenPrice: z.string().refine((val) => Number(val) >= 0, {
     message: "입력 토큰 가격은 0 이상이어야 합니다",
@@ -248,6 +258,7 @@ export type SubscriptionPeriodStatus =
 
 /**
  * 구독 플랜 정보
+ * price는 KRW, 크레딧은 USD
  */
 export interface SubscriptionPlan {
   id: string;
@@ -255,9 +266,9 @@ export interface SubscriptionPlan {
   displayName: string;
   description: string | null;
   plans: PlanContentBlock[] | null;
-  price: string;
-  monthlyQuota: string;
-  refillAmount: string;
+  price: string; // KRW (원화 구독료)
+  monthlyQuota: string; // USD (월간 크레딧)
+  refillAmount: string; // USD (자동 충전 금액)
   refillIntervalHours: number;
   maxRefillCount: number; // maxRefillBalance → maxRefillCount 변경
   isActive: boolean;
@@ -275,6 +286,7 @@ export interface SubscriptionPlanWithCount extends SubscriptionPlan {
 
 /**
  * 구독 기간 정보
+ * creditsGranted는 USD, amountPaid는 KRW
  */
 export interface SubscriptionPeriod {
   id: string;
@@ -284,25 +296,26 @@ export interface SubscriptionPeriod {
   periodEnd: Date;
   status: SubscriptionPeriodStatus;
   periodType: string;
-  creditsGranted: string | null;
+  creditsGranted: string | null; // USD
   refillCount: number;
   lastRefillAt: Date | null;
   invoiceId: string | null;
-  amountPaid: string | null;
+  amountPaid: string | null; // KRW
   metadata: string | null;
   createdAt: Date;
 }
 
 /**
  * 구독 정기 충전 이력
+ * 모든 금액은 USD
  */
 export interface SubscriptionRefill {
   id: string;
   subscriptionId: string;
   walletId: string;
-  refillAmount: string;
-  balanceBefore: string;
-  balanceAfter: string;
+  refillAmount: string; // USD
+  balanceBefore: string; // USD
+  balanceAfter: string; // USD
   createdAt: Date;
 }
 
@@ -318,12 +331,13 @@ export type CreateSubscriptionParams = z.infer<typeof createSubscriptionSchema>;
 
 /**
  * 구독 생성 응답
+ * initialCredits는 USD
  */
 export interface CreateSubscriptionResponse {
   success: true;
   subscriptionId: string;
   walletId: string;
-  initialCredits: string;
+  initialCredits: string; // USD
 }
 
 /**
@@ -337,13 +351,14 @@ export type RenewSubscriptionParams = z.infer<typeof renewSubscriptionSchema>;
 
 /**
  * 구독 갱신 응답
+ * 모든 금액은 USD
  */
 export interface RenewSubscriptionResponse {
   success: true;
   newPeriodStart: Date;
   newPeriodEnd: Date;
-  creditsGranted: string;
-  newBalance: string;
+  creditsGranted: string; // USD
+  newBalance: string; // USD
 }
 
 /**
@@ -357,11 +372,12 @@ export type CheckRefillParams = z.infer<typeof checkRefillSchema>;
 
 /**
  * 정기 충전 응답
+ * 모든 금액은 USD
  */
 export interface CheckRefillResponse {
   refilled: boolean;
-  refillAmount?: string;
-  newBalance?: string;
+  refillAmount?: string; // USD
+  newBalance?: string; // USD
   nextRefillAt?: Date;
 }
 
@@ -445,11 +461,12 @@ export type UpgradeSubscriptionParams = z.infer<
 
 /**
  * 플랜 업그레이드 응답
+ * 모든 금액은 USD
  */
 export interface UpgradeSubscriptionResponse {
   success: true;
   subscriptionId: string;
   newPlanId: string;
-  creditAdjustment: string; // 양수면 추가, 음수면 차감
-  newBalance: string;
+  creditAdjustment: string; // USD (양수면 추가, 음수면 차감)
+  newBalance: string; // USD
 }
