@@ -6,9 +6,9 @@ export const CacheKeys = {
   /**
    * 사용자 잔액 캐시 (userId 기반)
    * @param userId - 사용자 ID
-   * @returns Redis key: user:{userId}:balance
+   * @returns Redis key: user:{userId}:wallet
    */
-  userBalance: (userId: string) => `user:${userId}:balance`,
+  userWallet: (userId: string) => `user:${userId}:wallet`,
 
   /**
    * AI 가격표 캐시
@@ -32,7 +32,7 @@ export const CacheKeys = {
  */
 export const CacheTTL = {
   /** 사용자 잔액 캐시 - 10분 */
-  USER_BALANCE: 600,
+  USER_WALLET: 600,
 
   /** AI 가격표 캐시 - 1시간 (가격이 자주 변경되지 않음) */
   AI_PRICE: 3600,

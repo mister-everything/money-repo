@@ -4,5 +4,6 @@ export * from "./payment/ai-price.service";
 export * from "./payment/credit.service";
 export * from "./payment/plan-admin.service";
 export * from "./payment/schema";
+export * from "./payment/wallet.service";
 export * from "./prob/prob.service";
 export * from "./prob/schema";

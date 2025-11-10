@@ -1,14 +1,33 @@
 import type {
   LanguageModelV2Middleware,
   LanguageModelV2StreamPart,
+  LanguageModelV2Usage,
 } from "@ai-sdk/provider";
-import { aiPriceService } from "@service/solves";
-import { checkHasEnoughBalance } from "../auth/get-balance";
+import { aiPriceService, creditService } from "@service/solves";
+import { generateUUID, isNull } from "@workspace/util";
+import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
+
+function getTokens(useage: LanguageModelV2Usage) {
+  if (isNull(useage.inputTokens)) {
+    // @TODO  중요 에러 일 수 있기 때문에 Notice  되도록
+    console.warn(`inputTokens is null for useage: ${JSON.stringify(useage)}`);
+  }
+
+  if (isNull(useage.outputTokens)) {
+    // @TODO  중요 에러 일 수 있기 때문에 Notice  되도록
+    console.warn(`outputTokens is null for useage: ${JSON.stringify(useage)}`);
+  }
+
+  return {
+    inputTokens: (useage.inputTokens || 0) + (useage.reasoningTokens || 0),
+    outputTokens: useage.outputTokens || 0,
+  };
+}
 
 export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middleware =
   {
     wrapGenerate: async ({ doGenerate, model }) => {
-      await checkHasEnoughBalance();
+      const wallet = await getWalletThrowIfNotEnoughBalance();
       const [provider, modelName] = model.modelId.split("/");
       const price = await aiPriceService.getPriceByProviderAndModelName(
         provider,
@@ -20,33 +39,32 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         );
       }
       const result = await doGenerate();
-      console.dir(
-        {
-          ok: result.providerMetadata,
-          provider,
-          modelName,
-        },
-        {
-          depth: null,
-        },
-      );
-
+      const { inputTokens, outputTokens } = getTokens(result.usage);
+      creditService.deductCredit({
+        inputTokens,
+        outputTokens,
+        idempotencyKey: generateUUID(),
+        price,
+        userId: wallet.userId,
+        walletId: wallet.id,
+      });
       return result;
     },
 
     wrapStream: async ({ doStream, model }) => {
-      await checkHasEnoughBalance();
+      const wallet = await getWalletThrowIfNotEnoughBalance();
 
       const [provider, modelName] = model.modelId.split("/");
-      console.dir(
-        {
-          provider,
-          modelName,
-        },
-        {
-          depth: null,
-        },
+
+      const price = await aiPriceService.getPriceByProviderAndModelName(
+        provider,
+        modelName,
       );
+      if (price === null) {
+        throw new Error(
+          `Price not found for provider: ${provider} and model: ${modelName}`,
+        );
+      }
 
       const { stream, ...rest } = await doStream();
 
@@ -57,20 +75,17 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         transform(chunk, controller) {
           switch (chunk.type) {
             case "finish": {
-              console.dir(
-                {
-                  ok: chunk.providerMetadata,
-                  provider,
-                  modelName,
-                  x: chunk.usage,
-                },
-                {
-                  depth: null,
-                },
-              );
+              const { inputTokens, outputTokens } = getTokens(chunk.usage);
+              creditService.deductCredit({
+                inputTokens,
+                outputTokens,
+                idempotencyKey: generateUUID(),
+                price,
+                userId: wallet.userId,
+                walletId: wallet.id,
+              });
             }
           }
-
           controller.enqueue(chunk);
         },
       });

@@ -30,7 +30,7 @@ export const creditService = {
     inputTokens: number;
     outputTokens: number;
     price: AIPrice;
-    calls: number;
+    calls?: number;
     idempotencyKey: string;
   }) => {
     const {
@@ -124,9 +124,13 @@ export const creditService = {
     await Promise.all([
       // 5-1) 잔액 캐시 갱신 (userId 기반)
       sharedCache.setex(
-        CacheKeys.userBalance(userId),
-        CacheTTL.USER_BALANCE,
-        result.newBalance,
+        CacheKeys.userWallet(userId),
+        CacheTTL.USER_WALLET,
+        JSON.stringify({
+          id: walletId,
+          userId: userId,
+          balance: result.newBalance,
+        }),
       ),
       // 5-2) 멱등성 키 저장
       sharedCache.setex(

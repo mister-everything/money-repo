@@ -59,9 +59,13 @@ export const walletService = {
     // 캐시 저장 (userId 기반)
     await Promise.all([
       sharedCache.setex(
-        CacheKeys.userBalance(userId),
-        CacheTTL.USER_BALANCE,
-        wallet.balance,
+        CacheKeys.userWallet(userId),
+        CacheTTL.USER_WALLET,
+        JSON.stringify({
+          id: wallet.id,
+          userId: wallet.userId,
+          balance: wallet.balance,
+        }),
       ),
     ]);
 
