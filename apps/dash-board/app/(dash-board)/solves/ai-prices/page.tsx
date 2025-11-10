@@ -1,11 +1,14 @@
 import { aiPriceAdminService } from "@service/solves";
+
 import { AIPriceTable } from "@/components/solves/ai-price-table";
 import { AIPricesClient } from "./ai-prices-client";
-
 export const dynamic = "force-dynamic";
 
 export default async function AIPricesPage() {
-  const prices = await aiPriceAdminService.getAllPrices();
+  const prices = await aiPriceAdminService.getAllPrices().catch((e) => {
+    console.error(e);
+    return [];
+  });
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">

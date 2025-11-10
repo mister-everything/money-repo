@@ -1,5 +1,4 @@
 "use server";
-
 import { aiPriceAdminService } from "@service/solves";
 import {
   createAIPriceSchema,

@@ -3,7 +3,7 @@
 import type { AIPrice } from "@service/solves/shared";
 import { Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   toggleAIPriceActiveAction,
@@ -21,6 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useVercelGatewayPrices } from "@/hooks/query/use-vercel-gateway-prices";
 import { AIPriceDialog } from "./ai-price-dialog";
 
 interface AIPriceTableProps {
@@ -31,6 +37,26 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
   const [editingPrice, setEditingPrice] = useState<AIPrice | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const router = useRouter();
+
+  const { data: gatewayPrices } = useVercelGatewayPrices();
+
+  const gatewayPricesMap = useMemo(() => {
+    return new Map(gatewayPrices?.map((p) => [p.id, p]) ?? []);
+  }, [gatewayPrices]);
+
+  const pricesWithGatewayPrices = useMemo(() => {
+    return prices.map((price) => {
+      const key = price.provider + "/" + price.model;
+      const gatewayPrice = gatewayPricesMap.get(key);
+      return {
+        ...price,
+        providerInputTokenPrice: gatewayPrice?.pricing?.input,
+        providerOutputTokenPrice: gatewayPrice?.pricing?.output,
+        providerCachedTokenPrice:
+          gatewayPrice?.pricing?.cacheCreationInputTokens,
+      };
+    });
+  }, [prices, gatewayPricesMap]);
 
   const handleEdit = (price: AIPrice) => {
     setEditingPrice(price);
@@ -70,7 +96,8 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
   };
 
   const formatPrice = (price: number) => {
-    return price.toFixed(8);
+    // Convert to per M tokens (multiply by 1,000,000)
+    return (price * 1000000).toFixed(2);
   };
 
   const calculateFinalPrice = (basePrice: string, markupRate: string) => {
@@ -88,6 +115,20 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
       embedding: "임베딩",
     };
     return labels[type] || type;
+  };
+
+  const hasPriceDiff = (currentPrice: string, providerPrice?: string) => {
+    return providerPrice && Number(currentPrice) !== Number(providerPrice);
+  };
+
+  const getPriceDiffTooltip = (
+    currentPrice: string,
+    providerPrice: string,
+    tokenType: string,
+  ) => {
+    const current = formatPrice(Number(currentPrice));
+    const provider = formatPrice(Number(providerPrice));
+    return `${tokenType} 토큰\nVercel Gateway: $${provider}/M\n현재 가격: $${current}/M`;
   };
 
   return (
@@ -108,7 +149,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {prices.length === 0 ? (
+            {pricesWithGatewayPrices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-8">
                   <p className="text-muted-foreground">
@@ -117,7 +158,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              prices.map((price) => (
+              pricesWithGatewayPrices.map((price) => (
                 <TableRow key={price.id}>
                   <TableCell className="font-medium text-center">
                     {price.provider}
@@ -138,55 +179,154 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-muted-foreground">
-                        원가: {formatPrice(Number(price.inputTokenPrice))}$
-                      </span>
-                      <span className="text-sm font-medium">
-                        판매:{" "}
-                        {formatPrice(
-                          calculateFinalPrice(
-                            price.inputTokenPrice,
-                            price.markupRate,
-                          ),
-                        )}
-                        $
-                      </span>
-                    </div>
+                    <Tooltip
+                      open={
+                        hasPriceDiff(
+                          price.inputTokenPrice,
+                          price.providerInputTokenPrice,
+                        )
+                          ? undefined
+                          : false
+                      }
+                    >
+                      <TooltipTrigger asChild>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-end gap-1">
+                            {hasPriceDiff(
+                              price.inputTokenPrice,
+                              price.providerInputTokenPrice,
+                            ) && (
+                              <div className="w-2 h-2 rounded-full bg-destructive" />
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              원가: $
+                              {formatPrice(Number(price.inputTokenPrice))}
+                              /M
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium">
+                            판매: $
+                            {formatPrice(
+                              calculateFinalPrice(
+                                price.inputTokenPrice,
+                                price.markupRate,
+                              ),
+                            )}
+                            /M
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="whitespace-pre-line">
+                        <div className="text-xs">
+                          {price.providerInputTokenPrice &&
+                            getPriceDiffTooltip(
+                              price.inputTokenPrice,
+                              price.providerInputTokenPrice,
+                              "입력",
+                            )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-muted-foreground">
-                        원가: {formatPrice(Number(price.outputTokenPrice))}$
-                      </span>
-                      <span className="text-sm font-medium">
-                        판매:{" "}
-                        {formatPrice(
-                          calculateFinalPrice(
-                            price.outputTokenPrice,
-                            price.markupRate,
-                          ),
-                        )}
-                        $
-                      </span>
-                    </div>
+                    <Tooltip
+                      open={
+                        hasPriceDiff(
+                          price.outputTokenPrice,
+                          price.providerOutputTokenPrice,
+                        )
+                          ? undefined
+                          : false
+                      }
+                    >
+                      <TooltipTrigger asChild>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-end gap-1">
+                            {hasPriceDiff(
+                              price.outputTokenPrice,
+                              price.providerOutputTokenPrice,
+                            ) && (
+                              <div className="w-2 h-2 rounded-full bg-destructive" />
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              원가: $
+                              {formatPrice(Number(price.outputTokenPrice))}
+                              /M
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium">
+                            판매: $
+                            {formatPrice(
+                              calculateFinalPrice(
+                                price.outputTokenPrice,
+                                price.markupRate,
+                              ),
+                            )}
+                            /M
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="whitespace-pre-line">
+                        <div className="text-xs">
+                          {price.providerOutputTokenPrice &&
+                            getPriceDiffTooltip(
+                              price.outputTokenPrice,
+                              price.providerOutputTokenPrice,
+                              "출력",
+                            )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-muted-foreground">
-                        원가: {formatPrice(Number(price.cachedTokenPrice))}$
-                      </span>
-                      <span className="text-sm font-medium">
-                        판매:{" "}
-                        {formatPrice(
-                          calculateFinalPrice(
-                            price.cachedTokenPrice,
-                            price.markupRate,
-                          ),
-                        )}
-                        $
-                      </span>
-                    </div>
+                    <Tooltip
+                      open={
+                        hasPriceDiff(
+                          price.cachedTokenPrice,
+                          price.providerCachedTokenPrice,
+                        )
+                          ? undefined
+                          : false
+                      }
+                    >
+                      <TooltipTrigger asChild>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-end gap-1">
+                            {hasPriceDiff(
+                              price.cachedTokenPrice,
+                              price.providerCachedTokenPrice,
+                            ) && (
+                              <div className="w-2 h-2 rounded-full bg-destructive" />
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              원가: $
+                              {formatPrice(Number(price.cachedTokenPrice))}
+                              /M
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium">
+                            판매: $
+                            {formatPrice(
+                              calculateFinalPrice(
+                                price.cachedTokenPrice,
+                                price.markupRate,
+                              ),
+                            )}
+                            /M
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="whitespace-pre-line">
+                        <div className="text-xs">
+                          {price.providerCachedTokenPrice &&
+                            getPriceDiffTooltip(
+                              price.cachedTokenPrice,
+                              price.providerCachedTokenPrice,
+                              "캐시",
+                            )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-right text-sm">
                     {price.markupRate}×

@@ -18,38 +18,10 @@ export const seedPlans = async () => {
 
   const plans: CreateSubscriptionPlan[] = [
     {
-      name: "free",
-      displayName: "Free Plan",
-      description: "개인 개발자와 취미 프로젝트를 위한 무료 플랜",
-      plans: [
-        { type: "text", text: "월 $10 크레딧 제공" },
-        {
-          type: "text",
-          text: "자동 충전: 6시간마다 $0.50 크레딧 (월 최대 10회)",
-        },
-        { type: "text", text: "기본 AI 모델 사용 가능" },
-        { type: "text", text: "커뮤니티 지원" },
-        { type: "text", text: "미사용 크레딧 이월 불가 (매월 리셋)" },
-        { type: "text", text: "고급 모델 사용 제한" },
-      ],
-      price: "0.00",
-      monthlyQuota: "10.00000000",
-      refillAmount: "0.50000000",
-      refillIntervalHours: 6,
-      maxRefillCount: 10,
-
-      isActive: true,
-    },
-    {
       name: "pro",
       displayName: "Pro Plan",
       description: "전문가와 스타트업을 위한 프로 플랜",
       plans: [
-        { type: "text", text: "월 $100 크레딧 제공" },
-        {
-          type: "text",
-          text: "자동 충전: 6시간마다 $5 크레딧 (월 최대 20회)",
-        },
         { type: "text", text: "모든 AI 모델 사용 가능" },
         { type: "text", text: "우선 지원" },
         { type: "text", text: "크레딧 이월 가능 (누적)" },
@@ -57,12 +29,11 @@ export const seedPlans = async () => {
         { type: "text", text: "API 접근" },
         { type: "text", text: "월간 리포트 제공" },
       ],
-      price: "130000.00",
-      monthlyQuota: "100.00000000",
-      refillAmount: "5.00000000",
+      price: "9900",
+      monthlyQuota: "10",
+      refillAmount: "5",
       refillIntervalHours: 6,
-      maxRefillCount: 20,
-
+      maxRefillCount: 10,
       isActive: true,
     },
     {
@@ -83,11 +54,11 @@ export const seedPlans = async () => {
         { type: "text", text: "전용 인프라" },
         { type: "text", text: "컨설팅 서비스" },
       ],
-      price: "650000.00",
-      monthlyQuota: "1000.00000000",
-      refillAmount: "50.00000000",
+      price: "50000",
+      monthlyQuota: "50",
+      refillAmount: "10",
       refillIntervalHours: 6,
-      maxRefillCount: 50,
+      maxRefillCount: 10,
       isActive: true,
     },
   ];

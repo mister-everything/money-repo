@@ -1,0 +1,208 @@
+{
+  "steps": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "안녕하세요! 😊\n\n만나뵙게 되어 반갑습니다. 무엇을 도와드릴까요?"
+        }
+      ],
+      "finishReason": "stop",
+      "usage": {
+        "inputTokens": 15,
+        "outputTokens": 46,
+        "totalTokens": 61,
+        "cachedInputTokens": 0
+      },
+      "warnings": [],
+      "request": {
+        "body": {
+          "prompt": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "안녕하세요!"
+                }
+              ]
+            }
+          ],
+          "headers": {
+            "user-agent": "ai/5.0.81"
+          }
+        }
+      },
+      "response": {
+        "id": "aitxt-Idj6m7ixxXhjQJkZFs5rskGZ",
+        "timestamp": "2025-11-10T01:35:06.518Z",
+        "modelId": "anthropic/claude-haiku-4.5",
+        "headers": {
+          "access-control-allow-headers": "Content-Type, Authorization, ai-gateway-auth-method, ai-gateway-protocol-version, ai-model-id, ai-language-model-id, ai-language-model-specification-version, ai-language-model-streaming, http-referer, x-title",
+          "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+          "access-control-allow-origin": "*",
+          "cache-control": "public, max-age=0, must-revalidate",
+          "content-encoding": "br",
+          "content-type": "application/json",
+          "date": "Mon, 10 Nov 2025 01:35:06 GMT",
+          "server": "Vercel",
+          "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+          "transfer-encoding": "chunked",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "x-matched-path": "/v1/ai/language-model",
+          "x-vercel-cache": "MISS",
+          "x-vercel-id": "icn1::iad1::gn6cw-1762738505109-fac79e7dbd5d"
+        },
+        "body": {
+          "content": [
+            {
+              "type": "text",
+              "text": "안녕하세요! 😊\n\n만나뵙게 되어 반갑습니다. 무엇을 도와드릴까요?"
+            }
+          ],
+          "finishReason": "stop",
+          "usage": {
+            "inputTokens": 15,
+            "outputTokens": 46,
+            "totalTokens": 61,
+            "cachedInputTokens": 0
+          },
+          "warnings": [],
+          "providerMetadata": {
+            "anthropic": {
+              "usage": {
+                "input_tokens": 15,
+                "output_tokens": 46,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0,
+                "cache_creation": {
+                  "ephemeral_5m_input_tokens": 0,
+                  "ephemeral_1h_input_tokens": 0
+                },
+                "service_tier": "standard"
+              },
+              "cacheCreationInputTokens": 0,
+              "stopSequence": null,
+              "container": null
+            },
+            "gateway": {
+              "routing": {
+                "originalModelId": "anthropic/claude-haiku-4.5",
+                "resolvedProvider": "anthropic",
+                "resolvedProviderApiModelId": "claude-haiku-4-5-20251001",
+                "internalResolvedModelId": "anthropic:claude-haiku-4-5-20251001",
+                "fallbacksAvailable": [
+                  "vertexAnthropic",
+                  "bedrock"
+                ],
+                "internalReasoning": "Selected anthropic as preferred provider for claude-haiku-4.5. 2 fallback(s) available: vertexAnthropic, bedrock",
+                "planningReasoning": "System credentials planned for: anthropic, vertexAnthropic, bedrock. Total execution order: anthropic(system) → vertexAnthropic(system) → bedrock(system)",
+                "canonicalSlug": "anthropic/claude-haiku-4.5",
+                "finalProvider": "anthropic",
+                "attempts": [
+                  {
+                    "provider": "anthropic",
+                    "internalModelId": "anthropic:claude-haiku-4-5-20251001",
+                    "providerApiModelId": "claude-haiku-4-5-20251001",
+                    "credentialType": "system",
+                    "success": true,
+                    "startTime": 1427035.204995,
+                    "endTime": 1428184.083811,
+                    "statusCode": 200
+                  }
+                ],
+                "modelAttemptCount": 1,
+                "modelAttempts": [
+                  {
+                    "modelId": "anthropic/claude-haiku-4.5",
+                    "canonicalSlug": "anthropic/claude-haiku-4.5",
+                    "success": false,
+                    "providerAttemptCount": 0,
+                    "providerAttempts": []
+                  }
+                ],
+                "totalProviderAttemptCount": 0
+              },
+              "cost": "0.000245",
+              "marketCost": "0.000245",
+              "generationId": "gen_01K9NPE1FVHTNKWXZXWJAHC7XF",
+              "billableWebSearchCalls": 0
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "안녕하세요! 😊\n\n만나뵙게 되어 반갑습니다. 무엇을 도와드릴까요?"
+              }
+            ]
+          }
+        ]
+      },
+      "providerMetadata": {
+        "anthropic": {
+          "usage": {
+            "input_tokens": 15,
+            "output_tokens": 46,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "service_tier": "standard"
+          },
+          "cacheCreationInputTokens": 0,
+          "stopSequence": null,
+          "container": null
+        },
+        "gateway": {
+          "routing": {
+            "originalModelId": "anthropic/claude-haiku-4.5",
+            "resolvedProvider": "anthropic",
+            "resolvedProviderApiModelId": "claude-haiku-4-5-20251001",
+            "internalResolvedModelId": "anthropic:claude-haiku-4-5-20251001",
+            "fallbacksAvailable": [
+              "vertexAnthropic",
+              "bedrock"
+            ],
+            "internalReasoning": "Selected anthropic as preferred provider for claude-haiku-4.5. 2 fallback(s) available: vertexAnthropic, bedrock",
+            "planningReasoning": "System credentials planned for: anthropic, vertexAnthropic, bedrock. Total execution order: anthropic(system) → vertexAnthropic(system) → bedrock(system)",
+            "canonicalSlug": "anthropic/claude-haiku-4.5",
+            "finalProvider": "anthropic",
+            "attempts": [
+              {
+                "provider": "anthropic",
+                "internalModelId": "anthropic:claude-haiku-4-5-20251001",
+                "providerApiModelId": "claude-haiku-4-5-20251001",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1427035.204995,
+                "endTime": 1428184.083811,
+                "statusCode": 200
+              }
+            ],
+            "modelAttemptCount": 1,
+            "modelAttempts": [
+              {
+                "modelId": "anthropic/claude-haiku-4.5",
+                "canonicalSlug": "anthropic/claude-haiku-4.5",
+                "success": false,
+                "providerAttemptCount": 0,
+                "providerAttempts": []
+              }
+            ],
+            "totalProviderAttemptCount": 0
+          },
+          "cost": "0.000245",
+          "marketCost": "0.000245",
+          "generationId": "gen_01K9NPE1FVHTNKWXZXWJAHC7XF",
+          "billableWebSearchCalls": 0
+        }
+      }
+    }
+  ]
+}
