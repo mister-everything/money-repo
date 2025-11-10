@@ -3,7 +3,6 @@ import {
   boolean,
   integer,
   jsonb,
-  pgSchema,
   primaryKey,
   serial,
   text,
