@@ -455,4 +455,20 @@ export const probService = {
       })),
     } as SubmitProbBookResponse;
   },
+
+  deleteProbBookSession: async (
+    submitId: string,
+    userId: string,
+  ): Promise<void> => {
+    console.log(submitId, userId);
+    await pgDb
+      .delete(probBookSubmitsTable)
+      .where(
+        and(
+          eq(probBookSubmitsTable.id, submitId),
+          eq(probBookSubmitsTable.ownerId, userId),
+          isNull(probBookSubmitsTable.endTime),
+        ),
+      );
+  },
 };

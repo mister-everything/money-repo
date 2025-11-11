@@ -28,8 +28,13 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     Record<string, BlockAnswerSubmit>
   >({});
   const [submitResult, setSubmitResult] = useState<SubmitProbBookResponse>();
-  // 세션 초기화 (페이지 로드 시)
+  // 세션 초기화 (모드가 선택된 후에만)
   useEffect(() => {
+    // 모드가 선택되지 않았으면 세션 초기화 안 함
+    if (!mode) {
+      return;
+    }
+
     const initSession = async () => {
       try {
         const response = await fetcher<{
@@ -54,7 +59,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     };
 
     initSession();
-  }, [probBook.id]);
+  }, [probBook.id, mode]);
 
   // 30초 주기 자동 저장
   useEffect(() => {

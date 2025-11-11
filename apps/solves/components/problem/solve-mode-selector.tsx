@@ -2,7 +2,7 @@
 
 import { ProbBook, ProbBookSubmitSession } from "@service/solves/shared";
 import { BookOpen, CheckIcon, List } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ProblemHeader } from "@/components/problem/problem-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,19 +38,21 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
     null,
   );
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const session = await fetcher<ProbBookSubmitSession>(
-        `/api/workbooks/${probBook.id}/session`,
-        {
-          method: "GET",
-        },
-      );
-      console.log(session);
-      setSession(session);
-    };
-    checkSession();
+  const fetchSession = useCallback(async () => {
+    const response = await fetcher<{
+      success: boolean;
+      data: ProbBookSubmitSession;
+    }>(`/api/workbooks/${probBook.id}/session`, {
+      method: "GET",
+    });
+    if (response?.success && response.data) {
+      setSession(response.data);
+    }
   }, [probBook.id]);
+
+  useEffect(() => {
+    fetchSession();
+  }, [fetchSession]);
 
   const handleModeClick = (mode: "all" | "sequential") => {
     setSelectedMode(mode);
@@ -70,16 +72,15 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
 
   const handleRestart = async () => {
     try {
-      // 세션을 초기화하기 위해 빈 답안으로 저장
-
       if (session) {
-        await fetcher(`/api/workbook/${probBook.id}/save`, {
-          method: "POST",
-          body: JSON.stringify({
-            submitId: session.submitId,
-            answers: {},
-          }),
-        });
+        await fetcher(
+          `/api/workbooks/${probBook.id}/session/${session.submitId}`,
+          {
+            method: "DELETE",
+          },
+        );
+        // 세션 삭제 후 상태 초기화
+        setSession(null);
       }
     } catch (error) {
       console.error("세션 초기화 실패:", error);

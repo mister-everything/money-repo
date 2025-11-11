@@ -4,8 +4,8 @@ import { getSession } from "@/lib/auth/server";
 import { errorResponse } from "@/lib/response";
 
 /**
- * POST /api/prob/[id]/save
- * 답안 자동 저장 (30초 주기)
+ * POST /api/workbooks/[id]/save
+ * 답안 자동 저장 (10초 주기)
  * 변경된 답안만 DB에 저장 (upsert)
  */
 export async function POST(
