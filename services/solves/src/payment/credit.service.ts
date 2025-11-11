@@ -29,14 +29,14 @@ export const creditService = {
     inputTokens: number;
     outputTokens: number;
     price: AIPrice;
-    venderCost?: number;
+    vendorCost?: number;
     calls?: number;
   }) => {
     const {
       walletId,
       userId,
       inputTokens,
-      venderCost,
+      vendorCost,
       outputTokens,
       price,
       calls = 0,
@@ -99,7 +99,7 @@ export const creditService = {
           billableCredits: toDecimal(cost.totalMarketCost),
           inputTokens,
           outputTokens,
-          vendorCost: toDecimal(venderCost || cost.totalCost),
+          vendorCost: toDecimal(vendorCost || cost.totalCost),
         })
         .returning({ id: UsageEventsTable.id });
 

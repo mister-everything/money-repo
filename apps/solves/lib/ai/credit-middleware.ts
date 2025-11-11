@@ -3,6 +3,7 @@ import type {
   LanguageModelV2StreamPart,
   LanguageModelV2Usage,
 } from "@ai-sdk/provider";
+
 import { aiPriceService, creditService } from "@service/solves";
 import { isNull } from "@workspace/util";
 import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
@@ -40,12 +41,16 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
       }
       const result = await doGenerate();
       const { inputTokens, outputTokens } = getTokens(result.usage);
+      const vendorCost =
+        result.providerMetadata?.gateway?.marketCost ||
+        result.providerMetadata?.gateway?.cost;
       creditService.deductCredit({
         inputTokens,
         outputTokens,
         price,
         userId: wallet.userId,
         walletId: wallet.id,
+        vendorCost: vendorCost ? Number(vendorCost) : undefined,
       });
       return result;
     },
@@ -74,12 +79,16 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         transform(chunk, controller) {
           switch (chunk.type) {
             case "finish": {
+              const vendorCost =
+                chunk.providerMetadata?.gateway?.marketCost ||
+                chunk.providerMetadata?.gateway?.cost;
               const { inputTokens, outputTokens } = getTokens(chunk.usage);
               creditService.deductCredit({
                 inputTokens,
                 outputTokens,
                 price,
                 userId: wallet.userId,
+                vendorCost: vendorCost ? Number(vendorCost) : undefined,
                 walletId: wallet.id,
               });
             }
