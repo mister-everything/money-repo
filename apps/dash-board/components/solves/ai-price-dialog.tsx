@@ -35,6 +35,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useVercelGatewayPrices } from "@/hooks/query/use-vercel-gateway-prices";
 
+function toMillion(price: string) {
+  return (Number(price) * 1_000_000).toFixed(2);
+}
+
 interface AIPriceDialogProps {
   mode: "create" | "edit";
   initialData?: AIPrice;
@@ -209,10 +213,10 @@ export function AIPriceDialog({
                     {model.pricing && (
                       <div className="flex flex-col text-xs text-muted-foreground text-right">
                         {model.pricing.input && (
-                          <span>In: ${model.pricing.input}/M</span>
+                          <span>In: ${toMillion(model.pricing.input)}/M</span>
                         )}
                         {model.pricing.output && (
-                          <span>Out: ${model.pricing.output}/M</span>
+                          <span>Out: ${toMillion(model.pricing.output)}/M</span>
                         )}
                       </div>
                     )}
