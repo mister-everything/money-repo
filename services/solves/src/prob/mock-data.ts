@@ -31,7 +31,7 @@ const mcqBlockContent: BlockContent<"mcq"> = {
 
 const mcqBlockAnswer: BlockAnswer<"mcq"> = {
   type: "mcq",
-  answer: ["1", "2"],
+  answer: ["1"],
 };
 
 const mcqBlock: ProbBlock<"mcq"> = {

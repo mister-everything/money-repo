@@ -50,25 +50,25 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
     } else {
       setCurrentIndex(0);
     }
-  }, [probBook.blocks, answers, submitResult]);
+  }, [probBook.blocks, submitResult]);
 
-  // 답변 선택 시 자동으로 다음 문제로 이동
-  useEffect(() => {
-    if (submitResult) {
-      return; // 결과 화면에서는 자동 이동 안 함
+  // 답변 변경 핸들러 - 새로운 답변 선택 시에만 다음 문제로 이동
+  const handleAnswerChange = (problemId: string, answer: BlockAnswerSubmit) => {
+    // 기존 답변이 없었던 경우에만 자동 이동
+    const hadAnswer = !!answers[problemId];
+
+    // 답변 저장
+    onAnswerChange(problemId, answer);
+    // 객관식 ox인 경우에만 이동
+    // 결과 화면이 아니고, 기존 답변이 없었고, 마지막 문제가 아니면 다음 문제로 이동
+    if (
+      !submitResult &&
+      !hadAnswer &&
+      (answer.type === "mcq" || answer.type === "ox")
+    ) {
+      handleNext();
     }
-
-    const currentProblem = probBook.blocks[currentIndex];
-    if (currentProblem && answers[currentProblem.id]) {
-      const timer = setTimeout(() => {
-        if (currentIndex < probBook.blocks.length - 1) {
-          setCurrentIndex((prev) => prev + 1);
-        }
-      }, 1000); // 1초 후 자동 이동
-
-      return () => clearTimeout(timer);
-    }
-  }, [answers, currentIndex, probBook.blocks, submitResult]);
+  };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -100,7 +100,6 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
               problem={problem}
               problemNumber={index + 1}
               submittedAnswer={answers[problem.id]}
-              onAnswerChange={onAnswerChange}
               blockResult={
                 blockResult && submitResult
                   ? {
@@ -145,7 +144,7 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
             problem={currentProblem}
             problemNumber={currentIndex + 1}
             submittedAnswer={answers[currentProblem.id]}
-            onAnswerChange={onAnswerChange}
+            onAnswerChange={handleAnswerChange}
           />
         </div>
       )}
