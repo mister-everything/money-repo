@@ -44,7 +44,6 @@ const oauthProviders: {
 
 export default function SignUpPage() {
   const handleSocialSignIn = useCallback((provider: string) => {
-    console.log(`start sign in with ${provider}`);
     authClient.signIn
       .social({ provider })
       .catch((e: any) => {

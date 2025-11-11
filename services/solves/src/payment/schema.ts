@@ -7,13 +7,16 @@ import {
   index,
   integer,
   jsonb,
+  pgSchema,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { solvesSchema } from "../prob/schema";
+import { SCHEMA_NAME } from "../const";
 import { PlanContentBlock, TxnKind } from "./types";
+
+export const solvesSchema = pgSchema(SCHEMA_NAME);
 
 const timestamps = {
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -51,35 +54,41 @@ export const AiProviderPricesTable = solvesSchema.table(
      */
     model: text("model").notNull(),
 
+    /** 모델 표시명
+     *  사용자에게 보이는 이름
+     *  eg: "GPT-4o mini", "Claude 3.5 Sonnet", "Grok 2"
+     */
+    displayName: text("display_name").notNull(),
+
     /** 모델 타입 (과금 방식 구분)
      *  eg: "text", "image", "audio", "video", "embedding"
      */
     modelType: text("model_type").notNull(),
 
-    /** 입력 토큰 단가 (원화, 1M 토큰 기준)
-     *  eg: "1950.00" (1950원 per 1M tokens)
+    /** 입력 토큰 단가 (USD, per token)
+     *  eg: "0.00000250" ($0.0000025 per token)
      */
     inputTokenPrice: decimal("input_token_price", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
-    /** 출력 토큰 단가 (원화, 1M 토큰 기준)
-     *  eg: "7800.00" (7800원 per 1M tokens)
+    /** 출력 토큰 단가 (USD, per token)
+     *  eg: "0.00001000" ($0.00001 per token)
      */
     outputTokenPrice: decimal("output_token_price", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
-    /** 캐시 토큰 단가 (원화, 1M 토큰 기준)
+    /** 캐시 토큰 단가 (USD, per token)
      *  프롬프트 캐싱 사용 시 할인된 가격
      *  일반적으로 입력 토큰의 10-50% 수준
-     *  eg: "975.00" (입력 토큰 50% 할인)
+     *  eg: "0.00000125" (입력 토큰 50% 할인)
      */
     cachedTokenPrice: decimal("cached_token_price", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
     /** 마진율 (청구금액 = 원가 × markupRate)
@@ -95,7 +104,6 @@ export const AiProviderPricesTable = solvesSchema.table(
      */
     isActive: boolean("is_active").notNull().default(true),
     ...timestamps,
-    deletedAt: timestamp("deleted_at"),
   },
   (t) => [
     /** 가격 조회 최적화 (provider + model 조합으로 조회) */
@@ -113,7 +121,6 @@ export const AiProviderPricesTable = solvesSchema.table(
  * 캐싱: 10분 TTL (빠른 응답 우선)
  *
  * 동시성 제어:
- * - 차감: Optimistic Lock (version 컬럼 활용, 3회 재시도)
  * - 충전: Pessimistic Lock (FOR UPDATE)
  *
  * 빠른 응답 전략:
@@ -140,20 +147,13 @@ export const CreditWalletTable = solvesSchema.table(
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
 
-    /** 현재 크레딧 잔액
-     *  정밀도: decimal(15, 2) - 소수점 2자리
-     *  eg: "1250.00", "1.50"
+    /** 현재 크레딧 잔액 (USD)
+     *  정밀도: decimal(15, 8) - 소수점 8자리
+     *  eg: "1250.50000000", "1.50000000"
      */
-    balance: decimal("balance", { precision: 15, scale: 2 })
+    balance: decimal("balance", { precision: 15, scale: 8 })
       .notNull()
-      .default("0.00"),
-
-    /** 낙관적 락 버전
-     *  동시성 제어: UPDATE WHERE version = :expected
-     *  충돌 시 재시도 (최대 3회)
-     *  eg: 0 → 1 → 2 → ...
-     */
-    version: integer("version").notNull().default(0),
+      .default("0.00000000"),
     ...timestamps,
   },
   (t) => [
@@ -173,10 +173,6 @@ export const CreditWalletTable = solvesSchema.table(
  *
  * 목적: 모든 크레딧 변동 기록 (append-only, 불변)
  * 패턴: Event Sourcing - 지갑 잔액의 신뢰할 수 있는 출처
- *
- * 멱등성 보장:
- * - uniqueIndex(walletId, idempotencyKey)로 중복 방지
- * - 캐시 실패 시에도 DB 레벨에서 보장
  *
  * 데이터 라이프사이클:
  * - Hot: 1년 (PostgreSQL 메인 테이블)
@@ -201,27 +197,21 @@ export const CreditLedgerTable = solvesSchema.table(
      */
     kind: text("kind").$type<TxnKind>().notNull(),
 
-    /** 증감 크레딧
+    /** 증감 크레딧 (USD)
      *  양수: 적립 (purchase, grant, refill)
      *  음수: 차감 (debit, reset)
-     *  eg: "+100.00", "-13.50"
+     *  eg: "+100.00000000", "-13.50000000"
      */
-    delta: decimal("delta", { precision: 15, scale: 2 }).notNull(),
+    delta: decimal("delta", { precision: 15, scale: 8 }).notNull(),
 
-    /** 트랜잭션 직후 잔액 스냅샷
+    /** 트랜잭션 직후 잔액 스냅샷 (USD)
      *  복구/감사/리포팅에 유용
-     *  eg: "987.50"
+     *  eg: "987.50000000"
      */
     runningBalance: decimal("running_balance", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
-
-    /** 멱등성 키
-     *  중복 요청 방지 (재시도, 네트워크 오류 등)
-     *  eg: "req_20251014_abc123", "usage_event_xyz"
-     */
-    idempotencyKey: text("idempotency_key").notNull(),
 
     /** 트랜잭션 사유/출처
      *  eg: "invoice:inv_001", "promo:WELCOME20", "AI usage: gpt-4o-mini"
@@ -236,11 +226,6 @@ export const CreditLedgerTable = solvesSchema.table(
     index("credit_ledger_kind_created_idx").on(t.kind, t.createdAt),
     /** 사용자별 거래 내역 조회 */
     index("credit_ledger_user_idx").on(t.userId),
-    /** 멱등성 보장 (지갑당 중복 키 방지) */
-    uniqueIndex("credit_ledger_wallet_idemp_uniq").on(
-      t.walletId,
-      t.idempotencyKey,
-    ),
   ],
 );
 
@@ -251,19 +236,10 @@ export const CreditLedgerTable = solvesSchema.table(
  * 패턴: 비정규화 (성능 + 불변성)
  *
  * 비정규화 이유:
- * - priceId는 있지만 provider, model, vendorCostUsd 중복 저장
+ * - priceId는 있지만 provider, model, vendorCost 중복 저장
  * 1. 성능: JOIN 없이 빠른 리포팅 (GROUP BY provider, model)
  * 2. 히스토리: 가격 변경 시에도 과거 원가 불변
  * 3. 무결성: 모델 삭제 시에도 사용 기록 보존
- *
- * 멱등성 보장:
- * - uniqueIndex(walletId, idempotencyKey)로 중복 방지
- * - 동일 요청 재시도 시 중복 기록 방지
- *
- * 데이터 라이프사이클:
- * - Hot: 3개월 (PostgreSQL 메인 테이블)
- * - Warm: 1년 (집계 테이블로 요약, 추후 구현)
- * - Cold: 1년+ (S3 아카이브, 추후 구현)
  */
 export const UsageEventsTable = solvesSchema.table(
   "usage_events",
@@ -286,9 +262,9 @@ export const UsageEventsTable = solvesSchema.table(
      *  FK: AiProviderPricesTable.id (restrict)
      *  eg: "price_def456..."
      */
-    priceId: uuid("price_id")
-      .notNull()
-      .references(() => AiProviderPricesTable.id, { onDelete: "restrict" }),
+    priceId: uuid("price_id").references(() => AiProviderPricesTable.id, {
+      onDelete: "set null",
+    }),
 
     /** AI 제공자 (비정규화)
      *  리포팅 쿼리 성능 최적화
@@ -308,20 +284,32 @@ export const UsageEventsTable = solvesSchema.table(
      */
     calls: integer("calls"),
 
-    /** 고객 청구 크레딧
-     *  실제 차감된 크레딧 (원가 × markup)
-     *  eg: "1.60" (원가 1.00원 × 1.6)
+    /** 고객 청구 크레딧 (USD)
+     *  실제 사용자로부터 차감된 크레딧 (원가 × markup)
+     *  eg: "1.60000000" (원가 $1.00 × 1.6)
      */
     billableCredits: decimal("billable_credits", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
-    /** 멱등성 키
-     *  중복 요청 방지
-     *  eg: "req_20251014_xyz123", "chat_msg_abc"
+    /** 실제 프로바이더에게 결제한 크레딧 (USD, optional)
+     *  eg: "1.00000000" (실제 프로바이더 원가)
      */
-    idempotencyKey: text("request_id"),
+    vendorCost: decimal("provider_credits", {
+      precision: 15,
+      scale: 8,
+    }),
+
+    /** 입력 토큰 수 (optional)
+     *  eg: 1010
+     */
+    inputTokens: integer("input_tokens"),
+
+    /** 출력 토큰 수 (optional)
+     *  eg: 750
+     */
+    outputTokens: integer("output_tokens"),
 
     /** 생성 시각 */
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -331,8 +319,6 @@ export const UsageEventsTable = solvesSchema.table(
     index("usage_events_user_created_idx").on(t.userId, t.createdAt),
     /** 가격 정보별 조회 */
     index("usage_events_price_idx").on(t.priceId),
-    /** 멱등성 보장 (사용자당 중복 키 방지) */
-    uniqueIndex("usage_events_user_idemp_uniq").on(t.userId, t.idempotencyKey),
   ],
 );
 
@@ -407,14 +393,14 @@ export const InvoicesTable = solvesSchema.table(
      */
     amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
 
-    /** 구매 크레딧
+    /** 구매 크레딧 (USD)
      *  결제 완료 시 지갑에 적립되는 크레딧
      *  구독: 월간 할당량, 구매: 패키지 크레딧
-     *  eg: "10000.00", "1000.00"
+     *  eg: "10000.00000000", "1000.00000000"
      */
     purchasedCredits: decimal("purchased_credits", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }).notNull(),
 
     /** 결제 상태
@@ -504,22 +490,22 @@ export const SubscriptionPlansTable = solvesSchema.table("subscription_plans", {
    */
   price: decimal("price", { precision: 15, scale: 2 }).notNull(),
 
-  /** 월간 크레딧 할당량
+  /** 월간 크레딧 할당량 (USD)
    *  매월 초 또는 구독 갱신일에 지급
-   *  eg: "1000.00" (1K), "10000.00" (10K)
+   *  eg: "1000.00000000" (1K), "10000.00000000" (10K)
    */
   monthlyQuota: decimal("monthly_quota", {
     precision: 15,
-    scale: 2,
+    scale: 8,
   }).notNull(),
 
-  /** 정기 자동 충전량
+  /** 정기 자동 충전량 (USD)
    *  잔액 소진 시 자동 충전되는 크레딧
-   *  eg: "50.00", "500.00"
+   *  eg: "50.00000000", "500.00000000"
    */
   refillAmount: decimal("refill_amount", {
     precision: 15,
-    scale: 2,
+    scale: 8,
   }).notNull(),
 
   /** 자동 충전 간격 (시간)
@@ -725,13 +711,13 @@ export const SubscriptionPeriodsTable = solvesSchema.table(
      */
     periodType: text("period_type").notNull().default("renewal"),
 
-    /** 이 기간에 지급된 크레딧
+    /** 이 기간에 지급된 크레딧 (USD)
      *  월간 할당량
-     *  eg: "10000.00"
+     *  eg: "10000.00000000"
      */
     creditsGranted: decimal("credits_granted", {
       precision: 15,
-      scale: 2,
+      scale: 8,
     }),
 
     /** 이 기간 동안 자동 충전 횟수

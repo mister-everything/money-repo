@@ -30,7 +30,7 @@ export const getSession = async () => {
   return session!;
 };
 
-export const safeGetUser = async () => {
+export const safeGetSession = async () => {
   "use server";
   const session = await solvesBetterAuth.api
     .getSession({
@@ -40,7 +40,7 @@ export const safeGetUser = async () => {
       console.error(e);
       return null;
     });
-  return session?.user;
+  return session;
 };
 
 const database = drizzleAdapter(authDataBase, {
