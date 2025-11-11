@@ -17,13 +17,6 @@ export const CacheKeys = {
    * @returns Redis key: price:{provider}:{model}
    */
   aiPrice: (provider: string, model: string) => `price:${provider}:${model}`,
-
-  /**
-   * 멱등성 키 (중복 요청 방지)
-   * @param key - 멱등성 키
-   * @returns Redis key: idemp:{key}
-   */
-  idempotency: (key: string) => `idemp:${key}`,
 } as const;
 
 /**
@@ -36,7 +29,4 @@ export const CacheTTL = {
 
   /** AI 가격표 캐시 - 1시간 (가격이 자주 변경되지 않음) */
   AI_PRICE: 3600,
-
-  /** 멱등성 키 - 10분 */
-  IDEMPOTENCY: 600,
 } as const;

@@ -104,7 +104,6 @@ export const AiProviderPricesTable = solvesSchema.table(
      */
     isActive: boolean("is_active").notNull().default(true),
     ...timestamps,
-    deletedAt: timestamp("deleted_at"),
   },
   (t) => [
     /** 가격 조회 최적화 (provider + model 조합으로 조회) */
@@ -175,10 +174,6 @@ export const CreditWalletTable = solvesSchema.table(
  * 목적: 모든 크레딧 변동 기록 (append-only, 불변)
  * 패턴: Event Sourcing - 지갑 잔액의 신뢰할 수 있는 출처
  *
- * 멱등성 보장:
- * - uniqueIndex(walletId, idempotencyKey)로 중복 방지
- * - 캐시 실패 시에도 DB 레벨에서 보장
- *
  * 데이터 라이프사이클:
  * - Hot: 1년 (PostgreSQL 메인 테이블)
  * - Cold: 1년+ (S3 아카이브, 추후 구현)
@@ -218,12 +213,6 @@ export const CreditLedgerTable = solvesSchema.table(
       scale: 8,
     }).notNull(),
 
-    /** 멱등성 키
-     *  중복 요청 방지 (재시도, 네트워크 오류 등)
-     *  eg: "req_20251014_abc123", "usage_event_xyz"
-     */
-    idempotencyKey: text("idempotency_key").notNull(),
-
     /** 트랜잭션 사유/출처
      *  eg: "invoice:inv_001", "promo:WELCOME20", "AI usage: gpt-4o-mini"
      */
@@ -237,11 +226,6 @@ export const CreditLedgerTable = solvesSchema.table(
     index("credit_ledger_kind_created_idx").on(t.kind, t.createdAt),
     /** 사용자별 거래 내역 조회 */
     index("credit_ledger_user_idx").on(t.userId),
-    /** 멱등성 보장 (지갑당 중복 키 방지) */
-    uniqueIndex("credit_ledger_wallet_idemp_uniq").on(
-      t.walletId,
-      t.idempotencyKey,
-    ),
   ],
 );
 
@@ -252,19 +236,10 @@ export const CreditLedgerTable = solvesSchema.table(
  * 패턴: 비정규화 (성능 + 불변성)
  *
  * 비정규화 이유:
- * - priceId는 있지만 provider, model, vendorCostUsd 중복 저장
+ * - priceId는 있지만 provider, model, vendorCost 중복 저장
  * 1. 성능: JOIN 없이 빠른 리포팅 (GROUP BY provider, model)
  * 2. 히스토리: 가격 변경 시에도 과거 원가 불변
  * 3. 무결성: 모델 삭제 시에도 사용 기록 보존
- *
- * 멱등성 보장:
- * - uniqueIndex(walletId, idempotencyKey)로 중복 방지
- * - 동일 요청 재시도 시 중복 기록 방지
- *
- * 데이터 라이프사이클:
- * - Hot: 3개월 (PostgreSQL 메인 테이블)
- * - Warm: 1년 (집계 테이블로 요약, 추후 구현)
- * - Cold: 1년+ (S3 아카이브, 추후 구현)
  */
 export const UsageEventsTable = solvesSchema.table(
   "usage_events",
@@ -287,9 +262,9 @@ export const UsageEventsTable = solvesSchema.table(
      *  FK: AiProviderPricesTable.id (restrict)
      *  eg: "price_def456..."
      */
-    priceId: uuid("price_id")
-      .notNull()
-      .references(() => AiProviderPricesTable.id, { onDelete: "restrict" }),
+    priceId: uuid("price_id").references(() => AiProviderPricesTable.id, {
+      onDelete: "set null",
+    }),
 
     /** AI 제공자 (비정규화)
      *  리포팅 쿼리 성능 최적화
@@ -310,7 +285,7 @@ export const UsageEventsTable = solvesSchema.table(
     calls: integer("calls"),
 
     /** 고객 청구 크레딧 (USD)
-     *  실제 차감된 크레딧 (원가 × markup)
+     *  실제 사용자로부터 차감된 크레딧 (원가 × markup)
      *  eg: "1.60000000" (원가 $1.00 × 1.6)
      */
     billableCredits: decimal("billable_credits", {
@@ -318,11 +293,23 @@ export const UsageEventsTable = solvesSchema.table(
       scale: 8,
     }).notNull(),
 
-    /** 멱등성 키
-     *  중복 요청 방지
-     *  eg: "req_20251014_xyz123", "chat_msg_abc"
+    /** 실제 프로바이더에게 결제한 크레딧 (USD, optional)
+     *  eg: "1.00000000" (실제 프로바이더 원가)
      */
-    idempotencyKey: text("request_id"),
+    vendorCost: decimal("provider_credits", {
+      precision: 15,
+      scale: 8,
+    }),
+
+    /** 입력 토큰 수 (optional)
+     *  eg: 1010
+     */
+    inputTokens: integer("input_tokens"),
+
+    /** 출력 토큰 수 (optional)
+     *  eg: 750
+     */
+    outputTokens: integer("output_tokens"),
 
     /** 생성 시각 */
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -332,8 +319,6 @@ export const UsageEventsTable = solvesSchema.table(
     index("usage_events_user_created_idx").on(t.userId, t.createdAt),
     /** 가격 정보별 조회 */
     index("usage_events_price_idx").on(t.priceId),
-    /** 멱등성 보장 (사용자당 중복 키 방지) */
-    uniqueIndex("usage_events_user_idemp_uniq").on(t.userId, t.idempotencyKey),
   ],
 );
 

@@ -1,5 +1,5 @@
 {
-  "id": "3da04199-3fde-48b0-8a78-4f9c7f7d7b9c",
+  "id": "83184eb4-3c55-4be0-a225-d7d6d7bfb1bd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -88,7 +88,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -210,12 +210,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -289,12 +283,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "idempotency_key": {
-          "name": "idempotency_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "reason": {
           "name": "reason",
           "type": "text",
@@ -342,27 +330,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "credit_ledger_wallet_idemp_uniq": {
-          "name": "credit_ledger_wallet_idemp_uniq",
-          "columns": [
-            {
-              "expression": "wallet_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "idempotency_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -427,13 +394,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'0.00000000'"
-        },
-        "version": {
-          "name": "version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -1125,7 +1085,7 @@
           "name": "price_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "provider": {
           "name": "provider",
@@ -1151,9 +1111,21 @@
           "primaryKey": false,
           "notNull": true
         },
-        "request_id": {
-          "name": "request_id",
-          "type": "text",
+        "provider_credits": {
+          "name": "provider_credits",
+          "type": "numeric(15, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -1201,27 +1173,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "usage_events_user_idemp_uniq": {
-          "name": "usage_events_user_idemp_uniq",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "request_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -1250,7 +1201,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

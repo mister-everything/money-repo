@@ -44,7 +44,7 @@ export interface UsageEvent {
   cachedTokens: number | null;
   calls: number | null;
   billableCredits: string; // USD
-  idempotencyKey: string | null;
+  vendorCost: string | null; // USD
   createdAt: Date;
 }
 
@@ -60,15 +60,16 @@ export interface UsageEvent {
  * - "subscription_refill": 정기 자동 충전
  * - "subscription_reset": 월간 갱신 시 잔액 리셋 (rollover=false)
  */
-export type TxnKind =
-  | "purchase"
-  | "grant"
-  | "debit"
-  | "refund"
-  | "adjustment"
-  | "subscription_grant"
-  | "subscription_refill"
-  | "subscription_reset";
+export enum TxnKind {
+  purchase = "purchase",
+  grant = "grant",
+  debit = "debit",
+  refund = "refund",
+  adjustment = "adjustment",
+  subscription_grant = "subscription_grant",
+  subscription_refill = "subscription_refill",
+  subscription_reset = "subscription_reset",
+}
 
 /**
  * 크레딧 원장
@@ -80,7 +81,6 @@ export interface CreditLedger {
   kind: TxnKind;
   delta: string; // USD
   runningBalance: string; // USD
-  idempotencyKey: string | null;
   reason: string | null;
   createdAt: Date;
 }
@@ -142,25 +142,6 @@ export type CreateAIPrice = z.infer<typeof createAIPriceSchema>;
 export const updateAIPriceSchema = createAIPriceSchema.partial();
 
 export type UpdateAIPrice = z.infer<typeof updateAIPriceSchema>;
-
-/**
- * 인보이스 생성 스키마
- */
-export const createInvoiceSchema = z.object({
-  userId: z.string(),
-  walletId: z.uuid(),
-  title: z.string(),
-  amount: z.string().refine((val) => Number(val) >= 0, {
-    message: "금액은 0 이상이어야 합니다",
-  }),
-  purchasedCredits: z.string().refine((val) => Number(val) >= 0, {
-    message: "구매 크레딧은 0 이상이어야 합니다",
-  }),
-  externalRef: z.string().optional(),
-  externalOrderId: z.string().optional(),
-});
-
-export type CreateInvoice = z.infer<typeof createInvoiceSchema>;
 
 /**
  * 구독 상태

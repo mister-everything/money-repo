@@ -4,7 +4,7 @@ import type {
   LanguageModelV2Usage,
 } from "@ai-sdk/provider";
 import { aiPriceService, creditService } from "@service/solves";
-import { generateUUID, isNull } from "@workspace/util";
+import { isNull } from "@workspace/util";
 import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
 
 function getTokens(useage: LanguageModelV2Usage) {
@@ -29,7 +29,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
     wrapGenerate: async ({ doGenerate, model }) => {
       const wallet = await getWalletThrowIfNotEnoughBalance();
       const [provider, modelName] = model.modelId.split("/");
-      const price = await aiPriceService.getPriceByProviderAndModelName(
+      const price = await aiPriceService.getActivePriceByProviderAndModelName(
         provider,
         modelName,
       );
@@ -43,7 +43,6 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
       creditService.deductCredit({
         inputTokens,
         outputTokens,
-        idempotencyKey: generateUUID(),
         price,
         userId: wallet.userId,
         walletId: wallet.id,
@@ -56,7 +55,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
 
       const [provider, modelName] = model.modelId.split("/");
 
-      const price = await aiPriceService.getPriceByProviderAndModelName(
+      const price = await aiPriceService.getActivePriceByProviderAndModelName(
         provider,
         modelName,
       );
@@ -79,7 +78,6 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
               creditService.deductCredit({
                 inputTokens,
                 outputTokens,
-                idempotencyKey: generateUUID(),
                 price,
                 userId: wallet.userId,
                 walletId: wallet.id,

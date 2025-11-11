@@ -55,8 +55,7 @@ CREATE TABLE IF NOT EXISTS "solves"."ai_provider_prices" (
 	"markup_rate" numeric(6, 3) DEFAULT '1.60' NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."credit_ledger" (
@@ -66,7 +65,6 @@ CREATE TABLE IF NOT EXISTS "solves"."credit_ledger" (
 	"kind" text NOT NULL,
 	"delta" numeric(15, 8) NOT NULL,
 	"running_balance" numeric(15, 8) NOT NULL,
-	"idempotency_key" text NOT NULL,
 	"reason" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
@@ -75,7 +73,6 @@ CREATE TABLE IF NOT EXISTS "solves"."credit_wallet" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
 	"balance" numeric(15, 8) DEFAULT '0.00000000' NOT NULL,
-	"version" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "balance_non_negative" CHECK ("solves"."credit_wallet"."balance" >= 0)
@@ -147,12 +144,14 @@ CREATE TABLE IF NOT EXISTS "solves"."subscriptions" (
 CREATE TABLE IF NOT EXISTS "solves"."usage_events" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
-	"price_id" uuid NOT NULL,
+	"price_id" uuid,
 	"provider" text NOT NULL,
 	"model" text NOT NULL,
 	"calls" integer,
 	"billable_credits" numeric(15, 8) NOT NULL,
-	"request_id" text,
+	"provider_credits" numeric(15, 8),
+	"input_tokens" integer,
+	"output_tokens" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -284,7 +283,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_price_id_ai_provider_prices_id_fk" FOREIGN KEY ("price_id") REFERENCES "solves"."ai_provider_prices"("id") ON DELETE restrict ON UPDATE no action;
+ALTER TABLE "solves"."usage_events" ADD CONSTRAINT "usage_events_price_id_ai_provider_prices_id_fk" FOREIGN KEY ("price_id") REFERENCES "solves"."ai_provider_prices"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
@@ -340,7 +339,6 @@ END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS "ai_provider_prices_provider_model_idx" ON "solves"."ai_provider_prices" USING btree ("provider","model");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "credit_ledger_kind_created_idx" ON "solves"."credit_ledger" USING btree ("kind","created_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "credit_ledger_user_idx" ON "solves"."credit_ledger" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "credit_ledger_wallet_idemp_uniq" ON "solves"."credit_ledger" USING btree ("wallet_id","idempotency_key");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "credit_wallet_user_unique" ON "solves"."credit_wallet" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoices_user_created_idx" ON "solves"."invoices" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoices_external_ref_idx" ON "solves"."invoices" USING btree ("external_ref");--> statement-breakpoint
@@ -351,5 +349,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS "subscriptions_user_idx" ON "solves"."subscrip
 CREATE INDEX IF NOT EXISTS "subscriptions_status_idx" ON "solves"."subscriptions" USING btree ("status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "subscriptions_period_end_idx" ON "solves"."subscriptions" USING btree ("current_period_end","status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "usage_events_user_created_idx" ON "solves"."usage_events" USING btree ("user_id","created_at");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "usage_events_price_idx" ON "solves"."usage_events" USING btree ("price_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "usage_events_user_idemp_uniq" ON "solves"."usage_events" USING btree ("user_id","request_id");
+CREATE INDEX IF NOT EXISTS "usage_events_price_idx" ON "solves"."usage_events" USING btree ("price_id");

@@ -7,7 +7,7 @@ import {
   UsageEventsTable,
 } from "./schema";
 import { sharedCache } from "./shared-cache";
-import { AIPrice } from "./types";
+import { AIPrice, TxnKind } from "./types";
 import { calculateCost, toDecimal } from "./utils";
 
 /**
@@ -16,7 +16,6 @@ import { calculateCost, toDecimal } from "./utils";
  * 핵심 전략:
  * - 빠른 응답: 백그라운드 차감 (balance > 0만 체크)
  * - 안전한 충전: 비관적 락 + 순차 처리
- * - 멱등성 보장: 캐시 + DB 인덱스
  */
 export const creditService = {
   /**
@@ -30,33 +29,26 @@ export const creditService = {
     inputTokens: number;
     outputTokens: number;
     price: AIPrice;
+    venderCost?: number;
     calls?: number;
-    idempotencyKey: string;
   }) => {
     const {
       walletId,
       userId,
       inputTokens,
+      venderCost,
       outputTokens,
       price,
       calls = 0,
-      idempotencyKey,
     } = params;
 
-    // 1) 캐시에서 멱등성 체크
-    const cachedResponse = await sharedCache.get(
-      CacheKeys.idempotency(idempotencyKey),
-    );
-    if (cachedResponse) {
-      return JSON.parse(cachedResponse);
-    }
-    // 3) 비용 계산
+    // 1) 비용 계산
     const cost = calculateCost(price, {
       input: inputTokens,
       output: outputTokens,
     });
 
-    // 4) DB 트랜잭션 (FOR UPDATE로 충분)
+    // 2) DB 트랜잭션 (FOR UPDATE로 충분)
     const result = await pgDb.transaction(async (tx) => {
       const queryResult = await tx.execute<{
         id: string;
@@ -90,11 +82,9 @@ export const creditService = {
       await tx.insert(CreditLedgerTable).values({
         walletId,
         userId,
-        kind: "debit",
+        kind: TxnKind.debit,
         delta: toDecimal(-cost.totalMarketCost),
         runningBalance: toDecimal(newBalance),
-        idempotencyKey,
-        reason: `AI usage: ${price.provider}:${price.model}`,
       });
 
       // 4-4) 사용 이벤트 기록
@@ -107,7 +97,9 @@ export const creditService = {
           model: price.model,
           calls,
           billableCredits: toDecimal(cost.totalMarketCost),
-          idempotencyKey,
+          inputTokens,
+          outputTokens,
+          vendorCost: toDecimal(venderCost || cost.totalCost),
         })
         .returning({ id: UsageEventsTable.id });
 
@@ -121,24 +113,15 @@ export const creditService = {
       newBalance: result.newBalance,
     };
 
-    await Promise.all([
-      // 5-1) 잔액 캐시 갱신 (userId 기반)
-      sharedCache.setex(
-        CacheKeys.userWallet(userId),
-        CacheTTL.USER_WALLET,
-        JSON.stringify({
-          id: walletId,
-          userId: userId,
-          balance: result.newBalance,
-        }),
-      ),
-      // 5-2) 멱등성 키 저장
-      sharedCache.setex(
-        CacheKeys.idempotency(idempotencyKey),
-        CacheTTL.IDEMPOTENCY,
-        JSON.stringify(response),
-      ),
-    ]);
+    await sharedCache.setex(
+      CacheKeys.userWallet(userId),
+      CacheTTL.USER_WALLET,
+      JSON.stringify({
+        id: walletId,
+        userId: userId,
+        balance: result.newBalance,
+      }),
+    );
 
     return response;
   },

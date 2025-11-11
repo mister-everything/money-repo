@@ -23,7 +23,7 @@ export const aiPriceService = {
    * @param model - 모델명 (gpt-4o-mini, claude-3-5-sonnet, etc.)
    * @returns AI 가격 정보
    */
-  getPriceByProviderAndModelName: async (
+  getActivePriceByProviderAndModelName: async (
     provider: string,
     model: string,
   ): Promise<AIPrice | null> => {
@@ -165,30 +165,6 @@ export const aiPriceService = {
     } else {
       await sharedCache.del(cacheKey);
     }
-
-    return price;
-  },
-
-  /**
-   * 가격 삭제 (soft delete, 캐시 삭제)
-   */
-  deletePrice: async (priceId: string) => {
-    const [price] = await pgDb
-      .update(AiProviderPricesTable)
-      .set({
-        deletedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(AiProviderPricesTable.id, priceId))
-      .returning();
-
-    if (!price) {
-      throw new Error(`가격 정보를 찾을 수 없습니다: ${priceId}`);
-    }
-
-    // 캐시 삭제
-    const cacheKey = CacheKeys.aiPrice(price.provider, price.model);
-    await sharedCache.del(cacheKey);
 
     return price;
   },
