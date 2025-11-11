@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@workspace/env";
 import { ThemeProvider } from "next-themes";
+import { AuthCheck } from "@/components/layouts/auth-check";
 import { SwrProvider } from "@/components/swr-provider";
 
 const fontSans = Geist({
@@ -31,7 +32,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SwrProvider>
-            <div id="root">{children}</div>
+            <div id="root">
+              <AuthCheck>{children}</AuthCheck>
+            </div>
           </SwrProvider>
         </ThemeProvider>
       </body>
