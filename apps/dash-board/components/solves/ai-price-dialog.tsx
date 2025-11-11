@@ -118,8 +118,8 @@ export function AIPriceDialog({
     setInputTokenPrice(gatewayModel.pricing?.input || "0");
     setOutputTokenPrice(gatewayModel.pricing?.output || "0");
     setCachedTokenPrice(
-      gatewayModel.pricing?.cacheCreationInputTokens ||
-        gatewayModel.pricing?.cachedInputTokens ||
+      gatewayModel.pricing?.cachedInputTokens ||
+        gatewayModel.pricing?.cacheCreationInputTokens ||
         "0",
     );
     setModelType(mapModelType(gatewayModel.modelType || "language"));

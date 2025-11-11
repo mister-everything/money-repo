@@ -4,15 +4,11 @@ import type { AIPrice } from "@service/solves/shared";
 import { Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import {
-  toggleAIPriceActiveAction,
-  updateAIPriceAction,
-} from "@/app/(dash-board)/solves/ai-prices/actions";
+
+import { updateAIPriceAction } from "@/app/(dash-board)/solves/ai-prices/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { notify } from "@/components/ui/notify";
-import { Switch } from "@/components/ui/switch";
+
 import {
   Table,
   TableBody,
@@ -68,32 +64,6 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
     router.refresh(); // Refresh server component data
   };
 
-  const handleToggleActive = async (price: AIPrice) => {
-    const newStatus = !price.isActive;
-    const confirmed = await notify.confirm({
-      title: newStatus ? "가격 활성화" : "가격 비활성화",
-      description: newStatus
-        ? "이 가격을 활성화하시겠습니까?"
-        : "이 가격을 비활성화하시겠습니까? 비활성 모델은 가격 조회에서 제외됩니다.",
-      okText: newStatus ? "활성화" : "비활성화",
-      cancelText: "취소",
-    });
-
-    if (confirmed) {
-      try {
-        await toggleAIPriceActiveAction(price.id, newStatus);
-        toast.success(
-          newStatus ? "가격이 활성화되었습니다." : "가격이 비활성화되었습니다.",
-        );
-        router.refresh(); // Refresh server component data
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "작업에 실패했습니다.",
-        );
-      }
-    }
-  };
-
   const formatPrice = (price: number) => {
     // Convert to per M tokens (multiply by 1,000,000)
     return (price * 1000000).toFixed(2);
@@ -143,7 +113,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
               <TableHead>출력 토큰</TableHead>
               <TableHead>캐시 토큰</TableHead>
               <TableHead>마진율</TableHead>
-              <TableHead>활성화</TableHead>
+
               <TableHead>작업</TableHead>
             </TableRow>
           </TableHeader>
@@ -329,12 +299,6 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                   </TableCell>
                   <TableCell className="text-right text-sm">
                     {price.markupRate}×
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch
-                      checked={price.isActive}
-                      onCheckedChange={() => handleToggleActive(price)}
-                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
