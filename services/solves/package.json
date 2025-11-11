@@ -19,7 +19,7 @@
     ".": "./src/index.ts",
     "./shared": "./src/shared.ts"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@service/auth": "workspace:*",
     "@workspace/cache": "workspace:*",
     "@workspace/util": "workspace:*",
