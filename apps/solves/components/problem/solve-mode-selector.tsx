@@ -1,8 +1,9 @@
 "use client";
 
-import { ProbBook } from "@service/solves/shared";
+import { ProbBook, ProbBookSubmitSession } from "@service/solves/shared";
 import { BookOpen, CheckIcon, List } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ProblemHeader } from "@/components/problem/problem-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,9 +22,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { fetcher } from "@/lib/fetcher";
-import { ProblemHeader } from "./problem-header";
-
-// import { ProblemBookHeader } from "./problem-book-header";
 
 interface SolveModeSelectorProps {
   probBook: ProbBook;
@@ -34,7 +32,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   probBook,
   onModeSelect,
 }) => {
-  const [hasExistingSession, setHasExistingSession] = useState(false);
+  const [session, setSession] = useState<ProbBookSubmitSession | null>(null);
   const [showContinueDialog, setShowContinueDialog] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"all" | "sequential" | null>(
     null,
@@ -42,36 +40,21 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
 
   useEffect(() => {
     const checkSession = async () => {
-      try {
-        const response = await fetcher<{
-          success: boolean;
-          data: {
-            submitId: string;
-            startTime: Date;
-            savedAnswers: Record<string, unknown>;
-          };
-        }>(`/api/workbooks/${probBook.id}/session`, {
+      const session = await fetcher<ProbBookSubmitSession>(
+        `/api/workbooks/${probBook.id}/session`,
+        {
           method: "GET",
-        });
-
-        if (
-          response?.success &&
-          response.data &&
-          Object.keys(response.data.savedAnswers || {}).length > 0
-        ) {
-          setHasExistingSession(true);
-        }
-      } catch (error) {
-        console.error("세션 확인 실패:", error);
-      }
+        },
+      );
+      console.log(session);
+      setSession(session);
     };
-
     checkSession();
   }, [probBook.id]);
 
   const handleModeClick = (mode: "all" | "sequential") => {
     setSelectedMode(mode);
-    if (hasExistingSession) {
+    if (session) {
       setShowContinueDialog(true);
     } else {
       onModeSelect(mode);
@@ -88,22 +71,12 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   const handleRestart = async () => {
     try {
       // 세션을 초기화하기 위해 빈 답안으로 저장
-      const response = await fetcher<{
-        success: boolean;
-        data: {
-          submitId: string;
-          startTime: Date;
-          savedAnswers: Record<string, unknown>;
-        };
-      }>(`/api/workbook/${probBook.id}/session`, {
-        method: "GET",
-      });
 
-      if (response?.success && response.data) {
+      if (session) {
         await fetcher(`/api/workbook/${probBook.id}/save`, {
           method: "POST",
           body: JSON.stringify({
-            submitId: response.data.submitId,
+            submitId: session.submitId,
             answers: {},
           }),
         });

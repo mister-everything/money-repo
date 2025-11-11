@@ -59,14 +59,17 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
 
     // 답변 저장
     onAnswerChange(problemId, answer);
-    // 객관식 ox인 경우에만 이동
-    // 결과 화면이 아니고, 기존 답변이 없었고, 마지막 문제가 아니면 다음 문제로 이동
+
+    // 객관식/OX인 경우에만 자동 이동
+    // 조건: 결과 화면 아님 && 기존 답변 없음 && (객관식 또는 OX) && 마지막 문제 아님
     if (
       !submitResult &&
       !hadAnswer &&
       (answer.type === "mcq" || answer.type === "ox")
     ) {
-      handleNext();
+      setTimeout(() => {
+        handleNext();
+      }, 0);
     }
   };
 
