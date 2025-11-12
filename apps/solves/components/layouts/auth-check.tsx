@@ -2,25 +2,28 @@
 
 import { TIME } from "@workspace/util";
 import { usePathname, useRouter } from "next/navigation";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import useSWR from "swr";
 
 export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
-  const { data, isLoading } = useSWR("/api/auth/check", {
+  const { data, isLoading } = useSWR<{ success: boolean }>("/api/auth/check", {
     refreshInterval: TIME.MINUTES(10),
   });
   const pathname = usePathname();
   const router = useRouter();
 
-  useLayoutEffect(() => {
-    if (!data) return;
-    if (data.success) return;
-    if (pathname == "/") return;
-    if (pathname == "/sign-in") return;
-    if (pathname.startsWith("/auth")) return;
-    router.push("/sign-in");
-  }, [data, pathname]);
+  const notAllowed = useMemo(() => {
+    if (data?.success) return false;
+    if (pathname == "/") return false;
+    if (pathname == "/sign-in") return false;
+    if (pathname.startsWith("/auth")) return false;
+    return true;
+  }, [pathname, data]);
 
-  if (isLoading) return null;
+  useLayoutEffect(() => {
+    if (notAllowed && !isLoading) router.push("/sign-in");
+  }, [notAllowed, isLoading]);
+
+  if (isLoading || notAllowed) return null;
   return children;
 };
