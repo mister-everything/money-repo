@@ -1,6 +1,6 @@
 "use server";
 
-import { planAdminService } from "@service/solves";
+import { planService } from "@service/solves";
 import { createSubscriptionPlanSchema } from "@service/solves/shared";
 import { redirect } from "next/navigation";
 import { flattenError, z } from "zod";
@@ -39,7 +39,7 @@ export async function createPlanAction(
     // Validation
     const validated = createSubscriptionPlanSchema.parse(data);
 
-    await planAdminService.createPlan(validated);
+    await planService.createPlan(validated);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
@@ -88,7 +88,7 @@ export async function updatePlanAction(
     // Validation
     const validated = createSubscriptionPlanSchema.partial().parse(data);
 
-    await planAdminService.updatePlan(planId, validated);
+    await planService.updatePlan(planId, validated);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {
@@ -115,7 +115,7 @@ export async function togglePlanActiveAction(
   isActive: boolean,
 ) {
   try {
-    await planAdminService.setPlanActive(planId, isActive);
+    await planService.setPlanActive(planId, isActive);
     // redirect는 클라이언트에서 처리
   } catch (error) {
     console.error("플랜 상태 변경 실패:", error);

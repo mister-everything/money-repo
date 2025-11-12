@@ -13,7 +13,7 @@ import {
  * Plan Admin Service
  *
  */
-export const planAdminService = {
+export const planService = {
   getAllPlans: async (): Promise<SubscriptionPlanWithCount[]> => {
     const plans = await pgDb
       .select({
@@ -95,9 +95,6 @@ export const planAdminService = {
     return plan as any;
   },
 
-  /**
-   * 플랜 활성화/비활성화 설정 (멱등성 보장)
-   */
   setPlanActive: async (planId: string, isActive: boolean): Promise<any> => {
     const [plan] = await pgDb
       .update(SubscriptionPlansTable)

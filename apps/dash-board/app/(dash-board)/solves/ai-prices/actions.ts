@@ -1,6 +1,5 @@
 "use server";
-
-import { aiPriceAdminService } from "@service/solves";
+import { aiPriceService } from "@service/solves";
 import {
   createAIPriceSchema,
   updateAIPriceSchema,
@@ -25,6 +24,7 @@ export async function createAIPriceAction(
     const data = {
       provider: formData.get("provider") as string,
       model: formData.get("model") as string,
+      displayName: formData.get("displayName") as string,
       modelType: formData.get("modelType") as
         | "text"
         | "image"
@@ -41,7 +41,7 @@ export async function createAIPriceAction(
     // Validation
     const validated = createAIPriceSchema.parse(data);
 
-    await aiPriceAdminService.createPrice(validated);
+    await aiPriceService.createPrice(validated);
 
     return {
       success: true,
@@ -75,6 +75,7 @@ export async function updateAIPriceAction(
     const data = {
       provider: formData.get("provider") as string,
       model: formData.get("model") as string,
+      displayName: formData.get("displayName") as string,
       modelType: formData.get("modelType") as
         | "text"
         | "image"
@@ -91,7 +92,7 @@ export async function updateAIPriceAction(
     // Validation
     const validated = updateAIPriceSchema.parse(data);
 
-    await aiPriceAdminService.updatePrice(priceId, validated);
+    await aiPriceService.updatePrice(priceId, validated);
 
     return {
       success: true,
@@ -121,7 +122,7 @@ export async function toggleAIPriceActiveAction(
   isActive: boolean,
 ) {
   try {
-    await aiPriceAdminService.setPriceActive(priceId, isActive);
+    await aiPriceService.setPriceActive(priceId, isActive);
   } catch (error) {
     console.error("AI 가격 상태 변경 실패:", error);
     throw new Error("AI 가격 상태 변경에 실패했습니다.");
@@ -129,5 +130,5 @@ export async function toggleAIPriceActiveAction(
 }
 
 export async function fetchAIPrices() {
-  return aiPriceAdminService.getAllPrices();
+  return aiPriceService.getAllPrices();
 }

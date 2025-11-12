@@ -16,110 +16,296 @@ export const seedPrices = async () => {
   console.log("🌱 Seeding AI Provider Prices...");
 
   const prices: (typeof AiProviderPricesTable.$inferInsert)[] = [
-    // OpenAI
+    // OpenAI Models
     {
       provider: "openai",
       model: "gpt-4o",
+      displayName: "GPT-4o",
       modelType: "text",
-      inputTokenPrice: "3250.00", // 3250원 per 1M tokens
-      outputTokenPrice: "13000.00", // 13000원 per 1M tokens
-      cachedTokenPrice: "1625.00", // 1625원 per 1M tokens (50% discount)
+      inputTokenPrice: "0.00000250",
+      outputTokenPrice: "0.00001000",
+      cachedTokenPrice: "0.00000125",
       markupRate: "1.60",
       isActive: true,
     },
     {
       provider: "openai",
       model: "gpt-4o-mini",
+      displayName: "GPT-4o mini",
       modelType: "text",
-      inputTokenPrice: "195.00", // 195원 per 1M tokens
-      outputTokenPrice: "780.00", // 780원 per 1M tokens
-      cachedTokenPrice: "97.50", // 97.5원 per 1M tokens (50% discount)
+      inputTokenPrice: "0.00000015",
+      outputTokenPrice: "0.00000060",
+      cachedTokenPrice: "0.00000008",
       markupRate: "1.60",
       isActive: true,
     },
     {
       provider: "openai",
       model: "gpt-4-turbo",
+      displayName: "GPT-4 Turbo",
       modelType: "text",
-      inputTokenPrice: "13000.00", // 13000원 per 1M tokens
-      outputTokenPrice: "39000.00", // 39000원 per 1M tokens
-      cachedTokenPrice: "6500.00", // 6500원 per 1M tokens (50% discount)
+      inputTokenPrice: "0.00001000",
+      outputTokenPrice: "0.00003000",
+      cachedTokenPrice: "0.00000500",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "openai",
+      model: "gpt-4.1",
+      displayName: "GPT-4.1",
+      modelType: "text",
+      inputTokenPrice: "0.00000200",
+      outputTokenPrice: "0.00000800",
+      cachedTokenPrice: "0.00000050",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "openai",
+      model: "gpt-4.1-mini",
+      displayName: "GPT-4.1 mini",
+      modelType: "text",
+      inputTokenPrice: "0.00000040",
+      outputTokenPrice: "0.00000160",
+      cachedTokenPrice: "0.00000010",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "openai",
+      model: "gpt-5",
+      displayName: "GPT-5",
+      modelType: "text",
+      inputTokenPrice: "0.00000125",
+      outputTokenPrice: "0.00001000",
+      cachedTokenPrice: "0.00000013",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "openai",
+      model: "gpt-5-mini",
+      displayName: "GPT-5 mini",
+      modelType: "text",
+      inputTokenPrice: "0.00000025",
+      outputTokenPrice: "0.00000200",
+      cachedTokenPrice: "0.00000003",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "openai",
+      model: "o1",
+      displayName: "o1",
+      modelType: "text",
+      inputTokenPrice: "0.00001500",
+      outputTokenPrice: "0.00006000",
+      cachedTokenPrice: "0.00000750",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "openai",
+      model: "o3",
+      displayName: "o3",
+      modelType: "text",
+      inputTokenPrice: "0.00000200",
+      outputTokenPrice: "0.00000800",
+      cachedTokenPrice: "0.00000050",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "openai",
+      model: "o3-mini",
+      displayName: "o3-mini",
+      modelType: "text",
+      inputTokenPrice: "0.00000110",
+      outputTokenPrice: "0.00000440",
+      cachedTokenPrice: "0.00000055",
       markupRate: "1.60",
       isActive: true,
     },
 
-    // Anthropic Claude
+    // Anthropic Claude Models
     {
       provider: "anthropic",
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3.5-sonnet",
+      displayName: "Claude 3.5 Sonnet",
       modelType: "text",
-      inputTokenPrice: "3900.00", // 3900원 per 1M tokens
-      outputTokenPrice: "19500.00", // 19500원 per 1M tokens
-      cachedTokenPrice: "390.00", // 390원 per 1M tokens (90% discount)
+      inputTokenPrice: "0.00000300",
+      outputTokenPrice: "0.00001500",
+      cachedTokenPrice: "0.00000030",
       markupRate: "1.60",
       isActive: true,
     },
     {
       provider: "anthropic",
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-3.7-sonnet",
+      displayName: "Claude 3.7 Sonnet",
       modelType: "text",
-      inputTokenPrice: "1300.00", // 1300원 per 1M tokens
-      outputTokenPrice: "6500.00", // 6500원 per 1M tokens
-      cachedTokenPrice: "130.00", // 130원 per 1M tokens (90% discount)
+      inputTokenPrice: "0.00000300",
+      outputTokenPrice: "0.00001500",
+      cachedTokenPrice: "0.00000030",
       markupRate: "1.60",
       isActive: true,
     },
     {
       provider: "anthropic",
-      model: "claude-3-opus-20240229",
+      model: "claude-sonnet-4",
+      displayName: "Claude Sonnet 4",
       modelType: "text",
-      inputTokenPrice: "19500.00", // 19500원 per 1M tokens
-      outputTokenPrice: "97500.00", // 97500원 per 1M tokens
-      cachedTokenPrice: "1950.00", // 1950원 per 1M tokens (90% discount)
+      inputTokenPrice: "0.00000300",
+      outputTokenPrice: "0.00001500",
+      cachedTokenPrice: "0.00000030",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "anthropic",
+      model: "claude-3.5-haiku",
+      displayName: "Claude 3.5 Haiku",
+      modelType: "text",
+      inputTokenPrice: "0.00000080",
+      outputTokenPrice: "0.00000400",
+      cachedTokenPrice: "0.00000008",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "anthropic",
+      model: "claude-haiku-4.5",
+      displayName: "Claude Haiku 4.5",
+      modelType: "text",
+      inputTokenPrice: "0.00000100",
+      outputTokenPrice: "0.00000500",
+      cachedTokenPrice: "0.00000010",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "anthropic",
+      model: "claude-opus-4",
+      displayName: "Claude Opus 4",
+      modelType: "text",
+      inputTokenPrice: "0.00001500",
+      outputTokenPrice: "0.00007500",
+      cachedTokenPrice: "0.00000150",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "anthropic",
+      model: "claude-3-opus",
+      displayName: "Claude 3 Opus",
+      modelType: "text",
+      inputTokenPrice: "0.00001500",
+      outputTokenPrice: "0.00007500",
+      cachedTokenPrice: "0.00000150",
       markupRate: "1.60",
       isActive: true,
     },
 
-    // Google Gemini
+    // Google Gemini Models
     {
       provider: "google",
-      model: "gemini-1.5-pro",
+      model: "gemini-2.0-flash",
+      displayName: "Gemini 2.0 Flash",
       modelType: "text",
-      inputTokenPrice: "1625.00", // 1625원 per 1M tokens
-      outputTokenPrice: "6500.00", // 6500원 per 1M tokens
-      cachedTokenPrice: "812.50", // 812.5원 per 1M tokens (50% discount)
+      inputTokenPrice: "0.00000010",
+      outputTokenPrice: "0.00000040",
+      cachedTokenPrice: "0.00000003",
       markupRate: "1.60",
       isActive: true,
     },
     {
       provider: "google",
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
+      displayName: "Gemini 2.5 Flash",
       modelType: "text",
-      inputTokenPrice: "97.50", // 97.5원 per 1M tokens
-      outputTokenPrice: "390.00", // 390원 per 1M tokens
-      cachedTokenPrice: "48.75", // 48.75원 per 1M tokens (50% discount)
+      inputTokenPrice: "0.00000030",
+      outputTokenPrice: "0.00000250",
+      cachedTokenPrice: "0.00000003",
       markupRate: "1.60",
       isActive: true,
     },
     {
       provider: "google",
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash-lite",
+      displayName: "Gemini 2.5 Flash Lite",
       modelType: "text",
-      inputTokenPrice: "0.00", // 무료 프리뷰
-      outputTokenPrice: "0.00",
-      cachedTokenPrice: "0.00",
+      inputTokenPrice: "0.00000010",
+      outputTokenPrice: "0.00000040",
+      cachedTokenPrice: "0.00000001",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "google",
+      model: "gemini-2.5-pro",
+      displayName: "Gemini 2.5 Pro",
+      modelType: "text",
+      inputTokenPrice: "0.00000125",
+      outputTokenPrice: "0.00001000",
+      cachedTokenPrice: "0.00000013",
       markupRate: "1.60",
       isActive: true,
     },
 
-    // xAI Grok
+    // xAI Grok Models
     {
       provider: "xai",
-      model: "grok-beta",
+      model: "grok-2",
+      displayName: "Grok 2",
       modelType: "text",
-      inputTokenPrice: "6500.00", // 6500원 per 1M tokens
-      outputTokenPrice: "19500.00", // 19500원 per 1M tokens
-      cachedTokenPrice: "3250.00", // 3250원 per 1M tokens (50% discount)
+      inputTokenPrice: "0.00000200",
+      outputTokenPrice: "0.00001000",
+      cachedTokenPrice: "0.00000100",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "xai",
+      model: "grok-3",
+      displayName: "Grok 3 Beta",
+      modelType: "text",
+      inputTokenPrice: "0.00000300",
+      outputTokenPrice: "0.00001500",
+      cachedTokenPrice: "0.00000150",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "xai",
+      model: "grok-4",
+      displayName: "Grok 4",
+      modelType: "text",
+      inputTokenPrice: "0.00000300",
+      outputTokenPrice: "0.00001500",
+      cachedTokenPrice: "0.00000150",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "xai",
+      model: "grok-4-fast-non-reasoning",
+      displayName: "Grok 4 Fast Non-Reasoning",
+      modelType: "text",
+      inputTokenPrice: "0.00000020",
+      outputTokenPrice: "0.00000050",
+      cachedTokenPrice: "0.00000005",
+      markupRate: "1.60",
+      isActive: true,
+    },
+    {
+      provider: "xai",
+      model: "grok-4-fast-reasoning",
+      displayName: "Grok 4 Fast Reasoning",
+      modelType: "text",
+      inputTokenPrice: "0.00000020",
+      outputTokenPrice: "0.00000050",
+      cachedTokenPrice: "0.00000005",
       markupRate: "1.60",
       isActive: true,
     },
@@ -138,7 +324,7 @@ export const seedPrices = async () => {
     console.log("\n📊 Price Summary:");
     for (const price of inserted) {
       console.log(
-        `  ${price.provider}/${price.model}: ${price.inputTokenPrice}원/1M in, ${price.outputTokenPrice}원/1M out (${Number(price.markupRate) * 100 - 100}% markup)`,
+        `  ${price.displayName} (${price.provider}/${price.model}): $${price.inputTokenPrice}/token in, $${price.outputTokenPrice}/token out (${Number(price.markupRate) * 100 - 100}% markup)`,
       );
     }
   }

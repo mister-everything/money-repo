@@ -1,4 +1,4 @@
-import { planAdminService } from "@service/solves";
+import { planService } from "@service/solves";
 
 import Link from "next/link";
 import { PlanCard } from "@/components/solves/plan-card";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function PlanItemsPage() {
-  const plans = await planAdminService.getAllPlans();
+  const plans = await planService.getAllPlans();
 
   return (
     <main className="flex flex-1 flex-col">

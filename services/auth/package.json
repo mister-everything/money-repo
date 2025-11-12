@@ -18,7 +18,7 @@
     "./user.service": "./src/user.service.ts",
     "./shared": "./src/shared.ts"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@workspace/util": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
