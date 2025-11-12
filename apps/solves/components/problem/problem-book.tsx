@@ -4,6 +4,7 @@ import {
   ProbBook,
   SubmitProbBookResponse,
 } from "@service/solves/shared";
+import confetti from "canvas-confetti";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,36 @@ import { SolveModeSelector } from "./solve-mode-selector";
 interface ProblemBookProps {
   probBook: ProbBook;
 }
+
+const handleConfetti = () => {
+  const end = Date.now() + 1 * 1000;
+  const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
+
+  const frame = () => {
+    if (Date.now() > end) return;
+
+    confetti({
+      particleCount: 2,
+      angle: 60,
+      spread: 55,
+      startVelocity: 60,
+      origin: { x: 0, y: 0.5 },
+      colors: colors,
+    });
+    confetti({
+      particleCount: 2,
+      angle: 120,
+      spread: 55,
+      startVelocity: 60,
+      origin: { x: 1, y: 0.5 },
+      colors: colors,
+    });
+
+    requestAnimationFrame(frame);
+  };
+
+  frame();
+};
 
 export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
   const router = useRouter();
@@ -125,6 +156,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
       .then((response) => {
         if (response?.success) {
           setSubmitResult(response.data);
+          handleConfetti();
         }
       })
       .catch((error) => {
@@ -149,7 +181,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     <>
       {/* 결과 요약 섹션 */}
       {submitResult && (
-        <Card className="mb-8 text-primary border-none">
+        <Card className="mb-8 border-2 border-primary">
           <CardHeader>
             <div className="flex items-center justify-center">
               <div className="space-y-2 text-center">
