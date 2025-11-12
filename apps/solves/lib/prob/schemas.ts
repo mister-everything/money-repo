@@ -9,14 +9,10 @@ import { z } from "zod";
 
 export const DEFAULT_PROBLEM_COUNT = 10;
 
-const stringOrStringArraySchema = z
-  .union([z.string().min(1), z.array(z.string().min(1)).nonempty()])
-  .transform((value) => (typeof value === "string" ? [value] : value));
-
 export const probGenerationFormSchema = z.object({
   people: z.string().min(1),
   situation: z.string().min(1),
-  format: stringOrStringArraySchema,
+  format: z.string().min(1),
   platform: z.string().min(1),
   ageGroup: z.string().min(1),
   topic: z.array(z.string().min(1)).nonempty(),
