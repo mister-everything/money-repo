@@ -98,7 +98,7 @@ JSON만 반환해.
 
 export const searchAgeGroupTool = tool({
   description:
-    "문제집 설명을 분석해 정책 연령대(전체~시니어) 중 주 타깃과 보조 타깃을 추천합니다.",
+    "문제집 설명을 분석해 사전 정의된 연령 밴드(전체~시니어) 중 주 타깃과 보조 타깃을 추천합니다.",
   inputSchema: searchAgeInputSchema,
   execute: async (rawInput) => {
     const input = searchAgeInputSchema.parse(rawInput);

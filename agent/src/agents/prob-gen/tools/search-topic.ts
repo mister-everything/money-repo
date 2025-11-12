@@ -101,7 +101,7 @@ function matchFallbackTopic(input: SearchTopicInput): TopicClassification {
 
 function buildPrompt(input: SearchTopicInput): string {
   return `
-너는 문제집 카테고리 분류 전문가야. 아래 설명을 참고해 Notion 정책에 맞는 대분류/중분류를 선택해.
+너는 문제집 카테고리 분류 전문가야. 아래 설명을 참고해 사전 정의된 대분류/중분류 목록에서 가장 알맞은 조합을 골라.
 
 사용 가능한 대분류/중분류:
 ${topicOptionsSummary}
@@ -133,7 +133,7 @@ JSON만 반환해.
 
 export const searchTopicTool = tool({
   description:
-    "문제 설명을 바탕으로 Notion 정책의 대분류/중분류 소재를 분류하고 태그 후보를 생성합니다.",
+    "문제 설명을 바탕으로 사전 정의된 대분류/중분류를 선택하고 태그 후보를 생성합니다.",
   inputSchema: searchTopicInputSchema,
   execute: async (rawInput) => {
     const input = searchTopicInputSchema.parse(rawInput);

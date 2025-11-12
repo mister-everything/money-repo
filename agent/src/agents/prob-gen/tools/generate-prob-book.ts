@@ -5,6 +5,10 @@ import { buildGenerationPromptTool } from "./build-generation-prompt";
 import { evaluateProbDraftTool } from "./evaluate-prob-draft";
 import { generateProbDraftTool } from "./generate-prob-draft";
 import { refineProbDraftTool } from "./refine-prob-draft";
+import { searchAgeGroupTool } from "./search-age-group";
+import { searchDifficultyTool } from "./search-difficulty";
+import { searchTagsTool } from "./search-tags";
+import { searchTopicTool } from "./search-topic";
 import { finalizeProbBookTool } from "./sanitize-prob-book";
 import {
   type ProbBookSave,
@@ -13,7 +17,12 @@ import {
   type ProbGenerationForm,
   type ProbGenerationStrategy,
   type PromptPackage,
+  ageBandSchema,
+  ageClassificationSchema,
+  extendedDifficultySchema,
   probGenerationFormSchema,
+  tagSuggestionResultSchema,
+  topicClassificationSchema,
 } from "./shared-schemas";
 import { validateProbBookTool } from "./validate-prob-book";
 
@@ -64,6 +73,12 @@ type PipelineMetadata = {
   iterations: number;
   includeAnswers: boolean;
   problemCount: number;
+  classifications: {
+    tags: z.infer<typeof tagSuggestionResultSchema>;
+    topic: z.infer<typeof topicClassificationSchema>;
+    age: z.infer<typeof ageClassificationSchema>;
+    difficulty: z.infer<typeof extendedDifficultySchema>;
+  };
 };
 
 function applyScoreThreshold(
@@ -120,6 +135,41 @@ function buildSuccessMessage({
   return lines.join("\n");
 }
 
+function buildClassifierDescription(form: ProbGenerationForm): string {
+  const format = Array.isArray(form.format) ? form.format.join(", ") : form.format;
+  const lines = [
+    `상황: ${form.situation}`,
+    `인원: ${form.people}`,
+    `연령대: ${form.ageGroup}`,
+    `플랫폼: ${form.platform}`,
+    `형식: ${format}`,
+    `소재: ${form.topic.join(", ")}`,
+    `난이도: ${form.difficulty}`,
+  ];
+
+  if (form.description && form.description.trim().length > 0) {
+    lines.push(`추가 설명: ${form.description.trim()}`);
+  }
+
+  return lines.join("\n");
+}
+
+function mergeTags(...tagLists: Array<string[] | undefined>): string[] {
+  const set = new Set<string>();
+  for (const list of tagLists) {
+    if (!list) continue;
+    for (const tag of list) {
+      if (!tag) continue;
+      const trimmed = tag.trim();
+      if (trimmed.length === 0) continue;
+      set.add(trimmed);
+      if (set.size >= 10) break;
+    }
+    if (set.size >= 10) break;
+  }
+  return Array.from(set);
+}
+
 export const generateProbBookTool = tool({
   description:
     "폼 입력 → 전략 수립 → 프롬프트 작성 → 초안 생성 → 평가/개선 → 최종 정제/검증까지 수행하는 문제집 생성 파이프라인",
@@ -147,6 +197,48 @@ export const generateProbBookTool = tool({
         typeof input.includeAnswers === "boolean"
           ? input.includeAnswers
           : strategy.includeAnswers;
+
+      const classifierDescription = buildClassifierDescription(input.form);
+      const [tagSuggestions, topicClassification, ageClassification, difficultyClassification] =
+        await Promise.all([
+          runSubTool<z.infer<typeof tagSuggestionResultSchema>>(
+            searchTagsTool,
+            {
+              description: classifierDescription,
+              desiredTone: input.form.situation,
+              existingTags: strategy.suggestedTags,
+              maxTags: 10,
+            },
+            "classify:tags",
+          ),
+          runSubTool<z.infer<typeof topicClassificationSchema>>(
+            searchTopicTool,
+            {
+              description: classifierDescription,
+              preferredMainCategory: strategy.topicPlan?.[0]?.label,
+            },
+            "classify:topic",
+          ),
+          runSubTool<z.infer<typeof ageClassificationSchema>>(
+            searchAgeGroupTool,
+            {
+              description: classifierDescription,
+              currentDifficulty: strategy.difficulty.userDifficulty,
+              preferredAgeBand: ageBandSchema.safeParse(input.form.ageGroup).success
+                ? (input.form.ageGroup as z.infer<typeof ageBandSchema>)
+                : undefined,
+            },
+            "classify:age",
+          ),
+          runSubTool<z.infer<typeof extendedDifficultySchema>>(
+            searchDifficultyTool,
+            {
+              description: classifierDescription,
+              targetLearner: input.form.people,
+            },
+            "classify:difficulty",
+          ),
+        ]);
 
       // 2. 프롬프트 패키지 구성
       const promptPackage = await runSubTool<PromptPackage>(
@@ -263,6 +355,12 @@ export const generateProbBookTool = tool({
         "validate",
       );
 
+      const classifierTagStrings = tagSuggestions.tags
+        ?.map((entry) => entry.tag)
+        .filter((tag): tag is string => Boolean(tag));
+      const enhancedTags = mergeTags(classifierTagStrings, finalized.probBook.tags);
+      finalized.probBook.tags = enhancedTags;
+
       const metadata: PipelineMetadata = {
         strategy,
         promptPackage,
@@ -272,6 +370,12 @@ export const generateProbBookTool = tool({
         iterations: evaluations.length,
         includeAnswers: resolvedIncludeAnswers,
         problemCount: resolvedProblemCount,
+        classifications: {
+          tags: tagSuggestions,
+          topic: topicClassification,
+          age: ageClassification,
+          difficulty: difficultyClassification,
+        },
       };
 
       return {

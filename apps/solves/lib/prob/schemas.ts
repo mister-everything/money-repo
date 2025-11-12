@@ -1,3 +1,10 @@
+import {
+  ageClassificationSchema,
+  extendedDifficultySchema,
+  tagSuggestionResultSchema,
+  topicClassificationSchema,
+} from "@agent/agents/prob-gen/tools/shared-schemas";
+import { probBookMetadataSchema } from "@service/solves/shared";
 import { z } from "zod";
 
 export const DEFAULT_PROBLEM_COUNT = 10;
@@ -47,6 +54,7 @@ export const generatedProbBookSchema = z.object({
   tags: z.array(z.string()).optional(),
   isPublic: z.boolean().optional(),
   thumbnail: z.string().optional(),
+  metadata: probBookMetadataSchema.optional(),
 });
 
 export type GeneratedProbBook = z.infer<typeof generatedProbBookSchema>;
@@ -60,6 +68,16 @@ export const probGenerationResponseSchema = z.object({
       problemCount: z.number(),
       includeAnswers: z.boolean(),
       difficulty: z.enum(["easy", "medium", "hard"]),
+      dbProbBookId: z.string().optional(),
+      classifications: z
+        .object({
+          tags: tagSuggestionResultSchema,
+          topic: topicClassificationSchema,
+          age: ageClassificationSchema,
+          difficulty: extendedDifficultySchema,
+        })
+        .optional(),
+      agentMetadata: z.unknown().optional(),
     })
     .optional(),
 });

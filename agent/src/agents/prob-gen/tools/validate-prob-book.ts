@@ -70,7 +70,7 @@ function validateTagCoverage(
 
 export const validateProbBookTool = tool({
   description:
-    "생성된 문제집이 전략 기준과 프로젝트 규칙(문제 수, 정답 포함 정책, 태그)을 충족하는지 검증합니다.",
+    "생성된 문제집이 전략과 요구 조건(문항 수, 정답 필드, 태그 등)을 만족하는지 검증합니다.",
   inputSchema: validateInputSchema,
   execute: async ({
     probBook,

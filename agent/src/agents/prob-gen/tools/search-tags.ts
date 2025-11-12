@@ -126,7 +126,7 @@ JSON만 반환해.
 
 export const searchTagsTool = tool({
   description:
-    "문제 설명을 기반으로 태그 정책(최대 10개, 8자 이내)을 준수하는 추천 태그 세트를 생성합니다.",
+    "문제 설명을 기반으로 길이와 개수 조건을 만족하는 태그 세트를 추천합니다.",
   inputSchema: searchTagsInputSchema,
   execute: async (rawInput) => {
     const input = searchTagsInputSchema.parse(rawInput);

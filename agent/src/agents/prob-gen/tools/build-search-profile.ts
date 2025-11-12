@@ -68,7 +68,7 @@ async function runSubTool<OUTPUT>(
 
 export const buildSearchProfileTool = tool({
   description:
-    "문제 검색 정책(태그, 소재, 연령, 난이도, 상황, 유형)에 따라 세부 분류를 자동 완성하는 통합 도구입니다.",
+    "태그·소재·연령·난이도·상황·유형 도구를 묶어 통합 검색 프로필을 구성합니다.",
   inputSchema: profileInputSchema,
   execute: async (rawInput) => {
     const input = profileInputSchema.parse(rawInput);
