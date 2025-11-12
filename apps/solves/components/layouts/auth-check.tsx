@@ -21,8 +21,8 @@ export const AuthCheck = ({ children }: { children: React.ReactNode }) => {
   }, [pathname, data]);
 
   useLayoutEffect(() => {
-    if (notAllowed && !isLoading) router.push("/sign-in");
-  }, [notAllowed, isLoading]);
+    if (notAllowed && data && !isLoading) router.push("/sign-in");
+  }, [notAllowed, isLoading, data]);
 
   if (isLoading || notAllowed) return null;
   return children;
