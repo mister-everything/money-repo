@@ -43,11 +43,14 @@ function ensureTags(
 ) {
   const tags = new Set<string>();
 
-  (probBook.tags ?? []).forEach((tag) => tags.add(tag));
-  strategyTags.forEach((tag) => tags.add(tag));
-  fallbackTags.forEach((tag) => tags.add(tag));
+  const sanitize = (tag: string) => tag.slice(0, 8);
 
-  const result = Array.from(tags).filter((tag) => tag.trim().length > 0);
+  [...(probBook.tags ?? []), ...strategyTags, ...fallbackTags].forEach((tag) => {
+    const sanitized = sanitize(tag);
+    if (sanitized.length > 0) tags.add(sanitized);
+  });
+
+  const result = Array.from(tags);
   return result.length > 0 ? result.slice(0, 6) : ["일반"];
 }
 

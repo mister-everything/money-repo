@@ -16,10 +16,10 @@ export function ProbCreateForm({ onSubmit, isSubmitting }: ProbCreateFormProps) 
   const [formData, setFormData] = useState<ProbGenerationFormData>({
     people: "3인 이상",
     situation: "친목",
-    format: "OX 게임",
+    format: "OX",
     platform: "하이브리드",
     ageGroup: "성인",
-    topic: ["일반상식"],
+    topic: ["상식"],
     difficulty: "보통",
     description: "",
   });
@@ -51,7 +51,7 @@ export function ProbCreateForm({ onSubmit, isSubmitting }: ProbCreateFormProps) 
 
       <OptionGroup
         label="형식"
-        options={["객관식", "주관식", "OX 게임", "날말퀴즈", "이미지/오디오"]}
+        options={["객관식", "주관식", "OX", "낱말", "이미지"]}
         value={formData.format}
         onValueChange={(value) =>
           setFormData({ ...formData, format: value as string })
@@ -79,13 +79,13 @@ export function ProbCreateForm({ onSubmit, isSubmitting }: ProbCreateFormProps) 
       <OptionGroup
         label="소재"
         options={[
-          "일반상식",
+          "상식",
           "시사",
-          "영화/음악",
+          "영화음악",
           "브랜드",
-          "MBTI/성향",
+          "MBTI",
           "업무",
-          "밈/트렌드",
+          "밈",
         ]}
         value={formData.topic}
         onValueChange={(value) =>
@@ -96,7 +96,7 @@ export function ProbCreateForm({ onSubmit, isSubmitting }: ProbCreateFormProps) 
 
       <OptionGroup
         label="난이도"
-        options={["아주쉬움", "쉬움", "보통", "어려움", "아주어려움"]}
+        options={["매우쉬움", "쉬움", "보통", "어려움", "매우어려움"]}
         value={formData.difficulty}
         onValueChange={(value) =>
           setFormData({ ...formData, difficulty: value as string })

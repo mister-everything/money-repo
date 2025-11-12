@@ -35,9 +35,10 @@ const profileInputSchema = z.object({
     .optional()
     .describe("달성하고 싶은 효과 (예: 친목, 평가, 콘텐츠 활용)"),
   existingTags: z
-    .array(z.string())
+    .array(z.string().min(1).max(8))
+    .max(10)
     .optional()
-    .describe("이미 보유한 태그 목록"),
+    .describe("이미 보유한 태그 목록 (각 태그 최대 8자, 최대 10개)"),
   maxProblemTypes: z
     .number()
     .int()

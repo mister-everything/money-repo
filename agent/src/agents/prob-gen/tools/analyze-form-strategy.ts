@@ -141,7 +141,9 @@ function buildFallbackStrategy({
         form.platform,
         form.ageGroup,
       ]),
-    ),
+    )
+      .map((tag) => tag.slice(0, 8))
+      .filter((tag) => tag.length > 0),
     additionalNotes: form.description ? [form.description] : undefined,
   };
 }
