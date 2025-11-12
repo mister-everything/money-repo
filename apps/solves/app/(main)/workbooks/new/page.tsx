@@ -1,20 +1,33 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ProbCreateForm } from "@/components/prob-create/prob-create-form";
 import { ProbHeader } from "@/components/prob-create/prob-header";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { generateProbBook } from "@/lib/prob/generator";
+import type { ProbGenerationFormData } from "@/lib/prob/schemas";
 import { useProbCreateStore } from "@/store/prob-create";
 
 export default function ProbCreatePage() {
-  const router = useRouter();
   const { setFormData } = useProbCreateStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (data: any) => {
-    console.log("문제 생성 데이터:", data);
+  const handleSubmit = async (data: ProbGenerationFormData) => {
+    console.log("[ProbCreatePage] 폼 제출 데이터:", data);
+    if (isSubmitting) return;
     setFormData(data);
-    // TODO: API 호출 후 생성된 문제집 ID로 이동
-    router.push(`/workbooks/[임시아이디]/edit`);
+    setIsSubmitting(true);
+
+    try {
+      const response = await generateProbBook({ form: data });
+      console.log("[ProbCreatePage] 문제 생성 결과 probBook:", response.probBook);
+      console.log("[ProbCreatePage] 문제 생성 결과 metadata:", response.metadata);
+      // TODO: 생성된 문제집 결과를 UI에 연결하고, 이후 편집 페이지로 라우팅
+    } catch (error) {
+      console.error("[ProbCreatePage] 문제 생성 중 오류 발생:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -36,7 +49,10 @@ export default function ProbCreatePage() {
               </div>
 
               <TabsContent value="create">
-                <ProbCreateForm onSubmit={handleSubmit} />
+                <ProbCreateForm
+                  onSubmit={handleSubmit}
+                  isSubmitting={isSubmitting}
+                />
               </TabsContent>
             </Tabs>
           </div>

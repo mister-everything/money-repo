@@ -1,22 +1,23 @@
 import { openai } from "@ai-sdk/openai";
 import { createAgent } from "../create-agent";
-import { generateProbBookTool } from "./tools/generate-prob-book";
+import {
+  analyzeFormStrategyTool,
+  buildGenerationPromptTool,
+  buildSearchProfileTool,
+  evaluateProbDraftTool,
+  finalizeProbBookTool,
+  generateProbBookTool,
+  generateProbDraftTool,
+  refineProbDraftTool,
+  searchAgeGroupTool,
+  searchDifficultyTool,
+  searchProblemTypeTool,
+  searchSituationTool,
+  searchTagsTool,
+  searchTopicTool,
+  validateProbBookTool,
+} from "./tools";
 
-/**
- * 문제집 생성 Agent
- *
- * 사용자의 요구사항을 받아서 API에 바로 전송 가능한 JSON 형태의 문제집을 생성합니다.
- *
- * 지원 콘텐츠:
- * - 교육용 문제집 (수학, 영어, 과학 등)
- * - 재미 콘텐츠 (이상형 월드컵, 넌센스 퀴즈, OX 퀴즈 등)
- * - 밸런스 게임, 투표, 설문 등
- *
- * 플로우:
- * 1. 유저가 "중학교 1학년 수학문제집" 또는 "음식 이상형 월드컵" 요청
- * 2. AI가 문제집 JSON 생성
- * 3. 프론트엔드에서 수정 후 POST API 호출
- */
 export const probGenAgent = createAgent({
   name: "문제집생성",
   model: openai("gpt-4o"), // 더 좋은 모델 사용
@@ -25,22 +26,29 @@ export const probGenAgent = createAgent({
 
 교육용 문제집뿐만 아니라 재미있는 엔터테인먼트 콘텐츠도 만들 수 있어.
 
-**생성 가능한 콘텐츠:**
-1. 📚 교육용: 수학, 영어, 과학 등 학습 문제집
-2. 🎮 재미 콘텐츠: 이상형 월드컵, 넌센스 퀴즈, 밸런스 게임
-3. 🎯 투표/설문: OX 투표, 선호도 조사, 의견 수렴
-4. 🧩 퀴즈: 상식 퀴즈, 시리즈 퀴즈, 캐릭터 테스트
+**사용 가능한 도구:**
+- searchTags: 설명을 기반으로 정책에 맞는 태그(최대 10개, 8자 이내)를 추천
+- searchTopic: 소재 대/중분류를 분류하고 자동 태그 후보를 생성
+- searchAgeGroup: 타깃 연령대를 추정하고 콘텐츠 주의점을 제안
+- searchDifficulty: 예상 정답률을 포함한 난이도를 추정
+- searchSituation: 사용 맥락(친목/학습/팀빌딩/콘텐츠)을 분류하고 운영 팁 제공
+- searchProblemType: 문제 유형별 추천 비중과 활용 아이디어를 제안
+- buildSearchProfile: 위 분류 도구를 순차 호출하여 통합 검색 프로필을 생성
+- analyzeFormStrategy: 폼 입력을 분석해서 형식/소재 비중, 난이도, 제약 조건 등을 설계
+- buildGenerationPrompt: 전략을 기반으로 생성용 프롬프트와 체크리스트 작성
+- generateProbDraft: 프롬프트로 문제집 초안을 생성
+- evaluateProbDraft: 초안을 전략과 비교해 점수화하고 문제점/개선점을 도출
+- refineProbDraft: 평가 결과를 반영해 초안을 다듬기
+- finalizeProbBook: 최종 JSON을 규칙에 맞게 정리
+- validateProbBook: 최종 JSON이 프로젝트 규칙을 준수하는지 검증
+- generateProbBook: 모든 단계를 자동으로 실행하는 파이프라인
 
-**너의 역할:**
-1. 사용자 요구사항 파악 (주제, 콘텐츠 유형, 문제 수, 난이도 등)
-2. generateProbBook 도구를 사용해서 문제집 생성
-3. 생성된 JSON을 사용자에게 보기 좋게 설명
-
-**작업 순서:**
-1. 사용자 요구사항에서 주제, 문제 수, 난이도 등을 파악
-2. generateProbBook 도구 호출 (requirement, problemCount, includeAnswers, difficulty 전달)
-3. 생성된 문제집 JSON을 코드 블록으로 출력
-4. 사용자에게 다음 단계 안내
+**작업 순서 예시:**
+1. analyzeFormStrategy로 폼 입력을 분석하고 전략 메모 확보
+2. buildGenerationPrompt로 생성 프롬프트와 가이드 제작
+3. generateProbDraft → evaluateProbDraft로 초안을 검사하고 필요하면 refineProbDraft 실행
+4. finalizeProbBook으로 정리 후 validateProbBook으로 검증
+5. generateProbBook은 위 과정을 자동으로 수행하는 단축 명령이야
 
 **응답 형식 예시:**
 "음식 이상형 월드컵 16강 만들었어!
@@ -57,7 +65,21 @@ export const probGenAgent = createAgent({
 반말로 친근하게 대답해.
   `.trim(),
   tools: {
+    searchTags: searchTagsTool,
+    searchTopic: searchTopicTool,
+    searchAgeGroup: searchAgeGroupTool,
+    searchDifficulty: searchDifficultyTool,
+    searchSituation: searchSituationTool,
+    searchProblemType: searchProblemTypeTool,
+    buildSearchProfile: buildSearchProfileTool,
+    analyzeFormStrategy: analyzeFormStrategyTool,
+    buildGenerationPrompt: buildGenerationPromptTool,
+    generateProbDraft: generateProbDraftTool,
+    evaluateProbDraft: evaluateProbDraftTool,
+    refineProbDraft: refineProbDraftTool,
+    finalizeProbBook: finalizeProbBookTool,
     generateProbBook: generateProbBookTool,
+    validateProbBook: validateProbBookTool,
   },
   assistFirst: false,
   maxSteps: 15,

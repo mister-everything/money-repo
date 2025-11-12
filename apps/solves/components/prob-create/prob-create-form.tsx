@@ -1,30 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { OptionGroup } from "./option-group";
+import type { ProbGenerationFormData } from "@/lib/prob/schemas";
 
-interface ProbCreateFormData {
-  people: string;
-  situation: string;
-  format: string;
-  platform: string;
-  ageGroup: string;
-  topic: string[];
-  difficulty: string;
-  description: string;
-}
+type ProbCreateFormProps = {
+  onSubmit?: (data: ProbGenerationFormData) => void | Promise<void>;
+  isSubmitting?: boolean;
+};
 
-interface ProbCreateFormProps {
-  onSubmit?: (data: ProbCreateFormData) => void;
-}
-
-export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
-  const [formData, setFormData] = useState<ProbCreateFormData>({
+export function ProbCreateForm({ onSubmit, isSubmitting }: ProbCreateFormProps) {
+  const [formData, setFormData] = useState<ProbGenerationFormData>({
     people: "3인 이상",
-    situation: "진득",
-    format: "OX개입",
+    situation: "친목",
+    format: "OX 게임",
     platform: "하이브리드",
     ageGroup: "성인",
     topic: ["일반상식"],
@@ -33,7 +25,8 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
   });
 
   const handleSubmit = () => {
-    onSubmit?.(formData);
+    if (isSubmitting) return;
+    void onSubmit?.(formData);
   };
 
   return (
@@ -127,8 +120,17 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
       <Button
         onClick={handleSubmit}
         className="w-full rounded-lg py-6 text-base"
+        disabled={isSubmitting}
+        aria-busy={isSubmitting}
       >
-        문제 만들기
+        {isSubmitting ? (
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            생성 중...
+          </span>
+        ) : (
+          "문제 만들기"
+        )}
       </Button>
     </div>
   );
