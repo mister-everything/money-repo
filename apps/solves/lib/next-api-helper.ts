@@ -14,6 +14,7 @@ export function nextFail(message: unknown, status: number = 500) {
   return NextResponse.json(
     {
       message: errorToString(message),
+      $ref: "solves-message",
     },
     {
       status,
