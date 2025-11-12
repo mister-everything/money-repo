@@ -11,6 +11,7 @@ export const fetcher = async <T>(
 ) => {
   const res = await fetch(input, {
     ...init,
+    redirect: "follow",
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers || {}),
@@ -23,16 +24,14 @@ export const fetcher = async <T>(
   if (!res.ok) {
     const message =
       (data as { error?: string } | null)?.error ?? res.statusText;
+
     throw new Error(message);
   }
 
-  if (
-    data &&
-    typeof data === "object" &&
-    "success" in (data as any) &&
-    (data as any).success === false
-  ) {
-    throw new Error((data as any).error ?? "Unknown error");
+  if (res.status >= 400) {
+    throw new Error(
+      (data as { message?: string } | null)?.message ?? "Unknown error",
+    );
   }
 
   return data as T;
