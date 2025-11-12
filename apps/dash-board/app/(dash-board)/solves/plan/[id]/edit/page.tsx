@@ -1,4 +1,4 @@
-import { planAdminService } from "@service/solves";
+import { planService } from "@service/solves";
 import { notFound } from "next/navigation";
 
 import { EditPlanForm } from "./edit-plan-form";
@@ -9,7 +9,7 @@ interface EditPlanPageProps {
 
 export default async function EditPlanPage({ params }: EditPlanPageProps) {
   const { id } = await params;
-  const plan = await planAdminService.getPlanById(id);
+  const plan = await planService.getPlanById(id);
 
   if (!plan) {
     notFound();

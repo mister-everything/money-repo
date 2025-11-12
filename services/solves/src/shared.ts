@@ -1,3 +1,4 @@
+export * from "./chat/types";
 export * from "./payment/types";
 export * from "./prob/blocks";
 export * from "./prob/error";

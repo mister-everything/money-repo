@@ -15,7 +15,6 @@
     "test:coverage": "turbo run test:coverage",
     "test:e2e": "turbo run test:e2e",
     "playwright:install": "turbo run playwright:install",
-
     "format": "biome check . --apply",
     "check-types": "turbo run check-types",
     "changeset": "changeset",

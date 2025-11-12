@@ -1,9 +1,135 @@
 {
-  "id": "a55f4908-e755-4447-94e1-3bdbd998da2a",
+  "id": "83184eb4-3c55-4be0-a225-d7d6d7bfb1bd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "solves.chat_message": {
+      "name": "chat_message",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parts": {
+          "name": "parts",
+          "type": "json[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "chat_message_thread_id_chat_thread_id_fk": {
+          "name": "chat_message_thread_id_chat_thread_id_fk",
+          "tableFrom": "chat_message",
+          "tableTo": "chat_thread",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "thread_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.chat_thread": {
+      "name": "chat_thread",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "chat_thread_user_id_user_id_fk": {
+          "name": "chat_thread_user_id_user_id_fk",
+          "tableFrom": "chat_thread",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "solves.ai_provider_prices": {
       "name": "ai_provider_prices",
       "schema": "solves",
@@ -27,6 +153,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "model_type": {
           "name": "model_type",
           "type": "text",
@@ -35,19 +167,19 @@
         },
         "input_token_price": {
           "name": "input_token_price",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "output_token_price": {
           "name": "output_token_price",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "cached_token_price": {
           "name": "cached_token_price",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -78,12 +210,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -147,19 +273,13 @@
         },
         "delta": {
           "name": "delta",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "running_balance": {
           "name": "running_balance",
-          "type": "numeric(15, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "idempotency_key": {
-          "name": "idempotency_key",
-          "type": "text",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -210,27 +330,6 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "credit_ledger_wallet_idemp_uniq": {
-          "name": "credit_ledger_wallet_idemp_uniq",
-          "columns": [
-            {
-              "expression": "wallet_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "idempotency_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -291,17 +390,10 @@
         },
         "balance": {
           "name": "balance",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true,
-          "default": "'0.00'"
-        },
-        "version": {
-          "name": "version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "default": "'0.00000000'"
         },
         "created_at": {
           "name": "created_at",
@@ -407,7 +499,7 @@
         },
         "purchased_credits": {
           "name": "purchased_credits",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -565,7 +657,7 @@
         },
         "credits_granted": {
           "name": "credits_granted",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": false
         },
@@ -726,13 +818,13 @@
         },
         "monthly_quota": {
           "name": "monthly_quota",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
         "refill_amount": {
           "name": "refill_amount",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
@@ -993,7 +1085,7 @@
           "name": "price_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "provider": {
           "name": "provider",
@@ -1015,13 +1107,25 @@
         },
         "billable_credits": {
           "name": "billable_credits",
-          "type": "numeric(15, 2)",
+          "type": "numeric(15, 8)",
           "primaryKey": false,
           "notNull": true
         },
-        "request_id": {
-          "name": "request_id",
-          "type": "text",
+        "provider_credits": {
+          "name": "provider_credits",
+          "type": "numeric(15, 8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -1069,27 +1173,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "usage_events_user_idemp_uniq": {
-          "name": "usage_events_user_idemp_uniq",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "request_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -1118,7 +1201,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
