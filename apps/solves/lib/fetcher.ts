@@ -11,6 +11,7 @@ export const fetcher = async <T>(
 ) => {
   const res = await fetch(input, {
     ...init,
+    redirect: "follow",
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers || {}),
