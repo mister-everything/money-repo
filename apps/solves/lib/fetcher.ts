@@ -1,3 +1,6 @@
+import { errorToString, toAny } from "@workspace/util";
+import { toast } from "sonner";
+
 function dateReviver(key: string, value: unknown) {
   if (typeof value === "string" && /\d{4}-\d{2}-\d{2}T/.test(value)) {
     const date = new Date(value);
@@ -29,9 +32,11 @@ export const fetcher = async <T>(
   }
 
   if (res.status >= 400) {
-    throw new Error(
-      (data as { message?: string } | null)?.message ?? "Unknown error",
-    );
+    const serverData = toAny(data);
+    if (serverData.$ref === "solves-message" && serverData.message) {
+      toast.error(serverData.message);
+    }
+    throw new Error(errorToString(data));
   }
 
   return data as T;
