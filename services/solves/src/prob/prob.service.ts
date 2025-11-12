@@ -457,18 +457,37 @@ export const probService = {
   },
 
   deleteProbBookSession: async (
-    submitId: string,
+    probBookId: string,
     userId: string,
   ): Promise<void> => {
-    console.log(submitId, userId);
     await pgDb
       .delete(probBookSubmitsTable)
       .where(
         and(
-          eq(probBookSubmitsTable.id, submitId),
+          eq(probBookSubmitsTable.probBookId, probBookId),
           eq(probBookSubmitsTable.ownerId, userId),
           isNull(probBookSubmitsTable.endTime),
         ),
       );
+  },
+
+  hasProbBookSession: async (
+    probBookId: string,
+    userId: string,
+  ): Promise<boolean> => {
+    const [session] = await pgDb
+      .select({
+        id: probBookSubmitsTable.id,
+      })
+      .from(probBookSubmitsTable)
+      .where(
+        and(
+          eq(probBookSubmitsTable.probBookId, probBookId),
+          eq(probBookSubmitsTable.ownerId, userId),
+          isNull(probBookSubmitsTable.endTime),
+        ),
+      )
+      .limit(1);
+    return session ? true : false;
   },
 };

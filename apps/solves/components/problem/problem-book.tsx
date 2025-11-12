@@ -92,7 +92,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     initSession();
   }, [probBook.id, mode]);
 
-  // 30초 주기 자동 저장
+  // 10초 주기 자동 저장
   useEffect(() => {
     if (!submitId) {
       return;

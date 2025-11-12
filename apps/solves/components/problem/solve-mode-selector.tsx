@@ -32,7 +32,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   probBook,
   onModeSelect,
 }) => {
-  const [session, setSession] = useState<ProbBookSubmitSession | null>(null);
+  const [hasSession, setHasSession] = useState<boolean>(false);
   const [showContinueDialog, setShowContinueDialog] = useState(false);
   const [selectedMode, setSelectedMode] = useState<"all" | "sequential" | null>(
     null,
@@ -41,12 +41,12 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   const fetchSession = useCallback(async () => {
     const response = await fetcher<{
       success: boolean;
-      data: ProbBookSubmitSession;
-    }>(`/api/workbooks/${probBook.id}/session`, {
+      data: boolean;
+    }>(`/api/workbooks/${probBook.id}/session/check`, {
       method: "GET",
     });
     if (response?.success && response.data) {
-      setSession(response.data);
+      setHasSession(response.data);
     }
   }, [probBook.id]);
 
@@ -56,7 +56,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
 
   const handleModeClick = (mode: "all" | "sequential") => {
     setSelectedMode(mode);
-    if (session) {
+    if (hasSession) {
       setShowContinueDialog(true);
     } else {
       onModeSelect(mode);
@@ -72,15 +72,12 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
 
   const handleRestart = async () => {
     try {
-      if (session) {
-        await fetcher(
-          `/api/workbooks/${probBook.id}/session/${session.submitId}`,
-          {
-            method: "DELETE",
-          },
-        );
+      if (hasSession) {
+        await fetcher(`/api/workbooks/${probBook.id}/session`, {
+          method: "DELETE",
+        });
         // 세션 삭제 후 상태 초기화
-        setSession(null);
+        setHasSession(false);
       }
     } catch (error) {
       console.error("세션 초기화 실패:", error);

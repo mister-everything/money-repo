@@ -35,3 +35,26 @@ export async function GET(
   }
 }
 
+/**
+ * DELETE /api/workbooks/[id]/session
+ * 세션 삭제
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const session = await getSession();
+    await probService.deleteProbBookSession(id, session.user.id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting prob book session:", error);
+    return NextResponse.json(
+      errorResponse("세션 삭제 중 오류가 발생했습니다."),
+      { status: 500 },
+    );
+  }
+}
+
+
