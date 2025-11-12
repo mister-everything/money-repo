@@ -554,6 +554,9 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.4.0
+      ts-safe:
+        specifier: ^0.0.5
+        version: 0.0.5
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -4948,6 +4951,10 @@ packages:
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
+  ts-safe@0.0.5:
+    resolution: {integrity: sha512-Bai5dobPYWmDurdCm3G/YUhB1gKu8MPudtg6bwRrLNVuUJ7vyXTad6NOYmdksBY4m3YV5JmbDvkdJqiX6Q7CSQ==}
+    engines: {node: '>=14.0.0'}
+
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
@@ -9297,6 +9304,8 @@ snapshots:
   tree-kill@1.2.2: {}
 
   ts-interface-checker@0.1.13: {}
+
+  ts-safe@0.0.5: {}
 
   tsconfck@3.1.6(typescript@5.9.2):
     optionalDependencies:
