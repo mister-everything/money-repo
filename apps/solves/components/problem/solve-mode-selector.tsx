@@ -1,6 +1,6 @@
 "use client";
 
-import { ProbBook, ProbBookSubmitSession } from "@service/solves/shared";
+import { ProbBook } from "@service/solves/shared";
 import { BookOpen, CheckIcon, List } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ProblemHeader } from "@/components/problem/problem-header";

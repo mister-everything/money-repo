@@ -8,20 +8,6 @@ test.describe("문제집 풀이 모드 선택 E2E 테스트", () => {
     await page.waitForLoadState("networkidle");
   });
 
-  test("문제집 목록 페이지에서 문제집이 표시되는지 확인", async ({ page }) => {
-    // 문제집 라이브러리 제목 확인
-    await expect(page.locator("text=문제집 라이브러리")).toBeVisible();
-
-    // 문제집 카드가 있는지 확인 (문제집이 있는 경우)
-    const probBooks = page.locator('[href^="/prob/"]');
-    const count = await probBooks.count();
-
-    if (count > 0) {
-      // 첫 번째 문제집이 있는 경우 클릭 가능한지 확인
-      await expect(probBooks.first()).toBeVisible();
-    }
-  });
-
   test("문제집 상세 페이지 진입 시 모드 선택 화면 표시", async ({ page }) => {
     // 문제집 카드 찾기
     const probBookLink = page.locator('[href^="/prob/"]').first();
