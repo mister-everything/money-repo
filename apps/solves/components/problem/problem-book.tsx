@@ -121,8 +121,8 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
       }
     };
 
-    // 10초마다 실행
-    const interval = setInterval(saveAnswers, 10000);
+    // 5초마다 실행
+    const interval = setInterval(saveAnswers, 5000);
 
     return () => clearInterval(interval);
   }, [answers, lastSavedAnswers, submitId, probBook.id]);

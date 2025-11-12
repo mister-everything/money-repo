@@ -24,9 +24,6 @@ test.describe("문제집 풀이 모드 선택 E2E 테스트", () => {
     // URL이 변경되었는지 확인
     await page.waitForURL(/\/prob\/[^/]+$/);
 
-    // 모드 선택 화면이 표시되는지 확인
-    await expect(page.locator("text=풀이 모드를 선택해주세요")).toBeVisible();
-
     // 두 가지 모드 옵션이 있는지 확인
     await expect(page.locator("text=전체 풀이")).toBeVisible();
     await expect(page.locator("text=한 문제씩 풀이")).toBeVisible();

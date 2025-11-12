@@ -9,10 +9,10 @@ import { ErrorResponse, errorResponse } from "@/lib/response";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const probBook = await probService.selectProbBookById(id);
 
     if (!probBook) {
@@ -40,7 +40,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: { id: string } },
 ): Promise<
   NextResponse<
     | {
@@ -51,7 +51,7 @@ export async function POST(
   >
 > {
   try {
-    const { id } = await params;
+    const { id } = params;
     const { answer, submitId } = await request.json();
 
     let result;

@@ -104,7 +104,7 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
               problemNumber={index + 1}
               submittedAnswer={answers[problem.id]}
               blockResult={
-                blockResult && submitResult
+                blockResult
                   ? {
                       isCorrect: submitResult.correctAnswerIds.includes(
                         problem.id,

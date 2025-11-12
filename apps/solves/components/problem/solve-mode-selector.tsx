@@ -81,6 +81,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
       }
     } catch (error) {
       console.error("세션 초기화 실패:", error);
+      return;
     }
 
     setShowContinueDialog(false);
