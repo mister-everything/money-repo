@@ -1,5 +1,6 @@
 import { userService } from "@service/auth";
 import { safeGetSession } from "@/lib/auth/server";
+import { nextFail, nextOk } from "@/lib/next-api-helper";
 
 export async function GET() {
   const session = await safeGetSession();
@@ -10,8 +11,8 @@ export async function GET() {
       session?.user.id,
     );
     if (isSessionValid) {
-      return Response.json({ message: "Session is valid", success: true });
+      return nextOk({ message: "Session is valid", success: true });
     }
   }
-  return Response.json({ message: "Session is not valid", success: false });
+  return nextFail({ message: "Session is not valid", success: false });
 }
