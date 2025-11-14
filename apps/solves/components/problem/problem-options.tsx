@@ -79,12 +79,10 @@ const getOxLabel = (
 
 export const ProblemOptions = <T extends BlockType>({
   content,
-  answer,
-  submitted,
+  submitted, // 제출된 답안
   onAnswerChange,
   groupName,
-  correctAnswer,
-  isCorrect,
+  correctAnswer, // 실제 정답
 }: ProblemOptionsProps<T>) => {
   const isMcqContent = useMemo(() => isContent.mcq(content), [content]);
   const isOxContent = useMemo(() => isContent.ox(content), [content]);
@@ -122,47 +120,22 @@ export const ProblemOptions = <T extends BlockType>({
     }
   }, [content.type, isDefaultContent, isMcqContent, isOxContent, submitted]);
 
+  // 객관식 문제 옵션
   if (isMcqContent && isContent.mcq(content)) {
-    const allowMultiple = isAnswer.mcq(answer)
-      ? answer.answer.length > 1
-      : false;
-
     const handleOptionSelect = (optionId: string) => {
       // 결과 모드에서는 선택 불가
       if (correctAnswer) {
         return;
       }
 
-      if (allowMultiple) {
-        const exists = selectedOptions.includes(optionId);
-        if (exists && selectedOptions.length === 1) {
-          return;
-        }
-        const updated = exists
-          ? selectedOptions.filter((id) => id !== optionId)
-          : [...selectedOptions, optionId];
-
-        setSelectedOptions(updated);
-
-        // 다음 이벤트 루프에서 부모에 알림
-        if (updated.length > 0) {
-          queueMicrotask(() => {
-            onAnswerChange?.({
-              type: content.type,
-              answer: updated,
-            } as BlockAnswerSubmit<T>);
-          });
-        }
-      } else {
-        const updated = [optionId];
-        setSelectedOptions(updated);
-        queueMicrotask(() => {
-          onAnswerChange?.({
-            type: content.type,
-            answer: updated,
-          } as BlockAnswerSubmit<T>);
-        });
-      }
+      const updated = [optionId];
+      setSelectedOptions(updated);
+      queueMicrotask(() => {
+        onAnswerChange?.({
+          type: content.type,
+          answer: updated,
+        } as BlockAnswerSubmit<T>);
+      });
     };
 
     // 정답 옵션 ID 목록
@@ -172,14 +145,10 @@ export const ProblemOptions = <T extends BlockType>({
     return (
       <div className="space-y-3">
         <div className="text-sm text-muted-foreground mb-4">
-          {correctAnswer
-            ? "결과"
-            : allowMultiple
-              ? "복수 선택 가능"
-              : "한 개의 답을 선택하세요"}
+          {correctAnswer ? "결과" : "한 개의 답을 선택하세요"}
         </div>
 
-        {content.options.map((option, index) => {
+        {content.options.map((option) => {
           const checked = selectedOptions.includes(option.id);
           const isCorrectOption = correctOptionIds.includes(option.id);
           const isWrongSelection = correctAnswer && checked && !isCorrectOption;
@@ -205,7 +174,7 @@ export const ProblemOptions = <T extends BlockType>({
               } ${correctAnswer ? "" : "cursor-pointer"}`}
             >
               <input
-                type={allowMultiple ? "checkbox" : "radio"}
+                type="radio"
                 name={groupName ?? "problem-option"}
                 checked={checked}
                 onChange={() => handleOptionSelect(option.id)}
@@ -224,6 +193,7 @@ export const ProblemOptions = <T extends BlockType>({
     );
   }
 
+  // OX 문제 옵션
   if (isOxContent && isContent.ox(content)) {
     const handleSelect = (value: "o" | "x") => {
       // 결과 모드에서는 선택 불가
@@ -291,6 +261,7 @@ export const ProblemOptions = <T extends BlockType>({
     );
   }
 
+  // 주관식 문제 옵션
   if (isDefaultContent) {
     const handleChange = (value: string) => {
       setTextAnswer(value);
@@ -316,23 +287,44 @@ export const ProblemOptions = <T extends BlockType>({
           <span>{correctAnswer ? "결과" : "답안을 작성하세요"}</span>
           {!correctAnswer && <span>{textAnswer.length}자</span>}
         </div>
-        <Textarea
-          value={textAnswer}
-          onChange={(event) => handleChange(event.target.value)}
-          rows={4}
-          className="resize-none"
-          disabled={!!correctAnswer}
-        />
+        {!correctAnswer && (
+          <Textarea
+            value={textAnswer}
+            onChange={(event) => handleChange(event.target.value)}
+            rows={4}
+            className="bg-card resize-none"
+            disabled={!!correctAnswer}
+          />
+        )}
         {correctAnswer && correctTextAnswer && (
-          <div className="mt-3 rounded-lg border border-primary bg-primary/10 p-4">
-            <div className="text-sm font-semibold text-primary mb-2">정답</div>
-            <div className="text-sm text-foreground">{correctTextAnswer}</div>
-          </div>
+          <>
+            {!correctTextAnswer.includes(textAnswer) ? (
+              <div className="mt-3 rounded-lg border border-destructive bg-destructive/10 p-4">
+                <div className="text-sm font-semibold text-destructive mb-2">
+                  오답
+                </div>
+                <div className="text-sm text-foreground">
+                  <span>{textAnswer}</span>
+                </div>
+              </div>
+            ) : null}
+            <div className="mt-3 rounded-lg border border-primary bg-primary/10 p-4">
+              <div className="text-sm font-semibold text-primary mb-2">
+                정답
+              </div>
+              <div className="text-sm text-foreground">
+                {correctTextAnswer.includes(textAnswer)
+                  ? textAnswer
+                  : correctTextAnswer[0]}
+              </div>
+            </div>
+          </>
         )}
       </div>
     );
   }
 
+  // 순위 문제 옵션
   if (isRankingContent && isContent.ranking(content)) {
     return (
       <div className="space-y-3">
