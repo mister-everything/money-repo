@@ -20,12 +20,12 @@ interface ProbCreateFormProps {
 
 export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
   const [formData, setFormData] = useState<ProbCreateFormData>({
-    topic: ["일반상식"],
+    topic: ["전체"],
     ageGroup: ["성인"],
 
-    situation: "친목",
-    format: "객관식",
-    difficulty: "보통",
+    situation: "",
+    format: "",
+    difficulty: "",
   });
 
   const handleSubmit = () => {
@@ -34,35 +34,6 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
 
   return (
     <div className="space-y-6">
-
-      <OptionGroup
-        label="유형"
-        options={["객관식", "주관식", "OX게임", "날말퀴즈", "이미지/오디오"]}
-        value={formData.format}
-        onValueChange={(value) =>
-          setFormData({ ...formData, format: value as string })
-        }
-      />
-
-      <OptionGroup
-        label="연령대"
-        options={["전체","유아", "아동", "청소년", "성인", "시니어"]}
-        value={formData.ageGroup}
-        onValueChange={(value) =>
-          setFormData({ ...formData, ageGroup: value as string[] })
-        }
-      />
-
-      <OptionGroup
-        label="상황"
-        options={["친목", "콘텐츠", "교육"]}
-        value={formData.situation}
-        onValueChange={(value) =>
-          setFormData({ ...formData, situation: value as string })
-        }
-      />
-
-
       <OptionGroup
         label="소재"
         options={[
@@ -83,7 +54,38 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
           setFormData({ ...formData, topic: value as string[] })
         }
         type="multiple"
+        required={true}
       />
+
+      <OptionGroup
+        label="연령대"
+        options={["전체","유아", "아동", "청소년", "성인", "시니어"]}
+        value={formData.ageGroup}
+        onValueChange={(value) =>
+          setFormData({ ...formData, ageGroup: value as string[] })
+        }
+        required={true}
+      />
+
+      <OptionGroup
+        label="상황"
+        options={["친목", "콘텐츠", "교육"]}
+        value={formData.situation}
+        onValueChange={(value) =>
+          setFormData({ ...formData, situation: value as string })
+        }
+      />
+
+
+      <OptionGroup
+        label="유형"
+        options={["객관식", "주관식", "OX게임", "날말퀴즈", "이미지/오디오"]}
+        value={formData.format}
+        onValueChange={(value) =>
+          setFormData({ ...formData, format: value as string })
+        }
+      />
+
 
       <OptionGroup
         label="난이도"
