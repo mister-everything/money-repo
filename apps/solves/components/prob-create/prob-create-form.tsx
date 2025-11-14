@@ -2,18 +2,16 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { OptionGroup } from "./option-group";
 
 interface ProbCreateFormData {
-  people: string;
+  topic: string[];
+  ageGroup: string[];
+  
   situation: string;
   format: string;
-  platform: string;
-  ageGroup: string;
-  topic: string[];
   difficulty: string;
-  description: string;
+
 }
 
 interface ProbCreateFormProps {
@@ -22,14 +20,12 @@ interface ProbCreateFormProps {
 
 export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
   const [formData, setFormData] = useState<ProbCreateFormData>({
-    people: "3인 이상",
-    situation: "진득",
-    format: "OX개입",
-    platform: "하이브리드",
-    ageGroup: "성인",
     topic: ["일반상식"],
+    ageGroup: ["성인"],
+
+    situation: "친목",
+    format: "객관식",
     difficulty: "보통",
-    description: "",
   });
 
   const handleSubmit = () => {
@@ -38,12 +34,22 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
 
   return (
     <div className="space-y-6">
+
       <OptionGroup
-        label="인원"
-        options={["1인", "2인", "3인 이상"]}
-        value={formData.people}
+        label="유형"
+        options={["객관식", "주관식", "OX게임", "날말퀴즈", "이미지/오디오"]}
+        value={formData.format}
         onValueChange={(value) =>
-          setFormData({ ...formData, people: value as string })
+          setFormData({ ...formData, format: value as string })
+        }
+      />
+
+      <OptionGroup
+        label="연령대"
+        options={["전체","유아", "아동", "청소년", "성인", "시니어"]}
+        value={formData.ageGroup}
+        onValueChange={(value) =>
+          setFormData({ ...formData, ageGroup: value as string[] })
         }
       />
 
@@ -56,43 +62,21 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
         }
       />
 
-      <OptionGroup
-        label="형식"
-        options={["객관식", "주관식", "OX 게임", "날말퀴즈", "이미지/오디오"]}
-        value={formData.format}
-        onValueChange={(value) =>
-          setFormData({ ...formData, format: value as string })
-        }
-      />
-
-      <OptionGroup
-        label="플랫폼"
-        options={["온라인", "오프라인", "하이브리드"]}
-        value={formData.platform}
-        onValueChange={(value) =>
-          setFormData({ ...formData, platform: value as string })
-        }
-      />
-
-      <OptionGroup
-        label="연령대"
-        options={["유아", "아동", "청소년", "성인", "시니어"]}
-        value={formData.ageGroup}
-        onValueChange={(value) =>
-          setFormData({ ...formData, ageGroup: value as string })
-        }
-      />
 
       <OptionGroup
         label="소재"
         options={[
-          "일반상식",
+          "전체",
+          "일반싱식",
+          "학교 교과목",
           "시사",
+          "역사/문화",
           "영화/음악",
-          "브랜드",
+          "업무/직무",
           "MBTI/성향",
-          "업무",
           "밈/트렌드",
+          "라이프스타일",
+          "과학/기술/IT",
         ]}
         value={formData.topic}
         onValueChange={(value) =>
@@ -110,7 +94,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
         }
       />
 
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <label className="text-sm font-medium text-foreground">
           더 정확한 문제 생성을 위해 구체적으로 설명해주세요
         </label>
@@ -122,7 +106,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
             setFormData({ ...formData, description: e.target.value })
           }
         />
-      </div>
+      </div> */}
 
       <Button
         onClick={handleSubmit}
