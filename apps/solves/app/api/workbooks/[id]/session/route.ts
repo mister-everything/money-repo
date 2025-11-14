@@ -11,10 +11,10 @@ import { errorResponse } from "@/lib/response";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const session = await getSession();
 
     const sessionData = await probService.startOrResumeProbBookSession(
@@ -41,10 +41,10 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const session = await getSession();
     await probService.deleteProbBookSession(id, session.user.id);
     return NextResponse.json({ success: true });

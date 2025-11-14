@@ -9,10 +9,10 @@ import { errorResponse } from "@/lib/response";
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { submitId: string } },
+  { params }: { params: Promise<{ submitId: string }> },
 ) {
   try {
-    const { submitId } = params;
+    const { submitId } = await params;
     const session = await getSession();
     await probService.deleteProbBookSession(submitId, session.user.id);
     return NextResponse.json({ success: true });
