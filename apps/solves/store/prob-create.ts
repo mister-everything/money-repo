@@ -1,29 +1,28 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export interface ProbCreateFormData {
-  people: string;
+export interface WorkbookOptionsData {
+  topic: string[];
+  ageGroup: string[];
+
   situation: string;
   format: string;
-  platform: string;
-  ageGroup: string;
-  topic: string[];
   difficulty: string;
-  description: string;
 }
 
-interface ProbCreateStore {
-  formData: ProbCreateFormData | null;
-  setFormData: (data: ProbCreateFormData) => void;
-  clearFormData: () => void;
+interface WorkbookStore {
+  Workbooks: Record<string, WorkbookOptionsData>;
+  setWorkbooks: (id: string, options: WorkbookOptionsData) => void;
+  clearWorkbooks: () => void;
 }
 
-export const useProbCreateStore = create<ProbCreateStore>()(
+export const useWorkbookStore = create<WorkbookStore>()(
   persist(
     (set) => ({
-      formData: null,
-      setFormData: (data) => set({ formData: data }),
-      clearFormData: () => set({ formData: null }),
+      Workbooks: {},
+      setWorkbooks: (id, options) =>
+        set((state) => ({ Workbooks: { ...state.Workbooks, [id]: options } })),
+      clearWorkbooks: () => set({ Workbooks: {} }),
     }),
     {
       name: "prob-create-storage",

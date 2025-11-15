@@ -11,6 +11,7 @@ interface OptionGroupProps {
   onValueChange?: (value: string | string[]) => void;
   type?: "single" | "multiple";
   className?: string;
+  required?: boolean;
 }
 
 export function OptionGroup({
@@ -20,14 +21,21 @@ export function OptionGroup({
   onValueChange,
   type = "single",
   className,
+  required = false,
 }: OptionGroupProps) {
   const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
 
   const handleOptionClick = (option: string) => {
+    const isSelected = selectedValues.includes(option);
+
     if (type === "single") {
-      onValueChange?.(option);
+      onValueChange?.(isSelected && !required ? "" : option);
     } else {
-      const newValues = selectedValues.includes(option)
+      // multiple 타입: required면 최소 1개는 유지해야 함
+
+      if (isSelected && required && selectedValues.length === 1) return;
+
+      const newValues = isSelected
         ? selectedValues.filter((v) => v !== option)
         : [...selectedValues, option];
       onValueChange?.(newValues);
@@ -38,8 +46,9 @@ export function OptionGroup({
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="flex flex-cols gap-2">
+      <div className="flex flex-cols gap-1">
         <label className="text-sm font-medium text-foreground">{label}</label>
+        {required && <span className="text-red-500 text-sm">*</span>}
         {label === "인원" && (
           <p className="text-sm text-muted-foreground">
             (* 1인 문제는 풀이 후 문제집 별 개인 랭킹이 노출됩니다.)

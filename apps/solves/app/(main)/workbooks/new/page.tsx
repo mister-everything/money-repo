@@ -1,20 +1,37 @@
 "use client";
 
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale/ko";
 import { useRouter } from "next/navigation";
 import { ProbCreateForm } from "@/components/prob-create/prob-create-form";
 import { ProbHeader } from "@/components/prob-create/prob-header";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { useProbCreateStore } from "@/store/prob-create";
+import { fetcher } from "@/lib/fetcher";
+import { useWorkbookStore } from "@/store/prob-create";
+
+const generateTitle = () => {
+  return `${formatDistanceToNow(new Date(), {
+    addSuffix: true,
+    locale: ko,
+  })} 문제집`;
+};
 
 export default function ProbCreatePage() {
   const router = useRouter();
-  const { setFormData } = useProbCreateStore();
+  const { setWorkbooks } = useWorkbookStore();
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = async (data: any) => {
     console.log("문제 생성 데이터:", data);
-    setFormData(data);
+
     // TODO: API 호출 후 생성된 문제집 ID로 이동
-    router.push(`/workbooks/[임시아이디]/edit`);
+    const res = await fetcher<{ id: string }>("/api/workbooks", {
+      method: "POST",
+      body: JSON.stringify({ title: generateTitle() }),
+    });
+
+    setWorkbooks(res.id, data);
+
+    router.push(`/workbooks/${res.id}/edit`);
   };
 
   return (
