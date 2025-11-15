@@ -6,9 +6,9 @@ import { use, useEffect, useState } from "react";
 import { ProbHeader } from "@/components/prob-create/prob-header";
 import { ProblemSetDisplay } from "@/components/prob-create/problem-set-display";
 import { ResizableChatPanel } from "@/components/prob-create/resizable-chat-panel";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useProbCreateStore } from "@/store/prob-create";
+// import { useWorkbookStore } from "@/store/prob-create";
 
 export default function ProbEditPage({
   params,
@@ -22,7 +22,7 @@ export default function ProbEditPage({
   }, [id]);
 
   const router = useRouter();
-  const { formData } = useProbCreateStore();
+  // const { formData } = useWorkbookStore();
   const [problems, setProblems] = useState<ProbBlock[]>([
     {
       id: crypto.randomUUID(),
@@ -172,17 +172,17 @@ export default function ProbEditPage({
     // TODO: 문제 상세 보기 모달 또는 페이지 열기
   };
 
-  const tags = formData
-    ? [
-        `#${formData.people}`,
-        `#${formData.situation}`,
-        `#${formData.format}`,
-        `#${formData.platform}`,
-        `#${formData.ageGroup}`,
-        ...formData.topic.map((t) => `#${t}`),
-        `#${formData.difficulty}`,
-      ]
-    : [];
+  // const tags = formData
+  //   ? [
+  //       `#${formData.people}`,
+  //       `#${formData.situation}`,
+  //       `#${formData.format}`,
+  //       `#${formData.platform}`,
+  //       `#${formData.ageGroup}`,
+  //       ...formData.topic.map((t) => `#${t}`),
+  //       `#${formData.difficulty}`,
+  //     ]
+  //   : [];
 
   return (
     <div className="flex h-screen flex-col">
@@ -206,13 +206,13 @@ export default function ProbEditPage({
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                {/* <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="rounded-md">
                       {tag}
                     </Badge>
                   ))}
-                </div>
+                </div> */}
               </div>
 
               <ProblemSetDisplay

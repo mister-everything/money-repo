@@ -31,7 +31,10 @@ export function OptionGroup({
     if (type === "single") {
       onValueChange?.(isSelected && !required ? "" : option);
     } else {
-      if (isSelected && required) return; // required면 선택 해제 불가
+      // multiple 타입: required면 최소 1개는 유지해야 함
+
+      if (isSelected && required && selectedValues.length === 1) return;
+
       const newValues = isSelected
         ? selectedValues.filter((v) => v !== option)
         : [...selectedValues, option];
@@ -65,7 +68,7 @@ export function OptionGroup({
                 "hover:bg-accent/50",
                 checked
                   ? "bg-primary/5 border-primary dark:bg-primary/10"
-                  : "border-input bg-background"
+                  : "border-input bg-background",
               )}
             >
               <div className="flex items-center gap-1.5 overflow-hidden">

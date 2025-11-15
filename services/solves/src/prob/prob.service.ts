@@ -198,9 +198,6 @@ export const probService = {
     const data: typeof probBooksTable.$inferInsert = {
       ownerId: parsedProbBook.ownerId,
       title: parsedProbBook.title,
-      description: parsedProbBook.description,
-      isPublic: parsedProbBook.isPublic,
-      thumbnail: parsedProbBook.thumbnail,
     };
 
     const [newProbBook] = await pgDb
@@ -208,9 +205,9 @@ export const probService = {
       .values(data)
       .returning({ id: probBooksTable.id });
 
-    if (probBook.tags) {
-      await probService.saveTagByBookId(newProbBook.id, probBook.tags);
-    }
+    // if (probBook.tags) {
+    //   await probService.saveTagByBookId(newProbBook.id, probBook.tags);
+    // }
     return newProbBook;
   },
 

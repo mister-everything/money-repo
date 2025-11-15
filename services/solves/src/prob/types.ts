@@ -54,7 +54,6 @@ export const allContentSchemas = z.union(
 export const allAnswerSchemas = z.union(
   Object.values(All_BLOCKS).map((block) => block.answerSchema),
 ) as z.ZodType<BlockAnswer>;
-
 export const allAnswerSubmitSchemas = z.union(
   Object.values(All_BLOCKS).map((block) => block.answerSubmitSchema),
 ) as z.ZodType<BlockAnswerSubmit>;
@@ -62,10 +61,6 @@ export const allAnswerSubmitSchemas = z.union(
 export const createProbBookSchema = z.object({
   ownerId: z.string(),
   title: z.string(),
-  description: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  isPublic: z.boolean().default(false).optional(),
-  thumbnail: z.string().optional(),
 });
 export type CreateProbBook = z.infer<typeof createProbBookSchema>;
 
