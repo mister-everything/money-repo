@@ -10,6 +10,7 @@ import { Message } from "./message";
 interface WorkbooksCreateChatProps {
   threadId: string;
 }
+
 export function WorkbooksCreateChat({ threadId }: WorkbooksCreateChatProps) {
   const [input, setInput] = useState<string>("");
 
