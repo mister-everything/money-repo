@@ -44,7 +44,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
       const vendorCost =
         result.providerMetadata?.gateway?.marketCost ||
         result.providerMetadata?.gateway?.cost;
-      creditService.deductCredit({
+      creditService.consumeAICredit({
         inputTokens,
         outputTokens,
         price,
@@ -83,7 +83,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
                 chunk.providerMetadata?.gateway?.marketCost ||
                 chunk.providerMetadata?.gateway?.cost;
               const { inputTokens, outputTokens } = getTokens(chunk.usage);
-              creditService.deductCredit({
+              creditService.consumeAICredit({
                 inputTokens,
                 outputTokens,
                 price,

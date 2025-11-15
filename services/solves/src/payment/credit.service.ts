@@ -19,11 +19,11 @@ import { calculateCost, toDecimal } from "./utils";
  */
 export const creditService = {
   /**
-   * 크레딧 차감
+   * AI 사용 크레딧 차감
    * @param params - 차감 파라미터
    * @returns 사용 이벤트 정보
    */
-  deductCredit: async (params: {
+  consumeAICredit: async (params: {
     walletId: string;
     userId: string;
     inputTokens: number;
@@ -31,6 +31,7 @@ export const creditService = {
     price: AIPrice;
     vendorCost?: number;
     calls?: number;
+    idempotencyKey?: string;
   }) => {
     const {
       walletId,
@@ -40,7 +41,13 @@ export const creditService = {
       outputTokens,
       price,
       calls = 0,
+      idempotencyKey,
     } = params;
+
+    // 멱등키가 없으면 자동 생성
+    const finalIdempotencyKey =
+      idempotencyKey ||
+      `ai_usage_chat_${userId}_${Date.now()}_${price.id}_${walletId}`;
 
     // 1) 비용 계산
     const cost = calculateCost(price, {
@@ -68,6 +75,15 @@ export const creditService = {
       }
 
       const newBalance = Math.max(0, currentBalance - cost.totalMarketCost);
+      // 4-3) 원장 기록
+      await tx.insert(CreditLedgerTable).values({
+        walletId,
+        userId,
+        kind: TxnKind.debit,
+        delta: toDecimal(-cost.totalMarketCost),
+        runningBalance: toDecimal(newBalance),
+        idempotencyKey: finalIdempotencyKey,
+      });
 
       // 4-2) 잔액 차감
       await tx
@@ -77,15 +93,6 @@ export const creditService = {
           updatedAt: new Date(),
         })
         .where(eq(CreditWalletTable.id, walletId));
-
-      // 4-3) 원장 기록
-      await tx.insert(CreditLedgerTable).values({
-        walletId,
-        userId,
-        kind: TxnKind.debit,
-        delta: toDecimal(-cost.totalMarketCost),
-        runningBalance: toDecimal(newBalance),
-      });
 
       // 4-4) 사용 이벤트 기록
       const [usage] = await tx
