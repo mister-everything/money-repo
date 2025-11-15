@@ -82,6 +82,7 @@ export interface CreditLedger {
   delta: string; // USD
   runningBalance: string; // USD
   reason: string | null;
+  idempotencyKey: string;
   createdAt: Date;
 }
 
