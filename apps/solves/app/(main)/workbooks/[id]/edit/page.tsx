@@ -1,14 +1,10 @@
 "use client";
 
 import type { ProbBlock } from "@service/solves/shared";
-import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
-import { ProbHeader } from "@/components/prob-create/prob-header";
 import { ProblemSetDisplay } from "@/components/prob-create/problem-set-display";
-import { ResizableChatPanel } from "@/components/prob-create/resizable-chat-panel";
-// import { Badge } from "@/components/ui/badge";
+import { WorkbooksCreateChat } from "@/components/prob-create/workbooks-create-chat/chat";
 import { Button } from "@/components/ui/button";
-// import { useWorkbookStore } from "@/store/prob-create";
 
 export default function ProbEditPage({
   params,
@@ -21,8 +17,6 @@ export default function ProbEditPage({
     console.log(">", id);
   }, [id]);
 
-  const router = useRouter();
-  // const { formData } = useWorkbookStore();
   const [problems, setProblems] = useState<ProbBlock[]>([
     {
       id: crypto.randomUUID(),
@@ -188,11 +182,11 @@ export default function ProbEditPage({
     <div className="flex h-screen flex-col">
       <div className="flex flex-1 overflow-hidden">
         {/* Main Panel - Problem Set Info and Cards */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <ProbHeader
+        <div className="flex flex-1 flex-col w-3/4 overflow-hidden">
+          {/* <ProbHeader
             showBackButton
             onBack={() => router.push("/prob-create")}
-          />
+          /> */}
 
           <div className="flex-1 overflow-y-auto">
             <div className="p-6">
@@ -236,7 +230,10 @@ export default function ProbEditPage({
         </div>
 
         {/* Resizable Chat Panel */}
-        <ResizableChatPanel />
+        <div className="w-1/4">
+          <WorkbooksCreateChat threadId={id} />
+        </div>
+        {/* <ResizableChatPanel /> */}
       </div>
     </div>
   );

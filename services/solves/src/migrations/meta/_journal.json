@@ -15,6 +15,13 @@
       "when": 1763175235502,
       "tag": "0001_chemical_plazm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763178833174,
+      "tag": "0002_wise_shocker",
+      "breakpoints": true
     }
   ]
 }
