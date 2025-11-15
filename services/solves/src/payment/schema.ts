@@ -218,6 +218,12 @@ export const CreditLedgerTable = solvesSchema.table(
      */
     reason: text("reason"),
 
+    /** 멱등키 (Idempotency Key)
+     *  중복 트랜잭션 방지용
+     *  eg: "ai_usage_user123_1699999999999_abc123"
+     */
+    idempotencyKey: text("idempotency_key").unique().notNull(),
+
     /** 생성 시각 (수정 없음 - immutable) */
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
