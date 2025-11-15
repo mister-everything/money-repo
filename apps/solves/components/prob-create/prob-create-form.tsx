@@ -1,39 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { OptionGroup } from "./option-group";
+import type { ProbGenerationFormData } from "@/lib/prob/schemas";
 
-interface ProbCreateFormData {
-  people: string;
-  situation: string;
-  format: string;
-  platform: string;
-  ageGroup: string;
-  topic: string[];
-  difficulty: string;
-  description: string;
-}
+type ProbCreateFormProps = {
+  onSubmit?: (data: ProbGenerationFormData) => void | Promise<void>;
+  isSubmitting?: boolean;
+};
 
-interface ProbCreateFormProps {
-  onSubmit?: (data: ProbCreateFormData) => void;
-}
-
-export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
-  const [formData, setFormData] = useState<ProbCreateFormData>({
+export function ProbCreateForm({ onSubmit, isSubmitting }: ProbCreateFormProps) {
+  const [formData, setFormData] = useState<ProbGenerationFormData>({
     people: "3인 이상",
-    situation: "진득",
-    format: "OX개입",
+    situation: "친목",
+    format: "OX",
     platform: "하이브리드",
     ageGroup: "성인",
-    topic: ["일반상식"],
+    topic: ["상식"],
     difficulty: "보통",
     description: "",
   });
 
   const handleSubmit = () => {
-    onSubmit?.(formData);
+    if (isSubmitting) return;
+    void onSubmit?.(formData);
   };
 
   return (
@@ -58,7 +51,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
 
       <OptionGroup
         label="형식"
-        options={["객관식", "주관식", "OX 게임", "날말퀴즈", "이미지/오디오"]}
+        options={["객관식", "주관식", "OX", "낱말", "이미지"]}
         value={formData.format}
         onValueChange={(value) =>
           setFormData({ ...formData, format: value as string })
@@ -86,13 +79,13 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
       <OptionGroup
         label="소재"
         options={[
-          "일반상식",
+          "상식",
           "시사",
-          "영화/음악",
+          "영화음악",
           "브랜드",
-          "MBTI/성향",
+          "MBTI",
           "업무",
-          "밈/트렌드",
+          "밈",
         ]}
         value={formData.topic}
         onValueChange={(value) =>
@@ -103,7 +96,7 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
 
       <OptionGroup
         label="난이도"
-        options={["아주쉬움", "쉬움", "보통", "어려움", "아주어려움"]}
+        options={["매우쉬움", "쉬움", "보통", "어려움", "매우어려움"]}
         value={formData.difficulty}
         onValueChange={(value) =>
           setFormData({ ...formData, difficulty: value as string })
@@ -127,8 +120,17 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
       <Button
         onClick={handleSubmit}
         className="w-full rounded-lg py-6 text-base"
+        disabled={isSubmitting}
+        aria-busy={isSubmitting}
       >
-        문제 만들기
+        {isSubmitting ? (
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            생성 중...
+          </span>
+        ) : (
+          "문제 만들기"
+        )}
       </Button>
     </div>
   );

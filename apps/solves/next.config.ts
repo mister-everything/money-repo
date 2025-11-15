@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     globalNotFound: true,
+    externalDir: true,
   },
 };
 

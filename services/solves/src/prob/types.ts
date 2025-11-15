@@ -34,6 +34,45 @@ export type ProbBlockWithoutAnswer = Omit<ProbBlock, "answer">;
 /**
  * 문제집 (여러 문제의 모음)
  */
+export const tagMetadataSchema = z.object({
+  tag: z.string(),
+  reason: z.string().optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  related: z.array(z.string()).optional(),
+});
+
+export const topicMetadataSchema = z.object({
+  mainCategory: z.string(),
+  subCategory: z.string(),
+  confidence: z.number().min(0).max(1).optional(),
+  reason: z.string().optional(),
+  alternatives: z.array(z.string()).optional(),
+});
+
+export const ageMetadataSchema = z.object({
+  primary: z.string(),
+  secondary: z.array(z.string()).optional(),
+  reasoning: z.string().optional(),
+  contentNotes: z.array(z.string()).optional(),
+});
+
+export const difficultyMetadataSchema = z.object({
+  level: z.string(),
+  label: z.string(),
+  expectedAccuracy: z.number().min(0).max(1).optional(),
+  rationale: z.string().optional(),
+  preparationTips: z.array(z.string()).optional(),
+});
+
+export const probBookMetadataSchema = z.object({
+  topic: topicMetadataSchema.optional(),
+  age: ageMetadataSchema.optional(),
+  difficulty: difficultyMetadataSchema.optional(),
+  tags: z.array(tagMetadataSchema).optional(),
+});
+
+export type ProbBookMetadata = z.infer<typeof probBookMetadataSchema>;
+
 export type ProbBook = {
   id: string; // uuid
   title: string;
@@ -43,6 +82,7 @@ export type ProbBook = {
   isPublic: boolean;
   owner: Owner;
   thumbnail?: string;
+  metadata?: ProbBookMetadata;
 };
 
 export type ProbBookWithoutBlocks = Omit<ProbBook, "blocks">;
@@ -76,7 +116,7 @@ export const createProbBlockSchema = z.object({
   question: z.string().optional(),
   type: z.enum(Object.keys(All_BLOCKS) as [BlockType, ...BlockType[]]),
   content: allContentSchemas,
-  answer: allAnswerSchemas,
+  answer: allAnswerSchemas.optional(),
 });
 export type CreateProbBlock = z.infer<typeof createProbBlockSchema>;
 

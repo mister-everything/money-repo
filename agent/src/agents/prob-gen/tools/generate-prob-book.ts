@@ -1,258 +1,410 @@
-import { openai } from "@ai-sdk/openai";
-import { generateObject, Tool, tool } from "ai";
+import { type ModelMessage, type Tool, tool } from "ai";
 import { z } from "zod";
+import { analyzeFormStrategyTool } from "./analyze-form-strategy";
+import { buildGenerationPromptTool } from "./build-generation-prompt";
+import { evaluateProbDraftTool } from "./evaluate-prob-draft";
+import { generateProbDraftTool } from "./generate-prob-draft";
+import { refineProbDraftTool } from "./refine-prob-draft";
+import { searchAgeGroupTool } from "./search-age-group";
+import { searchDifficultyTool } from "./search-difficulty";
+import { searchTagsTool } from "./search-tags";
+import { searchTopicTool } from "./search-topic";
+import { finalizeProbBookTool } from "./sanitize-prob-book";
+import {
+  type ProbBookSave,
+  type ProbDraftEvaluation,
+  type ProbDraftGeneration,
+  type ProbGenerationForm,
+  type ProbGenerationStrategy,
+  type PromptPackage,
+  ageBandSchema,
+  ageClassificationSchema,
+  extendedDifficultySchema,
+  probGenerationFormSchema,
+  tagSuggestionResultSchema,
+  topicClassificationSchema,
+} from "./shared-schemas";
+import { validateProbBookTool } from "./validate-prob-book";
 
-// 문제 타입별 스키마 정의 (순환 참조 회피를 위해 agent에서 직접 정의)
-const defaultBlockContentSchema = z.object({
-  type: z.literal("default"),
-  question: z.string().optional(),
+const DEFAULT_PROBLEM_COUNT = 10;
+const DEFAULT_MAX_ITERATIONS = 2;
+const DEFAULT_THRESHOLD = 9;
+
+const pipelineInputSchema = z.object({
+  form: probGenerationFormSchema,
+  problemCount: z.number().int().min(1).max(50).optional(),
+  includeAnswers: z.boolean().optional(),
+  maxIterations: z.number().int().min(1).max(3).default(DEFAULT_MAX_ITERATIONS),
+  scoreThreshold: z.number().min(0).max(10).default(DEFAULT_THRESHOLD),
 });
 
-const defaultBlockAnswerSchema = z.object({
-  type: z.literal("default"),
-  answer: z.array(z.string()).min(1),
-});
+const defaultToolOptions = {
+  toolCallId: "prob-gen",
+} as const;
 
-const mcqBlockContentOptionSchema = z.union([
-  z.object({
-    type: z.literal("source"),
-    mimeType: z.string(),
-    url: z.string().url(),
-  }),
-  z.object({
-    type: z.literal("text"),
-    text: z.string().min(1),
-  }),
-]);
+async function runSubTool<OUTPUT>(
+  toolInstance: Tool,
+  input: unknown,
+  suffix: string,
+): Promise<OUTPUT> {
+  if (!toolInstance.execute) {
+    throw new Error(`${suffix} 도구에 실행 함수가 정의되어 있지 않습니다.`);
+  }
 
-const mcqBlockContentSchema = z.object({
-  type: z.literal("mcq"),
-  question: z.string().optional(),
-  options: mcqBlockContentOptionSchema.array().min(2),
-});
+  return toolInstance.execute(input, {
+    ...defaultToolOptions,
+    toolCallId: `${defaultToolOptions.toolCallId}:${suffix}`,
+    messages: [] as ModelMessage[],
+  }) as Promise<OUTPUT>;
+}
 
-const mcqBlockAnswerSchema = z.object({
-  type: z.literal("mcq"),
-  answer: z.array(z.number().int().min(0)).min(1),
-});
+type RefinementLog = {
+  iteration: number;
+  appliedChanges?: { description: string }[];
+  notes?: string[];
+};
 
-const rankingBlockItemSchema = z.union([
-  z.object({
-    id: z.string(),
-    type: z.literal("text"),
-    label: z.string().min(1),
-  }),
-  z.object({
-    id: z.string(),
-    type: z.literal("source"),
-    mimeType: z.string(),
-    url: z.string().url(),
-  }),
-]);
+type PipelineMetadata = {
+  strategy: ProbGenerationStrategy;
+  promptPackage: PromptPackage;
+  draftGeneration: ProbDraftGeneration;
+  evaluations: ProbDraftEvaluation[];
+  refinements: RefinementLog[];
+  iterations: number;
+  includeAnswers: boolean;
+  problemCount: number;
+  classifications: {
+    tags: z.infer<typeof tagSuggestionResultSchema>;
+    topic: z.infer<typeof topicClassificationSchema>;
+    age: z.infer<typeof ageClassificationSchema>;
+    difficulty: z.infer<typeof extendedDifficultySchema>;
+  };
+};
 
-const rankingBlockContentSchema = z.object({
-  type: z.literal("ranking"),
-  question: z.string().optional(),
-  items: rankingBlockItemSchema.array().min(2),
-});
+function applyScoreThreshold(
+  evaluation: ProbDraftEvaluation,
+  threshold: number,
+): ProbDraftEvaluation {
+  if (
+    evaluation.threshold === threshold &&
+    evaluation.pass === evaluation.overallScore >= threshold
+  ) {
+    return evaluation;
+  }
 
-const rankingBlockAnswerSchema = z.object({
-  type: z.literal("ranking"),
-  order: z.array(z.string()).min(2),
-});
+  return {
+    ...evaluation,
+    threshold,
+    pass: evaluation.overallScore >= threshold && evaluation.pass !== false,
+  };
+}
 
-const oxBlockOptionSchema = z.union([
-  z.object({
-    type: z.literal("source"),
-    mimeType: z.string(),
-    url: z.string().url(),
-  }),
-  z.object({
-    type: z.literal("text"),
-    text: z.string().min(1),
-  }),
-]);
+function buildSuccessMessage({
+  probBook,
+  form,
+  strategy,
+  evaluation,
+  iterations,
+}: {
+  probBook: ProbBookSave;
+  form: ProbGenerationForm;
+  strategy: ProbGenerationStrategy;
+  evaluation?: ProbDraftEvaluation;
+  iterations: number;
+}): string {
+  const lines: string[] = [
+    `✅ "${probBook.title}" 문제집을 ${probBook.blocks.length}문항으로 완성했어.`,
+    `- 상황: ${form.situation} / 인원: ${form.people} / 플랫폼: ${form.platform}`,
+    `- 형식 구성: ${strategy.formatPlan
+      .map(
+        (plan) =>
+          `${plan.label}${plan.targetCount != null ? ` ${plan.targetCount}문항` : ""}`,
+      )
+      .join(", ")}`,
+    `- 반복 횟수: ${iterations}회`,
+  ];
 
-const oxBlockContentSchema = z.object({
-  type: z.literal("ox"),
-  question: z.string().optional(),
-  oOption: oxBlockOptionSchema,
-  xOption: oxBlockOptionSchema,
-});
+  if (evaluation) {
+    lines.push(
+      `- 품질 점수: ${evaluation.overallScore.toFixed(1)}/${evaluation.threshold} (pass=${
+        evaluation.pass ? "yes" : "no"
+      })`,
+    );
+  }
 
-const oxBlockAnswerSchema = z.object({
-  type: z.literal("ox"),
-  answer: z.enum(["o", "x"]),
-});
+  return lines.join("\n");
+}
 
-const matchingBlockLeftItemSchema = z.object({
-  id: z.string(),
-  content: z.string().min(1),
-  imageUrl: z.string().url().optional(),
-});
+function buildClassifierDescription(form: ProbGenerationForm): string {
+  const format = Array.isArray(form.format) ? form.format.join(", ") : form.format;
+  const lines = [
+    `상황: ${form.situation}`,
+    `인원: ${form.people}`,
+    `연령대: ${form.ageGroup}`,
+    `플랫폼: ${form.platform}`,
+    `형식: ${format}`,
+    `소재: ${form.topic.join(", ")}`,
+    `난이도: ${form.difficulty}`,
+  ];
 
-const matchingBlockRightItemSchema = z.object({
-  id: z.string(),
-  content: z.string().min(1),
-  imageUrl: z.string().url().optional(),
-});
+  if (form.description && form.description.trim().length > 0) {
+    lines.push(`추가 설명: ${form.description.trim()}`);
+  }
 
-const matchingBlockContentSchema = z.object({
-  type: z.literal("matching"),
-  question: z.string().optional(),
-  leftItems: matchingBlockLeftItemSchema.array().min(2),
-  rightItems: matchingBlockRightItemSchema.array().min(2),
-});
+  return lines.join("\n");
+}
 
-const matchingPairSchema = z.object({
-  leftId: z.string(),
-  rightId: z.string(),
-});
+function mergeTags(...tagLists: Array<string[] | undefined>): string[] {
+  const set = new Set<string>();
+  for (const list of tagLists) {
+    if (!list) continue;
+    for (const tag of list) {
+      if (!tag) continue;
+      const trimmed = tag.trim();
+      if (trimmed.length === 0) continue;
+      set.add(trimmed);
+      if (set.size >= 10) break;
+    }
+    if (set.size >= 10) break;
+  }
+  return Array.from(set);
+}
 
-const matchingBlockAnswerSchema = z.object({
-  type: z.literal("matching"),
-  pairs: matchingPairSchema.array().min(1),
-});
+export const generateProbBookTool = tool({
+  description:
+    "폼 입력 → 전략 수립 → 프롬프트 작성 → 초안 생성 → 평가/개선 → 최종 정제/검증까지 수행하는 문제집 생성 파이프라인",
+  inputSchema: pipelineInputSchema,
+  execute: async (rawInput) => {
+    const input = pipelineInputSchema.parse(rawInput);
 
-// 문제집 저장 스키마
-const probBookSaveSchema = z.object({
-  id: z.number().optional(),
-  ownerId: z.string(),
-  title: z.string().min(1),
-  description: z.string().optional(),
-  blocks: z.array(
-    z.object({
-      id: z.number().optional(),
-      type: z.enum(["default", "mcq", "ranking", "ox", "matching"]),
-      question: z.string().optional(),
-      content: z.union([
-        defaultBlockContentSchema,
-        mcqBlockContentSchema,
-        rankingBlockContentSchema,
-        oxBlockContentSchema,
-        matchingBlockContentSchema,
-      ]),
-      answer: z
-        .union([
-          defaultBlockAnswerSchema,
-          mcqBlockAnswerSchema,
-          rankingBlockAnswerSchema,
-          oxBlockAnswerSchema,
-          matchingBlockAnswerSchema,
-        ])
-        .optional(),
-      tags: z.array(z.string()).optional(),
-      order: z.number().optional(),
-    }),
-  ),
-  tags: z.array(z.string()).optional(),
-  isPublic: z.boolean().optional(),
-  thumbnail: z.string().optional(),
-});
-
-/**
- * 문제집/퀴즈 생성 도구
- * AI가 사용자의 요구사항을 받아서 다양한 콘텐츠 JSON을 생성합니다.
- */
-export const generateProbBookTool: Tool = tool({
-  description: `
-사용자의 요구사항에 따라 문제집/퀴즈 JSON을 생성합니다.
-
-교육용부터 재미 콘텐츠까지 모두 지원:
-- 교육용: "중학교 1학년 수학 문제집 10개", "고등학교 영어 단어 퀴즈"
-- 재미용: "음식 이상형 월드컵 16강", "넌센스 퀴즈 20개", "밸런스 게임 10개"
-- 투표: "2024 인기 드라마 순위 투표", "최애 캐릭터 OX 투표"
-
-생성된 JSON은 API에 바로 전송 가능한 형태입니다.
-  `.trim(),
-  inputSchema: z.object({
-    requirement: z
-      .string()
-      .describe(
-        "사용자의 요구사항 (예: '중학교 1학년 수학 문제집', '음식 이상형 월드컵 16강', '넌센스 퀴즈 20개')",
-      ),
-    problemCount: z
-      .number()
-      .min(1)
-      .max(50)
-      .default(10)
-      .describe("생성할 문제 수 (기본 10개, 최대 50개)"),
-    includeAnswers: z
-      .boolean()
-      .default(true)
-      .describe(
-        "정답 포함 여부 (교육용은 true, 이상형 월드컵 같은 재미 콘텐츠는 false 가능)",
-      ),
-    difficulty: z
-      .enum(["easy", "medium", "hard"])
-      .default("medium")
-      .describe("문제 난이도 또는 콘텐츠 복잡도 (easy, medium, hard)"),
-  }),
-  execute: async ({
-    requirement,
-    problemCount,
-    includeAnswers,
-    difficulty,
-  }) => {
     try {
-      // AI를 사용해 실제 문제집 생성
-      const result = await generateObject({
-        model: openai("gpt-4o"),
-        schema: probBookSaveSchema,
-        prompt: `
-당신은 다양한 퀴즈/문제집 콘텐츠 생성 전문가입니다. 다음 요구사항에 맞는 콘텐츠를 생성하세요:
+      // 1. 전략 분석
+      const strategy = await runSubTool<ProbGenerationStrategy>(
+        analyzeFormStrategyTool,
+        {
+          form: input.form,
+          problemCount: input.problemCount,
+          includeAnswers: input.includeAnswers,
+        },
+        "analyze",
+      );
 
-**요구사항:**
-- 주제: ${requirement}
-- 문제 수: ${problemCount}개
-- 난이도/복잡도: ${difficulty === "easy" ? "쉬움" : difficulty === "medium" ? "보통" : "어려움"}
-- 정답 포함: ${includeAnswers ? "예" : "아니오"}
+      const resolvedProblemCount =
+        input.problemCount ??
+        strategy.recommendedProblemCount ??
+        DEFAULT_PROBLEM_COUNT;
+      const resolvedIncludeAnswers =
+        typeof input.includeAnswers === "boolean"
+          ? input.includeAnswers
+          : strategy.includeAnswers;
 
-**사용 가능한 문제 타입:**
-1. default (주관식): 단답형, 주관식 답변
-2. mcq (객관식): 선택형 문제 (2개 이상의 선택지)
-3. ox (OX퀴즈): 참/거짓, 양자택일
-4. ranking (순위): 순서 맞추기, 순위 정하기
-5. matching (매칭): 항목 연결, 짝 맞추기
+      const classifierDescription = buildClassifierDescription(input.form);
+      const [tagSuggestions, topicClassification, ageClassification, difficultyClassification] =
+        await Promise.all([
+          runSubTool<z.infer<typeof tagSuggestionResultSchema>>(
+            searchTagsTool,
+            {
+              description: classifierDescription,
+              desiredTone: input.form.situation,
+              existingTags: strategy.suggestedTags,
+              maxTags: 10,
+            },
+            "classify:tags",
+          ),
+          runSubTool<z.infer<typeof topicClassificationSchema>>(
+            searchTopicTool,
+            {
+              description: classifierDescription,
+              preferredMainCategory: strategy.topicPlan?.[0]?.label,
+            },
+            "classify:topic",
+          ),
+          runSubTool<z.infer<typeof ageClassificationSchema>>(
+            searchAgeGroupTool,
+            {
+              description: classifierDescription,
+              currentDifficulty: strategy.difficulty.userDifficulty,
+              preferredAgeBand: ageBandSchema.safeParse(input.form.ageGroup).success
+                ? (input.form.ageGroup as z.infer<typeof ageBandSchema>)
+                : undefined,
+            },
+            "classify:age",
+          ),
+          runSubTool<z.infer<typeof extendedDifficultySchema>>(
+            searchDifficultyTool,
+            {
+              description: classifierDescription,
+              targetLearner: input.form.people,
+            },
+            "classify:difficulty",
+          ),
+        ]);
 
-**주제 분석 후 자유롭게 구성:**
-- 주제의 특성을 파악하고 가장 재미있고 적합한 문제 타입을 자유롭게 선택하세요
-- 한 가지 타입만 사용할 필요 없음, 여러 타입을 섞어도 좋습니다
-- 교육용이든 재미용이든 사용자가 즐길 수 있는 최적의 형태로 구성하세요
+      // 2. 프롬프트 패키지 구성
+      const promptPackage = await runSubTool<PromptPackage>(
+        buildGenerationPromptTool,
+        {
+          form: input.form,
+          strategy,
+          problemCount: resolvedProblemCount,
+          includeAnswers: resolvedIncludeAnswers,
+        },
+        "prompt",
+      );
 
-**기본 지침:**
-1. ownerId는 "USER_ID_PLACEHOLDER"로 설정
-2. tags는 주제에 맞는 태그 3-5개 추가
-3. **중요**: 정답 포함이 "아니오"면 answer 필드를 아예 포함하지 마세요 (필드 자체 제거)
-4. 문제는 흥미롭고 창의적으로 구성하세요
+      // 3. 초안 생성
+      const draftGeneration = await runSubTool<ProbDraftGeneration>(
+        generateProbDraftTool,
+        {
+          form: input.form,
+          strategy,
+          promptPackage,
+        },
+        "draft",
+      );
 
-**문제 타입별 JSON 형식:**
-- default: { type: "default", question: "..." } / answer: { type: "default", answer: ["..."] }
-- mcq: { type: "mcq", question: "...", options: [{ type: "text", text: "..." }...] } / answer: { type: "mcq", answer: [인덱스] }
-- ox: { type: "ox", question: "...", oOption: {...}, xOption: {...} } / answer: { type: "ox", answer: "o" or "x" }
-- ranking: { type: "ranking", question: "...", items: [{ id: "...", type: "text", label: "..." }...] } / answer: { type: "ranking", order: ["id"...] }
-- matching: { type: "matching", question: "...", leftItems: [...], rightItems: [...] } / answer: { type: "matching", pairs: [{...}...] }
+      let currentProbBook = draftGeneration.probBook;
+      const evaluations: ProbDraftEvaluation[] = [];
+      const refinements: RefinementLog[] = [];
 
-콘텐츠를 생성하세요.
-        `.trim(),
-      });
+      // 4. 평가 + 개선 루프
+      for (let iteration = 0; iteration < input.maxIterations; iteration += 1) {
+        const evaluation = await runSubTool<ProbDraftEvaluation>(
+          evaluateProbDraftTool,
+          {
+            form: input.form,
+            strategy,
+            probBook: currentProbBook,
+          },
+          `evaluate:${iteration}`,
+        );
+
+        const normalizedEvaluation = applyScoreThreshold(
+          evaluation,
+          input.scoreThreshold,
+        );
+        evaluations.push(normalizedEvaluation);
+
+        if (
+          normalizedEvaluation.pass ||
+          iteration === input.maxIterations - 1
+        ) {
+          break;
+        }
+
+        const refinement = await runSubTool<{
+          probBook: ProbBookSave;
+          appliedChanges?: { description: string }[];
+          notes?: string[];
+        }>(
+          refineProbDraftTool,
+          {
+            form: input.form,
+            strategy,
+            probBook: currentProbBook,
+            evaluation: normalizedEvaluation,
+            iteration: iteration + 1,
+          },
+          `refine:${iteration}`,
+        );
+
+        refinements.push({
+          iteration: iteration + 1,
+          appliedChanges: refinement.appliedChanges,
+          notes: refinement.notes,
+        });
+
+        currentProbBook = refinement.probBook;
+      }
+
+      const lastEvaluation = evaluations[evaluations.length - 1];
+
+      // 5. 최종 정제
+      const finalized = await runSubTool<{
+        probBook: ProbBookSave;
+        message?: string;
+        warnings?: string[];
+      }>(
+        finalizeProbBookTool,
+        {
+          formData: input.form,
+          strategy,
+          probBook: currentProbBook,
+          problemCount: resolvedProblemCount,
+          includeAnswers: resolvedIncludeAnswers,
+          notes: [
+            promptPackage.summary,
+            ...(draftGeneration.notes ?? []),
+            ...refinements.flatMap((refinement) => refinement.notes ?? []),
+          ],
+          evaluation: lastEvaluation,
+        },
+        "finalize",
+      );
+
+      // 6. 검증
+      await runSubTool(
+        validateProbBookTool,
+        {
+          probBook: finalized.probBook,
+          strategy,
+          formData: input.form,
+          problemCount: resolvedProblemCount,
+          includeAnswers: resolvedIncludeAnswers,
+        },
+        "validate",
+      );
+
+      const classifierTagStrings = tagSuggestions.tags
+        ?.map((entry) => entry.tag)
+        .filter((tag): tag is string => Boolean(tag));
+      const enhancedTags = mergeTags(classifierTagStrings, finalized.probBook.tags);
+      finalized.probBook.tags = enhancedTags;
+
+      const metadata: PipelineMetadata = {
+        strategy,
+        promptPackage,
+        draftGeneration,
+        evaluations,
+        refinements,
+        iterations: evaluations.length,
+        includeAnswers: resolvedIncludeAnswers,
+        problemCount: resolvedProblemCount,
+        classifications: {
+          tags: tagSuggestions,
+          topic: topicClassification,
+          age: ageClassification,
+          difficulty: difficultyClassification,
+        },
+      };
 
       return {
-        probBook: result.object,
-        message: `✅ "${requirement}" 주제로 ${problemCount}개의 문제를 생성했습니다!\n\n📋 **생성된 문제집:**\n- 제목: ${result.object.title}\n- 문제 수: ${result.object.blocks.length}개\n- 태그: ${result.object.tags?.join(", ") || "없음"}\n\n💡 **다음 단계:**\n1. 프론트엔드에서 JSON을 확인하고 수정\n2. ownerId를 실제 사용자 ID로 교체\n3. POST /api/prob-books API로 전송`,
+        probBook: finalized.probBook,
+        message: buildSuccessMessage({
+          probBook: finalized.probBook,
+          form: input.form,
+          strategy,
+          evaluation: lastEvaluation,
+          iterations: metadata.iterations,
+        }),
+        metadata,
       };
     } catch (error) {
-      console.error("문제집 생성 중 오류:", error);
+      console.error("generateProbBookTool: 파이프라인 실패", error);
+
       return {
         probBook: {
-          title: requirement,
-          description: `${requirement} 관련 문제집`,
           ownerId: "USER_ID_PLACEHOLDER",
+          title: `${input.form.topic.join(", ")} 문제집`,
+          description: `${input.form.situation} 상황을 위한 기본 문제집 (생성 실패)`,
           isPublic: false,
-          tags: [],
+          tags: input.form.topic,
           blocks: [],
         },
-        message: `❌ 문제집 생성 중 오류가 발생했습니다: ${error}`,
+        message: `❌ 문제집 생성 중 오류가 발생했어: ${error}`,
+        metadata: {
+          fallback: true,
+        },
       };
     }
   },

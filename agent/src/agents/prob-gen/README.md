@@ -40,44 +40,78 @@ pnpm agent
 # 목록에서 "문제집생성" 선택
 ```
 
-### 2. 요구사항 입력 예시
+### 2. 기본 흐름 (자동 파이프라인)
 
-#### 📚 교육용
+1. 프론트에서 수집한 폼 데이터를 입력하면 `generateProbBook` 파이프라인이 전체 과정을 자동 실행
+2. 결과로 문제집 JSON, 품질 평가 로그, 전략 메타데이터가 함께 제공
+3. JSON을 검토 후 필요하면 수정해 API로 전송
 
-```
-중학교 1학년 수학 문제집 10개 만들어줘
+### 3. 커스텀 제어 (단계별 도구 호출)
+
+| 단계          | 도구                    | 역할                                                           |
+| ------------- | ----------------------- | -------------------------------------------------------------- |
+| 검색 분류     | `searchTags`            | 태그 정책(8자, 10개 이하)에 맞는 태그 추천                     |
+|               | `searchTopic`           | 소재 대/중분류 분류 + 자동 태그 제안                           |
+|               | `searchAgeGroup`        | 타깃 연령대 추정 및 콘텐츠 주의 포인트 제공                    |
+|               | `searchDifficulty`      | 예상 정답률 기반 난이도 추정                                   |
+|               | `searchSituation`       | 사용 맥락(친목/학습/팀빌딩/콘텐츠) 분류 및 운영 팁 제공        |
+|               | `searchProblemType`     | 문제 유형별 추천 비중 및 활용 아이디어 제안                    |
+|               | `buildSearchProfile`    | 위 분류 도구를 순차 호출해 통합 검색 프로필 생성               |
+| 전략 설계     | `analyzeFormStrategy`   | 폼 입력을 구조화된 전략(형식/소재 비중, 난이도, 제약)으로 변환 |
+| 프롬프트 작성 | `buildGenerationPrompt` | 전략을 기반으로 생성 프롬프트/체크리스트 생성                  |
+| 초안 생성     | `generateProbDraft`     | 프롬프트로 문제집 초안 JSON 생성                               |
+| 품질 평가     | `evaluateProbDraft`     | 초안을 전략과 비교하여 점수/이슈/제안 도출                     |
+| 개선 반복     | `refineProbDraft`       | 평가 결과를 기반으로 초안을 보정                               |
+| 최종 정리     | `finalizeProbBook`      | 누락 필드/순서/태그 정리, 기본값 보완                          |
+| 검증          | `validateProbBook`      | 규칙(문항 수, 정답 정책, 태그 등) 최종 검증                    |
+
+⏩ `generateProbBook`은 위 단계 전체를 1회 호출로 수행하는 단축 명령어다.
+
+### 4. 문제 검색 정책 기반 도구 활용
+
+```ts
+const profile = await buildSearchProfile.tool({
+  description: "중학교 2학년 과학 실험을 주제로 팀빌딩 워크숍에서 사용할 퀴즈",
+  platform: "하이브리드",
+  audience: "중학교 과학 동아리 20명",
+  desiredOutcome: "팀워크 강화와 실험 개념 복습",
+});
+
+console.log(profile.tags.tags); // [{ tag: "과학", ... }, ...]
+console.log(profile.topic.mainCategory); // "학교 교과목"
+console.log(profile.problemTypes.recommendations); // 유형별 비중과 팁
 ```
 
-```
-고등학교 영어 단어 퀴즈 20문제, 쉬운 난이도로
+각 분류 도구는 개별 호출도 가능하며, `buildSearchProfile`은 정책 테이블에 맞춰 일괄 분류 결과를 제공한다. 이후 `analyzeFormStrategy`나 문제 생성 파이프라인에서 그대로 활용할 수 있다.
+
+### 4. 전략 입력 예시
+
+폼 데이터 예:
+
+```json
+{
+  "people": "3인 이상",
+  "situation": "친목",
+  "format": ["객관식", "OX 게임"],
+  "platform": "하이브리드",
+  "ageGroup": "성인",
+  "topic": ["일반상식", "밈/트렌드"],
+  "difficulty": "보통",
+  "description": "회식 자리에서 팀원들이 웃으면서 풀 수 있게"
+}
 ```
 
-```
-초등학교 과학 OX 퀴즈 15개
-```
+`analyzeFormStrategy` 출력 요약 예:
 
-#### 🎮 재미 콘텐츠
+- 형식 계획: 객관식 6문항, OX 4문항
+- 소재 계획: 일반상식 50%, 밈/트렌드 50%
+- 난이도: medium
+- 제약: 회식 분위기, 토론 유발형, 정답 포함
 
-```
-음식 이상형 월드컵 16강 만들어줘
-```
+### 5. 생성된 JSON 활용
 
-```
-넌센스 퀴즈 20개, 쉬운 난이도로
-```
-
-```
-여행 vs 맛집 밸런스 게임 10개
-```
-
-```
-2024 인기 드라마 순위 투표 만들어줘
-```
-
-### 3. 생성된 JSON 활용
-
-1. Agent가 생성한 JSON 복사
-2. 프론트엔드에서 미리보기
+1. Agent가 출력한 JSON을 복사
+2. 프론트에서 미리보기
 3. 필요시 문제 수정/추가/삭제
 4. `ownerId`를 실제 사용자 ID로 교체
 5. `POST /api/prob-books` API로 전송
@@ -180,12 +214,19 @@ pnpm test -- prob-gen
 
 ### 구조
 
-```
+```text
 prob-gen/
 ├── index.ts              # Agent 정의
 ├── tools/
-│   ├── generate-prob-book.ts  # 문제집 생성 도구
-│   └── shared.ts              # 공통 타입
+│   ├── analyze-form-strategy.ts    # 폼 → 전략 변환
+│   ├── build-generation-prompt.ts  # 전략 → 프롬프트 패키지
+│   ├── generate-prob-draft.ts      # 프롬프트 → 초안 생성
+│   ├── evaluate-prob-draft.ts      # 초안 품질 평가
+│   ├── refine-prob-draft.ts        # 평가 기반 개선
+│   ├── sanitize-prob-book.ts       # 최종 정리/보정
+│   ├── validate-prob-book.ts       # 규칙 검증
+│   ├── generate-prob-book.ts       # 전체 파이프라인 오케스트레이션
+│   └── shared-schemas.ts           # 공통 스키마/타입
 └── README.md
 ```
 

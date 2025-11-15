@@ -1,16 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { ProbGenerationFormData } from "@/lib/prob/schemas";
 
-export interface ProbCreateFormData {
-  people: string;
-  situation: string;
-  format: string;
-  platform: string;
-  ageGroup: string;
-  topic: string[];
-  difficulty: string;
-  description: string;
-}
+export type ProbCreateFormData = ProbGenerationFormData;
 
 interface ProbCreateStore {
   formData: ProbCreateFormData | null;
