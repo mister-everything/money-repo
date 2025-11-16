@@ -121,6 +121,7 @@ export const probBookTagsTable = solvesSchema.table(
 
 /**
  * 문제집 카테고리 대분류
+ * 문제집의 소재 대분류 정보 저장
  */
 export const categoryMainTable = solvesSchema.table("category_main", {
   id: serial("category_main_id").primaryKey(),
@@ -131,6 +132,7 @@ export const categoryMainTable = solvesSchema.table("category_main", {
 
 /**
  * 문제집 카테고리 중분류
+ * 문제집의 소재 중분류 정보 저장
  */
 export const categorySubTable = solvesSchema.table("category_sub", {
   id: serial("category_sub_id").primaryKey(),
@@ -144,6 +146,7 @@ export const categorySubTable = solvesSchema.table("category_sub", {
 
 /**
  * 문제집 카테고리 연결 테이블
+ * 문제집 생성 시 추가 필요
  */
 export const probBookCategoryTable = solvesSchema.table(
   "prob_book_category",
