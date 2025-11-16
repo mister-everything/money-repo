@@ -118,3 +118,50 @@ export const probBookTagsTable = solvesSchema.table(
   },
   (table) => [primaryKey({ columns: [table.probBookId, table.tagId] })],
 );
+
+/**
+ * 문제집 카테고리 대분류
+ */
+export const categoryMainTable = solvesSchema.table("category_main", {
+  id: serial("category_main_id").primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 50 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/**
+ * 문제집 카테고리 중분류
+ */
+export const categorySubTable = solvesSchema.table("category_sub", {
+  id: serial("category_sub_id").primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 50 }).notNull(),
+  mainId: integer("category_main_id")
+    .notNull()
+    .references(() => categoryMainTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/**
+ * 문제집 카테고리 연결 테이블
+ */
+export const probBookCategoryTable = solvesSchema.table(
+  "prob_book_category",
+  {
+    probBookId: uuid("prob_book_id")
+      .notNull()
+      .references(() => probBooksTable.id, { onDelete: "cascade" }),
+    categoryMainId: integer("category_main_id")
+      .notNull()
+      .references(() => categoryMainTable.id, { onDelete: "cascade" }),
+    categorySubId: integer("category_sub_id")
+      .notNull()
+      .references(() => categorySubTable.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.probBookId, table.categoryMainId, table.categorySubId],
+    }),
+  ],
+);

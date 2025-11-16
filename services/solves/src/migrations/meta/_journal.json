@@ -22,6 +22,13 @@
       "when": 1763178833174,
       "tag": "0002_wise_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1763282010790,
+      "tag": "0003_living_metal_master",
+      "breakpoints": true
     }
   ]
 }
