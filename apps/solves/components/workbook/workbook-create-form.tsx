@@ -10,7 +10,7 @@ import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { useWorkbookStore } from "@/store/prob-create";
 import { OptionGroup } from "./option-group";
 
-export function ProbCreateForm() {
+export function WorkbookCreateForm() {
   const router = useRouter();
   const { setWorkbooks } = useWorkbookStore();
 

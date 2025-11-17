@@ -1,4 +1,4 @@
-import { ProbCreateForm } from "@/components/prob-create/prob-create-form";
+import { WorkbookCreateForm } from "@/components/workbook/workbook-create-form";
 
 export default function ProbCreatePage() {
   return (
@@ -13,7 +13,7 @@ export default function ProbCreatePage() {
           </p>
         </div>
 
-        <ProbCreateForm />
+        <WorkbookCreateForm />
       </div>
     </div>
   );

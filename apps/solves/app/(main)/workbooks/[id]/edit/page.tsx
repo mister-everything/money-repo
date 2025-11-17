@@ -1,9 +1,9 @@
 "use client";
 
 import { use } from "react";
-
-import { WorkbooksCreateChat } from "@/components/prob-create/workbooks-create-chat/chat";
 import { Button } from "@/components/ui/button";
+import { InDevelopment } from "@/components/ui/in-development";
+import { WorkbooksCreateChat } from "@/components/workbook/create-chatbot";
 
 export default function ProbEditPage({
   params,
@@ -28,6 +28,7 @@ export default function ProbEditPage({
                   </p>
                 </div>
               </div>
+              <InDevelopment className="h-96" />
 
               <div className="mt-8 flex justify-end">
                 <Button
@@ -44,7 +45,7 @@ export default function ProbEditPage({
 
         {/* Resizable Chat Panel */}
         <div className="w-1/4">
-          <WorkbooksCreateChat threadId={id} />
+          <WorkbooksCreateChat threadId={id} workbookId={id} />
         </div>
         {/* <ResizableChatPanel /> */}
       </div>
