@@ -17,11 +17,11 @@ export function useSafeAction<T, U>(
   const [isPending, startTransition] = useTransition();
 
   const action = useCallback(
-    (input: T) => {
+    (input: T | undefined = undefined) => {
       startTransition(() => {
         void (async () => {
           try {
-            const result = await serverAction(input);
+            const result = await serverAction(input as T);
             if (isSafeFail(result)) throw result;
 
             const data = result.data;
