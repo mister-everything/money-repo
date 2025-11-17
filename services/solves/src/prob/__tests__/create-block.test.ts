@@ -9,7 +9,8 @@ import {
 
 describe("blockBuilder", () => {
   it("throws when answer schema is missing", () => {
-    const builder = blockBuilder("missing-answer");
+    const builder =
+      blockBuilder("missing-answer").displayName("Missing Answer");
 
     expect(() => builder.build()).toThrowError(
       "missing-answer 블록의 정답 스키마가 없습니다.",
@@ -17,9 +18,9 @@ describe("blockBuilder", () => {
   });
 
   it("throws when answer submit schema is missing", () => {
-    const builder = blockBuilder("missing-submit").answer(
-      z.object({ value: z.string() }),
-    );
+    const builder = blockBuilder("missing-submit")
+      .displayName("Missing Submit")
+      .answer(z.object({ value: z.string() }));
 
     expect(() => builder.build()).toThrowError(
       "missing-submit 블록의 제출 답안 스키마가 없습니다.",
@@ -28,6 +29,7 @@ describe("blockBuilder", () => {
 
   it("throws when checker is missing", () => {
     const builder = blockBuilder("missing-checker")
+      .displayName("Missing Checker")
       .answer(z.object({ value: z.string() }))
       .answerSubmit(z.object({ value: z.string() }));
 
@@ -38,6 +40,7 @@ describe("blockBuilder", () => {
 
   it("throws ProbInvalidAnswerError when the correct answer fails validation", () => {
     const block = blockBuilder("validate-answer")
+      .displayName("Validate Answer")
       .answer(
         z.object({
           value: z.string().min(1),
@@ -61,6 +64,7 @@ describe("blockBuilder", () => {
 
   it("throws ProbInvalidAnswerSubmitError when the submitted answer fails validation", () => {
     const block = blockBuilder("validate-submit")
+      .displayName("Validate Submit")
       .answer(
         z.object({
           value: z.string(),
@@ -85,6 +89,7 @@ describe("blockBuilder", () => {
   it("calls the checker with parsed data when validation succeeds", () => {
     const checker = vi.fn().mockReturnValue(true);
     const block = blockBuilder("call-checker")
+      .displayName("Call Checker")
       .answer(
         z.object({
           value: z.string(),
@@ -114,6 +119,7 @@ describe("blockBuilder", () => {
 
   it("returns false when the checker reports a mismatch", () => {
     const block = blockBuilder("checker-error")
+      .displayName("Checker Error")
       .answer(
         z.object({
           value: z.string(),
@@ -137,6 +143,7 @@ describe("blockBuilder", () => {
 
   it("wraps checker exceptions with ProbCheckerError", () => {
     const block = blockBuilder("checker-exception")
+      .displayName("Checker Exception")
       .answer(
         z.object({
           value: z.string(),

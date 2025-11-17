@@ -1,7 +1,7 @@
 "use client";
 
 import { SWRConfig, SWRConfiguration } from "swr";
-import { fetcher } from "@/lib/fetcher";
+import { fetcher } from "@/lib/protocol/fetcher";
 
 const defaultSWRConfig: SWRConfiguration = {
   fetcher: (url: string) => fetcher(url),

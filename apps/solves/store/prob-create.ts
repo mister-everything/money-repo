@@ -2,11 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface WorkbookOptionsData {
-  topic: string[];
-  ageGroup: string[];
-
+  topic: string;
+  ageGroup: string;
   situation: string;
-  format: string;
+  format: string[];
   difficulty: string;
 }
 
