@@ -15,7 +15,6 @@ const PurePreviewMessage = ({ message, className }: MessageProps) => {
   if (message.role == "system") {
     return null; // system message 는 표기하지 않음
   }
-
   return (
     <div className="w-full mx-auto max-w-3xl px-6 group/message">
       <div

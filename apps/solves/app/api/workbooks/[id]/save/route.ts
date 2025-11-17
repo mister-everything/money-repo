@@ -1,7 +1,7 @@
 import { probService } from "@service/solves";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
-import { errorResponse } from "@/lib/response";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * POST /api/workbooks/[id]/save
@@ -15,22 +15,14 @@ export async function POST(request: NextRequest) {
     await getSession(); // 인증 확인
 
     if (!submitId) {
-      return NextResponse.json(errorResponse("세션 ID가 필요합니다."), {
-        status: 400,
-      });
+      return nextFail("세션 ID가 필요합니다.");
     }
 
     await probService.saveAnswerProgress(submitId, answers);
 
-    return NextResponse.json({
-      success: true,
-      data: { saved: true },
-    });
+    return nextOk({ saved: true });
   } catch (error) {
     console.error("Error saving answer progress:", error);
-    return NextResponse.json(
-      errorResponse("답안 저장 중 오류가 발생했습니다."),
-      { status: 500 },
-    );
+    return nextFail("답안 저장 중 오류가 발생했습니다.");
   }
 }
