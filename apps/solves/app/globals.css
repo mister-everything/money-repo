@@ -1,3 +1,4 @@
-@import "tailwindcss";
-@import "@workspace/tailwind-config";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import '@workspace/tailwind-config';
+@import 'tw-animate-css';
+@source "../../node_modules/streamdown/dist/index.js";

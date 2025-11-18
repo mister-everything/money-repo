@@ -17,6 +17,14 @@ import {
  * AI Provider Prices 관리 서비스
  */
 export const aiPriceService = {
+  getActivePrices: async (): Promise<AIPrice[]> => {
+    const prices = await pgDb
+      .select(getTableColumns(AiProviderPricesTable))
+      .from(AiProviderPricesTable)
+      .where(eq(AiProviderPricesTable.isActive, true));
+    return prices;
+  },
+
   /**
    * Provider와 Model로 가격 조회 (Cache 우선 → DB Fallback)
    * @param provider - AI 제공자 (openai, gemini, claude, xai)

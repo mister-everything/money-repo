@@ -44,7 +44,7 @@ export default function ProbEditPage({
         </div>
 
         {/* Resizable Chat Panel */}
-        <div className="w-1/4">
+        <div className="w-1/4 p-2">
           <WorkbooksCreateChat threadId={id} workbookId={id} />
         </div>
         {/* <ResizableChatPanel /> */}
