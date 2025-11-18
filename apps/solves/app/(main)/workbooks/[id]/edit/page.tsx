@@ -3,6 +3,7 @@
 import { use } from "react";
 import { Button } from "@/components/ui/button";
 import { InDevelopment } from "@/components/ui/in-development";
+import { SidebarController } from "@/components/ui/sidebar";
 import { WorkbooksCreateChat } from "@/components/workbook/create-chatbot";
 
 export default function ProbEditPage({
@@ -14,6 +15,7 @@ export default function ProbEditPage({
 
   return (
     <div className="flex h-screen flex-col">
+      <SidebarController open={false} />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col w-3/4 overflow-hidden">
           <div className="flex-1 overflow-y-auto">

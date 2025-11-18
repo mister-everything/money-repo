@@ -727,6 +727,16 @@ function SidebarMenuSubButton({
   );
 }
 
+function SidebarController({ open }: { open: boolean }) {
+  const { setOpen } = useSidebar();
+
+  React.useEffect(() => {
+    setOpen(open);
+  }, [open, setOpen]);
+
+  return null; // 아무것도 렌더링하지 않음
+}
+
 export {
   Sidebar,
   SidebarContent,
@@ -752,5 +762,6 @@ export {
   SidebarSeparator,
   SidebarLink,
   SidebarTrigger,
+  SidebarController,
   useSidebar,
 };
