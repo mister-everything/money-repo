@@ -734,7 +734,7 @@ function SidebarController({ open }: { open: boolean }) {
     setOpen(open);
   }, [open, setOpen]);
 
-  return null; // 아무것도 렌더링하지 않음
+  return null;
 }
 
 export {
