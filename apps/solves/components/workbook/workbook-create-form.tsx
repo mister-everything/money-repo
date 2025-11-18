@@ -4,7 +4,7 @@ import { BlockDisplayName } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createWorkbookAction } from "@/app/(main)/workbooks/new/actions";
+import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { useWorkbookStore } from "@/store/prob-create";

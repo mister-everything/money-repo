@@ -9,20 +9,29 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { NavUser } from "./nav-user";
 
 export function AppSidebar() {
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
+      <SidebarRail />
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="font-bold">
-              <Link className="" href={"/"}>
+            <SidebarMenuButton className="font-bold group-data-[state=collapsed]:hidden">
+              <Link className="w-full" href={"/"}>
                 Solves
                 <span className="text-lg text-primary">.</span>
               </Link>
+            </SidebarMenuButton>
+            <SidebarMenuButton
+              className="font-bold hidden group-data-[state=collapsed]:block"
+              asChild
+            >
+              <SidebarTrigger />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
