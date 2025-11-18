@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "@workspace/env";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
 import { AuthCheck } from "@/components/layouts/auth-check";
 import { SwrProvider } from "@/components/swr-provider";
 
@@ -31,6 +32,7 @@ export default function RootLayout({
           themes={["light", "dark"]}
           disableTransitionOnChange
         >
+          <Toaster />
           <SwrProvider>
             <div id="root">
               <AuthCheck>{children}</AuthCheck>

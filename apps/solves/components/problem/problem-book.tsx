@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetcher } from "@/lib/fetcher";
+import { fetcher } from "@/lib/protocol/fetcher";
 import { ProblemBlock } from "./problem-block";
 import { ProblemBookSequential } from "./problem-book-sequential";
 import { ProblemHeader } from "./problem-header";

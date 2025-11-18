@@ -1,13 +1,14 @@
-import { errorToString, toAny } from "@workspace/util";
-import { toast } from "sonner";
+import { errorToString } from "@workspace/util";
+import { isSafeFail, isSafeOk } from "./interface";
 
-function dateReviver(key: string, value: unknown) {
+function dateReviver(_: string, value: unknown) {
   if (typeof value === "string" && /\d{4}-\d{2}-\d{2}T/.test(value)) {
     const date = new Date(value);
     if (!Number.isNaN(date.getTime())) return date;
   }
   return value as unknown;
 }
+
 export const fetcher = async <T>(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -24,19 +25,12 @@ export const fetcher = async <T>(
   const text = await res.text();
   const data = text ? (JSON.parse(text, dateReviver) as unknown) : null;
 
-  if (!res.ok) {
-    const message =
-      (data as { error?: string } | null)?.error ?? res.statusText;
-
-    throw new Error(message);
+  if (isSafeFail(data) || res.status >= 400 || !res.ok) {
+    throw new Error(errorToString(data) ?? res.statusText);
   }
 
-  if (res.status >= 400) {
-    const serverData = toAny(data);
-    if (serverData.$ref === "solves-message" && serverData.message) {
-      toast.error(serverData.message);
-    }
-    throw new Error(errorToString(data));
+  if (isSafeOk(data)) {
+    return data.data as T;
   }
 
   return data as T;

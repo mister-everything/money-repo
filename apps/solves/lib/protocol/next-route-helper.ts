@@ -1,23 +1,16 @@
 import { errorToString } from "@workspace/util";
 import { NextResponse } from "next/server";
 
+import { safeFail, safeOk } from "./interface";
+
 export function nextOk(data: any) {
-  return NextResponse.json(data, {
+  return NextResponse.json(safeOk(data), {
     status: 200,
   });
 }
 
-export type Fail = {
-  message?: string;
-};
 export function nextFail(message: unknown, status: number = 500) {
-  return NextResponse.json(
-    {
-      message: errorToString(message),
-      $ref: "solves-message",
-    },
-    {
-      status,
-    },
-  );
+  return NextResponse.json(safeFail(errorToString(message) as string), {
+    status,
+  });
 }

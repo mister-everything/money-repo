@@ -1,43 +1,44 @@
 "use client";
 
+import { BlockDisplayName } from "@service/solves/shared";
+import { errorToString } from "@workspace/util";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createWorkbookAction } from "@/app/(main)/workbooks/new/actions";
 import { Button } from "@/components/ui/button";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { useWorkbookStore } from "@/store/prob-create";
 import { OptionGroup } from "./option-group";
 
-interface ProbCreateFormData {
-  topic: string[];
-  ageGroup: string[];
+export function WorkbookCreateForm() {
+  const router = useRouter();
+  const { setWorkbooks } = useWorkbookStore();
 
-  situation: string;
-  format: string;
-  difficulty: string;
-}
+  const [formAction, isPending] = useSafeAction(createWorkbookAction, {
+    onSuccess: (result) => {
+      setWorkbooks(result.id, formData);
+      router.push(`/workbooks/${result.id}/edit`);
+    },
+    failMessage: errorToString,
+    successMessage: "문제집 생성에 성공했습니다.",
+  });
 
-interface ProbCreateFormProps {
-  onSubmit?: (data: ProbCreateFormData) => void;
-}
-
-export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
-  const [formData, setFormData] = useState<ProbCreateFormData>({
-    topic: ["전체"],
-    ageGroup: ["성인"],
-
+  const [formData, setFormData] = useState({
+    topic: "전체",
+    ageGroup: "성인",
     situation: "",
-    format: "",
+    format: [] as string[],
     difficulty: "",
   });
 
-  const handleSubmit = () => {
-    onSubmit?.(formData);
-  };
-
   return (
-    <div className="space-y-6">
+    <form action={formAction} className="space-y-6">
       <OptionGroup
         label="소재"
+        name="topic"
         options={[
           "전체",
-          "일반싱식",
+          "일반상식",
           "학교 교과목",
           "시사",
           "역사/문화",
@@ -50,24 +51,27 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
         ]}
         value={formData.topic}
         onValueChange={(value) =>
-          setFormData({ ...formData, topic: value as string[] })
+          setFormData({ ...formData, topic: value as string })
         }
-        type="multiple"
+        type="single"
         required={true}
       />
 
       <OptionGroup
         label="연령대"
+        name="ageGroup"
         options={["전체", "유아", "아동", "청소년", "성인", "시니어"]}
         value={formData.ageGroup}
         onValueChange={(value) =>
-          setFormData({ ...formData, ageGroup: value as string[] })
+          setFormData({ ...formData, ageGroup: value as string })
         }
+        type="single"
         required={true}
       />
 
       <OptionGroup
         label="상황"
+        name="situation"
         options={["친목", "콘텐츠", "교육"]}
         value={formData.situation}
         onValueChange={(value) =>
@@ -77,15 +81,18 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
 
       <OptionGroup
         label="유형"
-        options={["객관식", "주관식", "OX게임", "날말퀴즈", "이미지/오디오"]}
+        name="format"
+        options={Object.values(BlockDisplayName)}
         value={formData.format}
         onValueChange={(value) =>
-          setFormData({ ...formData, format: value as string })
+          setFormData({ ...formData, format: value as string[] })
         }
+        type="multiple"
       />
 
       <OptionGroup
         label="난이도"
+        name="difficulty"
         options={["아주쉬움", "쉬움", "보통", "어려움", "아주어려움"]}
         value={formData.difficulty}
         onValueChange={(value) =>
@@ -94,11 +101,12 @@ export function ProbCreateForm({ onSubmit }: ProbCreateFormProps) {
       />
 
       <Button
-        onClick={handleSubmit}
+        type="submit"
+        disabled={isPending}
         className="w-full rounded-lg mt-10 py-6 text-base"
       >
-        문제 만들기
+        {isPending ? "문제집 생성 중..." : "문제 만들기"}
       </Button>
-    </div>
+    </form>
   );
 }

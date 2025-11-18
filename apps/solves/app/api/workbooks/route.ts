@@ -3,8 +3,7 @@ import { createProbBookSchema } from "@service/solves/shared";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/server";
-import { nextFail, nextOk } from "@/lib/next-api-helper";
-import { errorResponse } from "@/lib/response";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * GET /api/prob
@@ -22,12 +21,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(probBooks);
   } catch (error) {
     console.error("Error fetching prob books:", error);
-    return NextResponse.json(
-      errorResponse("문제집 조회 중 오류가 발생했습니다."),
-      {
-        status: 500,
-      },
-    );
+    return nextFail("문제집 조회 중 오류가 발생했습니다.");
   }
 }
 

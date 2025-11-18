@@ -14,6 +14,7 @@ export interface Block<
   AnswerSubmit = any,
 > {
   type: BlockType;
+  displayName: string;
   contentSchema: ZodType<Content>;
   answerSchema: ZodType<Answer>;
   answerSubmitSchema: ZodType<AnswerSubmit>;
@@ -78,6 +79,18 @@ export interface BlockBuilderContext<
     >,
     O | "checker"
   >;
+  displayName(
+    displayName: string,
+  ): Omit<
+    BlockBuilderContext<
+      BlockType,
+      Content,
+      Answer,
+      AnswerSubmit,
+      O | "displayName"
+    >,
+    O | "displayName"
+  >;
   build(): Block<BlockType, Content, Answer, AnswerSubmit>;
 }
 
@@ -87,10 +100,14 @@ export function blockBuilder<BlockType extends string>(
   let content: any;
   let answer: any;
   let answerSubmit: any;
+  let name: string;
   let checkerFn: (correctAnswer: any, submittedAnswer: any) => boolean;
 
   const context = {
     build() {
+      if (!name) {
+        throw new Error(`${type} 블록의 표시 이름이 없습니다.`);
+      }
       if (!answer) {
         throw new Error(`${type} 블록의 정답 스키마가 없습니다.`);
       }
@@ -115,6 +132,7 @@ export function blockBuilder<BlockType extends string>(
 
       const block: Block<BlockType> = {
         type,
+        displayName: name,
         contentSchema: resolvedContentSchema.default({
           type: type,
           question: undefined,
@@ -161,6 +179,10 @@ export function blockBuilder<BlockType extends string>(
         },
       };
       return block;
+    },
+    displayName(displayName) {
+      name = displayName;
+      return context;
     },
     content(schema) {
       content = schema;

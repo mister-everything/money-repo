@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface OptionGroupProps {
   label: string;
+  name?: string;
   options: string[];
   value?: string | string[];
   onValueChange?: (value: string | string[]) => void;
@@ -16,6 +17,7 @@ interface OptionGroupProps {
 
 export function OptionGroup({
   label,
+  name,
   options,
   value,
   onValueChange,
@@ -61,7 +63,7 @@ export function OptionGroup({
           return (
             <Label
               key={option}
-              htmlFor={option}
+              htmlFor={name ? `${name}-${option}` : option}
               className={cn(
                 "group/field-label peer/field-label flex w-fit items-center gap-2 cursor-pointer select-none",
                 "rounded-md border px-3 py-1.5 transition-all duration-100 ease-linear",
@@ -71,9 +73,13 @@ export function OptionGroup({
                   : "border-input bg-background",
               )}
             >
+              {/* Hidden input for form submission */}
+              {name && checked && (
+                <input type="hidden" name={name} value={option} />
+              )}
               <div className="flex items-center gap-1.5 overflow-hidden">
                 <Checkbox
-                  id={option}
+                  id={name ? `${name}-${option}` : option}
                   checked={checked}
                   onCheckedChange={() => handleOptionClick(option)}
                   className={cn(

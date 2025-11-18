@@ -1,33 +1,41 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, UIMessage } from "ai";
 import { useState } from "react";
+import { PreviewMessage } from "@/components/chat/message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Message } from "./message";
 
 interface WorkbooksCreateChatProps {
-  threadId: string;
+  threadId?: string;
+  initialMessages?: UIMessage[];
+  workbookId: string;
 }
 
-export function WorkbooksCreateChat({ threadId }: WorkbooksCreateChatProps) {
+export function WorkbooksCreateChat({
+  threadId,
+  initialMessages,
+  workbookId,
+}: WorkbooksCreateChatProps) {
   const [input, setInput] = useState<string>("");
 
   const { messages, sendMessage } = useChat({
     id: threadId,
+    messages: initialMessages,
     transport: new DefaultChatTransport({
-      api: "/api/ai/workbook-chat/create",
+      api: "/api/ai/chat/workbook/create",
+
       prepareSendMessagesRequest: ({ messages }) => {
         return {
           body: {
             messages,
             model: { provider: "openai", model: "gpt-4o-mini" },
+            workbookId,
           },
         };
       },
     }),
-    // messages: messages,
     experimental_throttle: 100,
   });
 
@@ -35,7 +43,7 @@ export function WorkbooksCreateChat({ threadId }: WorkbooksCreateChatProps) {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
         {messages.map((message) => (
-          <Message key={message.id} message={message} />
+          <PreviewMessage key={message.id} message={message} />
         ))}
       </div>
 
