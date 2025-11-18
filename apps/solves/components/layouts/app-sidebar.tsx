@@ -9,6 +9,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { NavUser } from "./nav-user";
 
@@ -28,6 +31,27 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarMenuItem>
+          <SidebarMenuButton>
+            <SidebarLink href="/workbooks">문제 풀기</SidebarLink>
+          </SidebarMenuButton>
+          <SidebarMenuSub>
+            <SidebarMenuSubItem>
+              <SidebarMenuSubButton>
+                <SidebarLink href="/workbooks/in-progress">
+                  풀고 있는 문제집
+                </SidebarLink>
+              </SidebarMenuSubButton>
+            </SidebarMenuSubItem>
+            <SidebarMenuSubItem>
+              <SidebarMenuSubButton>
+                <SidebarLink href="/workbooks/completed">
+                  다 푼 문제집
+                </SidebarLink>
+              </SidebarMenuSubButton>
+            </SidebarMenuSubItem>
+          </SidebarMenuSub>
+        </SidebarMenuItem>
         <SidebarGroup>
           <SidebarMenu>
             <SidebarLink href="/workbooks">문제 풀기</SidebarLink>

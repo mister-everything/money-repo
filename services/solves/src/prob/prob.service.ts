@@ -17,6 +17,7 @@ import {
   createProbBookSchema,
   ProbBlock,
   ProbBook,
+  ProbBookSubmit,
   ProbBookSubmitSession,
   ProbBookWithoutBlocks,
   SubmitProbBookResponse,
@@ -453,6 +454,10 @@ export const probService = {
     } as SubmitProbBookResponse;
   },
 
+  /**
+   * 문제집 세션 삭제
+   * @param submitId 세션 ID
+   */
   deleteProbBookSession: async (
     probBookId: string,
     userId: string,
@@ -468,6 +473,12 @@ export const probService = {
       );
   },
 
+  /**
+   * 문제집 세션 존재 여부 확인
+   * @param probBookId 문제집 ID
+   * @param userId 사용자 ID
+   * @returns 세션 존재 여부
+   */
   hasProbBookSession: async (
     probBookId: string,
     userId: string,
@@ -486,5 +497,30 @@ export const probService = {
       )
       .limit(1);
     return session ? true : false;
+  },
+
+  /**
+   * 풀고있는 문제집
+   * @param userId 사용자 ID
+   * @returns 풀고있는 문제집 목록
+   */
+  getProbBookInProgress: async (userId: string): Promise<ProbBookSubmit[]> => {
+    const sessions = await pgDb
+      .select({
+        id: probBookSubmitsTable.id,
+        probBookId: probBookSubmitsTable.probBookId,
+        startTime: probBookSubmitsTable.startTime,
+        endTime: probBookSubmitsTable.endTime,
+        score: probBookSubmitsTable.score,
+        ownerId: probBookSubmitsTable.ownerId,
+      })
+      .from(probBookSubmitsTable)
+      .where(
+        and(
+          eq(probBookSubmitsTable.ownerId, userId),
+          isNull(probBookSubmitsTable.endTime),
+        ),
+      );
+    return sessions as ProbBookSubmit[];
   },
 };
