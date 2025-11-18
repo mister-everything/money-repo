@@ -1,23 +1,31 @@
-"use client";
-
-import { use } from "react";
-import { Button } from "@/components/ui/button";
+import { probService } from "@service/solves";
+import { notFound } from "next/navigation";
+import z from "zod";
 import { InDevelopment } from "@/components/ui/in-development";
-import { SidebarController } from "@/components/ui/sidebar";
 import { WorkbooksCreateChat } from "@/components/workbook/create-chatbot";
+import { getSession } from "@/lib/auth/server";
 
-export default function ProbEditPage({
+export default async function ProbEditPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+  const { id } = await params;
+
+  const session = await getSession();
+
+  const hasPermission = await probService.isProbBookOwner(
+    z.uuid().parse(id),
+    session.user.id,
+  );
+  if (!hasPermission) return notFound();
+  const book = await probService.selectProbBookById(id);
+  if (!book) notFound();
 
   return (
-    <div className="flex h-screen flex-col">
-      <SidebarController open={false} />
+    <div className="flex h-full flex-col">
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col w-3/4 overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto">
             <div className="p-6">
               <div className="mb-8 space-y-4">
@@ -30,26 +38,16 @@ export default function ProbEditPage({
                   </p>
                 </div>
               </div>
-              <InDevelopment className="h-96" />
-
-              <div className="mt-8 flex justify-end">
-                <Button
-                  size="lg"
-                  className="rounded-lg w-full"
-                  onClick={() => console.log("전체 미리보기")}
-                >
-                  전체 미리보기
-                </Button>
-              </div>
+              <InDevelopment className="h-screen">
+                {JSON.stringify(book, null, 2)}
+              </InDevelopment>
             </div>
           </div>
         </div>
 
-        {/* Resizable Chat Panel */}
-        <div className="w-1/4 p-2">
+        <div className="w-sm lg:w-md xl:w-lg p-2">
           <WorkbooksCreateChat threadId={id} workbookId={id} />
         </div>
-        {/* <ResizableChatPanel /> */}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
+import { isNull } from "@workspace/util";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 import Link from "next/link";
@@ -672,7 +673,7 @@ function SidebarLink({
         <Link
           href={href}
           onClick={() => setOpenMobile(false)}
-          className={className}
+          className={cn("w-full", className)}
         >
           {children}
         </Link>
@@ -727,12 +728,25 @@ function SidebarMenuSubButton({
   );
 }
 
-function SidebarController({ open }: { open: boolean }) {
+function SidebarController({
+  openMounted,
+  openUnmounted,
+}: {
+  openMounted?: boolean;
+  openUnmounted?: boolean;
+}) {
   const { setOpen } = useSidebar();
 
   React.useEffect(() => {
-    setOpen(open);
-  }, [open, setOpen]);
+    if (!isNull(openMounted)) {
+      setOpen(openMounted);
+    }
+    if (!isNull(openUnmounted)) {
+      return () => {
+        setOpen(openUnmounted);
+      };
+    }
+  }, []);
 
   return null;
 }

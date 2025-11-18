@@ -9,7 +9,7 @@ function InDevelopment({ className, children, ...props }: InDevelopmentProps) {
     <div
       data-slot="in-development"
       className={cn(
-        "relative rounded-md border-2 border-dashed border-muted-foreground/30 text-2xl bg-muted/30 flex items-center justify-center",
+        "relative rounded-md border-2 border-dashed border-muted-foreground/30 text-2xl bg-muted/30 flex items-center justify-center p-6",
         className,
       )}
       {...props}
