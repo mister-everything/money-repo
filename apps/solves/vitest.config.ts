@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    globals: true,
+    globals: false, // Playwright와 충돌 방지를 위해 false로 변경
     exclude: [
       "**/node_modules/**",
       "**/.next/**",
@@ -24,4 +24,3 @@ export default defineConfig({
     },
   },
 });
-
