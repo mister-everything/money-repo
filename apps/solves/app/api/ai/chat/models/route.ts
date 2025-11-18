@@ -1,7 +1,7 @@
 import { aiPriceService } from "@service/solves";
 import { nextOk } from "@/lib/protocol/next-route-helper";
 
-export const revalidate = 60 * 10;
+export const revalidate = 600;
 
 export async function GET() {
   const models = await aiPriceService.getActivePrices();
