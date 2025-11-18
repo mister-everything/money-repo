@@ -1,11 +1,13 @@
 import { convertToModelMessages, streamText } from "ai";
 import { getChatModel } from "@/lib/ai/model";
-import { DefaultChatRequest } from "../../../types";
+import { WorkbookCreateChatRequest } from "../../../types";
 
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const { messages, model } = await req.json().then(DefaultChatRequest.parse);
+  const { messages, model } = await req
+    .json()
+    .then(WorkbookCreateChatRequest.parse);
 
   const result = streamText({
     model: getChatModel(model),

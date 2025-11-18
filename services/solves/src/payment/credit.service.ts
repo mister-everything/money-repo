@@ -119,6 +119,9 @@ export const creditService = {
       usageId: result.usageId,
       newBalance: result.newBalance,
     };
+    console.log(
+      `[consumeAICredit] ${price.displayName} cost: ${cost.totalMarketCost.toFixed(8)}, vendorCost: ${vendorCost}, marketCost: ${cost.totalMarketCost - (vendorCost || cost.totalCost)}, balance: ${result.newBalance}`,
+    );
 
     await sharedCache.setex(
       CacheKeys.userWallet(userId),

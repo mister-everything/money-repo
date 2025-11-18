@@ -7,3 +7,10 @@ export const DefaultChatRequest = z.object({
     model: z.string(),
   }),
 });
+
+export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
+  z.object({
+    threadId: z.string(),
+    workbookId: z.string(),
+  }).shape,
+);
