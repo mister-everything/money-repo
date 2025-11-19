@@ -79,7 +79,7 @@ export const NavUser = memo(function NavUser() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) rounded-lg"
+        className="min-w-(--radix-dropdown-menu-trigger-width) rounded-lg"
         side="top"
         align="center"
       >

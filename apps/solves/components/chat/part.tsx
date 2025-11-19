@@ -1,5 +1,6 @@
 import { truncateString } from "@workspace/util";
-import { TextUIPart } from "ai";
+import { ReasoningUIPart, TextUIPart } from "ai";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -9,6 +10,7 @@ import {
 import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +21,7 @@ import { cn } from "@/lib/utils";
 
 interface UserMessagePartProps {
   part: TextUIPart;
+  streaming?: boolean;
 }
 const MAX_TEXT_LENGTH = 600;
 export function UserMessagePart({ part }: UserMessagePartProps) {
@@ -118,6 +121,77 @@ export function AssistantTextPart({
             <TooltipContent side="bottom">복사하기</TooltipContent>
           </Tooltip>
         )}
+      </div>
+    </div>
+  );
+}
+
+const variants = {
+  collapsed: {
+    height: 0,
+    opacity: 0,
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  expanded: {
+    height: "auto",
+    opacity: 1,
+    marginTop: "1rem",
+    marginBottom: "0.5rem",
+  },
+};
+
+interface ReasoningPartProps {
+  part: ReasoningUIPart;
+  streaming?: boolean;
+}
+
+export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div
+      className="flex flex-col cursor-pointer"
+      onClick={() => {
+        setIsExpanded(!isExpanded);
+      }}
+    >
+      <div className="flex flex-row gap-2 items-center text-muted-foreground hover:text-accent-foreground transition-colors">
+        {streaming ? (
+          <TextShimmer>Reasoned for a few seconds</TextShimmer>
+        ) : (
+          <div className="font-medium">Reasoned for a few seconds</div>
+        )}
+
+        <button
+          data-testid="message-reasoning-toggle"
+          type="button"
+          className="cursor-pointer"
+        >
+          <ChevronDownIcon size={16} />
+        </button>
+      </div>
+
+      <div className="pl-4">
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              data-testid="message-reasoning"
+              key="content"
+              initial="collapsed"
+              animate="expanded"
+              exit="collapsed"
+              variants={variants}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              style={{ overflow: "hidden" }}
+              className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
+            >
+              <Streamdown>
+                {part.text || (streaming ? "" : "생각중...🤔")}
+              </Streamdown>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
