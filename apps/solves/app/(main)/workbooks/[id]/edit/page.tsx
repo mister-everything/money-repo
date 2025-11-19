@@ -2,7 +2,7 @@ import { probService } from "@service/solves";
 import { notFound } from "next/navigation";
 import z from "zod";
 import { InDevelopment } from "@/components/ui/in-development";
-import { WorkbooksCreateChat } from "@/components/workbook/create-chatbot";
+import { WorkbooksCreateChat } from "@/components/workbook/workbook-edit-chatbot";
 import { getSession } from "@/lib/auth/server";
 
 export default async function ProbEditPage({
