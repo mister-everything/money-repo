@@ -128,7 +128,3 @@ export async function toggleAIPriceActiveAction(
     throw new Error("AI 가격 상태 변경에 실패했습니다.");
   }
 }
-
-export async function fetchAIPrices() {
-  return aiPriceService.getAllPrices();
-}

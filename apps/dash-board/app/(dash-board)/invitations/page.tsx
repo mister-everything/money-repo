@@ -5,7 +5,7 @@ import { errorToString } from "@workspace/util";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Link as LinkIcon, Plus } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
@@ -27,14 +27,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { createInviteToken, getInvitations } from "./actions";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { createInviteTokenAction, getInvitations } from "./actions";
 
 const createLink = (token: string) =>
   `${window.location.origin}/sign-in?invite=${token}`;
 
 export default function InvitationsPage() {
-  const [creating, setCreating] = useState(false);
-
   const {
     data: invitations,
     isLoading,
@@ -43,21 +42,19 @@ export default function InvitationsPage() {
     onError: (err) => toast.error(errorToString(err)),
     fallbackData: [],
   });
-  const handleCreateInvite = useCallback(async () => {
-    setCreating(true);
-    try {
-      const token = await createInviteToken();
-      await mutate();
-      // Auto-copy the new link
-      const inviteUrl = createLink(token);
-      await navigator.clipboard.writeText(inviteUrl);
-      toast.success("초대 링크가 복사되었습니다.");
-    } catch {
-      toast.error("초대 링크 생성에 실패했습니다.");
-    } finally {
-      setCreating(false);
-    }
-  }, [mutate]);
+
+  const [, createInviteToken, isPending] = useSafeAction(
+    createInviteTokenAction,
+    {
+      onSuccess: async (token) => {
+        const inviteUrl = createLink(token);
+        mutate();
+        await navigator.clipboard.writeText(inviteUrl);
+        toast.success("초대 링크가 복사되었습니다.");
+      },
+      onError: (err) => toast.error(errorToString(err)),
+    },
+  );
 
   const activeInvitations = useMemo(
     () =>
@@ -83,9 +80,9 @@ export default function InvitationsPage() {
             새로운 관리자를 초대할 수 있는 링크를 생성하고 관리합니다.
           </p>
         </div>
-        <Button onClick={handleCreateInvite} disabled={creating}>
+        <Button onClick={createInviteToken} disabled={isPending}>
           <Plus className="mr-2 h-4 w-4" />
-          {creating ? "생성 중..." : "초대 링크 생성"}
+          {isPending ? "생성 중..." : "초대 링크 생성"}
         </Button>
       </div>
       {isLoading ? (

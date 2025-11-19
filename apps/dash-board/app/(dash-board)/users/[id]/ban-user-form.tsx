@@ -7,36 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { banUser } from "./actions";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { banUserAction } from "./actions";
 
 export function BanUserForm({ userId }: { userId: string }) {
   const [reason, setReason] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!reason.trim()) {
-      toast.error("밴 사유를 입력해주세요.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await banUser(userId, reason, expiresAt || undefined);
+  const [, banUser, loading] = useSafeAction(banUserAction, {
+    onSuccess: () => {
       toast.success("사용자가 성공적으로 밴되었습니다.");
       setReason("");
       setExpiresAt("");
-    } catch (error) {
+    },
+    onError: (error) => {
       toast.error(errorToString(error));
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="reason">밴 사유 *</Label>
         <Textarea
@@ -60,7 +50,11 @@ export function BanUserForm({ userId }: { userId: string }) {
         <p className="text-sm text-muted-foreground">비워두면 영구 밴됩니다.</p>
       </div>
 
-      <Button type="submit" variant="destructive" disabled={loading}>
+      <Button
+        onClick={() => banUser({ userId, reason, expiresAt })}
+        variant="destructive"
+        disabled={loading}
+      >
         {loading ? "처리 중..." : "사용자 밴"}
       </Button>
     </form>

@@ -49,6 +49,19 @@ const database = drizzleAdapter(authDataBase, {
   },
 });
 
+export const safeGetSession = async () => {
+  "use server";
+  const session = await adminBetterAuth.api
+    .getSession({
+      headers: await headers(),
+    })
+    .catch((e) => {
+      console.error(e);
+      return null;
+    });
+  return session;
+};
+
 const sessionHook = async (session: Partial<Session>) => {
   const cookieStore = await cookies();
   const inviteToken = cookieStore.get("admin_invite_token")?.value;

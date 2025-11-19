@@ -3,51 +3,63 @@
 import { userService } from "@service/auth";
 import { Role } from "@service/auth/shared";
 import { revalidatePath } from "next/cache";
+import z from "zod";
 import { getUser } from "@/lib/auth/server";
+import { safeAction } from "@/lib/protocol/server-action";
 
-export async function updateUserRole(userId: string, role: string) {
-  await getUser(); // Check if user is authenticated
+export const updateUserRoleAction = safeAction(
+  z.object({
+    userId: z.string(),
+    role: z.string(),
+  }),
+  async ({ userId, role }) => {
+    await getUser(); // Check if user is authenticated
 
-  if (role !== Role.USER && role !== Role.ADMIN) {
-    throw new Error("Invalid role");
-  }
+    if (role !== Role.USER && role !== Role.ADMIN) {
+      throw new Error("Invalid role");
+    }
 
-  await userService.updateUserRole(userId, role);
-  revalidatePath(`/users/${userId}`);
-  revalidatePath("/users");
+    await userService.updateUserRole(userId, role);
+    revalidatePath(`/users/${userId}`);
+    revalidatePath("/users");
 
-  return { success: true };
-}
+    return { success: true };
+  },
+);
 
-export async function banUser(
-  userId: string,
-  reason: string,
-  expiresAt?: string,
-) {
-  await getUser(); // Check if user is authenticated
+export const banUserAction = safeAction(
+  z.object({
+    userId: z.string(),
+    reason: z.string().min(1, "밴 사유를 입력해주세요."),
+    expiresAt: z.string().optional(),
+  }),
+  async ({ userId, reason, expiresAt }) => {
+    await getUser(); // Check if user is authenticated
 
-  if (!reason.trim()) {
-    throw new Error("밴 사유를 입력해주세요.");
-  }
+    const banExpiresDate = expiresAt ? new Date(expiresAt) : null;
 
-  const banExpiresDate = expiresAt ? new Date(expiresAt) : null;
+    await userService.banUser(userId, reason, banExpiresDate);
+    revalidatePath(`/users/${userId}`);
+    revalidatePath("/users");
 
-  await userService.banUser(userId, reason, banExpiresDate);
-  revalidatePath(`/users/${userId}`);
-  revalidatePath("/users");
+    return { success: true };
+  },
+);
 
-  return { success: true };
-}
+export const unbanUserAction = safeAction(
+  z.object({
+    userId: z.string(),
+  }),
+  async ({ userId }) => {
+    await getUser(); // Check if user is authenticated
 
-export async function unbanUser(userId: string) {
-  await getUser(); // Check if user is authenticated
+    await userService.unbanUser(userId);
+    revalidatePath(`/users/${userId}`);
+    revalidatePath("/users");
 
-  await userService.unbanUser(userId);
-  revalidatePath(`/users/${userId}`);
-  revalidatePath("/users");
-
-  return { success: true };
-}
+    return { success: true };
+  },
+);
 
 export async function getUserDetail(userId: string) {
   await getUser(); // Check if user is authenticated
