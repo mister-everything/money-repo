@@ -1,7 +1,12 @@
 import { isFunction, isNull } from "@workspace/util";
-import { useCallback, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { isSafeFail, SafeFailResponse, SafeFunction } from "./interface";
+import {
+  isSafeFail,
+  SafeFailResponse,
+  SafeFunction,
+  SafeResponse,
+} from "./interface";
 
 export type SafeActionOptions<U> = {
   onSuccess?: (response: U) => void;
@@ -15,9 +20,12 @@ export function useSafeAction<T, U>(
   options?: SafeActionOptions<U>,
 ) {
   const [isPending, startTransition] = useTransition();
+  const [result, setResult] = useState<SafeResponse<U> | null>(null);
 
   const action = useCallback(
     (input: T | undefined = undefined) => {
+      if (isPending) return;
+      setResult(null);
       startTransition(() => {
         void (async () => {
           try {
@@ -25,6 +33,7 @@ export function useSafeAction<T, U>(
             if (isSafeFail(result)) throw result;
 
             const data = result.data;
+            setResult(result);
 
             options?.onSuccess?.(data);
 
@@ -39,6 +48,7 @@ export function useSafeAction<T, U>(
           } catch (error: any) {
             if (!isSafeFail(error)) throw error;
             options?.onError?.(error);
+            setResult(error);
             const failMessage = options?.failMessage;
             if (!isNull(failMessage)) {
               if (isFunction(failMessage)) {
@@ -53,6 +63,7 @@ export function useSafeAction<T, U>(
     },
     [
       serverAction,
+      isPending,
       options?.onSuccess,
       options?.onError,
       options?.successMessage,
@@ -60,5 +71,5 @@ export function useSafeAction<T, U>(
     ],
   );
 
-  return [action, isPending] as const;
+  return [result, action, isPending] as const;
 }

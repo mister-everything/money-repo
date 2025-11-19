@@ -43,7 +43,7 @@ export default function InvitationsPage() {
     fallbackData: [],
   });
 
-  const [createInviteToken, isPending] = useSafeAction(
+  const [, createInviteToken, isPending] = useSafeAction(
     createInviteTokenAction,
     {
       onSuccess: async (token) => {

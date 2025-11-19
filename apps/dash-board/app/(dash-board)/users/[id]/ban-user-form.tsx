@@ -14,7 +14,7 @@ export function BanUserForm({ userId }: { userId: string }) {
   const [reason, setReason] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
 
-  const [banUser, loading] = useSafeAction(banUserAction, {
+  const [, banUser, loading] = useSafeAction(banUserAction, {
     onSuccess: () => {
       toast.success("사용자가 성공적으로 밴되었습니다.");
       setReason("");

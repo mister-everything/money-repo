@@ -23,7 +23,7 @@ export function RoleUpdateForm({
 }) {
   const [role, setRole] = useState(currentRole);
 
-  const [updateUserRole, loading] = useSafeAction(updateUserRoleAction, {
+  const [, updateUserRole, loading] = useSafeAction(updateUserRoleAction, {
     failMessage: "역할 변경에 실패했습니다.",
     successMessage: "역할이 성공적으로 변경되었습니다.",
   });

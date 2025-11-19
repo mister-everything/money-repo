@@ -14,7 +14,7 @@ export function WorkbookCreateForm() {
   const router = useRouter();
   const { setWorkbooks } = useWorkbookStore();
 
-  const [formAction, isPending] = useSafeAction(createWorkbookAction, {
+  const [, formAction, isPending] = useSafeAction(createWorkbookAction, {
     onSuccess: (result) => {
       setWorkbooks(result.id, formData);
       router.push(`/workbooks/${result.id}/edit`);
