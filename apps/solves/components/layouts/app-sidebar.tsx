@@ -31,23 +31,17 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarLink href="/workbooks">문제 풀기</SidebarLink>
         <SidebarMenuItem>
-          <SidebarMenuButton>
-            <SidebarLink href="/workbooks">문제 풀기</SidebarLink>
-          </SidebarMenuButton>
           <SidebarMenuSub>
             <SidebarMenuSubItem>
-              <SidebarMenuSubButton>
-                <SidebarLink href="/workbooks/in-progress">
-                  풀고 있는 문제집
-                </SidebarLink>
+              <SidebarMenuSubButton asChild>
+                <Link href="/workbooks/in-progress">풀고 있는 문제집</Link>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
             <SidebarMenuSubItem>
-              <SidebarMenuSubButton>
-                <SidebarLink href="/workbooks/completed">
-                  다 푼 문제집
-                </SidebarLink>
+              <SidebarMenuSubButton asChild>
+                <Link href="/workbooks/completed">다 푼 문제집</Link>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
           </SidebarMenuSub>
