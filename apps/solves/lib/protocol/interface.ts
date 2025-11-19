@@ -42,6 +42,9 @@ export const isSafeFail = (response: any): response is SafeFailResponse => {
 };
 
 export const safeOk = <T>(data: T): SafeSuccessResponse<T> => {
+  if (isSafeResponse(data)) {
+    return data as SafeSuccessResponse<T>;
+  }
   return {
     data,
     success: true,
