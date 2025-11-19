@@ -21,11 +21,14 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="font-bold group-data-[state=collapsed]:hidden">
-              <Link className="w-full" href={"/"}>
-                Solves
-                <span className="text-lg text-primary">.</span>
-              </Link>
+            <SidebarMenuButton asChild>
+              <div className="w-full group-data-[state=collapsed]:hidden items-center gap-4">
+                <Link href={"/"} className="font-bold flex-1">
+                  Solves
+                  <span className="text-lg text-primary">.</span>
+                </Link>
+                <SidebarTrigger />
+              </div>
             </SidebarMenuButton>
             <SidebarMenuButton
               className="font-bold hidden group-data-[state=collapsed]:block"
