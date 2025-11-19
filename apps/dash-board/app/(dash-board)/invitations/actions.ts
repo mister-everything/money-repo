@@ -2,13 +2,13 @@
 
 import { userService } from "@service/auth";
 import { getUser } from "@/lib/auth/server";
+import { safeAction } from "@/lib/protocol/server-action";
 
-export async function createInviteToken() {
+export const createInviteTokenAction = safeAction(async () => {
   const user = await getUser();
   const invitation = await userService.createInvitation(user.id);
-
   return invitation.token;
-}
+});
 
 export async function getInvitations() {
   await getUser(); // Check if user is authenticated

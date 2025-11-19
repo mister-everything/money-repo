@@ -1,8 +1,7 @@
 "use client";
 
-import { errorToString } from "@workspace/util";
 import { useState } from "react";
-import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateUserRole } from "./actions";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { updateUserRoleAction } from "./actions";
 
 export function RoleUpdateForm({
   userId,
@@ -22,29 +22,14 @@ export function RoleUpdateForm({
   currentRole: string;
 }) {
   const [role, setRole] = useState(currentRole);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (role === currentRole) {
-      toast.info("역할이 변경되지 않았습니다.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await updateUserRole(userId, role);
-      toast.success("역할이 성공적으로 변경되었습니다.");
-    } catch (error) {
-      toast.error(errorToString(error));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [updateUserRole, loading] = useSafeAction(updateUserRoleAction, {
+    failMessage: "역할 변경에 실패했습니다.",
+    successMessage: "역할이 성공적으로 변경되었습니다.",
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="role">역할 선택</Label>
         <Select value={role} onValueChange={setRole}>
@@ -58,7 +43,10 @@ export function RoleUpdateForm({
         </Select>
       </div>
 
-      <Button type="submit" disabled={loading || role === currentRole}>
+      <Button
+        onClick={() => updateUserRole({ userId, role })}
+        disabled={loading || role === currentRole}
+      >
         {loading ? "변경 중..." : "역할 변경"}
       </Button>
     </form>
