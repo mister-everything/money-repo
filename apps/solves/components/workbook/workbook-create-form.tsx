@@ -2,13 +2,14 @@
 
 import { BlockDisplayName } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
+import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { useWorkbookStore } from "@/store/prob-create";
-import { OptionGroup } from "./option-group";
+import { ButtonSelect } from "../ui/button-select";
 
 export function WorkbookCreateForm() {
   const router = useRouter();
@@ -33,79 +34,80 @@ export function WorkbookCreateForm() {
 
   return (
     <form action={formAction} className="space-y-6">
-      <OptionGroup
-        label="소재"
-        name="topic"
-        options={[
-          "전체",
-          "일반상식",
-          "학교 교과목",
-          "시사",
-          "역사/문화",
-          "영화/음악",
-          "업무/직무",
-          "MBTI/성향",
-          "밈/트렌드",
-          "라이프스타일",
-          "과학/기술/IT",
-        ]}
-        value={formData.topic}
-        onValueChange={(value) =>
-          setFormData({ ...formData, topic: value as string })
-        }
-        type="single"
-        required={true}
-      />
+      <div className="space-y-3">
+        <div className="flex flex-cols gap-1">
+          <label className="text-sm font-medium text-foreground">소재</label>
+          <span className="text-destructive text-sm">*</span>
+        </div>
+        <ButtonSelect
+          value={formData.topic}
+          onChange={(value) =>
+            setFormData({ ...formData, topic: value as string })
+          }
+          name="topic"
+          options={[
+            { label: "전체", value: "전체" },
+            { label: "일반상식", value: "일반상식" },
+            { label: "학교 교과목", value: "학교 교과목" },
+            { label: "시사", value: "시사" },
+            { label: "역사/문화", value: "역사/문화" },
+            { label: "영화/음악", value: "영화/음악" },
+            { label: "업무/직무", value: "업무/직무" },
+            { label: "MBTI/성향", value: "MBTI/성향" },
+            { label: "밈/트렌드", value: "밈/트렌드" },
+            { label: "라이프스타일", value: "라이프스타일" },
+            { label: "과학/기술/IT", value: "과학/기술/IT" },
+          ]}
+        />
+      </div>
 
-      <OptionGroup
-        label="연령대"
-        name="ageGroup"
-        options={["전체", "유아", "아동", "청소년", "성인", "시니어"]}
-        value={formData.ageGroup}
-        onValueChange={(value) =>
-          setFormData({ ...formData, ageGroup: value as string })
-        }
-        type="single"
-        required={true}
-      />
+      <div className="space-y-3">
+        <div className="flex flex-cols gap-1">
+          <label className="text-sm font-medium text-foreground">연령대</label>
+        </div>
+        <ButtonSelect
+          value={formData.ageGroup}
+          onChange={(value) => {
+            setFormData({ ...formData, ageGroup: value as string });
+          }}
+          name="ageGroup"
+          options={[
+            { label: "전체", value: "전체" },
+            { label: "유아", value: "유아" },
+            { label: "아동", value: "아동" },
+            { label: "청소년", value: "청소년" },
+            { label: "성인", value: "성인" },
+            { label: "시니어", value: "시니어" },
+          ]}
+        />
+      </div>
 
-      <OptionGroup
-        label="상황"
-        name="situation"
-        options={["친목", "콘텐츠", "교육"]}
-        value={formData.situation}
-        onValueChange={(value) =>
-          setFormData({ ...formData, situation: value as string })
-        }
-      />
-
-      <OptionGroup
-        label="유형"
-        name="format"
-        options={Object.values(BlockDisplayName)}
-        value={formData.format}
-        onValueChange={(value) =>
-          setFormData({ ...formData, format: value as string[] })
-        }
-        type="multiple"
-      />
-
-      <OptionGroup
-        label="난이도"
-        name="difficulty"
-        options={["아주쉬움", "쉬움", "보통", "어려움", "아주어려움"]}
-        value={formData.difficulty}
-        onValueChange={(value) =>
-          setFormData({ ...formData, difficulty: value as string })
-        }
-      />
+      <div className="space-y-3">
+        <div className="flex flex-cols gap-1">
+          <label className="text-sm font-medium text-foreground">유형</label>
+          <span className="text-destructive text-sm">*</span>
+        </div>
+        <ButtonSelect
+          value={formData.format}
+          multiple={true}
+          onChange={(value) => {
+            setFormData({ ...formData, format: value as string[] });
+          }}
+          name="format"
+          options={Object.values(BlockDisplayName).map((value) => ({
+            label: value,
+            value: value,
+          }))}
+        />
+      </div>
 
       <Button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-lg mt-10 py-6 text-base"
+        className="w-full rounded-lg py-6 text-base"
       >
-        {isPending ? "문제집 생성 중..." : "문제 만들기"}
+        {isPending && <Loader className="size-4 animate-spin" />}
+        문제 만들기
       </Button>
     </form>
   );
