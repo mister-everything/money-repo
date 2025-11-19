@@ -4,7 +4,13 @@ import { equal } from "@workspace/util";
 import { ChatStatus, isToolUIPart, type UIMessage } from "ai";
 
 import { memo } from "react";
-import { AssistantTextPart, UserMessagePart } from "./part";
+import { AssistantTextPart, ReasoningPart, UserMessagePart } from "./part";
+
+function isStreamingMessage(
+  props: Pick<MessageProps, "status" | "isLastMessage">,
+) {
+  return props.status == "streaming" && props.isLastMessage;
+}
 
 export interface MessageProps {
   message: UIMessage;
@@ -17,7 +23,6 @@ const PurePreviewMessage = ({
   status,
   isLastMessage,
 }: MessageProps) => {
-  const isStreaming = status == "streaming" && isLastMessage;
   if (message.role == "system") {
     return null; // system message 는 표기하지 않음
   }
@@ -27,10 +32,22 @@ const PurePreviewMessage = ({
         <div className="flex flex-col gap-4 w-full">
           {message.parts.map((part, index) => {
             const key = `message-${message.id}-${index}`;
+            const isLastPart = index === message.parts.length - 1;
+            const isStreaming =
+              isStreamingMessage({
+                status,
+                isLastMessage,
+              }) && isLastPart;
 
             if (part.type === "text") {
               if (message.role == "user")
-                return <UserMessagePart part={part} key={key} />;
+                return (
+                  <UserMessagePart
+                    part={part}
+                    key={key}
+                    streaming={isStreaming}
+                  />
+                );
               else
                 return (
                   <AssistantTextPart
@@ -43,10 +60,7 @@ const PurePreviewMessage = ({
 
             if (part.type === "reasoning") {
               return (
-                <div className="flex flex-col" key={key}>
-                  <span>Reasoning Part</span>
-                  <span>{part.text}</span>
-                </div>
+                <ReasoningPart part={part} key={key} streaming={isStreaming} />
               );
             }
 
@@ -68,10 +82,6 @@ const PurePreviewMessage = ({
     </div>
   );
 };
-
-function isStreamingMessage(props: MessageProps) {
-  return props.status == "streaming" && props.isLastMessage;
-}
 
 export const Message = memo(
   PurePreviewMessage,
