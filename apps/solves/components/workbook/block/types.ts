@@ -6,9 +6,7 @@ import {
   WorkbookBlock,
 } from "@service/solves/shared";
 
-export type BlockMode = "edit" | "solve" | "review";
-
-export type BaseBlockProps<T extends BlockType = BlockType> = {
+type BaseBlockProps<T extends BlockType = BlockType> = {
   id: string;
   question: string;
   order: number;
@@ -37,3 +35,8 @@ export type ReviewBlockProps<T extends BlockType = BlockType> =
     submit: BlockAnswerSubmit<T>;
     isCorrect: boolean;
   };
+
+export type BlockDefaultProps<T extends BlockType = BlockType> =
+  | EditBlockProps<T>
+  | SolveBlockProps<T>
+  | ReviewBlockProps<T>;

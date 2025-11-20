@@ -1,5 +1,9 @@
-import { EditBlockProps, ReviewBlockProps, SolveBlockProps } from "./types";
+import { ComponentProps } from "react";
+import { Card } from "@/components/ui/card";
+import { BlockDefaultProps } from "./types";
 
-type BlockProps = EditBlockProps | SolveBlockProps | ReviewBlockProps;
+type Props = BlockDefaultProps & ComponentProps<"div">;
 
-export function Block({}: BlockProps) {}
+export function Block({}: Props) {
+  return <Card></Card>;
+}
