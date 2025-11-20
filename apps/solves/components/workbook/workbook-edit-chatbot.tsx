@@ -7,11 +7,11 @@ import { DefaultChatTransport, UIMessage } from "ai";
 import { SendIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Message } from "@/components/chat/message";
+import { ModelDropDownMenu } from "@/components/chat/model-drop-down-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToRef } from "@/hooks/use-to-ref";
 import { handleErrorToast } from "@/lib/handle-toast";
-import { ModelDropDown } from "../chat/model-drop-down";
 
 interface WorkbooksCreateChatProps {
   threadId?: string;
@@ -99,9 +99,7 @@ export function WorkbooksCreateChat({
       </div>
       <div className="p-4 flex flex-col gap-2">
         <div className="w-full flex justify-end">
-          <ModelDropDown defaultModel={model} onModelChange={setModel}>
-            <Button variant={"ghost"}>{model.model}</Button>
-          </ModelDropDown>
+          <ModelDropDownMenu defaultModel={model} onModelChange={setModel} />
         </div>
         <div className="flex gap-2 items-center">
           <Input

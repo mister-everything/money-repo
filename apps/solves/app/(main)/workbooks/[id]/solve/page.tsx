@@ -1,7 +1,6 @@
 import { probService } from "@service/solves";
 import { notFound } from "next/navigation";
 import z from "zod";
-import { ChatDrawer } from "@/components/chat-interface/chat-drawer";
 import { GoBackButton } from "@/components/layouts/go-back-button";
 import { ProblemBook } from "@/components/problem/problem-book";
 import { getSession } from "@/lib/auth/server";
@@ -28,7 +27,6 @@ export default async function Page({
     <div className="bg-background flex h-full flex-col overflow-hidden">
       <div className="px-6 py-6 flex justify-between">
         <GoBackButton />
-        <ChatDrawer />
       </div>
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden">
