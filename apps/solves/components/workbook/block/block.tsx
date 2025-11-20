@@ -1,11 +1,5 @@
-type BlockProps =
-  | {
-      mode: "edit";
-      block: any;
-    }
-  | {
-      mode: "solve";
-      block: any;
-    };
+import { EditBlockProps, ReviewBlockProps, SolveBlockProps } from "./types";
+
+type BlockProps = EditBlockProps | SolveBlockProps | ReviewBlockProps;
 
 export function Block({}: BlockProps) {}

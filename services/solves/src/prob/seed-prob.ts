@@ -33,7 +33,7 @@ export const seedProb = async () => {
   });
 
   for (const block of mockData.slice(0, 2)) {
-    await probService.createProbBlock({
+    await probService.createWorkbookBlock({
       probBookId: probBook.id,
       ownerId: testUser[0].id,
       order: block.order,
@@ -56,7 +56,7 @@ export const seedProb = async () => {
   });
 
   for (const block of mockData.slice(2, 4)) {
-    await probService.createProbBlock({
+    await probService.createWorkbookBlock({
       probBookId: probBook2.id,
       ownerId: testUser[0].id,
       order: block.order,

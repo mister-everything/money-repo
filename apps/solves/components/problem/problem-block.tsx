@@ -1,7 +1,7 @@
 import {
   BlockAnswer,
   BlockAnswerSubmit,
-  ProbBlockWithoutAnswer,
+  WorkbookBlockWithoutAnswer,
 } from "@service/solves/shared";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { ContentRenderer } from "./content-renderer";
 import { ProblemOptions } from "./problem-options";
 
 interface ProblemBlockProps {
-  problem: ProbBlockWithoutAnswer;
+  problem: WorkbookBlockWithoutAnswer;
   problemNumber: number;
   submittedAnswer?: BlockAnswerSubmit; // 제출된 답안
   onAnswerChange?: (problemId: string, answer: BlockAnswerSubmit) => void;

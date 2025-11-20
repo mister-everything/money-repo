@@ -19,7 +19,7 @@ export type Tag = {
 /**
  * 문제 블록 (단일 문제)
  */
-export type ProbBlock<T extends BlockType = BlockType> = {
+export type WorkbookBlock<T extends BlockType = BlockType> = {
   id: string; // uuid
   question?: string;
   type: T;
@@ -29,7 +29,7 @@ export type ProbBlock<T extends BlockType = BlockType> = {
 };
 
 // 풀이 모드에서 사용하는 문제 블록
-export type ProbBlockWithoutAnswer = Omit<ProbBlock, "answer">;
+export type WorkbookBlockWithoutAnswer = Omit<WorkbookBlock, "answer">;
 
 /**
  * 문제집 (여러 문제의 모음)
@@ -38,7 +38,7 @@ export type ProbBook = {
   id: string; // uuid
   title: string;
   description?: string;
-  blocks: ProbBlockWithoutAnswer[];
+  blocks: WorkbookBlockWithoutAnswer[];
   tags: string[];
   isPublic: boolean;
   owner: Owner;
@@ -64,7 +64,7 @@ export const createProbBookSchema = z.object({
 });
 export type CreateProbBook = z.infer<typeof createProbBookSchema>;
 
-export const createProbBlockSchema = z.object({
+export const createWorkbookBlockSchema = z.object({
   probBookId: z.uuid(),
   ownerId: z.string(),
   order: z.number(),
@@ -73,7 +73,7 @@ export const createProbBlockSchema = z.object({
   content: allContentSchemas,
   answer: allAnswerSchemas,
 });
-export type CreateProbBlock = z.infer<typeof createProbBlockSchema>;
+export type CreateWorkbookBlock = z.infer<typeof createWorkbookBlockSchema>;
 
 /**
  * probBookSubmitsTable에 대응하는 타입
@@ -90,7 +90,7 @@ export type ProbBookSubmit = {
 /**
  * probBlockAnswerSubmitsTable에 대응하는 타입
  */
-export type ProbBlockAnswerSubmitRecord = {
+export type WorkbookBlockAnswerSubmitRecord = {
   blockId: string;
   submitId: string;
   answer: BlockAnswerSubmit;

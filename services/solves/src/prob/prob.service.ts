@@ -11,15 +11,15 @@ import {
   tagsTable,
 } from "./schema";
 import {
-  CreateProbBlock,
   CreateProbBook,
-  createProbBlockSchema,
+  CreateWorkbookBlock,
   createProbBookSchema,
-  ProbBlock,
+  createWorkbookBlockSchema,
   ProbBook,
   ProbBookSubmitSession,
   ProbBookWithoutBlocks,
   SubmitProbBookResponse,
+  WorkbookBlock,
 } from "./types";
 
 export const probService = {
@@ -221,18 +221,20 @@ export const probService = {
   /**
    * 문제 생성
    */
-  createProbBlock: async (probBlock: CreateProbBlock): Promise<ProbBlock> => {
-    const parsedProbBlock = createProbBlockSchema.parse(probBlock);
+  createWorkbookBlock: async (
+    probBlock: CreateWorkbookBlock,
+  ): Promise<WorkbookBlock> => {
+    const parsedWorkbookBlock = createWorkbookBlockSchema.parse(probBlock);
     const data: typeof probBlocksTable.$inferInsert = {
-      probBookId: parsedProbBlock.probBookId,
-      order: parsedProbBlock.order,
-      type: parsedProbBlock.type,
-      question: parsedProbBlock.question,
-      content: parsedProbBlock.content,
-      answer: parsedProbBlock.answer,
+      probBookId: parsedWorkbookBlock.probBookId,
+      order: parsedWorkbookBlock.order,
+      type: parsedWorkbookBlock.type,
+      question: parsedWorkbookBlock.question,
+      content: parsedWorkbookBlock.content,
+      answer: parsedWorkbookBlock.answer,
     };
 
-    const [newProbBlock] = await pgDb
+    const [newWorkbookBlock] = await pgDb
       .insert(probBlocksTable)
       .values(data)
       .returning({
@@ -245,19 +247,19 @@ export const probService = {
       });
 
     return {
-      id: newProbBlock.id,
-      type: newProbBlock.type,
-      content: newProbBlock.content,
-      question: newProbBlock.question ?? undefined,
-      answer: newProbBlock.answer ?? undefined,
-      order: newProbBlock.order,
+      id: newWorkbookBlock.id,
+      type: newWorkbookBlock.type,
+      content: newWorkbookBlock.content,
+      question: newWorkbookBlock.question ?? undefined,
+      answer: newWorkbookBlock.answer ?? undefined,
+      order: newWorkbookBlock.order,
     };
   },
 
   /**
    * 문제 삭제
    */
-  deleteProbBlock: async (id: string): Promise<void> => {
+  deleteWorkbookBlock: async (id: string): Promise<void> => {
     await pgDb.delete(probBlocksTable).where(eq(probBlocksTable.id, id));
   },
 
