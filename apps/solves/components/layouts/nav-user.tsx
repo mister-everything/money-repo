@@ -1,4 +1,5 @@
 "use client";
+
 import {
   ChevronUpIcon,
   LogOutIcon,
@@ -10,6 +11,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { memo, useCallback, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +19,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth/client";
+import { cn } from "@/lib/utils";
 
 export const NavUser = memo(function NavUser() {
   const { data, isPending, isRefetching } = authClient.useSession();
+  const { state } = useSidebar();
 
   const handleSignOut = useCallback(() => {
     authClient.signOut().finally(() => {
@@ -35,19 +40,17 @@ export const NavUser = memo(function NavUser() {
     return !isPending && !data && !isRefetching;
   }, [data, isPending, isRefetching]);
 
-  if (isAnonymous) return null;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+  const trigger = useMemo(() => {
+    if (state == "expanded") {
+      return (
         <div
           data-testid="sidebar-user-button"
           className="pointer-events-auto data-[state=open]:bg-primary/5! hover:bg-primary/5! flex items-center gap-2 p-2 rounded-lg text-sm"
         >
           {isPending ? (
-            <Skeleton className="rounded-full size-7" />
+            <Skeleton className="rounded-full size-6" />
           ) : (
-            <Avatar className="rounded-full size-7 border mr-1">
+            <Avatar className="rounded-full size-6 border mr-1">
               <AvatarImage
                 className="object-cover"
                 src={data?.user.image ?? ""}
@@ -75,12 +78,44 @@ export const NavUser = memo(function NavUser() {
             <ChevronUpIcon className="ml-auto size-4! text-muted-foreground" />
           )}
         </div>
-      </DropdownMenuTrigger>
+      );
+    }
+    if (isPending) {
+      return <Skeleton className="rounded-full size-6" />;
+    }
+    return (
+      <Button
+        size="icon"
+        variant="ghost"
+        className="flex items-center justify-center"
+      >
+        <Avatar className="rounded-full size-6 border mr-1">
+          <AvatarImage
+            className="object-cover"
+            src={data?.user.image ?? ""}
+            alt={`${data?.user.name} 프로필 사진`}
+          />
+          <AvatarFallback>{data?.user.name.at(0)}</AvatarFallback>
+        </Avatar>
+      </Button>
+    );
+  }, [state, isPending, data]);
+
+  if (isAnonymous) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) rounded-lg"
-        side="top"
-        align="center"
+        className={cn(
+          "rounded-lg",
+          state == "expanded"
+            ? "w-(--radix-dropdown-menu-trigger-width)"
+            : "w-72",
+        )}
+        side={state == "expanded" ? "top" : "right"}
+        align={state == "expanded" ? "center" : "end"}
       >
         <div className="p-4 flex flex-col justify-center items-center gap-2 relative">
           <Avatar className="rounded-full size-14 border mr-1 ">

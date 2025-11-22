@@ -1,7 +1,7 @@
 import { probService } from "@service/solves";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/server";
-import { errorResponse } from "@/lib/response";
+import { nextFail } from "@/lib/protocol/next-route-helper";
 
 /**
  * GET /api/prob/[id]/session
@@ -28,10 +28,7 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error starting/resuming prob book session:", error);
-    return NextResponse.json(
-      errorResponse("세션 시작 중 오류가 발생했습니다."),
-      { status: 500 },
-    );
+    return nextFail(error);
   }
 }
 
@@ -50,9 +47,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting prob book session:", error);
-    return NextResponse.json(
-      errorResponse("세션 삭제 중 오류가 발생했습니다."),
-      { status: 500 },
-    );
+    return nextFail(error);
   }
 }

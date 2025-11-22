@@ -34,7 +34,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         provider,
         modelName,
       );
-      if (price === null) {
+      if (!price) {
         throw new Error(
           `Price not found for provider: ${provider} and model: ${modelName}`,
         );
@@ -64,7 +64,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         provider,
         modelName,
       );
-      if (price === null) {
+      if (!price) {
         throw new Error(
           `Price not found for provider: ${provider} and model: ${modelName}`,
         );

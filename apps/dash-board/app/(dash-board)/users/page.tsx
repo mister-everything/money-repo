@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { isSafeFail } from "@/lib/protocol/interface";
 import { getUsers } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,13 @@ export default async function UsersPage(props: { searchParams: SearchParams }) {
   const page = Number(searchParams.page) || 1;
   const search = (searchParams.search as string) || "";
 
-  const { users, totalCount, totalPages } = await getUsers(page, search);
+  const result = await getUsers({ page, search });
+
+  if (isSafeFail(result)) {
+    throw new Error(result.message);
+  }
+
+  const { users, totalCount, totalPages } = result.data;
 
   return (
     <div className="container mx-auto py-8 space-y-8">

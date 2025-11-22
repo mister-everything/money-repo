@@ -7,5 +7,5 @@ export default defineConfig({
     restoreMocks: true,
     testTimeout: 30000,
   },
-  plugins: [tsconfigPaths()],
+  plugins: [tsconfigPaths() as any],
 });
