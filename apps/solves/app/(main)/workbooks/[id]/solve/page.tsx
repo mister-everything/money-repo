@@ -13,11 +13,9 @@ export default async function Page({
 }) {
   const { id } = await params;
 
-  const hasPermission = await probService.hasProbBookPermission(id, "1");
-
   const book = await probService.selectProbBookById(id);
 
-  if (!hasPermission || !book)
+  if (!book)
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto p-6">
