@@ -1,3 +1,4 @@
+import { BookOpen, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -5,7 +6,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarLink,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -44,7 +44,12 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarLink href="/workbooks">문제 풀기</SidebarLink>
+          <SidebarMenuButton asChild>
+            <Link href="/workbooks">
+              <BookOpen />
+              문제 풀기
+            </Link>
+          </SidebarMenuButton>
           <SidebarMenuItem>
             <SidebarMenuSub>
               <SidebarMenuSubItem>
@@ -61,7 +66,12 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarLink href="/workbooks/new">문제 생성</SidebarLink>
+          <SidebarMenuButton asChild>
+            <Link href="/workbooks/new">
+              <Pencil />
+              문제 생성
+            </Link>
+          </SidebarMenuButton>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">
