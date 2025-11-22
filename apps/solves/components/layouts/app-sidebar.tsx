@@ -1,4 +1,4 @@
-import { BookOpen, Pencil, Plus } from "lucide-react";
+import { BookOpen, Pencil } from "lucide-react";
 import Link from "next/link";
 import {
   Sidebar,
