@@ -4,10 +4,10 @@ import { getSession } from "@/lib/auth/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  const probBookId = params.id;
+  const { id: probBookId } = await params;
 
   try {
     const result = await probService.getLatestProbBookResult(
