@@ -1,6 +1,6 @@
 import { probService } from "@service/solves";
-import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/server";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 export async function GET(
   request: Request,
@@ -16,18 +16,12 @@ export async function GET(
     );
 
     if (!result) {
-      return NextResponse.json({ success: false, error: "Result not found" });
+      return nextFail("Result not found");
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-    });
+    return nextOk(result);
   } catch (error) {
     console.error("Error fetching result:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal Server Error" },
-      { status: 500 },
-    );
+    return nextFail("Internal Server Error");
   }
 }

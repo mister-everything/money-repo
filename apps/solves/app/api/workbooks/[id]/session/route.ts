@@ -1,7 +1,7 @@
 import { probService } from "@service/solves";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
-import { nextFail } from "@/lib/protocol/next-route-helper";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * GET /api/prob/[id]/session
@@ -22,10 +22,7 @@ export async function GET(
       session.user.id,
     );
 
-    return NextResponse.json({
-      success: true,
-      data: sessionData,
-    });
+    return nextOk(sessionData);
   } catch (error) {
     console.error("Error starting/resuming prob book session:", error);
     return nextFail(error);
@@ -44,7 +41,7 @@ export async function DELETE(
     const { id } = await params;
     const session = await getSession();
     await probService.deleteProbBookSession(id, session.user.id);
-    return NextResponse.json({ success: true });
+    return nextOk("세션이 삭제 되었습니다.");
   } catch (error) {
     console.error("Error deleting prob book session:", error);
     return nextFail(error);
