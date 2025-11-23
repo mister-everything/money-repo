@@ -1,9 +1,7 @@
 import { probService } from "@service/solves";
 import { notFound } from "next/navigation";
-import z from "zod";
 import { GoBackButton } from "@/components/layouts/go-back-button";
 import { ProblemBook } from "@/components/problem/problem-book";
-import { getSession } from "@/lib/auth/server";
 
 export default async function Page({
   params,
@@ -11,14 +9,14 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const session = await getSession();
+  // const session = await getSession();
 
-  const hasPermission = await probService.hasProbBookPermission(
-    z.uuid().parse(id),
-    session.user.id,
-  );
+  // const hasPermission = await probService.hasProbBookPermission(
+  //   z.uuid().parse(id),
+  //   session.user.id,
+  // );
 
-  if (!hasPermission) throw new Error("문제집에 접근할 수 없습니다.");
+  // if (!hasPermission) throw new Error("문제집에 접근할 수 없습니다.");
 
   const book = await probService.selectProbBookById(id);
   if (!book) notFound();

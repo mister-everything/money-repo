@@ -35,7 +35,7 @@ export type WorkbookBlockWithoutAnswer = Omit<WorkbookBlock, "answer">;
  * 문제집 (여러 문제의 모음)
  */
 export type ProbBook = {
-  id: string; // uuid
+  id: string;
   title: string;
   description?: string;
   blocks: WorkbookBlockWithoutAnswer[];
@@ -43,6 +43,7 @@ export type ProbBook = {
   isPublic: boolean;
   owner: Owner;
   thumbnail?: string;
+  createdAt: Date;
 };
 
 export type ProbBookWithoutBlocks = Omit<ProbBook, "blocks">;
@@ -118,4 +119,15 @@ export type SubmitProbBookResponse = {
     blockId: string;
     answer: BlockAnswer;
   }>;
+};
+
+export type ProbBookInProgress = ProbBookWithoutBlocks & {
+  startTime: Date;
+};
+
+export type ProbBookCompleted = ProbBookWithoutBlocks & {
+  startTime: Date;
+  endTime: Date;
+  score: number;
+  totalProblems: number;
 };

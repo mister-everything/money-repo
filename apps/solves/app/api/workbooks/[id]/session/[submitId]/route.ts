@@ -1,7 +1,7 @@
 import { probService } from "@service/solves";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
-import { nextFail } from "@/lib/protocol/next-route-helper";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * DELETE /api/workbooks/[id]/session/[submitId]
@@ -15,7 +15,7 @@ export async function DELETE(
     const { submitId } = await params;
     const session = await getSession();
     await probService.deleteProbBookSession(submitId, session.user.id);
-    return NextResponse.json({ success: true });
+    return nextOk({ success: true });
   } catch (error) {
     console.error("Error deleting prob book session:", error);
     return nextFail(error);

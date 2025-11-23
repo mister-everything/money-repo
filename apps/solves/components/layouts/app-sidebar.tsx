@@ -1,3 +1,4 @@
+import { BookOpen, Pencil } from "lucide-react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -5,10 +6,12 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarLink,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
@@ -41,10 +44,34 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
-            <SidebarLink href="/workbooks">문제 풀기</SidebarLink>
-            <SidebarLink href="/workbooks/new">문제 생성</SidebarLink>
-          </SidebarMenu>
+          <SidebarMenuButton asChild>
+            <Link href="/workbooks">
+              <BookOpen />
+              문제 풀기
+            </Link>
+          </SidebarMenuButton>
+          <SidebarMenuItem>
+            <SidebarMenuSub>
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton asChild>
+                  <Link href="/workbooks/in-progress">풀고 있는 문제집</Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+              <SidebarMenuSubItem>
+                <SidebarMenuSubButton asChild>
+                  <Link href="/workbooks/completed">다 푼 문제집</Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            </SidebarMenuSub>
+          </SidebarMenuItem>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarMenuButton asChild>
+            <Link href="/workbooks/new">
+              <Pencil />
+              문제 생성
+            </Link>
+          </SidebarMenuButton>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">
