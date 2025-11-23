@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/card";
 import { InDevelopment } from "@/components/ui/in-development";
 import { cn } from "@/lib/utils";
-import { DefaultBlockContent, McqBlockContent } from "./block-content";
+import {
+  DefaultBlockContent,
+  McqBlockContent,
+  McqSingleBlockContent,
+} from "./block-content";
 import { BlockQuestion } from "./block-question";
 import { BlockComponentMode } from "./types";
 
@@ -121,6 +125,17 @@ function PureBlock<T extends BlockType = BlockType>({
           />
         ) : blockPropsTypeGuard("mcq", props) ? (
           <McqBlockContent
+            content={props.content}
+            isCorrect={props.isCorrect}
+            answer={props.answer}
+            submit={props.submit}
+            mode={props.mode}
+            onUpdateContent={props.onUpdateContent}
+            onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
+            onUpdateAnswer={props.onUpdateAnswer}
+          />
+        ) : blockPropsTypeGuard("mcq-single", props) ? (
+          <McqSingleBlockContent
             content={props.content}
             isCorrect={props.isCorrect}
             answer={props.answer}

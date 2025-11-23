@@ -3,8 +3,9 @@
 import { workBookService } from "@service/solves";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale/ko";
-
+import z from "zod";
 import { getSession } from "@/lib/auth/server";
+import { fail } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
 const generateDefaultTitle = () => {
@@ -24,3 +25,20 @@ export const createWorkbookAction = safeAction(async (formData: FormData) => {
 
   return savedProbBook;
 });
+
+export const updateWorkbookAction = safeAction(
+  z.object({
+    id: z.string(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+  }),
+  async ({ id, title, description }) => {
+    const session = await getSession();
+    const hasPermission = await workBookService.isProbBookOwner(
+      id,
+      session.user.id,
+    );
+    if (!hasPermission) return fail("권한이 없습니다.");
+    await workBookService.updateWorkBook({ id, title, description });
+  },
+);

@@ -1,3 +1,4 @@
+import { generateUUID } from "@workspace/util";
 import {
   All_BLOCKS,
   BlockAnswer,
@@ -5,6 +6,7 @@ import {
   type BlockContent,
   type BlockType,
 } from "./blocks";
+import { WorkBookBlock } from "./types";
 
 type ContentGuardMap = {
   [K in BlockType]: (value: unknown) => value is BlockContent<K>;
@@ -100,4 +102,95 @@ export const blockDisplayNames = Object.entries(All_BLOCKS).reduce(
 
 export const getBlockDisplayName = (blockType: BlockType) => {
   return blockDisplayNames[blockType];
+};
+
+export const initializeBlock = (
+  blockType: BlockType,
+  order?: number,
+): WorkBookBlock => {
+  switch (blockType) {
+    case "default":
+      const defaultBlock: WorkBookBlock<"default"> = {
+        id: generateUUID(),
+        question: "",
+        type: blockType,
+        answer: {
+          type: blockType,
+          answer: [],
+        },
+        content: {
+          type: blockType,
+        },
+        order: order ?? 0,
+      };
+      return defaultBlock;
+    case "mcq":
+      const mcqBlock: WorkBookBlock<"mcq"> = {
+        id: generateUUID(),
+        question: "",
+        type: blockType,
+        content: {
+          type: blockType,
+          options: [],
+        },
+        answer: {
+          type: blockType,
+          answer: [],
+        },
+        order: order ?? 0,
+      };
+      return mcqBlock;
+    case "mcq-single":
+      const mcqSingleBlock: WorkBookBlock<"mcq-single"> = {
+        id: generateUUID(),
+        question: "",
+        type: blockType,
+        content: {
+          type: blockType,
+          options: [],
+        },
+        answer: {
+          type: blockType,
+          answer: "",
+        },
+        order: order ?? 0,
+      };
+      return mcqSingleBlock;
+    case "ranking":
+      const rankingBlock: WorkBookBlock<"ranking"> = {
+        id: generateUUID(),
+        question: "",
+        type: blockType,
+        content: {
+          type: blockType,
+          items: [],
+        },
+        answer: {
+          type: blockType,
+          order: [],
+        },
+        order: order ?? 0,
+      };
+      return rankingBlock;
+
+    case "ox":
+      const oxBlock: WorkBookBlock<"ox"> = {
+        id: generateUUID(),
+        question: "",
+        type: blockType,
+        content: {
+          type: blockType,
+          oOption: { id: generateUUID(), type: "text", text: "O" },
+          xOption: { id: generateUUID(), type: "text", text: "X" },
+        },
+        answer: {
+          type: blockType,
+          answer: "o",
+        },
+        order: order ?? 0,
+      };
+      return oxBlock;
+    default:
+      throw new Error(`찾을 수 없는 블럭 유형: ${blockType}`);
+  }
 };

@@ -1,7 +1,9 @@
 import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import z from "zod";
+import { GoBackButton } from "@/components/layouts/go-back-button";
 import { InDevelopment } from "@/components/ui/in-development";
+import { WorkbookEdit } from "@/components/workbook/workbook-edit";
 import { WorkbooksCreateChat } from "@/components/workbook/workbook-edit-chatbot";
 import { getSession } from "@/lib/auth/server";
 
@@ -24,25 +26,14 @@ export default async function ProbEditPage({
   if (!book) notFound();
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col p-4">
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="w-full">
+            <GoBackButton>처음부터 다시 만들기</GoBackButton>
+          </div>
           <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
-              <div className="mb-8 space-y-4">
-                <div>
-                  <h1 className="mb-2 text-2xl font-bold text-foreground">
-                    문제집 제목
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    문제집 한줄 설명 어쩌구
-                  </p>
-                </div>
-              </div>
-              <InDevelopment className="h-screen">
-                {JSON.stringify(book, null, 2)}
-              </InDevelopment>
-            </div>
+            <WorkbookEdit book={book} />
           </div>
         </div>
 

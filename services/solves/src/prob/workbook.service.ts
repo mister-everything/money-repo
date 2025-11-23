@@ -216,6 +216,20 @@ export const workBookService = {
     return newProbBook;
   },
 
+  updateWorkBook: async (probBook: {
+    id: string;
+    title?: string;
+    description?: string;
+  }): Promise<void> => {
+    await pgDb
+      .update(probBooksTable)
+      .set({
+        title: probBook.title,
+        description: probBook.description,
+      })
+      .where(eq(probBooksTable.id, probBook.id));
+  },
+
   /**
    * 문제집 삭제
    */
