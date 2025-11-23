@@ -17,6 +17,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
+import { InDevelopment } from "@/components/ui/in-development";
 import { cn } from "@/lib/utils";
 import { DefaultBlockContent, McqBlockContent } from "./block-content";
 import { BlockQuestion } from "./block-question";
@@ -107,7 +108,7 @@ export function Block<T extends BlockType = BlockType>({
         />
       </CardHeader>
       <CardContent>
-        {blockPropsTypeGuard("default", props) && (
+        {blockPropsTypeGuard("default", props) ? (
           <DefaultBlockContent
             content={props.content}
             isCorrect={props.isCorrect}
@@ -118,8 +119,7 @@ export function Block<T extends BlockType = BlockType>({
             onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
             onUpdateAnswer={props.onUpdateAnswer}
           />
-        )}
-        {blockPropsTypeGuard("mcq", props) && (
+        ) : blockPropsTypeGuard("mcq", props) ? (
           <McqBlockContent
             content={props.content}
             isCorrect={props.isCorrect}
@@ -130,6 +130,10 @@ export function Block<T extends BlockType = BlockType>({
             onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
             onUpdateAnswer={props.onUpdateAnswer}
           />
+        ) : (
+          <InDevelopment className="w-full text-sm h-48">
+            아직 지원하지 않는 블럭 입니다.
+          </InDevelopment>
         )}
       </CardContent>
       <CardFooter>

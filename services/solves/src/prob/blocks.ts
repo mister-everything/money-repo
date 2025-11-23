@@ -57,7 +57,7 @@ export type DefaultBlockAnswerSubmit = z.infer<
  * type: "mcq"
  * question: 한국의 도시는?
  * options: [{type: "text", text: "서울"}, {type: "text", text: "도쿄"}, {type: "text", text: "나가사키"}, {type: "text", text: "부산"}]
- * answer: [0,2]
+ * answer: 1
  * answerSubmit: [0,2]
  */
 const mcqBlock = blockBuilder("mcq")
@@ -85,6 +85,30 @@ const mcqBlock = blockBuilder("mcq")
       // submitted.length === correctAnswer.answer.length &&
       correctAnswer.answer.some((answer) => submitted.includes(answer))
     );
+  })
+  .build();
+
+const mcqSingleBlock = blockBuilder("mcq-single")
+  .displayName("객관식")
+  .content(
+    z.object({
+      options: z.array(z.union([textOption, sourceOption])).min(2), // 최소 2개의 선택지 필요
+    }),
+  )
+
+  .answer(
+    z.object({
+      answer: z.string().min(1),
+    }),
+  )
+  .answerSubmit(
+    z.object({
+      answer: z.string().min(1),
+    }),
+  )
+  .checker((correctAnswer, submittedAnswer) => {
+    const submitted = submittedAnswer.answer;
+    return correctAnswer.answer === submitted;
   })
   .build();
 
@@ -177,6 +201,7 @@ export type OxBlockAnswerSubmit = z.infer<typeof oxBlock.answerSubmitSchema>;
 export const All_BLOCKS = {
   [defaultBlock.type]: defaultBlock,
   [mcqBlock.type]: mcqBlock,
+  [mcqSingleBlock.type]: mcqSingleBlock,
   [rankingBlock.type]: rankingBlock,
   [oxBlock.type]: oxBlock,
 } as const;
