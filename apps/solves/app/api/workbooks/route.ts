@@ -1,6 +1,6 @@
 import { probService } from "@service/solves";
 import { createProbBookSchema } from "@service/solves/shared";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const probBooks = await probService.searchProbBooks();
 
-    return NextResponse.json(probBooks);
+    return nextOk(probBooks);
   } catch (error) {
     console.error("Error fetching prob books:", error);
     return nextFail("문제집 조회 중 오류가 발생했습니다.");

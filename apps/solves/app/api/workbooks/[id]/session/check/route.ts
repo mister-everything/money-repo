@@ -1,7 +1,7 @@
 import { probService } from "@service/solves";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
-import { nextFail } from "@/lib/protocol/next-route-helper";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * GET /api/prob/[id]/session/check
@@ -22,10 +22,7 @@ export async function GET(
       session.user.id,
     );
 
-    return NextResponse.json({
-      success: true,
-      data: hasSession,
-    });
+    return nextOk(hasSession);
   } catch (error) {
     console.error("Error starting/resuming prob book session:", error);
     return nextFail(error);
