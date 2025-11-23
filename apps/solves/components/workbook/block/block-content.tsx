@@ -26,7 +26,7 @@ type BlockContentProps<T extends BlockType = BlockType> = {
   answer?: BlockAnswer<T>;
   submit?: BlockAnswerSubmit<T>;
 };
-
+// 주관식 문제
 export function DefaultBlockContent({
   answer,
   submit,
@@ -137,6 +137,7 @@ export function DefaultBlockContent({
   );
 }
 
+// 다중 선택 객관식 문제
 export function McqBlockContent({
   answer,
   submit,
@@ -200,6 +201,134 @@ export function McqBlockContent({
               ? prevAnswer?.filter((id) => id !== optionId)
               : [...prevAnswer, optionId],
           };
+        });
+    },
+    [onUpdateAnswer, mode, onUpdateSubmitAnswer],
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      {content.options.map((option, index) => {
+        if (option.type == "text") {
+          const name = `problem-option-${option.id}`;
+          const checked = answer?.answer.includes(option.id);
+          const isSelected =
+            mode == "solve" && submit?.answer?.includes(option.id);
+
+          return (
+            <div
+              key={option.id}
+              onClick={() => handleOptionSelect(option.id)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border p-4 transition-colors",
+                (mode == "edit" || mode == "solve") && "cursor-pointer",
+                isSelected &&
+                  isCorrect == false &&
+                  "border-destructive bg-destructive/10",
+                mode != "solve" && checked
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card hover:bg-accent",
+              )}
+            >
+              <input
+                type="checkbox"
+                name={name}
+                checked={checked}
+                value={option.id}
+                className="accent-primary"
+              />
+              <div className="flex w-full items-center justify-between gap-4">
+                <div className="flex-1 text-sm text-foreground">
+                  {option.text}
+                </div>
+              </div>
+              {mode == "edit" && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeOption(index);
+                  }}
+                  size="icon"
+                  className="size-6! hover:bg-destructive/10! hover:text-destructive! text-muted-foreground"
+                  variant="ghost"
+                >
+                  <XIcon className="size-3!" />
+                </Button>
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <InDevelopment key={option.id} className="w-full text-sm h-48">
+            아직 지원하지 않는 옵션 입니다.
+          </InDevelopment>
+        );
+      })}
+      {mode == "edit" && (
+        <Button
+          variant="outline"
+          size="lg"
+          className="border-dashed w-full py-6!"
+          onClick={addOption}
+        >
+          <PlusIcon /> 옵션 추가
+        </Button>
+      )}
+    </div>
+  );
+}
+// 단일 선택 객관식 문제
+export function McqSingleBlockContent({
+  answer,
+  submit,
+  mode,
+  content,
+  onUpdateAnswer,
+  onUpdateContent,
+  onUpdateSubmitAnswer,
+  isCorrect,
+}: BlockContentProps<"mcq-single">) {
+  const addOption = useCallback(async () => {
+    const newAnswer = await notify
+      .prompt({
+        title: "정답 추가",
+        description: "답안을 작성하세요",
+      })
+      .then((answer) => answer.trim());
+    if (!newAnswer) return;
+    onUpdateContent?.((prev) => ({
+      ...prev,
+      options: [
+        ...(prev?.options || []),
+        {
+          id: generateUUID(),
+          text: newAnswer,
+          type: "text",
+        },
+      ],
+    }));
+  }, [onUpdateContent]);
+
+  const removeOption = useCallback(
+    (index: number) => {
+      onUpdateContent?.((prev) => ({
+        ...prev,
+        options: prev?.options?.filter((_, i) => i !== index) || [],
+      }));
+    },
+    [onUpdateContent],
+  );
+
+  const handleOptionSelect = useCallback(
+    (optionId: string) => {
+      if (mode == "solve")
+        return onUpdateSubmitAnswer?.({
+          answer: optionId,
+        });
+      if (mode == "edit")
+        return onUpdateAnswer?.({
+          answer: optionId,
         });
     },
     [onUpdateAnswer, mode, onUpdateSubmitAnswer],

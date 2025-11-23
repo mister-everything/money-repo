@@ -2,8 +2,8 @@
 
 import {
   BlockAnswerSubmit,
-  ProbBook,
-  SubmitProbBookResponse,
+  SubmitWorkBookResponse,
+  WorkBookWithoutAnswer,
 } from "@service/solves/shared";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { ProblemBlock } from "./problem-block";
 
 interface ProblemBookSequentialProps {
-  probBook: ProbBook;
+  probBook: WorkBookWithoutAnswer;
   answers: Record<string, BlockAnswerSubmit>;
   onAnswerChange: (problemId: string, answer: BlockAnswerSubmit) => void;
   onSubmit: () => void;
-  submitResult?: SubmitProbBookResponse;
+  submitResult?: SubmitWorkBookResponse;
 }
 
 export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({

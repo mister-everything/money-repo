@@ -1,4 +1,4 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
@@ -14,7 +14,7 @@ export async function DELETE(
   try {
     const { submitId } = await params;
     const session = await getSession();
-    await probService.deleteProbBookSession(submitId, session.user.id);
+    await workBookService.deleteProbBookSession(submitId, session.user.id);
     return nextOk({ success: true });
   } catch (error) {
     console.error("Error deleting prob book session:", error);

@@ -1,4 +1,4 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import z from "zod";
 import { InDevelopment } from "@/components/ui/in-development";
@@ -14,12 +14,13 @@ export default async function ProbEditPage({
 
   const session = await getSession();
 
-  const hasPermission = await probService.isProbBookOwner(
+  const hasPermission = await workBookService.isProbBookOwner(
     z.uuid().parse(id),
     session.user.id,
   );
   if (!hasPermission) return notFound();
-  const book = await probService.selectProbBookById(id);
+
+  const book = await workBookService.selectProbBookById(id);
   if (!book) notFound();
 
   return (

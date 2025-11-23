@@ -11,20 +11,21 @@ import {
   tagsTable,
 } from "./schema";
 import {
-  CreateProbBook,
-  CreateWorkbookBlock,
-  createProbBookSchema,
-  createWorkbookBlockSchema,
-  ProbBook,
-  ProbBookCompleted,
-  ProbBookInProgress,
-  ProbBookSubmitSession,
-  ProbBookWithoutBlocks,
-  SubmitProbBookResponse,
-  WorkbookBlock,
+  CreateWorkBook,
+  CreateWorkBookBlock,
+  createWorkBookBlockSchema,
+  createWorkBookSchema,
+  SubmitWorkBookResponse,
+  WorkBook,
+  WorkBookBlock,
+  WorkBookCompleted,
+  WorkBookInProgress,
+  WorkBookSubmitSession,
+  WorkBookWithoutAnswer,
+  WorkBookWithoutBlocks,
 } from "./types";
 
-export const probService = {
+export const workBookService = {
   isProbBookOwner: async (
     probBookId: string,
     userId: string,
@@ -38,28 +39,11 @@ export const probService = {
     return probBook?.ownerId === userId;
   },
 
-  hasProbBookPermission: async (
-    probBookId: string,
-    userId: string,
-  ): Promise<boolean> => {
-    const [probBook] = await pgDb
-      .select({
-        id: probBooksTable.id,
-        isPublic: probBooksTable.isPublic,
-        ownerId: probBooksTable.ownerId,
-      })
-      .from(probBooksTable)
-      .where(eq(probBooksTable.id, probBookId));
-    const isOwner = probBook?.ownerId === userId;
-    const isPublic = probBook?.isPublic;
-    return isOwner || isPublic;
-  },
-
   /**
    * 공개된 문제집 목록 조회
    * @todo 검색옵션 추가 (pagination, 검색어, 태그, 퍼블릭 여부, owner,id )
    */
-  async searchProbBooks(options = {}): Promise<ProbBookWithoutBlocks[]> {
+  async searchProbBooks(options = {}): Promise<WorkBookWithoutBlocks[]> {
     const rows = await pgDb
       .select({
         id: probBooksTable.id,
@@ -98,7 +82,21 @@ export const probService = {
     }));
   },
 
-  selectProbBookById: async (id: string): Promise<ProbBook | null> => {
+  selectWorkBookWithoutAnswerById: async (
+    id: string,
+  ): Promise<WorkBookWithoutAnswer | null> => {
+    const book = await workBookService.selectProbBookById(id);
+    if (!book) return null;
+    return {
+      ...book,
+      blocks: book.blocks.map((block) => ({
+        ...block,
+        answer: undefined,
+      })),
+    };
+  },
+
+  selectProbBookById: async (id: string): Promise<WorkBook | null> => {
     const [book] = await pgDb
       .select({
         id: probBooksTable.id,
@@ -131,7 +129,7 @@ export const probService = {
         id: probBlocksTable.id,
         content: probBlocksTable.content,
         question: probBlocksTable.question,
-        // answer: probBlocksTable.answer, // 풀이 모드에서는 정답 데이터 제외
+        answer: probBlocksTable.answer,
         order: probBlocksTable.order,
         type: probBlocksTable.type,
       })
@@ -147,9 +145,10 @@ export const probService = {
       blocks: blocks.map((block) => ({
         id: block.id,
         content: block.content,
-        question: block.question ?? undefined,
+        question: block.question || "",
         order: block.order,
         type: block.type,
+        answer: block.answer!,
       })),
       owner: {
         name: book.ownerName,
@@ -199,8 +198,8 @@ export const probService = {
   /**
    * 문제집 생성
    */
-  createProbBook: async (probBook: CreateProbBook): Promise<{ id: string }> => {
-    const parsedProbBook = createProbBookSchema.parse(probBook);
+  createWorkBook: async (probBook: CreateWorkBook): Promise<{ id: string }> => {
+    const parsedProbBook = createWorkBookSchema.parse(probBook);
     const data: typeof probBooksTable.$inferInsert = {
       ownerId: parsedProbBook.ownerId,
       title: parsedProbBook.title,
@@ -212,7 +211,7 @@ export const probService = {
       .returning({ id: probBooksTable.id });
 
     // if (probBook.tags) {
-    //   await probService.saveTagByBookId(newProbBook.id, probBook.tags);
+    //   await workBookService.saveTagByBookId(newProbBook.id, probBook.tags);
     // }
     return newProbBook;
   },
@@ -227,20 +226,20 @@ export const probService = {
   /**
    * 문제 생성
    */
-  createWorkbookBlock: async (
-    probBlock: CreateWorkbookBlock,
-  ): Promise<WorkbookBlock> => {
-    const parsedWorkbookBlock = createWorkbookBlockSchema.parse(probBlock);
+  createWorkBookBlock: async (
+    probBlock: CreateWorkBookBlock,
+  ): Promise<WorkBookBlock> => {
+    const parsedWorkBookBlock = createWorkBookBlockSchema.parse(probBlock);
     const data: typeof probBlocksTable.$inferInsert = {
-      probBookId: parsedWorkbookBlock.probBookId,
-      order: parsedWorkbookBlock.order,
-      type: parsedWorkbookBlock.type,
-      question: parsedWorkbookBlock.question,
-      content: parsedWorkbookBlock.content,
-      answer: parsedWorkbookBlock.answer,
+      probBookId: parsedWorkBookBlock.probBookId,
+      order: parsedWorkBookBlock.order,
+      type: parsedWorkBookBlock.type,
+      question: parsedWorkBookBlock.question,
+      content: parsedWorkBookBlock.content,
+      answer: parsedWorkBookBlock.answer,
     };
 
-    const [newWorkbookBlock] = await pgDb
+    const [newWorkBookBlock] = await pgDb
       .insert(probBlocksTable)
       .values(data)
       .returning({
@@ -253,19 +252,19 @@ export const probService = {
       });
 
     return {
-      id: newWorkbookBlock.id,
-      type: newWorkbookBlock.type,
-      content: newWorkbookBlock.content,
-      question: newWorkbookBlock.question ?? undefined,
-      answer: newWorkbookBlock.answer ?? undefined,
-      order: newWorkbookBlock.order,
+      id: newWorkBookBlock.id,
+      type: newWorkBookBlock.type,
+      content: newWorkBookBlock.content,
+      question: newWorkBookBlock.question || "",
+      answer: newWorkBookBlock.answer!,
+      order: newWorkBookBlock.order,
     };
   },
 
   /**
    * 문제 삭제
    */
-  deleteWorkbookBlock: async (id: string): Promise<void> => {
+  deleteWorkBookBlock: async (id: string): Promise<void> => {
     await pgDb.delete(probBlocksTable).where(eq(probBlocksTable.id, id));
   },
 
@@ -279,7 +278,7 @@ export const probService = {
   startOrResumeProbBookSession: async (
     probBookId: string,
     userId: string,
-  ): Promise<ProbBookSubmitSession> => {
+  ): Promise<WorkBookSubmitSession> => {
     // 진행 중인 세션 조회 (endTime이 null인 세션)
     const [existingSession] = await pgDb
       .select({
@@ -338,7 +337,7 @@ export const probService = {
       submitId,
       startTime,
       savedAnswers,
-    } as ProbBookSubmitSession;
+    } as WorkBookSubmitSession;
   },
 
   /**
@@ -389,7 +388,7 @@ export const probService = {
     submitId: string,
     probBookId: string,
     answers: Record<string, BlockAnswerSubmit>,
-  ): Promise<SubmitProbBookResponse> => {
+  ): Promise<SubmitWorkBookResponse> => {
     // 문제 목록 조회
     const probBlocks = await pgDb
       .select()
@@ -458,7 +457,7 @@ export const probService = {
         blockId: block.id,
         answer: block.answer,
       })),
-    } as SubmitProbBookResponse;
+    } as SubmitWorkBookResponse;
   },
 
   /**
@@ -511,9 +510,9 @@ export const probService = {
    * @param userId 사용자 ID
    * @returns 풀고있는 문제집 목록
    */
-  getProbBookInProgress: async (
+  getWorkBookInProgress: async (
     userId: string,
-  ): Promise<ProbBookInProgress[]> => {
+  ): Promise<WorkBookInProgress[]> => {
     const rows = await pgDb
       .select({
         id: probBooksTable.id,
@@ -571,7 +570,7 @@ export const probService = {
       },
       createdAt: row.createdAt,
       startTime: row.startTime,
-    })) as ProbBookInProgress[];
+    })) as WorkBookInProgress[];
   },
 
   /**
@@ -581,7 +580,7 @@ export const probService = {
    */
   getCompletedProbBooks: async (
     userId: string,
-  ): Promise<ProbBookCompleted[]> => {
+  ): Promise<WorkBookCompleted[]> => {
     // 각 문제집별 최신 제출 ID 조회
     // 위 방식은 UUID라 위험함. Window function 사용
     const rows = await pgDb
@@ -674,7 +673,7 @@ export const probService = {
       endTime: row.endTime!,
       score: row.score,
       totalProblems: Number(row.totalProblems),
-    })) as ProbBookCompleted[];
+    })) as WorkBookCompleted[];
   },
 
   /**
@@ -685,7 +684,7 @@ export const probService = {
   getLatestProbBookResult: async (
     probBookId: string,
     userId: string,
-  ): Promise<SubmitProbBookResponse | null> => {
+  ): Promise<SubmitWorkBookResponse | null> => {
     // 최신 제출 세션 조회
     const [session] = await pgDb
       .select({
@@ -732,9 +731,9 @@ export const probService = {
     // 블록별 정답 데이터 구성 (클라이언트에서 보여줄 때 필요)
     // 원래 정답은 보안상 클라이언트에 주면 안되지만, 결과 화면에서는 보여줘야 할 수도 있음.
     // 여기서는 사용자가 제출한 답과 정답 여부만 내려주고,
-    // 실제 정답 데이터는 probService.selectProbBookById 에서 가져온 블록 정보에는 answer가 포함되어 있지 않음 (풀이 모드라).
+    // 실제 정답 데이터는 workBookService.selectProbBookById 에서 가져온 블록 정보에는 answer가 포함되어 있지 않음 (풀이 모드라).
     // 결과 모드에서는 정답을 보여줘야 한다면 selectProbBookById를 수정하거나 별도 로직 필요.
-    // 일단 SubmitProbBookResponse 타입에 맞춰서 반환.
+    // 일단 SubmitWorkBookResponse 타입에 맞춰서 반환.
 
     // 문제집의 정답 데이터 조회
     const blocks = await pgDb
@@ -755,6 +754,6 @@ export const probService = {
       correctAnswerIds,
       totalProblems: Number(totalCount.count),
       blockResults,
-    } as SubmitProbBookResponse;
+    } as SubmitWorkBookResponse;
   },
 };

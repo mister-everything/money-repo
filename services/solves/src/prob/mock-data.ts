@@ -1,5 +1,5 @@
 import { BlockAnswer, BlockContent } from "./blocks";
-import { WorkbookBlock } from "./types";
+import { WorkBookBlock } from "./types";
 
 const defaultBlockContent: BlockContent<"default"> = {
   type: "default",
@@ -10,7 +10,7 @@ const defaultBlockAnswer: BlockAnswer<"default"> = {
   answer: ["서울", "서울시", "Seoul"],
 };
 
-const defaultBlock: WorkbookBlock<"default"> = {
+const defaultBlock: WorkBookBlock<"default"> = {
   type: "default",
   content: defaultBlockContent,
   answer: defaultBlockAnswer,
@@ -34,7 +34,7 @@ const mcqBlockAnswer: BlockAnswer<"mcq"> = {
   answer: ["1"],
 };
 
-const mcqBlock: WorkbookBlock<"mcq"> = {
+const mcqBlock: WorkBookBlock<"mcq"> = {
   type: "mcq",
   content: mcqBlockContent,
   answer: mcqBlockAnswer,
@@ -54,7 +54,7 @@ const oxBlockAnswer: BlockAnswer<"ox"> = {
   answer: "o",
 };
 
-const oxBlock: WorkbookBlock<"ox"> = {
+const oxBlock: WorkBookBlock<"ox"> = {
   type: "ox",
   content: oxBlockContent,
   answer: oxBlockAnswer,
@@ -78,7 +78,7 @@ const rankingBlockAnswer: BlockAnswer<"ranking"> = {
   order: ["3", "2", "1", "4"],
 };
 
-const rankingBlock: WorkbookBlock<"ranking"> = {
+const rankingBlock: WorkBookBlock<"ranking"> = {
   type: "ranking",
   content: rankingBlockContent,
   answer: rankingBlockAnswer,
@@ -87,7 +87,7 @@ const rankingBlock: WorkbookBlock<"ranking"> = {
   question: "잘생긴 사람 순서대로 나열하시오.",
 };
 
-export const mockData: WorkbookBlock[] = [
+export const mockData: WorkBookBlock[] = [
   defaultBlock,
   mcqBlock,
   oxBlock,

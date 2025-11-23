@@ -4,13 +4,13 @@ export type ProbBookSaveInput = {
   ownerId: string;
   title: string;
   description?: string;
-  blocks: WorkbookBlockSaveInput[];
+  blocks: WorkBookBlockSaveInput[];
   tags?: string[];
   isPublic?: boolean;
   thumbnail?: string;
 };
 
-export type WorkbookBlockSaveInput = {
+export type WorkBookBlockSaveInput = {
   id?: number;
   type: "default" | "mcq" | "ranking" | "ox" | "matching";
   question?: string;

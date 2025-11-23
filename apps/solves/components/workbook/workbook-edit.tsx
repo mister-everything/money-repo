@@ -3,18 +3,21 @@ import {
   BlockAnswer,
   BlockContent,
   BlockType,
-  ProbBook,
-  WorkbookBlock,
+  WorkBook,
+  WorkBookBlock,
 } from "@service/solves/shared";
 import { applyStateUpdate, StateUpdate } from "@workspace/util";
 import { useCallback, useState } from "react";
 import { Block } from "./block/block";
-import { BlockComponentMode } from "./block/types";
 
-export function WorkbookEdit({ book }: { book: ProbBook }) {
-  const [blocks, setBlocks] = useState<WorkbookBlock[]>(book.blocks);
+export function WorkbookEdit({
+  initialWorkbook,
+}: {
+  initialWorkbook: WorkBook;
+}) {
+  const [blocks, setBlocks] = useState<WorkBookBlock[]>(initialWorkbook.blocks);
 
-  const [mode, setMode] = useState<BlockComponentMode>("preview");
+  const [editingBlockId, setEditingBlockId] = useState<string[]>([]);
 
   const handleUpdateContent = useCallback(
     (id: string, content: StateUpdate<BlockContent<BlockType>>) => {
@@ -50,14 +53,22 @@ export function WorkbookEdit({ book }: { book: ProbBook }) {
       prev.map((b) => (b.id === id ? { ...b, question } : b)),
     );
   }, []);
+  const handleToggleEditMode = useCallback((id: string) => {
+    setEditingBlockId((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((id) => id !== id);
+      }
+      return Array.from(new Set([...prev, id]));
+    });
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 p-8 max-w-3xl">
       {blocks.map((b) => {
         return (
           <Block
-            mode={mode}
-            onChangeMode={setMode}
+            mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
+            onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
             key={b.id}
             type={b.type}
             question={b.question ?? ""}

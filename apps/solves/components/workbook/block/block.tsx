@@ -6,9 +6,9 @@ import {
   BlockType,
   getBlockDisplayName,
 } from "@service/solves/shared";
-import { StateUpdate } from "@workspace/util";
+import { equal, exclude, StateUpdate } from "@workspace/util";
 import { CheckIcon, PencilIcon, XIcon } from "lucide-react";
-import { Ref } from "react";
+import { memo, Ref } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,7 @@ export type BlockProps<T extends BlockType = BlockType> = {
   isCorrect?: boolean;
 
   mode: BlockComponentMode;
-  onChangeMode?: (mode: BlockComponentMode) => void;
+  onToggleEditMode?: () => void;
 
   content: BlockContent<T>;
   answer?: BlockAnswer<T>;
@@ -54,7 +54,7 @@ const blockPropsTypeGuard = <T extends BlockType = BlockType>(
   return props.type === type;
 };
 
-export function Block<T extends BlockType = BlockType>({
+function PureBlock<T extends BlockType = BlockType>({
   className,
   ref,
   ...props
@@ -77,7 +77,7 @@ export function Block<T extends BlockType = BlockType>({
 
           {props.mode === "preview" && (
             <Button
-              onClick={() => props.onChangeMode?.("edit")}
+              onClick={props.onToggleEditMode}
               variant="ghost"
               size="icon"
             >
@@ -86,7 +86,7 @@ export function Block<T extends BlockType = BlockType>({
           )}
           {props.mode === "edit" && (
             <Button
-              onClick={() => props.onChangeMode?.("preview")}
+              onClick={props.onToggleEditMode}
               variant="secondary"
               size="icon"
             >
@@ -144,3 +144,22 @@ export function Block<T extends BlockType = BlockType>({
     </Card>
   );
 }
+
+PureBlock.displayName = "PureBlock";
+
+export const Block = memo(PureBlock, (prev, next) => {
+  const prevProps = exclude(prev, [
+    "onToggleEditMode",
+    "onUpdateContent",
+    "onUpdateAnswer",
+    "onUpdateQuestion",
+  ]);
+  const nextProps = exclude(next, [
+    "onToggleEditMode",
+    "onUpdateContent",
+    "onUpdateAnswer",
+    "onUpdateQuestion",
+  ]);
+  if (!equal(prevProps, nextProps)) return false;
+  return true;
+});

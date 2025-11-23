@@ -1,6 +1,6 @@
 "use server";
 
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale/ko";
 
@@ -17,7 +17,7 @@ const generateDefaultTitle = () => {
 export const createWorkbookAction = safeAction(async (formData: FormData) => {
   const session = await getSession();
 
-  const savedProbBook = await probService.createProbBook({
+  const savedProbBook = await workBookService.createWorkBook({
     title: (formData.get("title") as string) || generateDefaultTitle(),
     ownerId: session.user.id,
   });

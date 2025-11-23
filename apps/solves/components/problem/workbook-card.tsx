@@ -1,11 +1,14 @@
 "use client";
 
-import { ProbBook, ProbBookInProgress } from "@service/solves/shared";
+import {
+  WorkBookInProgress,
+  WorkBookWithoutBlocks,
+} from "@service/solves/shared";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface WorkbookCardProps {
-  book: ProbBook | ProbBookInProgress;
+  book: WorkBookWithoutBlocks | WorkBookInProgress;
 }
 
 export function WorkbookCard({ book }: WorkbookCardProps) {
