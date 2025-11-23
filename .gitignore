@@ -44,3 +44,5 @@ test-results
 
 .cursor/rules
 
+
+next-env.d.ts

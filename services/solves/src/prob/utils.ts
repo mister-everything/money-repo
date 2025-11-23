@@ -89,3 +89,15 @@ export const checkAnswer = (
     submittedAnswer,
   );
 };
+
+export const blockDisplayNames = Object.entries(All_BLOCKS).reduce(
+  (acc, [key, block]) => {
+    acc[key as BlockType] = block.displayName;
+    return acc;
+  },
+  {},
+) as Record<BlockType, string>;
+
+export const getBlockDisplayName = (blockType: BlockType) => {
+  return blockDisplayNames[blockType];
+};

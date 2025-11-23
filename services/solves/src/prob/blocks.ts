@@ -1,4 +1,3 @@
-import { objectFlow } from "@workspace/util";
 import z from "zod";
 import { blockBuilder } from "./create-block";
 
@@ -27,7 +26,7 @@ const sourceOption = z.object({
  */
 const defaultBlock = blockBuilder("default")
   // .content() 은 필요 없음.
-  .displayName("주관식 문제")
+  .displayName("주관식")
   .answer(
     z.object({
       answer: z.array(z.string().min(1)).min(1),
@@ -62,7 +61,7 @@ export type DefaultBlockAnswerSubmit = z.infer<
  * answerSubmit: [0,2]
  */
 const mcqBlock = blockBuilder("mcq")
-  .displayName("객관식 문제")
+  .displayName("객관식")
   .content(
     z.object({
       options: z.array(z.union([textOption, sourceOption])).min(2), // 최소 2개의 선택지 필요
@@ -105,7 +104,7 @@ export type McqBlockAnswerSubmit = z.infer<typeof mcqBlock.answerSubmitSchema>;
  * answerSubmit: ["서울", "나가사키"]
  */
 const rankingBlock = blockBuilder("ranking")
-  .displayName("순위 맞추기 문제")
+  .displayName("순위 맞추기")
   .content(
     z.object({
       items: z.array(z.union([textOption, sourceOption])).min(2),
@@ -147,7 +146,7 @@ export type RankingBlockAnswerSubmit = z.infer<
  * answerSubmit: "x"
  */
 const oxBlock = blockBuilder("ox")
-  .displayName("OX 문제")
+  .displayName("OX")
   .content(
     z.object({
       oOption: z.union([textOption, sourceOption]),
@@ -181,10 +180,6 @@ export const All_BLOCKS = {
   [rankingBlock.type]: rankingBlock,
   [oxBlock.type]: oxBlock,
 } as const;
-
-export const BlockDisplayName = objectFlow(All_BLOCKS).map(
-  (block) => block.displayName,
-);
 
 export type BlockType = keyof typeof All_BLOCKS;
 
