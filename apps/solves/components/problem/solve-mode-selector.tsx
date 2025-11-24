@@ -1,6 +1,6 @@
 "use client";
 
-import { ProbBook } from "@service/solves/shared";
+import { WorkBookWithoutAnswer } from "@service/solves/shared";
 import { BookOpen, CheckIcon, List } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ProblemHeader } from "@/components/problem/problem-header";
@@ -24,7 +24,7 @@ import {
 import { fetcher } from "@/lib/protocol/fetcher";
 
 interface SolveModeSelectorProps {
-  probBook: ProbBook;
+  probBook: WorkBookWithoutAnswer;
   onModeSelect: (mode: "all" | "sequential") => void;
 }
 

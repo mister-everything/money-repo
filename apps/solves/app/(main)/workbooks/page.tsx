@@ -1,4 +1,4 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import Link from "next/link";
 
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 
 export default async function Page() {
-  const probBooks = await probService.searchProbBooks();
+  const probBooks = await workBookService.searchProbBooks();
 
   return (
     <div className="min-h-screen bg-transparent">

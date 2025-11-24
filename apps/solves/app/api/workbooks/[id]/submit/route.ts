@@ -1,4 +1,4 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
@@ -12,7 +12,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const probBook = await probService.selectProbBookById(id);
+    const probBook = await workBookService.selectWorkBookWithoutAnswerById(id);
 
     if (!probBook) {
       return nextFail("문제집을 찾을 수 없습니다.");
@@ -42,7 +42,11 @@ export async function POST(
 
     if (submitId) {
       // 세션 기반 제출
-      result = await probService.submitProbBookSession(submitId, id, answer);
+      result = await workBookService.submitProbBookSession(
+        submitId,
+        id,
+        answer,
+      );
     }
 
     return nextOk(result);

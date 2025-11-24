@@ -1,4 +1,4 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import { GoBackButton } from "@/components/layouts/go-back-button";
 import { ProblemBook } from "@/components/problem/problem-book";
@@ -11,14 +11,14 @@ export default async function Page({
   const { id } = await params;
   // const session = await getSession();
 
-  // const hasPermission = await probService.hasProbBookPermission(
+  // const hasPermission = await workBookService.hasProbBookPermission(
   //   z.uuid().parse(id),
   //   session.user.id,
   // );
 
   // if (!hasPermission) throw new Error("문제집에 접근할 수 없습니다.");
 
-  const book = await probService.selectProbBookById(id);
+  const book = await workBookService.selectWorkBookWithoutAnswerById(id);
   if (!book) notFound();
 
   return (

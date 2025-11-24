@@ -1,4 +1,4 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
@@ -17,7 +17,7 @@ export async function GET(
     const { id } = await params;
     const session = await getSession();
 
-    const hasSession = await probService.hasProbBookSession(
+    const hasSession = await workBookService.hasProbBookSession(
       id,
       session.user.id,
     );

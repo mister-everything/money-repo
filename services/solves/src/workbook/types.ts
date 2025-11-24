@@ -19,26 +19,26 @@ export type Tag = {
 /**
  * 문제 블록 (단일 문제)
  */
-export type ProbBlock<T extends BlockType = BlockType> = {
+export type WorkBookBlock<T extends BlockType = BlockType> = {
   id: string; // uuid
-  question?: string;
+  question: string;
   type: T;
   content: BlockContent<T>;
-  answer?: BlockAnswer<T>;
+  answer: BlockAnswer<T>;
   order: number;
 };
 
 // 풀이 모드에서 사용하는 문제 블록
-export type ProbBlockWithoutAnswer = Omit<ProbBlock, "answer">;
+export type WorkBookBlockWithoutAnswer = Omit<WorkBookBlock, "answer">;
 
 /**
  * 문제집 (여러 문제의 모음)
  */
-export type ProbBook = {
+export type WorkBook = {
   id: string;
   title: string;
   description?: string;
-  blocks: ProbBlockWithoutAnswer[];
+  blocks: WorkBookBlock[];
   tags: string[];
   isPublic: boolean;
   owner: Owner;
@@ -46,7 +46,14 @@ export type ProbBook = {
   createdAt: Date;
 };
 
-export type ProbBookWithoutBlocks = Omit<ProbBook, "blocks">;
+/**
+ * 문제집 (여러 문제의 모음) 사용하지 않음.
+ */
+export type WorkBookWithoutBlocks = Omit<WorkBook, "blocks">;
+
+export type WorkBookWithoutAnswer = WorkBookWithoutBlocks & {
+  blocks: WorkBookBlockWithoutAnswer[];
+};
 
 export const allContentSchemas = z.union(
   Object.values(All_BLOCKS).map((block) => block.contentSchema),
@@ -59,13 +66,13 @@ export const allAnswerSubmitSchemas = z.union(
   Object.values(All_BLOCKS).map((block) => block.answerSubmitSchema),
 ) as z.ZodType<BlockAnswerSubmit>;
 
-export const createProbBookSchema = z.object({
+export const createWorkBookSchema = z.object({
   ownerId: z.string(),
   title: z.string(),
 });
-export type CreateProbBook = z.infer<typeof createProbBookSchema>;
+export type CreateWorkBook = z.infer<typeof createWorkBookSchema>;
 
-export const createProbBlockSchema = z.object({
+export const createWorkBookBlockSchema = z.object({
   probBookId: z.uuid(),
   ownerId: z.string(),
   order: z.number(),
@@ -74,24 +81,12 @@ export const createProbBlockSchema = z.object({
   content: allContentSchemas,
   answer: allAnswerSchemas,
 });
-export type CreateProbBlock = z.infer<typeof createProbBlockSchema>;
-
-/**
- * probBookSubmitsTable에 대응하는 타입
- */
-export type ProbBookSubmit = {
-  id: string;
-  probBookId: string;
-  ownerId: string;
-  startTime: Date;
-  endTime: Date | null;
-  score: number;
-};
+export type CreateWorkBookBlock = z.infer<typeof createWorkBookBlockSchema>;
 
 /**
  * probBlockAnswerSubmitsTable에 대응하는 타입
  */
-export type ProbBlockAnswerSubmitRecord = {
+export type WorkBookBlockAnswerSubmitRecord = {
   blockId: string;
   submitId: string;
   answer: BlockAnswerSubmit;
@@ -102,7 +97,7 @@ export type ProbBlockAnswerSubmitRecord = {
 /**
  * 세션 시작/재개 응답 타입
  */
-export type ProbBookSubmitSession = {
+export type WorkBookSubmitSession = {
   submitId: string;
   startTime: Date;
   savedAnswers: Record<string, BlockAnswerSubmit>;
@@ -111,7 +106,7 @@ export type ProbBookSubmitSession = {
 /**
  * 문제집 제출 결과 타입
  */
-export type SubmitProbBookResponse = {
+export type SubmitWorkBookResponse = {
   score: number;
   correctAnswerIds: string[];
   totalProblems: number;
@@ -121,11 +116,11 @@ export type SubmitProbBookResponse = {
   }>;
 };
 
-export type ProbBookInProgress = ProbBookWithoutBlocks & {
+export type WorkBookInProgress = WorkBookWithoutBlocks & {
   startTime: Date;
 };
 
-export type ProbBookCompleted = ProbBookWithoutBlocks & {
+export type WorkBookCompleted = WorkBookWithoutBlocks & {
   startTime: Date;
   endTime: Date;
   score: number;

@@ -1,4 +1,4 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       return nextFail("세션 ID가 필요합니다.");
     }
 
-    await probService.saveAnswerProgress(submitId, answers);
+    await workBookService.saveAnswerProgress(submitId, answers);
 
     return nextOk({ saved: true });
   } catch (error) {

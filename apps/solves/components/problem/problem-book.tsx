@@ -1,8 +1,8 @@
 "use client";
 import {
   BlockAnswerSubmit,
-  ProbBook,
-  SubmitProbBookResponse,
+  SubmitWorkBookResponse,
+  WorkBookWithoutAnswer,
 } from "@service/solves/shared";
 import confetti from "canvas-confetti";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,7 +16,7 @@ import { ProblemHeader } from "./problem-header";
 import { SolveModeSelector } from "./solve-mode-selector";
 
 interface ProblemBookProps {
-  probBook: ProbBook;
+  probBook: WorkBookWithoutAnswer;
 }
 
 const handleConfetti = () => {
@@ -58,7 +58,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
   const [lastSavedAnswers, setLastSavedAnswers] = useState<
     Record<string, BlockAnswerSubmit>
   >({});
-  const [submitResult, setSubmitResult] = useState<SubmitProbBookResponse>();
+  const [submitResult, setSubmitResult] = useState<SubmitWorkBookResponse>();
   // 세션 초기화 (모드가 선택된 후에만)
   useEffect(() => {
     // 모드가 선택되지 않았으면 세션 초기화 안 함
@@ -145,7 +145,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
 
     await fetcher<{
       success: boolean;
-      data: SubmitProbBookResponse;
+      data: SubmitWorkBookResponse;
     }>(`/api/workbooks/${probBook.id}/submit`, {
       method: "POST",
       body: JSON.stringify({

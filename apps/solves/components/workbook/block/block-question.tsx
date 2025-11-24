@@ -1,51 +1,43 @@
-import { useCallback, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useCallback, useMemo } from "react";
+import { Streamdown } from "streamdown";
+import { Textarea } from "@/components/ui/textarea";
+
+import { BlockComponentMode } from "./types";
 
 interface BlockQuestionProps {
-  question?: string;
-  mode?: "edit" | "solve";
-  onChange?: (question: string) => void;
+  question: string;
+  mode: BlockComponentMode;
+  onChangeQuestion?: (question: string) => void;
 }
 
 export function BlockQuestion({
   question,
-  mode = "solve",
-  onChange,
+  mode,
+  onChangeQuestion,
 }: BlockQuestionProps) {
-  const [repliation, setRepliation] = useState(question ?? "");
+  const isEditable = useMemo(() => mode == "edit", [mode]);
 
-  const [isEditing, setIsEditing] = useState(false);
-
-  const handleEditStart = useCallback(() => {
-    if (mode === "solve") return;
-    setIsEditing(true);
-  }, [mode]);
-
-  const handleEditStop = useCallback(() => {
-    if (mode === "solve") return;
-    if (!repliation) return;
-    onChange?.(repliation ?? "");
-    setIsEditing(false);
-  }, [mode, onChange, repliation]);
-
-  if (isEditing) {
-    return (
-      <Input
-        value={repliation}
-        onChange={(e) => setRepliation(e.target.value)}
-        onBlur={handleEditStop}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            handleEditStop();
-          }
-        }}
-      />
-    );
-  }
+  const handleChangeQuestion = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      onChangeQuestion?.(e.target.value);
+    },
+    [onChangeQuestion],
+  );
 
   return (
-    <p className="text-sm text-muted-foreground" onClick={handleEditStart}>
-      {question}
-    </p>
+    <div className="w-full py-2">
+      {isEditable ? (
+        <Textarea
+          className="min-h-[100px] max-h-[300px] resize-none"
+          value={question}
+          placeholder="문제의 질문을 작성하세요"
+          maxLength={300}
+          autoFocus
+          onChange={handleChangeQuestion}
+        />
+      ) : (
+        <Streamdown>{question}</Streamdown>
+      )}
+    </div>
   );
 }

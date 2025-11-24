@@ -1,6 +1,6 @@
 "use client";
 
-import { BlockDisplayName } from "@service/solves/shared";
+import { blockDisplayNames } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -94,7 +94,7 @@ export function WorkbookCreateForm() {
             setFormData({ ...formData, format: value as string[] });
           }}
           name="format"
-          options={Object.values(BlockDisplayName).map((value) => ({
+          options={Object.values(blockDisplayNames).map((value) => ({
             label: value,
             value: value,
           }))}

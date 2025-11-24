@@ -2,7 +2,7 @@ import { userTable } from "@service/auth";
 import { UIMessage } from "ai";
 import { json, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { solvesSchema } from "../db";
-import { probBooksTable } from "../prob/schema";
+import { probBooksTable } from "../workbook/schema";
 import { ChatMetadata } from "./types";
 
 export const ChatThreadTable = solvesSchema.table("chat_thread", {

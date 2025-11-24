@@ -1,5 +1,6 @@
-import { probService } from "@service/solves";
+import { workBookService } from "@service/solves";
 import Link from "next/link";
+import { WorkbookCard } from "@/components/problem/workbook-card";
 import {
   Card,
   CardContent,
@@ -7,11 +8,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSession } from "@/lib/auth/server";
-import { WorkbookCard } from "@/components/problem/workbook-card";
 
 export default async function InProgressWorkbooksPage() {
   const session = await getSession();
-  const inProgressWorkbooks = await probService.getProbBookInProgress(
+  const inProgressWorkbooks = await workBookService.getWorkBookInProgress(
     session.user.id,
   );
   console.log(inProgressWorkbooks);
