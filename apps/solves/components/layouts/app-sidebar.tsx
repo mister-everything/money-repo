@@ -1,4 +1,3 @@
-import { BookOpen, Pencil } from "lucide-react";
 import Link from "next/link";
 import {
   Sidebar,
@@ -9,13 +8,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { NavUser } from "./nav-user";
+import { SidebarEditMenuItem } from "./sidebar-edit-menu-item";
+import { SidebarSolveMenuItem } from "./sidebar-solve-menu-item";
 
 export function AppSidebar() {
   return (
@@ -44,34 +42,15 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenuButton asChild>
-            <Link href="/workbooks">
-              <BookOpen />
-              문제 풀기
-            </Link>
-          </SidebarMenuButton>
-          <SidebarMenuItem>
-            <SidebarMenuSub>
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton asChild>
-                  <Link href="/workbooks/in-progress">풀고 있는 문제집</Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton asChild>
-                  <Link href="/workbooks/completed">다 푼 문제집</Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            </SidebarMenuSub>
-          </SidebarMenuItem>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarMenuButton asChild>
-            <Link href="/workbooks/new">
-              <Pencil />
-              문제 생성
-            </Link>
-          </SidebarMenuButton>
+          <SidebarSolveMenuItem
+            rootHref="/workbooks/solve"
+            inProgressHref="/workbooks/in-progress"
+            completedHref="/workbooks/completed"
+          />
+          <SidebarEditMenuItem
+            rootHref="/workbooks/new"
+            myBooksHref="/workbooks"
+          />
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">

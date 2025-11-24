@@ -27,9 +27,6 @@ export const seedProb = async () => {
   const probBook = await workBookService.createWorkBook({
     ownerId: testUser[0].id,
     title: "상식 테스트 문제 입니다",
-    // description: "상식 퀴즈 객관식과 주관식 문제 입니다.",
-    // isPublic: true,
-    // tags: ["test", "객관식", "주관식"],
   });
 
   for (const block of mockData.slice(0, 2)) {
