@@ -3,7 +3,7 @@ import inquirer from "inquirer";
 import { SERVICE_NAME } from "./const";
 import { seedPlans } from "./payment/seed-plans";
 import { seedPrices } from "./payment/seed-prices";
-import { seedProb } from "./prob/seed-prob";
+import { seedProb } from "./workbook/seed-prob";
 
 console.log(`🚀 [${SERVICE_NAME}] 시드 데이터 생성 시작...\n`);
 

@@ -104,7 +104,10 @@ export const createActionFactory = (ctx: MiddlewareConfig) => {
 };
 
 const devLogger = (name: string) => (input: any) => {
-  console.log(`[SERVER ACTION] ${name}: ${JSON.stringify(input)}`);
+  if (isSafeFail(input)) {
+    console.log(`❌ [SERVER ACTION] ${name}: ${input.message}`);
+    console.error(input.error);
+  } else console.log(`[SERVER ACTION] ${name}: ${JSON.stringify(input)}`);
   return input;
 };
 

@@ -2,7 +2,7 @@ import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import z from "zod";
 import { GoBackButton } from "@/components/layouts/go-back-button";
-import { InDevelopment } from "@/components/ui/in-development";
+
 import { WorkbookEdit } from "@/components/workbook/workbook-edit";
 import { WorkbooksCreateChat } from "@/components/workbook/workbook-edit-chatbot";
 import { getSession } from "@/lib/auth/server";

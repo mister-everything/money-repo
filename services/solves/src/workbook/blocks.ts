@@ -61,7 +61,7 @@ export type DefaultBlockAnswerSubmit = z.infer<
  * answerSubmit: [0,2]
  */
 const mcqBlock = blockBuilder("mcq")
-  .displayName("객관식")
+  .displayName("객관식 다중")
   .content(
     z.object({
       options: z.array(z.union([textOption, sourceOption])).min(2), // 최소 2개의 선택지 필요

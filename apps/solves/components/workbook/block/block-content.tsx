@@ -5,7 +5,7 @@ import {
   BlockContent,
   BlockType,
 } from "@service/solves/shared";
-import { generateUUID, StateUpdate } from "@workspace/util";
+import { generateUUID, noop, StateUpdate } from "@workspace/util";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -233,8 +233,9 @@ export function McqBlockContent({
               <input
                 type="checkbox"
                 name={name}
-                checked={checked}
+                defaultChecked={checked}
                 value={option.id}
+                onChange={noop}
                 className="accent-primary"
               />
               <div className="flex w-full items-center justify-between gap-4">

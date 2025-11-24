@@ -3,8 +3,8 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
+  blocksTable,
   probBlockAnswerSubmitsTable,
-  probBlocksTable,
   probBookSubmitsTable,
   probBooksTable,
   probBookTagsTable,
@@ -126,15 +126,15 @@ export const workBookService = {
     }
     const blocks = await pgDb
       .select({
-        id: probBlocksTable.id,
-        content: probBlocksTable.content,
-        question: probBlocksTable.question,
-        answer: probBlocksTable.answer,
-        order: probBlocksTable.order,
-        type: probBlocksTable.type,
+        id: blocksTable.id,
+        content: blocksTable.content,
+        question: blocksTable.question,
+        answer: blocksTable.answer,
+        order: blocksTable.order,
+        type: blocksTable.type,
       })
-      .from(probBlocksTable)
-      .where(eq(probBlocksTable.probBookId, id));
+      .from(blocksTable)
+      .where(eq(blocksTable.probBookId, id));
 
     return {
       id: book.id,
@@ -231,20 +231,13 @@ export const workBookService = {
   },
 
   /**
-   * 문제집 삭제
-   */
-  deleteProbBook: async (id: string): Promise<void> => {
-    await pgDb.delete(probBooksTable).where(eq(probBooksTable.id, id));
-  },
-
-  /**
    * 문제 생성
    */
   createWorkBookBlock: async (
     probBlock: CreateWorkBookBlock,
   ): Promise<WorkBookBlock> => {
     const parsedWorkBookBlock = createWorkBookBlockSchema.parse(probBlock);
-    const data: typeof probBlocksTable.$inferInsert = {
+    const data: typeof blocksTable.$inferInsert = {
       probBookId: parsedWorkBookBlock.probBookId,
       order: parsedWorkBookBlock.order,
       type: parsedWorkBookBlock.type,
@@ -254,15 +247,15 @@ export const workBookService = {
     };
 
     const [newWorkBookBlock] = await pgDb
-      .insert(probBlocksTable)
+      .insert(blocksTable)
       .values(data)
       .returning({
-        id: probBlocksTable.id,
-        content: probBlocksTable.content,
-        question: probBlocksTable.question,
-        answer: probBlocksTable.answer,
-        order: probBlocksTable.order,
-        type: probBlocksTable.type,
+        id: blocksTable.id,
+        content: blocksTable.content,
+        question: blocksTable.question,
+        answer: blocksTable.answer,
+        order: blocksTable.order,
+        type: blocksTable.type,
       });
 
     return {
@@ -275,11 +268,44 @@ export const workBookService = {
     };
   },
 
-  /**
-   * 문제 삭제
-   */
-  deleteWorkBookBlock: async (id: string): Promise<void> => {
-    await pgDb.delete(probBlocksTable).where(eq(probBlocksTable.id, id));
+  processBlocks: async (
+    bookId: string,
+    deleteBlocks: string[],
+    saveBlocks: WorkBookBlock[],
+  ): Promise<void> => {
+    await pgDb.transaction(async (tx) => {
+      if (saveBlocks.length > 0) {
+        const saveResult = await tx
+          .insert(blocksTable)
+          .values(saveBlocks.map((block) => ({ ...block, probBookId: bookId })))
+          .onConflictDoUpdate({
+            target: [blocksTable.id],
+            set: {
+              answer: sql.raw(`excluded.${blocksTable.answer.name}`),
+              content: sql.raw(`excluded.${blocksTable.content.name}`),
+              question: sql.raw(`excluded.${blocksTable.question.name}`),
+              order: sql.raw(`excluded.${blocksTable.order.name}`),
+              type: sql.raw(`excluded.${blocksTable.type.name}`),
+            },
+          });
+        if (saveResult.rowCount !== saveBlocks.length) {
+          throw new Error("Failed to save blocks");
+        }
+      }
+      if (deleteBlocks.length > 0) {
+        const deleteResult = await tx
+          .delete(blocksTable)
+          .where(
+            and(
+              eq(blocksTable.probBookId, bookId),
+              inArray(blocksTable.id, deleteBlocks),
+            ),
+          );
+        if (deleteResult.rowCount !== deleteBlocks.length) {
+          throw new Error("Failed to delete blocks");
+        }
+      }
+    });
   },
 
   /**
@@ -406,8 +432,8 @@ export const workBookService = {
     // 문제 목록 조회
     const probBlocks = await pgDb
       .select()
-      .from(probBlocksTable)
-      .where(eq(probBlocksTable.probBookId, probBookId));
+      .from(blocksTable)
+      .where(eq(blocksTable.probBookId, probBookId));
 
     let score = 0;
     const correctAnswerIds: string[] = [];
@@ -613,17 +639,14 @@ export const workBookService = {
           string[]
         >`coalesce(array_agg(${tagsTable.name}) filter (where ${tagsTable.name} is not null), '{}')`,
         createdAt: probBooksTable.createdAt,
-        totalProblems: sql<number>`count(distinct ${probBlocksTable.id})`,
+        totalProblems: sql<number>`count(distinct ${blocksTable.id})`,
       })
       .from(probBookSubmitsTable)
       .innerJoin(
         probBooksTable,
         eq(probBookSubmitsTable.probBookId, probBooksTable.id),
       )
-      .innerJoin(
-        probBlocksTable,
-        eq(probBooksTable.id, probBlocksTable.probBookId),
-      )
+      .innerJoin(blocksTable, eq(probBooksTable.id, blocksTable.probBookId))
       .leftJoin(
         probBookTagsTable,
         eq(probBookTagsTable.probBookId, probBooksTable.id),
@@ -735,8 +758,8 @@ export const workBookService = {
       .select({
         count: sql<number>`count(*)`,
       })
-      .from(probBlocksTable)
-      .where(eq(probBlocksTable.probBookId, probBookId));
+      .from(blocksTable)
+      .where(eq(blocksTable.probBookId, probBookId));
 
     const correctAnswerIds = answers
       .filter((a) => a.isCorrect)
@@ -752,11 +775,11 @@ export const workBookService = {
     // 문제집의 정답 데이터 조회
     const blocks = await pgDb
       .select({
-        id: probBlocksTable.id,
-        answer: probBlocksTable.answer,
+        id: blocksTable.id,
+        answer: blocksTable.answer,
       })
-      .from(probBlocksTable)
-      .where(eq(probBlocksTable.probBookId, probBookId));
+      .from(blocksTable)
+      .where(eq(blocksTable.probBookId, probBookId));
 
     const blockResults = blocks.map((block) => ({
       blockId: block.id,

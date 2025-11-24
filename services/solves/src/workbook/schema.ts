@@ -39,7 +39,7 @@ export const probBooksTable = solvesSchema.table("prob_books", {
  * 문제 블록 테이블
  * 개별 문제를 관리하는 테이블
  */
-export const probBlocksTable = solvesSchema.table("prob_blocks", {
+export const blocksTable = solvesSchema.table("prob_blocks", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   probBookId: uuid("prob_book_id")
     .notNull()
@@ -81,7 +81,7 @@ export const probBlockAnswerSubmitsTable = solvesSchema.table(
   {
     blockId: uuid("block_id")
       .notNull()
-      .references(() => probBlocksTable.id, { onDelete: "cascade" }),
+      .references(() => blocksTable.id, { onDelete: "cascade" }),
     submitId: uuid("submit_id")
       .notNull()
       .references(() => probBookSubmitsTable.id, { onDelete: "cascade" }),

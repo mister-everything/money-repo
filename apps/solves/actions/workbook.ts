@@ -1,11 +1,12 @@
 "use server";
 
 import { workBookService } from "@service/solves";
+import { WorkBookBlock } from "@service/solves/shared";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale/ko";
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
-import { fail } from "@/lib/protocol/interface";
+import { fail, ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
 const generateDefaultTitle = () => {
@@ -40,5 +41,27 @@ export const updateWorkbookAction = safeAction(
     );
     if (!hasPermission) return fail("권한이 없습니다.");
     await workBookService.updateWorkBook({ id, title, description });
+    return ok();
+  },
+);
+
+export const processBlocksAction = safeAction(
+  async ({
+    workbookId,
+    deleteBlocks,
+    saveBlocks,
+  }: {
+    workbookId: string;
+    deleteBlocks: string[];
+    saveBlocks: WorkBookBlock[];
+  }) => {
+    const session = await getSession();
+    const hasPermission = await workBookService.isProbBookOwner(
+      workbookId,
+      session.user.id,
+    );
+    if (!hasPermission) return fail("권한이 없습니다.");
+    await workBookService.processBlocks(workbookId, deleteBlocks, saveBlocks);
+    return ok();
   },
 );
