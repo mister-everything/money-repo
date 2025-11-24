@@ -79,7 +79,7 @@ function PureBlock<T extends BlockType = BlockType>({
             {getBlockDisplayName(props.type)} {props.order}
           </Badge>
 
-          {props.mode === "preview" && (
+          {props.mode === "preview" && props.onToggleEditMode && (
             <Button
               onClick={props.onToggleEditMode}
               variant="ghost"

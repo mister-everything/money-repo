@@ -1,4 +1,5 @@
 import { userTable } from "@service/auth";
+
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
@@ -25,6 +26,27 @@ import {
   WorkBookWithoutBlocks,
 } from "./types";
 
+const tagsSubQuery = pgDb
+  .select({
+    tags: sql<string[]>`array_agg(${tagsTable.name})`,
+  })
+  .from(probBookTagsTable)
+  .innerJoin(tagsTable, eq(probBookTagsTable.tagId, tagsTable.id))
+  .where(eq(probBookTagsTable.probBookId, probBooksTable.id))
+  .toSQL();
+
+const WorkBookColumnsForList = {
+  id: probBooksTable.id,
+  title: probBooksTable.title,
+  description: probBooksTable.description,
+  isPublic: probBooksTable.isPublic,
+  thumbnail: probBooksTable.thumbnail,
+  ownerName: userTable.name,
+  ownerProfile: userTable.image,
+  tags: sql<string[]>`coalesce((${tagsSubQuery}), '{}')`,
+  createdAt: probBooksTable.createdAt,
+};
+
 export const workBookService = {
   isProbBookOwner: async (
     probBookId: string,
@@ -37,6 +59,46 @@ export const workBookService = {
       .from(probBooksTable)
       .where(eq(probBooksTable.id, probBookId));
     return probBook?.ownerId === userId;
+  },
+
+  searchMyWorkBooks: async (options: {
+    userId: string;
+    page?: number;
+    limit?: number;
+    isPublic?: boolean;
+  }): Promise<WorkBookWithoutBlocks[]> => {
+    const { userId, page = 1, limit = 100, isPublic } = options;
+    const offset = (page - 1) * limit;
+
+    const where = [eq(probBooksTable.ownerId, userId)];
+    if (isPublic !== undefined) {
+      where.push(eq(probBooksTable.isPublic, isPublic));
+    }
+
+    const query = pgDb
+      .select(WorkBookColumnsForList)
+      .from(probBooksTable)
+      .innerJoin(userTable, eq(probBooksTable.ownerId, userTable.id))
+      .where(and(...where))
+      .offset(offset)
+      .limit(limit)
+      .orderBy(sql`${probBooksTable.createdAt} desc`);
+
+    const rows = await query;
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description ?? undefined,
+      tags: row.tags,
+      isPublic: row.isPublic,
+      owner: {
+        name: row.ownerName,
+        profile: row.ownerProfile ?? undefined,
+      },
+      thumbnail: row.thumbnail ?? undefined,
+      createdAt: row.createdAt,
+    }));
   },
 
   /**

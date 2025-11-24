@@ -46,7 +46,7 @@ export function SidebarSolveMenuItem({
       </SidebarMenuButton>
 
       <div
-        className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
+        className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out overflow-y-auto"
         style={{
           maxHeight: showSubMenu ? "400px" : "0",
           opacity: showSubMenu ? 1 : 0,
