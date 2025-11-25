@@ -25,7 +25,6 @@ import {
 import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { Button } from "../ui/button";
-import { DialogClose } from "../ui/dialog";
 import { Block } from "./block/block";
 
 export function WorkbookEdit({
