@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome lint . --write",
-    "check": "pnpm run lint && pnpm run check-types",
+    "check": "pnpm run lint && pnpm run check-types && pnpm run test",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
     "test:ui": "vitest --ui",
