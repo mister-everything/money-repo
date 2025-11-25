@@ -16,7 +16,7 @@
     "test:e2e": "turbo run test:e2e",
     "playwright:install": "turbo run playwright:install",
     "format": "biome check . --apply",
-    "check-types": "turbo run check-types",
+    "check-types": "pnpm clean .next && turbo run check-types",
     "changeset": "changeset",
     "check": "turbo run check",
     "changeset:version": "changeset version",
