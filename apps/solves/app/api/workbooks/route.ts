@@ -13,9 +13,9 @@ export async function GET(request: NextRequest) {
   try {
     // @todo search Options
 
-    const probBooks = await workBookService.searchProbBooks();
+    const workBooks = await workBookService.searchWorkBooks();
 
-    return nextOk(probBooks);
+    return nextOk(workBooks);
   } catch (error) {
     console.error("Error fetching prob books:", error);
     return nextFail("문제집 조회 중 오류가 발생했습니다.");

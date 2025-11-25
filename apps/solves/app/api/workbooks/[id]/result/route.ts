@@ -7,11 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  const { id: probBookId } = await params;
+  const { id: workBookId } = await params;
 
   try {
-    const result = await workBookService.getLatestProbBookResult(
-      probBookId,
+    const result = await workBookService.getLatestWorkBookResult(
+      workBookId,
       session.user.id,
     );
 

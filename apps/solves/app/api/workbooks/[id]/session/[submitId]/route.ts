@@ -14,7 +14,7 @@ export async function DELETE(
   try {
     const { submitId } = await params;
     const session = await getSession();
-    await workBookService.deleteProbBookSession(submitId, session.user.id);
+    await workBookService.deleteWorkBookSession(submitId, session.user.id);
     return nextOk({ success: true });
   } catch (error) {
     console.error("Error deleting prob book session:", error);

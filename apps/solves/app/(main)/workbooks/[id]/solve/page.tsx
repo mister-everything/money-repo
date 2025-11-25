@@ -11,7 +11,7 @@ export default async function Page({
   const { id } = await params;
   // const session = await getSession();
 
-  // const hasPermission = await workBookService.hasProbBookPermission(
+  // const hasPermission = await workBookService.hasWorkBookPermission(
   //   z.uuid().parse(id),
   //   session.user.id,
   // );
@@ -29,7 +29,7 @@ export default async function Page({
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <ProblemBook probBook={book} />
+          <ProblemBook workBook={book} />
         </div>
       </div>
     </div>

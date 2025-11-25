@@ -24,17 +24,17 @@ export const seedProb = async () => {
   console.log(`✅ 랜덤 유저 생성 완료: ${testUser[0].email}`);
 
   // 첫 번째 문제집 생성
-  const probBook = await workBookService.createWorkBook({
+  const workBook = await workBookService.createWorkBook({
     ownerId: testUser[0].id,
     title: "상식 테스트 문제 입니다",
   });
 
-  await workBookService.processBlocks(probBook.id, [], mockData.slice(0, 2));
+  await workBookService.processBlocks(workBook.id, [], mockData.slice(0, 2));
 
-  console.log(`✅ 문제집 1 생성 완료: ${probBook.id}`);
+  console.log(`✅ 문제집 1 생성 완료: ${workBook.id}`);
 
   // 두 번째 문제집 생성
-  const probBook2 = await workBookService.createWorkBook({
+  const workBook2 = await workBookService.createWorkBook({
     ownerId: testUser[0].id,
     title: "상식 테스트 문제 입니다 2",
     // description: "상식퀴즈 OX, 순서맞추기 문제 입니다.",
@@ -42,11 +42,11 @@ export const seedProb = async () => {
     // tags: ["test", "OX", "순서맞추기"],
   });
 
-  await workBookService.processBlocks(probBook2.id, [], mockData.slice(2, 4));
+  await workBookService.processBlocks(workBook2.id, [], mockData.slice(2, 4));
 
-  console.log(`✅ 문제집 2 생성 완료: ${probBook2.id}`);
+  console.log(`✅ 문제집 2 생성 완료: ${workBook2.id}`);
 
-  const bookDetail = await workBookService.selectProbBookById(probBook.id);
+  const bookDetail = await workBookService.selectWorkBookById(workBook.id);
   console.log("\n📊 생성된 문제집 상세:");
   console.dir(bookDetail, { depth: null });
 

@@ -16,13 +16,13 @@ export default async function ProbEditPage({
 
   const session = await getSession();
 
-  const hasPermission = await workBookService.isProbBookOwner(
+  const hasPermission = await workBookService.isWorkBookOwner(
     z.uuid().parse(id),
     session.user.id,
   );
   if (!hasPermission) return notFound();
 
-  const book = await workBookService.selectProbBookById(id);
+  const book = await workBookService.selectWorkBookById(id);
   if (!book) notFound();
 
   return (
