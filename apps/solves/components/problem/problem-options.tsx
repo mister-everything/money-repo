@@ -55,28 +55,6 @@ const getMcqOptionLabel = (
   );
 };
 
-const getOxLabel = (
-  option: OxBlockContent["oOption"] | OxBlockContent["xOption"],
-) => {
-  if (option.type === "text") {
-    return option.text;
-  }
-
-  if (option.mimeType.startsWith("image/")) {
-    return (
-      <img
-        src={option.url}
-        alt="OX 보기"
-        width={96}
-        height={72}
-        className="h-24 w-24 rounded object-cover"
-      />
-    );
-  }
-
-  return option.url;
-};
-
 export const ProblemOptions = <T extends BlockType>({
   content,
   submitted, // 제출된 답안
@@ -91,28 +69,28 @@ export const ProblemOptions = <T extends BlockType>({
 
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [textAnswer, setTextAnswer] = useState("");
-  const [oxAnswer, setOxAnswer] = useState<"o" | "x" | null>(null);
+  const [oxAnswer, setOxAnswer] = useState<boolean>();
 
   // submitted prop 변경 시 로컬 state 초기화
   useEffect(() => {
     if (submitted?.type !== content.type) {
       setSelectedOptions([]);
-      setOxAnswer(null);
+      setOxAnswer(undefined);
       setTextAnswer("");
       return;
     }
 
     if (isMcqContent && isAnswer.mcq(submitted)) {
-      setSelectedOptions(submitted.answer);
+      setSelectedOptions([submitted.answer]);
     } else {
       setSelectedOptions([]);
     }
 
     if (isOxContent && isAnswer.ox(submitted)) {
       const value = submitted.answer;
-      setOxAnswer(value === "o" || value === "x" ? value : null);
+      setOxAnswer(value);
     } else {
-      setOxAnswer(null);
+      setOxAnswer(undefined);
     }
 
     if (isDefaultContent && isAnswer.default(submitted)) {

@@ -6,7 +6,7 @@ import {
   BlockType,
 } from "@service/solves/shared";
 import { generateUUID, noop, StateUpdate } from "@workspace/util";
-import { PlusIcon, XIcon } from "lucide-react";
+import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,19 @@ import { Input } from "@/components/ui/input";
 import { notify } from "@/components/ui/notify";
 import { cn } from "@/lib/utils";
 import { BlockComponentMode } from "./types";
+
+// 사용자가 선택했고 정답 일때
+const okClass = "border-primary bg-primary/5 text-primary hover:text-primary";
+
+// 문제를 풀때 선택한 것 일단 ok 랑 동일하게
+const selectClass =
+  "border-primary bg-primary/5 text-primary hover:text-primary";
+
+// 사용자가 선택했고 오답 일때
+const failClass = "border-destructive bg-destructive/5 text-destructive";
+
+// 사용자가 선택은 안했지만 (오답제출) 정답일때
+const muteCalss = "bg-secondary border-muted-foreground";
 
 type BlockContentProps<T extends BlockType = BlockType> = {
   content: BlockContent<T>;
@@ -98,19 +111,7 @@ export function DefaultBlockContent({
             </p>
           </div>
         )}
-        {mode == "preview" && (
-          <div className="flex flex-wrap items-center gap-2">
-            {answer?.answer.map((correctAnswer, index) => (
-              <Button
-                className="cursor-default"
-                key={index}
-                variant="secondary"
-              >
-                {correctAnswer}
-              </Button>
-            ))}
-          </div>
-        )}
+
         {mode == "edit" && (
           <div className="flex flex-wrap items-center gap-2">
             {answer?.answer.map((correctAnswer, index) => (
@@ -404,6 +405,74 @@ export function McqSingleBlockContent({
           <PlusIcon /> 옵션 추가
         </Button>
       )}
+    </div>
+  );
+}
+
+export function OXBlockContent({
+  onUpdateSubmitAnswer,
+  onUpdateAnswer,
+  mode,
+  answer,
+  isCorrect,
+  submit,
+}: BlockContentProps<"ox">) {
+  const handleClick = useCallback(
+    (value: boolean) => {
+      if (mode == "solve") {
+        return onUpdateSubmitAnswer?.({
+          answer: value,
+        });
+      }
+
+      if (mode == "edit") {
+        return onUpdateAnswer?.({
+          answer: value,
+        });
+      }
+    },
+    [mode, onUpdateSubmitAnswer, onUpdateAnswer],
+  );
+
+  const getSelectedClass = useCallback(
+    (value: boolean) => {
+      if (mode == "solve") {
+        return submit?.answer === value ? selectClass : "";
+      }
+      if (mode == "edit") {
+        return answer?.answer === value ? okClass : "";
+      }
+      if (mode == "review") {
+        if (isCorrect) return answer?.answer === value ? okClass : "";
+        if (submit?.answer === value) return failClass;
+        if (answer?.answer === value) return muteCalss;
+      }
+    },
+    [mode, answer, submit, isCorrect],
+  );
+
+  return (
+    <div className="grid grid-cols-2 gap-4 h-44 lg:h-64">
+      <Button
+        variant={"outline"}
+        className={cn(
+          "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
+          getSelectedClass(true),
+        )}
+        onClick={() => handleClick(true)}
+      >
+        <CircleIcon className="size-24" />
+      </Button>
+      <Button
+        variant={"outline"}
+        className={cn(
+          "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
+          getSelectedClass(false),
+        )}
+        onClick={() => handleClick(false)}
+      >
+        <XIcon className="size-24 text-muted-foreground" />
+      </Button>
     </div>
   );
 }
