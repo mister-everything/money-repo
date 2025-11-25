@@ -140,6 +140,9 @@ importers:
       '@workspace/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -276,6 +279,9 @@ importers:
       '@workspace/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -370,6 +376,9 @@ importers:
       '@workspace/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -497,6 +506,9 @@ importers:
       '@workspace/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -666,6 +678,21 @@ importers:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@22.19.1)(lightningcss@1.30.2)
 
+  packages/error:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.0
+        version: 22.19.1
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.2
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.19.1)(lightningcss@1.30.2)
+
   packages/fb-storage:
     devDependencies:
       '@types/node':
@@ -712,6 +739,9 @@ importers:
 
   services/auth:
     dependencies:
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -755,6 +785,9 @@ importers:
 
   services/report:
     dependencies:
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -804,6 +837,9 @@ importers:
       '@workspace/cache':
         specifier: workspace:*
         version: link:../../packages/cache
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -881,6 +917,9 @@ importers:
       '@workspace/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@workspace/error':
+        specifier: workspace:*
+        version: link:../../packages/error
       '@workspace/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config

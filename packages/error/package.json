@@ -1,0 +1,20 @@
+{
+  "name": "@workspace/error",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "biome lint . --write",
+    "check-types": "tsc --noEmit",
+    "check": "pnpm run lint && pnpm run check-types"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@workspace/typescript-config": "workspace:*",
+    "@types/node": "^22.13.0",
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.1"
+  }
+}

@@ -1,3 +1,4 @@
+import { PublicError } from "@workspace/error";
 import { eq, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { CacheKeys, CacheTTL } from "./cache-keys";
@@ -67,11 +68,11 @@ export const creditService = {
       `);
 
       const wallet = queryResult.rows[0];
-      if (!wallet) throw new Error("지갑을 찾을 수 없습니다");
+      if (!wallet) throw new PublicError("지갑을 찾을 수 없습니다");
 
       const currentBalance = Number(wallet.balance);
       if (currentBalance <= 0) {
-        throw new Error("크레딧이 부족합니다");
+        throw new PublicError("크레딧이 부족합니다");
       }
 
       const newBalance = Math.max(0, currentBalance - cost.totalMarketCost);

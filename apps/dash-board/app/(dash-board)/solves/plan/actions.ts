@@ -2,6 +2,7 @@
 
 import { planService } from "@service/solves";
 import { createSubscriptionPlanSchema } from "@service/solves/shared";
+import { PublicError } from "@workspace/error";
 import { redirect } from "next/navigation";
 import { flattenError, z } from "zod";
 
@@ -119,6 +120,6 @@ export async function togglePlanActiveAction(
     // redirect는 클라이언트에서 처리
   } catch (error) {
     console.error("플랜 상태 변경 실패:", error);
-    throw new Error("플랜 상태 변경에 실패했습니다.");
+    throw new PublicError("플랜 상태 변경에 실패했습니다.");
   }
 }

@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@workspace/env": "workspace:*",
+    "@workspace/error": "workspace:*",
     "@biomejs/biome": "2.2.2",
     "@types/node": "^22.13.0",
     "@types/pg": "^8.15.5",

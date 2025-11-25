@@ -1,3 +1,4 @@
+import { PublicError } from "@workspace/error";
 import { and, eq, getTableColumns } from "drizzle-orm";
 import { pgDb } from "../db";
 import { CacheKeys, CacheTTL } from "./cache-keys";
@@ -127,7 +128,7 @@ export const aiPriceService = {
       .returning();
 
     if (!price) {
-      throw new Error(`가격 정보를 찾을 수 없습니다: ${priceId}`);
+      throw new PublicError(`가격 정보를 찾을 수 없습니다: ${priceId}`);
     }
 
     // 캐시 갱신 (isActive가 true인 경우 저장, false인 경우 삭제)
@@ -159,7 +160,7 @@ export const aiPriceService = {
       .returning();
 
     if (!price) {
-      throw new Error(`가격 정보를 찾을 수 없습니다: ${priceId}`);
+      throw new PublicError(`가격 정보를 찾을 수 없습니다: ${priceId}`);
     }
 
     // 캐시 갱신 (활성화 시 저장, 비활성화 시 삭제)

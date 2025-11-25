@@ -23,6 +23,7 @@
     "@service/auth": "workspace:*",
     "@workspace/cache": "workspace:*",
     "@workspace/util": "workspace:*",
+    "@workspace/error": "workspace:*",
     "ai": "^5.0.41",
     "drizzle-orm": "^0.44.5",
     "ioredis": "^5.4.1",

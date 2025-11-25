@@ -1,5 +1,5 @@
 import { userTable } from "@service/auth";
-
+import { PublicError } from "@workspace/error";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
@@ -310,7 +310,7 @@ export const workBookService = {
             },
           });
         if (saveResult.rowCount !== saveBlocks.length) {
-          throw new Error("Failed to save blocks");
+          throw new PublicError("Failed to save blocks");
         }
       }
       if (deleteBlocks.length > 0) {
@@ -323,7 +323,7 @@ export const workBookService = {
             ),
           );
         if (deleteResult.rowCount !== deleteBlocks.length) {
-          throw new Error("Failed to delete blocks");
+          throw new PublicError("Failed to delete blocks");
         }
       }
     });

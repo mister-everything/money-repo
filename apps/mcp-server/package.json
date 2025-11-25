@@ -12,6 +12,7 @@
     "check": "pnpm run lint && pnpm run check-types"
   },
   "dependencies": {
+    "@workspace/error": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.18.0",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.15",

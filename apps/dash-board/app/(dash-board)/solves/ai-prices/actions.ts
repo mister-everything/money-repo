@@ -4,7 +4,7 @@ import {
   createAIPriceSchema,
   updateAIPriceSchema,
 } from "@service/solves/shared";
-
+import { PublicError } from "@workspace/error";
 import { flattenError, z } from "zod";
 
 type FormState = {
@@ -125,6 +125,6 @@ export async function toggleAIPriceActiveAction(
     await aiPriceService.setPriceActive(priceId, isActive);
   } catch (error) {
     console.error("AI 가격 상태 변경 실패:", error);
-    throw new Error("AI 가격 상태 변경에 실패했습니다.");
+    throw new PublicError("AI 가격 상태 변경에 실패했습니다.");
   }
 }

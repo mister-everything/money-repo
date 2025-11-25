@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@workspace/util": "workspace:*",
+    "@workspace/error": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
     "zod": "^4.1.8"

@@ -1,3 +1,4 @@
+import { PublicError } from "@workspace/error";
 import { generateUUID } from "@workspace/util";
 import {
   All_BLOCKS,
@@ -46,30 +47,30 @@ export const isAnswerSubmit = Object.entries(All_BLOCKS).reduce(
 
 export const parseContent = (content?: BlockContent) => {
   if (!content?.type) {
-    throw new Error(`Content is required`);
+    throw new PublicError(`Content is required`);
   }
   if (!All_BLOCKS[content.type]) {
-    throw new Error(`Invalid content type: ${content.type}`);
+    throw new PublicError(`Invalid content type: ${content.type}`);
   }
   return All_BLOCKS[content.type].contentSchema.parse(content);
 };
 
 export const parseAnswer = (answer?: BlockAnswer) => {
   if (!answer?.type) {
-    throw new Error(`Answer is required`);
+    throw new PublicError(`Answer is required`);
   }
   if (!All_BLOCKS[answer.type]) {
-    throw new Error(`Invalid answer type: ${answer.type}`);
+    throw new PublicError(`Invalid answer type: ${answer.type}`);
   }
   return All_BLOCKS[answer.type].answerSchema.parse(answer);
 };
 
 export const parseAnswerSubmit = (answerSubmit?: BlockAnswerSubmit) => {
   if (!answerSubmit?.type) {
-    throw new Error(`Answer submit is required`);
+    throw new PublicError(`Answer submit is required`);
   }
   if (!All_BLOCKS[answerSubmit.type]) {
-    throw new Error(`Invalid answer submit type: ${answerSubmit.type}`);
+    throw new PublicError(`Invalid answer submit type: ${answerSubmit.type}`);
   }
   return All_BLOCKS[answerSubmit.type].answerSubmitSchema.parse(answerSubmit);
 };
@@ -189,6 +190,6 @@ export const initializeBlock = (
       };
       return oxBlock;
     default:
-      throw new Error(`찾을 수 없는 블럭 유형: ${blockType}`);
+      throw new PublicError(`찾을 수 없는 블럭 유형: ${blockType}`);
   }
 };

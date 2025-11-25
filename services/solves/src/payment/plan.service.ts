@@ -1,3 +1,4 @@
+import { PublicError } from "@workspace/error";
 import { and, count, eq, getTableColumns } from "drizzle-orm";
 import { pgDb } from "../db";
 import { SubscriptionPlansTable, SubscriptionsTable } from "./schema";
@@ -90,7 +91,7 @@ export const planService = {
       .returning();
 
     if (!plan) {
-      throw new Error(`플랜을 찾을 수 없습니다: ${planId}`);
+      throw new PublicError(`플랜을 찾을 수 없습니다: ${planId}`);
     }
     return plan as any;
   },
@@ -106,7 +107,7 @@ export const planService = {
       .returning();
 
     if (!plan) {
-      throw new Error(`플랜을 찾을 수 없습니다: ${planId}`);
+      throw new PublicError(`플랜을 찾을 수 없습니다: ${planId}`);
     }
     return plan as any;
   },
