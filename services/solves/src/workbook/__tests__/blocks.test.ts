@@ -61,7 +61,7 @@ describe("blocks", () => {
     expect(() =>
       answerSchema.parse({
         type: "ox",
-        answer: "o",
+        answer: true,
       }),
     ).not.toThrow();
 
