@@ -134,22 +134,23 @@ export function WorkbookEdit({
       setEditingBlockId((prev) => [...prev, newBlock.id]);
     };
     notify.component({
-      children: (
+      renderer: ({ close }) => (
         <div>
           <h2 className="text-lg font-semibold mb-4">
             생성할 문제 유형을 선택하세요
           </h2>
           <div className="flex flex-wrap gap-2">
             {Object.entries(blockDisplayNames).map(([type, displayName]) => (
-              <DialogClose key={type} asChild>
-                <Button
-                  key={type}
-                  variant="outline"
-                  onClick={() => addBlock(type as BlockType)}
-                >
-                  {displayName}
-                </Button>
-              </DialogClose>
+              <Button
+                key={type}
+                variant="outline"
+                onClick={() => {
+                  addBlock(type as BlockType);
+                  close();
+                }}
+              >
+                {displayName}
+              </Button>
             ))}
           </div>
         </div>
@@ -229,6 +230,7 @@ export function WorkbookEdit({
       {blocks.map((b) => {
         return (
           <Block
+            className={isPending ? "opacity-50" : ""}
             mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
             onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
             key={b.id}
