@@ -21,7 +21,7 @@ import { InDevelopment } from "@/components/ui/in-development";
 import { cn } from "@/lib/utils";
 import {
   DefaultBlockContent,
-  McqMultipleBlockContent,
+  McqBlockContent,
   McqSingleBlockContent,
 } from "./block-content";
 import { BlockQuestion } from "./block-question";
@@ -123,8 +123,8 @@ function PureBlock<T extends BlockType = BlockType>({
             onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
             onUpdateAnswer={props.onUpdateAnswer}
           />
-        ) : blockPropsTypeGuard("mcq-multiple", props) ? (
-          <McqMultipleBlockContent
+        ) : blockPropsTypeGuard("mcq", props) ? (
+          <McqBlockContent
             content={props.content}
             isCorrect={props.isCorrect}
             answer={props.answer}
@@ -134,7 +134,7 @@ function PureBlock<T extends BlockType = BlockType>({
             onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
             onUpdateAnswer={props.onUpdateAnswer}
           />
-        ) : blockPropsTypeGuard("mcq", props) ? (
+        ) : blockPropsTypeGuard("mcq-single", props) ? (
           <McqSingleBlockContent
             content={props.content}
             isCorrect={props.isCorrect}

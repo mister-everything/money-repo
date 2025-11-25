@@ -31,7 +31,7 @@ const mcqBlockContent: BlockContent<"mcq"> = {
 
 const mcqBlockAnswer: BlockAnswer<"mcq"> = {
   type: "mcq",
-  answer: "1",
+  answer: ["1"],
 };
 
 const mcqBlock: WorkBookBlock<"mcq"> = {
@@ -45,11 +45,13 @@ const mcqBlock: WorkBookBlock<"mcq"> = {
 
 const oxBlockContent: BlockContent<"ox"> = {
   type: "ox",
+  oOption: { id: "1", type: "text", text: "맞다" },
+  xOption: { id: "2", type: "text", text: "틀리다" },
 };
 
 const oxBlockAnswer: BlockAnswer<"ox"> = {
   type: "ox",
-  answer: true,
+  answer: "o",
 };
 
 const oxBlock: WorkBookBlock<"ox"> = {

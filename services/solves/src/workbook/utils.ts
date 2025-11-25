@@ -135,13 +135,13 @@ export const initializeBlock = (
         },
         answer: {
           type: blockType,
-          answer: "",
+          answer: [],
         },
         order: order ?? 0,
       };
       return mcqBlock;
-    case "mcq-multiple":
-      const mcqMultipleBlock: WorkBookBlock<"mcq-multiple"> = {
+    case "mcq-single":
+      const mcqSingleBlock: WorkBookBlock<"mcq-single"> = {
         id: generateUUID(),
         question: "",
         type: blockType,
@@ -151,11 +151,11 @@ export const initializeBlock = (
         },
         answer: {
           type: blockType,
-          answer: [],
+          answer: "",
         },
         order: order ?? 0,
       };
-      return mcqMultipleBlock;
+      return mcqSingleBlock;
     case "ranking":
       const rankingBlock: WorkBookBlock<"ranking"> = {
         id: generateUUID(),
@@ -180,10 +180,12 @@ export const initializeBlock = (
         type: blockType,
         content: {
           type: blockType,
+          oOption: { id: generateUUID(), type: "text", text: "O" },
+          xOption: { id: generateUUID(), type: "text", text: "X" },
         },
         answer: {
           type: blockType,
-          answer: true,
+          answer: "o",
         },
         order: order ?? 0,
       };

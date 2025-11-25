@@ -13,6 +13,8 @@ import {
 } from "./schema";
 import {
   CreateWorkBook,
+  CreateWorkBookBlock,
+  createWorkBookBlockSchema,
   createWorkBookSchema,
   SubmitWorkBookResponse,
   WorkBook,
@@ -289,6 +291,45 @@ export const workBookService = {
       })
       .where(eq(probBooksTable.id, probBook.id));
   },
+
+  /**
+   * 문제 생성
+   */
+  createWorkBookBlock: async (
+    probBlock: CreateWorkBookBlock,
+  ): Promise<WorkBookBlock> => {
+    const parsedWorkBookBlock = createWorkBookBlockSchema.parse(probBlock);
+    const data: typeof blocksTable.$inferInsert = {
+      probBookId: parsedWorkBookBlock.probBookId,
+      order: parsedWorkBookBlock.order,
+      type: parsedWorkBookBlock.type,
+      question: parsedWorkBookBlock.question,
+      content: parsedWorkBookBlock.content,
+      answer: parsedWorkBookBlock.answer,
+    };
+
+    const [newWorkBookBlock] = await pgDb
+      .insert(blocksTable)
+      .values(data)
+      .returning({
+        id: blocksTable.id,
+        content: blocksTable.content,
+        question: blocksTable.question,
+        answer: blocksTable.answer,
+        order: blocksTable.order,
+        type: blocksTable.type,
+      });
+
+    return {
+      id: newWorkBookBlock.id,
+      type: newWorkBookBlock.type,
+      content: newWorkBookBlock.content,
+      question: newWorkBookBlock.question || "",
+      answer: newWorkBookBlock.answer!,
+      order: newWorkBookBlock.order,
+    };
+  },
+
   processBlocks: async (
     bookId: string,
     deleteBlocks: string[],

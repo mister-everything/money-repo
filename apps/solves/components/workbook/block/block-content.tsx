@@ -138,7 +138,7 @@ export function DefaultBlockContent({
 }
 
 // 다중 선택 객관식 문제
-export function McqMultipleBlockContent({
+export function McqBlockContent({
   answer,
   submit,
   mode,
@@ -147,7 +147,7 @@ export function McqMultipleBlockContent({
   onUpdateContent,
   onUpdateSubmitAnswer,
   isCorrect,
-}: BlockContentProps<"mcq-multiple">) {
+}: BlockContentProps<"mcq">) {
   const addOption = useCallback(async () => {
     const newAnswer = await notify
       .prompt({
@@ -289,7 +289,7 @@ export function McqSingleBlockContent({
   onUpdateContent,
   onUpdateSubmitAnswer,
   isCorrect,
-}: BlockContentProps<"mcq">) {
+}: BlockContentProps<"mcq-single">) {
   const addOption = useCallback(async () => {
     const newAnswer = await notify
       .prompt({

@@ -29,7 +29,17 @@ export const seedProb = async () => {
     title: "상식 테스트 문제 입니다",
   });
 
-  await workBookService.processBlocks(probBook.id, [], mockData.slice(0, 2));
+  for (const block of mockData.slice(0, 2)) {
+    await workBookService.createWorkBookBlock({
+      probBookId: probBook.id,
+      ownerId: testUser[0].id,
+      order: block.order,
+      type: block.type,
+      content: block.content,
+      question: block.question,
+      answer: block.answer!,
+    });
+  }
 
   console.log(`✅ 문제집 1 생성 완료: ${probBook.id}`);
 
@@ -42,7 +52,17 @@ export const seedProb = async () => {
     // tags: ["test", "OX", "순서맞추기"],
   });
 
-  await workBookService.processBlocks(probBook2.id, [], mockData.slice(2, 4));
+  for (const block of mockData.slice(2, 4)) {
+    await workBookService.createWorkBookBlock({
+      probBookId: probBook2.id,
+      ownerId: testUser[0].id,
+      order: block.order,
+      type: block.type,
+      content: block.content,
+      question: block.question,
+      answer: block.answer!,
+    });
+  }
 
   console.log(`✅ 문제집 2 생성 완료: ${probBook2.id}`);
 
