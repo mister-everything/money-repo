@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 
 export default async function Page() {
-  const probBooks = await workBookService.searchProbBooks();
+  const workBooks = await workBookService.searchWorkBooks();
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -29,8 +29,8 @@ export default async function Page() {
       {/* 문제집 목록 */}
       <div className="max-w-6xl mx-auto p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {probBooks.length > 0 ? (
-            probBooks.map((book) => (
+          {workBooks.length > 0 ? (
+            workBooks.map((book) => (
               <Link href={`/workbooks/${book.id}/solve`} key={book.id}>
                 <Card className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader>

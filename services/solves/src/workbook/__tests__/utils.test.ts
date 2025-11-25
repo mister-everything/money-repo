@@ -20,15 +20,15 @@ const mcqContent = {
 
 const mcqAnswer = {
   type: "mcq" as const,
-  answer: ["1"],
+  answer: "1",
 };
 
 const mcqAnswerSubmit = {
   type: "mcq" as const,
-  answer: ["1"],
+  answer: "1",
 };
 
-describe("prob utils", () => {
+describe("workbook utils", () => {
   it("parses known block content and rejects unknown content types", () => {
     expect(parseContent(mcqContent)).toEqual(mcqContent);
 

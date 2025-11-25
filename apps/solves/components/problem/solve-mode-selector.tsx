@@ -24,12 +24,12 @@ import {
 import { fetcher } from "@/lib/protocol/fetcher";
 
 interface SolveModeSelectorProps {
-  probBook: WorkBookWithoutAnswer;
+  workBook: WorkBookWithoutAnswer;
   onModeSelect: (mode: "all" | "sequential") => void;
 }
 
 export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
-  probBook,
+  workBook,
   onModeSelect,
 }) => {
   const [hasSession, setHasSession] = useState<boolean>(false);
@@ -42,13 +42,13 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
     const response = await fetcher<{
       success: boolean;
       data: boolean;
-    }>(`/api/workbooks/${probBook.id}/session/check`, {
+    }>(`/api/workbooks/${workBook.id}/session/check`, {
       method: "GET",
     });
     if (response?.success && response.data) {
       setHasSession(response.data);
     }
-  }, [probBook.id]);
+  }, [workBook.id]);
 
   useEffect(() => {
     fetchSession();
@@ -73,7 +73,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   const handleRestart = async () => {
     try {
       if (hasSession) {
-        await fetcher(`/api/workbooks/${probBook.id}/session`, {
+        await fetcher(`/api/workbooks/${workBook.id}/session`, {
           method: "DELETE",
         });
         // 세션 삭제 후 상태 초기화
@@ -93,7 +93,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   return (
     <>
       <div className="max-w-4xl mx-auto p-6">
-        <ProblemHeader probBook={probBook} />
+        <ProblemHeader workBook={workBook} />
         {/* 전체 풀이 모드 */}
         <Card className="text-primary border-1">
           <Card

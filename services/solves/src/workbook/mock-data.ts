@@ -1,3 +1,4 @@
+import { generateUUID } from "@workspace/util";
 import { BlockAnswer, BlockContent } from "./blocks";
 import { WorkBookBlock } from "./types";
 
@@ -14,7 +15,7 @@ const defaultBlock: WorkBookBlock<"default"> = {
   type: "default",
   content: defaultBlockContent,
   answer: defaultBlockAnswer,
-  id: "1",
+  id: generateUUID(),
   order: 1,
   question: "한국의 수도는?",
 };
@@ -31,34 +32,32 @@ const mcqBlockContent: BlockContent<"mcq"> = {
 
 const mcqBlockAnswer: BlockAnswer<"mcq"> = {
   type: "mcq",
-  answer: ["1"],
+  answer: "1",
 };
 
 const mcqBlock: WorkBookBlock<"mcq"> = {
   type: "mcq",
   content: mcqBlockContent,
   answer: mcqBlockAnswer,
-  id: "2",
+  id: generateUUID(),
   order: 2,
   question: "한국의 도시는?",
 };
 
 const oxBlockContent: BlockContent<"ox"> = {
   type: "ox",
-  oOption: { id: "1", type: "text", text: "맞다" },
-  xOption: { id: "2", type: "text", text: "틀리다" },
 };
 
 const oxBlockAnswer: BlockAnswer<"ox"> = {
   type: "ox",
-  answer: "o",
+  answer: true,
 };
 
 const oxBlock: WorkBookBlock<"ox"> = {
   type: "ox",
   content: oxBlockContent,
   answer: oxBlockAnswer,
-  id: "3",
+  id: generateUUID(),
   order: 3,
   question: "지구는 태양 주위를 돈다",
 };
@@ -82,7 +81,7 @@ const rankingBlock: WorkBookBlock<"ranking"> = {
   type: "ranking",
   content: rankingBlockContent,
   answer: rankingBlockAnswer,
-  id: "4",
+  id: generateUUID(),
   order: 4,
   question: "잘생긴 사람 순서대로 나열하시오.",
 };

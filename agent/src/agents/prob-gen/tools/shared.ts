@@ -1,5 +1,5 @@
 // 순환 참조 회피를 위해 타입을 직접 정의
-export type ProbBookSaveInput = {
+export type WorkBookSaveInput = {
   id?: number;
   ownerId: string;
   title: string;

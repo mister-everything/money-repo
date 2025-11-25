@@ -24,7 +24,7 @@ export const useWorkbookStore = create<WorkbookStore>()(
       clearWorkbooks: () => set({ Workbooks: {} }),
     }),
     {
-      name: "prob-create-storage",
+      name: "workbook-create-storage",
     },
   ),
 );

@@ -268,3 +268,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
       });
   });
 }
+
+export function deduplicate<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}

@@ -17,7 +17,7 @@ export async function GET(
     const { id } = await params;
     const session = await getSession();
 
-    const sessionData = await workBookService.startOrResumeProbBookSession(
+    const sessionData = await workBookService.startOrResumeWorkBookSession(
       id,
       session.user.id,
     );
@@ -40,7 +40,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     const session = await getSession();
-    await workBookService.deleteProbBookSession(id, session.user.id);
+    await workBookService.deleteWorkBookSession(id, session.user.id);
     return nextOk("세션이 삭제 되었습니다.");
   } catch (error) {
     console.error("Error deleting prob book session:", error);

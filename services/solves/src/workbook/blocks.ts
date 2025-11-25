@@ -60,7 +60,7 @@ export type DefaultBlockAnswerSubmit = z.infer<
  * answer: 1
  * answerSubmit: [0,2]
  */
-const mcqBlock = blockBuilder("mcq")
+const mcqMultipleBlock = blockBuilder("mcq-multiple")
   .displayName("객관식 다중")
   .content(
     z.object({
@@ -88,7 +88,7 @@ const mcqBlock = blockBuilder("mcq")
   })
   .build();
 
-const mcqSingleBlock = blockBuilder("mcq-single")
+const mcqBlock = blockBuilder("mcq")
   .displayName("객관식")
   .content(
     z.object({
@@ -112,11 +112,13 @@ const mcqSingleBlock = blockBuilder("mcq-single")
   })
   .build();
 
-export type McqBlockContent = z.infer<typeof mcqBlock.contentSchema>;
+export type McqBlockContent = z.infer<typeof mcqMultipleBlock.contentSchema>;
 
-export type McqBlockAnswer = z.infer<typeof mcqBlock.answerSchema>;
+export type McqBlockAnswer = z.infer<typeof mcqMultipleBlock.answerSchema>;
 
-export type McqBlockAnswerSubmit = z.infer<typeof mcqBlock.answerSubmitSchema>;
+export type McqBlockAnswerSubmit = z.infer<
+  typeof mcqMultipleBlock.answerSubmitSchema
+>;
 
 /**
  * 순위 맞추기 문제
@@ -170,21 +172,15 @@ export type RankingBlockAnswerSubmit = z.infer<
  * answerSubmit: "x"
  */
 const oxBlock = blockBuilder("ox")
-  .displayName("OX")
-  .content(
-    z.object({
-      oOption: z.union([textOption, sourceOption]),
-      xOption: z.union([textOption, sourceOption]),
-    }),
-  )
+  .displayName("OX 퀴즈")
   .answer(
     z.object({
-      answer: z.enum(["o", "x"]),
+      answer: z.boolean(),
     }),
   )
   .answerSubmit(
     z.object({
-      answer: z.enum(["o", "x"]),
+      answer: z.boolean(),
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
@@ -200,8 +196,8 @@ export type OxBlockAnswerSubmit = z.infer<typeof oxBlock.answerSubmitSchema>;
 
 export const All_BLOCKS = {
   [defaultBlock.type]: defaultBlock,
+  [mcqMultipleBlock.type]: mcqMultipleBlock,
   [mcqBlock.type]: mcqBlock,
-  [mcqSingleBlock.type]: mcqSingleBlock,
   [rankingBlock.type]: rankingBlock,
   [oxBlock.type]: oxBlock,
 } as const;

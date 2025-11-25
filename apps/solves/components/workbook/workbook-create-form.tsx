@@ -9,7 +9,7 @@ import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
-import { useWorkbookStore } from "@/store/prob-create";
+import { useWorkbookStore } from "@/store/workbook-create";
 
 export function WorkbookCreateForm() {
   const router = useRouter();

@@ -72,19 +72,8 @@ export const createWorkBookSchema = z.object({
 });
 export type CreateWorkBook = z.infer<typeof createWorkBookSchema>;
 
-export const createWorkBookBlockSchema = z.object({
-  probBookId: z.uuid(),
-  ownerId: z.string(),
-  order: z.number(),
-  question: z.string().optional(),
-  type: z.enum(Object.keys(All_BLOCKS) as [BlockType, ...BlockType[]]),
-  content: allContentSchemas,
-  answer: allAnswerSchemas,
-});
-export type CreateWorkBookBlock = z.infer<typeof createWorkBookBlockSchema>;
-
 /**
- * probBlockAnswerSubmitsTable에 대응하는 타입
+ * workBookBlockAnswerSubmitsTable에 대응하는 타입
  */
 export type WorkBookBlockAnswerSubmitRecord = {
   blockId: string;

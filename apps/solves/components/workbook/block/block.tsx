@@ -7,7 +7,7 @@ import {
   getBlockDisplayName,
 } from "@service/solves/shared";
 import { equal, exclude, StateUpdate } from "@workspace/util";
-import { CheckIcon, PencilIcon, XIcon } from "lucide-react";
+import { CheckIcon, PencilIcon, TrashIcon, XIcon } from "lucide-react";
 import { memo, Ref } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,17 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { InDevelopment } from "@/components/ui/in-development";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   DefaultBlockContent,
-  McqBlockContent,
+  McqMultipleBlockContent,
   McqSingleBlockContent,
+  OXBlockContent,
 } from "./block-content";
 import { BlockQuestion } from "./block-question";
 import { BlockComponentMode } from "./types";
@@ -46,6 +52,7 @@ export type BlockProps<T extends BlockType = BlockType> = {
   onUpdateAnswer?: (answer: StateUpdate<BlockAnswer<T>>) => void;
   onUpdateQuestion?: (question: string) => void;
   onUpdateSubmitAnswer?: (submit: StateUpdate<BlockAnswerSubmit<T>>) => void;
+  onDeleteBlock?: () => void;
 
   className?: string;
   ref?: Ref<HTMLDivElement>;
@@ -66,7 +73,7 @@ function PureBlock<T extends BlockType = BlockType>({
   return (
     <Card className={cn("gap-2", className)} ref={ref}>
       <CardHeader>
-        <div className="flex items-center gap-2 justify-between">
+        <div className="flex items-center gap-2">
           <Badge
             variant={
               props.mode !== "review"
@@ -76,18 +83,43 @@ function PureBlock<T extends BlockType = BlockType>({
                   : "destructive"
             }
           >
-            {getBlockDisplayName(props.type)} {props.order}
+            {getBlockDisplayName(props.type)}
           </Badge>
 
+          <div className="flex-1" />
           {props.mode === "preview" && props.onToggleEditMode && (
-            <Button
-              onClick={props.onToggleEditMode}
-              variant="ghost"
-              size="icon"
-            >
-              <PencilIcon />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={props.onToggleEditMode}
+                  variant="ghost"
+                  size="icon"
+                >
+                  <PencilIcon />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>문제 수정하기</span>
+              </TooltipContent>
+            </Tooltip>
           )}
+          {props.mode === "preview" && props.onDeleteBlock && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={props.onDeleteBlock}
+                  variant="ghost"
+                  size="icon"
+                >
+                  <TrashIcon className="hover:text-destructive" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>문제 삭제하기</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {props.mode === "edit" && (
             <Button
               onClick={props.onToggleEditMode}
@@ -123,8 +155,8 @@ function PureBlock<T extends BlockType = BlockType>({
             onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
             onUpdateAnswer={props.onUpdateAnswer}
           />
-        ) : blockPropsTypeGuard("mcq", props) ? (
-          <McqBlockContent
+        ) : blockPropsTypeGuard("mcq-multiple", props) ? (
+          <McqMultipleBlockContent
             content={props.content}
             isCorrect={props.isCorrect}
             answer={props.answer}
@@ -134,8 +166,19 @@ function PureBlock<T extends BlockType = BlockType>({
             onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
             onUpdateAnswer={props.onUpdateAnswer}
           />
-        ) : blockPropsTypeGuard("mcq-single", props) ? (
+        ) : blockPropsTypeGuard("mcq", props) ? (
           <McqSingleBlockContent
+            content={props.content}
+            isCorrect={props.isCorrect}
+            answer={props.answer}
+            submit={props.submit}
+            mode={props.mode}
+            onUpdateContent={props.onUpdateContent}
+            onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
+            onUpdateAnswer={props.onUpdateAnswer}
+          />
+        ) : blockPropsTypeGuard("ox", props) ? (
+          <OXBlockContent
             content={props.content}
             isCorrect={props.isCorrect}
             answer={props.answer}
@@ -168,12 +211,14 @@ export const Block = memo(PureBlock, (prev, next) => {
     "onUpdateContent",
     "onUpdateAnswer",
     "onUpdateQuestion",
+    "onDeleteBlock",
   ]);
   const nextProps = exclude(next, [
     "onToggleEditMode",
     "onUpdateContent",
     "onUpdateAnswer",
     "onUpdateQuestion",
+    "onDeleteBlock",
   ]);
   if (!equal(prevProps, nextProps)) return false;
   return true;

@@ -17,7 +17,7 @@ export async function GET(
     const { id } = await params;
     const session = await getSession();
 
-    const hasSession = await workBookService.hasProbBookSession(
+    const hasSession = await workBookService.hasWorkBookSession(
       id,
       session.user.id,
     );

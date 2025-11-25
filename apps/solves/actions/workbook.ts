@@ -19,12 +19,12 @@ const generateDefaultTitle = () => {
 export const createWorkbookAction = safeAction(async (formData: FormData) => {
   const session = await getSession();
 
-  const savedProbBook = await workBookService.createWorkBook({
+  const savedWorkBook = await workBookService.createWorkBook({
     title: (formData.get("title") as string) || generateDefaultTitle(),
     ownerId: session.user.id,
   });
 
-  return savedProbBook;
+  return savedWorkBook;
 });
 
 export const updateWorkbookAction = safeAction(
@@ -35,7 +35,7 @@ export const updateWorkbookAction = safeAction(
   }),
   async ({ id, title, description }) => {
     const session = await getSession();
-    const hasPermission = await workBookService.isProbBookOwner(
+    const hasPermission = await workBookService.isWorkBookOwner(
       id,
       session.user.id,
     );
@@ -56,7 +56,7 @@ export const processBlocksAction = safeAction(
     saveBlocks: WorkBookBlock[];
   }) => {
     const session = await getSession();
-    const hasPermission = await workBookService.isProbBookOwner(
+    const hasPermission = await workBookService.isWorkBookOwner(
       workbookId,
       session.user.id,
     );

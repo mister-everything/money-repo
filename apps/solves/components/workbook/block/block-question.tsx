@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { Textarea } from "@/components/ui/textarea";
-
+import { cn } from "@/lib/utils";
 import { BlockComponentMode } from "./types";
 
 interface BlockQuestionProps {
@@ -24,19 +24,25 @@ export function BlockQuestion({
     [onChangeQuestion],
   );
 
+  const placeholder = useMemo(() => {
+    return ["preview", "edit"].includes(mode)
+      ? "문제의 질문을 작성하세요"
+      : "질문이 비어있습니다.";
+  }, [mode]);
+
   return (
-    <div className="w-full py-2">
+    <div className={cn("w-full py-2", !question && "text-muted-foreground")}>
       {isEditable ? (
         <Textarea
           className="min-h-[100px] max-h-[300px] resize-none"
           value={question}
-          placeholder="문제의 질문을 작성하세요"
+          placeholder={placeholder}
           maxLength={300}
           autoFocus
           onChange={handleChangeQuestion}
         />
       ) : (
-        <Streamdown>{question}</Streamdown>
+        <Streamdown>{question || placeholder}</Streamdown>
       )}
     </div>
   );

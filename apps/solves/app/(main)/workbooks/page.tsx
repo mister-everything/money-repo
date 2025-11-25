@@ -11,12 +11,12 @@ import { getSession } from "@/lib/auth/server";
 
 export default async function WorkbooksPage() {
   const session = await getSession();
-  const probBooks = await workBookService.searchMyWorkBooks({
+  const workBooks = await workBookService.searchMyWorkBooks({
     userId: session.user.id,
   });
   return (
     <div>
-      {probBooks.map((book) => (
+      {workBooks.map((book) => (
         <Link href={`/workbooks/${book.id}/edit`} key={book.id}>
           <Card>
             <CardHeader>

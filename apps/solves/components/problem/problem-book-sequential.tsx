@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ProblemBlock } from "./problem-block";
 
 interface ProblemBookSequentialProps {
-  probBook: WorkBookWithoutAnswer;
+  workBook: WorkBookWithoutAnswer;
   answers: Record<string, BlockAnswerSubmit>;
   onAnswerChange: (problemId: string, answer: BlockAnswerSubmit) => void;
   onSubmit: () => void;
@@ -19,7 +19,7 @@ interface ProblemBookSequentialProps {
 }
 
 export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
-  probBook,
+  workBook,
   answers,
   onAnswerChange,
   onSubmit,
@@ -36,7 +36,7 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
     }
 
     // 답안이 있는 가장 마지막 문제 다음으로 이동
-    const answeredIndices = probBook.blocks
+    const answeredIndices = workBook.blocks
       .map((block, idx) => (answers[block.id] ? idx : -1))
       .filter((idx) => idx !== -1);
 
@@ -44,13 +44,13 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
       const lastAnsweredIndex = Math.max(...answeredIndices);
       const nextIndex = Math.min(
         lastAnsweredIndex + 1,
-        probBook.blocks.length - 1,
+        workBook.blocks.length - 1,
       );
       setCurrentIndex(nextIndex);
     } else {
       setCurrentIndex(0);
     }
-  }, [probBook.blocks, submitResult]);
+  }, [workBook.blocks, submitResult]);
 
   // 답변 변경 핸들러 - 새로운 답변 선택 시에만 다음 문제로 이동
   const handleAnswerChange = (problemId: string, answer: BlockAnswerSubmit) => {
@@ -80,19 +80,19 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
   };
 
   const handleNext = () => {
-    if (currentIndex < probBook.blocks.length - 1) {
+    if (currentIndex < workBook.blocks.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     }
   };
 
-  const currentProblem = probBook.blocks[currentIndex];
-  const progress = ((currentIndex + 1) / probBook.blocks.length) * 100;
+  const currentProblem = workBook.blocks[currentIndex];
+  const progress = ((currentIndex + 1) / workBook.blocks.length) * 100;
 
   // 결과 화면이면 모든 문제를 순차적으로 표시
   if (submitResult) {
     return (
       <div className="space-y-6">
-        {probBook.blocks.map((problem, index) => {
+        {workBook.blocks.map((problem, index) => {
           const blockResult = submitResult.blockResults.find(
             (result) => result.blockId === problem.id,
           );
@@ -126,7 +126,7 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-foreground">
-            문제 {currentIndex + 1} / {probBook.blocks.length}
+            문제 {currentIndex + 1} / {workBook.blocks.length}
           </span>
           <span className="text-sm text-muted-foreground">
             {Math.round(progress)}%
@@ -164,7 +164,7 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
           이전
         </Button>
 
-        {currentIndex === probBook.blocks.length - 1 ? (
+        {currentIndex === workBook.blocks.length - 1 ? (
           <Button
             onClick={onSubmit}
             size="lg"
@@ -176,7 +176,7 @@ export const ProblemBookSequential: React.FC<ProblemBookSequentialProps> = ({
         ) : (
           <Button
             onClick={handleNext}
-            disabled={currentIndex === probBook.blocks.length - 1}
+            disabled={currentIndex === workBook.blocks.length - 1}
             variant="outline"
             className="flex items-center gap-2"
           >

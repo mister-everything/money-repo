@@ -16,7 +16,7 @@ import { ProblemHeader } from "./problem-header";
 import { SolveModeSelector } from "./solve-mode-selector";
 
 interface ProblemBookProps {
-  probBook: WorkBookWithoutAnswer;
+  workBook: WorkBookWithoutAnswer;
 }
 
 const handleConfetti = () => {
@@ -49,7 +49,7 @@ const handleConfetti = () => {
   frame();
 };
 
-export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
+export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") as "all" | "sequential" | null;
@@ -75,7 +75,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
             startTime: Date;
             savedAnswers: Record<string, BlockAnswerSubmit>;
           };
-        }>(`/api/workbooks/${probBook.id}/session`, {
+        }>(`/api/workbooks/${workBook.id}/session`, {
           method: "GET",
         });
 
@@ -90,7 +90,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     };
 
     initSession();
-  }, [probBook.id, mode]);
+  }, [workBook.id, mode]);
 
   // 10초 주기 자동 저장
   useEffect(() => {
@@ -107,7 +107,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
       }
 
       try {
-        await fetcher(`/api/workbooks/${probBook.id}/save`, {
+        await fetcher(`/api/workbooks/${workBook.id}/save`, {
           method: "POST",
           body: JSON.stringify({
             submitId,
@@ -125,7 +125,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     const interval = setInterval(saveAnswers, 5000);
 
     return () => clearInterval(interval);
-  }, [answers, lastSavedAnswers, submitId, probBook.id]);
+  }, [answers, lastSavedAnswers, submitId, workBook.id]);
 
   const handleAnswerChange = useCallback(
     (problemId: string, answer: BlockAnswerSubmit) => {
@@ -146,7 +146,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
     await fetcher<{
       success: boolean;
       data: SubmitWorkBookResponse;
-    }>(`/api/workbooks/${probBook.id}/submit`, {
+    }>(`/api/workbooks/${workBook.id}/submit`, {
       method: "POST",
       body: JSON.stringify({
         submitId,
@@ -166,13 +166,13 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
   };
 
   const handleModeSelect = (selectedMode: "all" | "sequential") => {
-    router.replace(`/workbooks/${probBook.id}/solve?mode=${selectedMode}`);
+    router.replace(`/workbooks/${workBook.id}/solve?mode=${selectedMode}`);
   };
 
   // 모드가 선택되지 않았으면 모드 선택 화면 표시
   if (!mode) {
     return (
-      <SolveModeSelector probBook={probBook} onModeSelect={handleModeSelect} />
+      <SolveModeSelector workBook={workBook} onModeSelect={handleModeSelect} />
     );
   }
 
@@ -207,7 +207,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
           </CardHeader>
         </Card>
       )}
-      <ProblemHeader probBook={probBook} />
+      <ProblemHeader workBook={workBook} />
     </>
   );
 
@@ -217,7 +217,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
       <div className="max-w-4xl mx-auto p-6">
         {renderHeader()}
         <ProblemBookSequential
-          probBook={probBook}
+          workBook={workBook}
           answers={answers}
           onAnswerChange={handleAnswerChange}
           onSubmit={handleSubmit}
@@ -234,7 +234,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ probBook }) => {
 
       {/* 문제들 */}
       <div className="space-y-6">
-        {probBook.blocks.map((problem, index) => {
+        {workBook.blocks.map((problem, index) => {
           // 해당 블록의 결과 찾기
           const blockResult = submitResult?.blockResults.find(
             (result) => result.blockId === problem.id,

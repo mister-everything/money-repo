@@ -5,11 +5,7 @@ import { generateUUID } from "@workspace/util";
 import { mockData } from "./mock-data";
 import { workBookService } from "./workbook.service";
 
-/**
- * Prob 모듈 시드 데이터 생성
- * 테스트 사용자 및 문제집 생성
- */
-export const seedProb = async () => {
+export const seedWorkbook = async () => {
   console.log("🌱 Seeding Prob data...");
 
   // 랜덤 테스트 유저 생성
@@ -24,27 +20,17 @@ export const seedProb = async () => {
   console.log(`✅ 랜덤 유저 생성 완료: ${testUser[0].email}`);
 
   // 첫 번째 문제집 생성
-  const probBook = await workBookService.createWorkBook({
+  const workBook = await workBookService.createWorkBook({
     ownerId: testUser[0].id,
     title: "상식 테스트 문제 입니다",
   });
 
-  for (const block of mockData.slice(0, 2)) {
-    await workBookService.createWorkBookBlock({
-      probBookId: probBook.id,
-      ownerId: testUser[0].id,
-      order: block.order,
-      type: block.type,
-      content: block.content,
-      question: block.question,
-      answer: block.answer!,
-    });
-  }
+  await workBookService.processBlocks(workBook.id, [], mockData.slice(0, 2));
 
-  console.log(`✅ 문제집 1 생성 완료: ${probBook.id}`);
+  console.log(`✅ 문제집 1 생성 완료: ${workBook.id}`);
 
   // 두 번째 문제집 생성
-  const probBook2 = await workBookService.createWorkBook({
+  const workBook2 = await workBookService.createWorkBook({
     ownerId: testUser[0].id,
     title: "상식 테스트 문제 입니다 2",
     // description: "상식퀴즈 OX, 순서맞추기 문제 입니다.",
@@ -52,21 +38,11 @@ export const seedProb = async () => {
     // tags: ["test", "OX", "순서맞추기"],
   });
 
-  for (const block of mockData.slice(2, 4)) {
-    await workBookService.createWorkBookBlock({
-      probBookId: probBook2.id,
-      ownerId: testUser[0].id,
-      order: block.order,
-      type: block.type,
-      content: block.content,
-      question: block.question,
-      answer: block.answer!,
-    });
-  }
+  await workBookService.processBlocks(workBook2.id, [], mockData.slice(2, 4));
 
-  console.log(`✅ 문제집 2 생성 완료: ${probBook2.id}`);
+  console.log(`✅ 문제집 2 생성 완료: ${workBook2.id}`);
 
-  const bookDetail = await workBookService.selectProbBookById(probBook.id);
+  const bookDetail = await workBookService.selectWorkBookById(workBook.id);
   console.log("\n📊 생성된 문제집 상세:");
   console.dir(bookDetail, { depth: null });
 
@@ -76,7 +52,7 @@ export const seedProb = async () => {
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   import("@workspace/env");
-  seedProb()
+  seedWorkbook()
     .then(() => {
       console.log("\n✅ Seed completed!");
       process.exit(0);

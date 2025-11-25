@@ -22,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { Button } from "../ui/button";
 import { DialogClose } from "../ui/dialog";
@@ -49,8 +50,8 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, ...workbook }));
       },
-      successMessage: "문제집 정보가 성공적으로 업데이트되었습니다.",
-      failMessage: "문제집 정보 업데이트에 실패했습니다.",
+      successMessage: "저장이 완료되었습니다.",
+      failMessage: "저장에 실패했습니다.",
     },
   );
 
@@ -60,8 +61,8 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, blocks: blocks }));
       },
-      successMessage: "문제 정보가 성공적으로 업데이트되었습니다.",
-      failMessage: "문제 정보 업데이트에 실패했습니다.",
+      successMessage: "저장이 완료되었습니다.",
+      failMessage: "저장에 실패했습니다.",
     },
   );
 
@@ -70,9 +71,11 @@ export function WorkbookEdit({
     [isBookPending, isBlocksPending],
   );
 
+  const pendingRef = useToRef(isPending);
+
   const handleUpdateContent = useCallback(
     (id: string, content: StateUpdate<BlockContent<BlockType>>) => {
-      if (isPending) return;
+      if (pendingRef.current) return;
       setBlocks((prev) =>
         prev.map((b) =>
           b.id === id
@@ -84,12 +87,12 @@ export function WorkbookEdit({
         ),
       );
     },
-    [isPending],
+    [],
   );
 
   const handleUpdateAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswer<BlockType>>) => {
-      if (isPending) return;
+      if (pendingRef.current) return;
       setBlocks((prev) =>
         prev.map((b) =>
           b.id === id
@@ -98,33 +101,33 @@ export function WorkbookEdit({
         ),
       );
     },
-    [isPending],
+    [],
   );
 
-  const handleUpdateQuestion = useCallback(
-    (id: string, question: string) => {
-      if (isPending) return;
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, question } : b)),
-      );
-    },
-    [isPending],
-  );
-  const handleToggleEditMode = useCallback(
-    (id: string) => {
-      if (isPending) return;
-      setEditingBlockId((prev) => {
-        if (prev.includes(id)) {
-          return prev.filter((id) => id !== id);
-        }
-        return Array.from(new Set([...prev, id]));
-      });
-    },
-    [isPending],
-  );
+  const handleUpdateQuestion = useCallback((id: string, question: string) => {
+    if (pendingRef.current) return;
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, question } : b)),
+    );
+  }, []);
+  const handleToggleEditMode = useCallback((id: string) => {
+    if (pendingRef.current) return;
+    setEditingBlockId((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((id) => id !== id);
+      }
+      return Array.from(new Set([...prev, id]));
+    });
+  }, []);
+
+  const handleDeleteBlock = useCallback((id: string) => {
+    if (pendingRef.current) return;
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
+    setEditingBlockId((prev) => prev.filter((id) => id !== id));
+  }, []);
 
   const handleAddBlock = useCallback(async () => {
-    if (isPending) return;
+    if (pendingRef.current) return;
     const addBlock = async (type: BlockType) => {
       const newBlock = initializeBlock(type);
       setBlocks((prev) => [...prev, newBlock]);
@@ -152,7 +155,7 @@ export function WorkbookEdit({
         </div>
       ),
     });
-  }, [isPending]);
+  }, []);
 
   const handleSave = async () => {
     const hasBookDiff = !equal(
@@ -235,6 +238,7 @@ export function WorkbookEdit({
             order={b.order}
             answer={b.answer}
             content={b.content}
+            onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
             onUpdateContent={handleUpdateContent.bind(null, b.id)}
             onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
             onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
@@ -243,12 +247,13 @@ export function WorkbookEdit({
       })}
       <Tooltip>
         <TooltipTrigger asChild>
-          <div
+          <Button
+            variant="outline"
             onClick={handleAddBlock}
-            className="transition-all hover:bg-primary/5 hover:border-primary group cursor-pointer border border-dashed  p-12 rounded-lg flex items-center justify-center"
+            className="w-full h-24 md:h-32"
           >
-            <PlusIcon className="size-10 text-accent group-hover:text-primary" />
-          </div>
+            <PlusIcon className="size-10 text-muted-foreground" />
+          </Button>
         </TooltipTrigger>
         <TooltipContent>
           <span>문제 추가</span>
