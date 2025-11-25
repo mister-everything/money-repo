@@ -50,8 +50,8 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, ...workbook }));
       },
-      successMessage: "문제집 정보가 성공적으로 업데이트되었습니다.",
-      failMessage: "문제집 정보 업데이트에 실패했습니다.",
+      successMessage: "저장이 완료되었습니다.",
+      failMessage: "저장에 실패했습니다.",
     },
   );
 
@@ -61,8 +61,8 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, blocks: blocks }));
       },
-      successMessage: "문제 정보가 성공적으로 업데이트되었습니다.",
-      failMessage: "문제 정보 업데이트에 실패했습니다.",
+      successMessage: "저장이 완료되었습니다.",
+      failMessage: "저장에 실패했습니다.",
     },
   );
 
