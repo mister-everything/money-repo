@@ -123,6 +123,15 @@ export function WorkbookEdit({
     [isPending],
   );
 
+  const handleDeleteBlock = useCallback(
+    (id: string) => {
+      if (isPending) return;
+      setBlocks((prev) => prev.filter((b) => b.id !== id));
+      setEditingBlockId((prev) => prev.filter((id) => id !== id));
+    },
+    [isPending],
+  );
+
   const handleAddBlock = useCallback(async () => {
     if (isPending) return;
     const addBlock = async (type: BlockType) => {
@@ -235,6 +244,7 @@ export function WorkbookEdit({
             order={b.order}
             answer={b.answer}
             content={b.content}
+            onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
             onUpdateContent={handleUpdateContent.bind(null, b.id)}
             onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
             onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
@@ -243,12 +253,13 @@ export function WorkbookEdit({
       })}
       <Tooltip>
         <TooltipTrigger asChild>
-          <div
+          <Button
+            variant="outline"
             onClick={handleAddBlock}
-            className="transition-all hover:bg-primary/5 hover:border-primary group cursor-pointer border border-dashed  p-12 rounded-lg flex items-center justify-center"
+            className="w-full h-24 md:h-32"
           >
-            <PlusIcon className="size-10 text-accent group-hover:text-primary" />
-          </div>
+            <PlusIcon className="size-10 text-muted-foreground" />
+          </Button>
         </TooltipTrigger>
         <TooltipContent>
           <span>문제 추가</span>

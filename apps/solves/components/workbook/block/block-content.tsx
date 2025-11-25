@@ -5,13 +5,15 @@ import {
   BlockContent,
   BlockType,
 } from "@service/solves/shared";
-import { generateUUID, noop, StateUpdate } from "@workspace/util";
+import { deduplicate, generateUUID, noop, StateUpdate } from "@workspace/util";
 import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { InDevelopment } from "@/components/ui/in-development";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/notify";
 import { cn } from "@/lib/utils";
 import { BlockComponentMode } from "./types";
@@ -66,7 +68,7 @@ export function DefaultBlockContent({
     if (!newAnswer) return;
     onUpdateAnswer?.((prev) => ({
       ...prev,
-      answer: [...(prev?.answer || []), newAnswer],
+      answer: deduplicate([...(prev?.answer || []), newAnswer]),
     }));
   }, [onUpdateAnswer]);
 
@@ -83,19 +85,23 @@ export function DefaultBlockContent({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
-        {mode == "solve" && (
+        {(mode == "solve" || mode == "preview") && (
           <Input
             placeholder="답안을 작성하세요"
             className="w-full"
             value={submit?.answer}
             onChange={handleChangeSubmitAnswer}
+            disabled={mode == "preview"}
           />
         )}
         {mode == "review" && (
           <div className="text-sm flex flex-col gap-2 text-muted-foreground">
-            <p className={!isCorrect ? "text-destructive" : undefined}>
-              {submit?.answer || "정답을 제출하지 않았습니다."}
-            </p>
+            <Input
+              placeholder="정답을 제출하지 않았습니다."
+              className="w-full"
+              value={submit?.answer}
+              disabled
+            />
             {!isCorrect && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="pr-2">정답:</span>
@@ -106,12 +112,8 @@ export function DefaultBlockContent({
                 ))}
               </div>
             )}
-            <p className="text-muted-foreground">
-              이곳은 추후 해설이 추가될 예정입니다.
-            </p>
           </div>
         )}
-
         {mode == "edit" && (
           <div className="flex flex-wrap items-center gap-2">
             {answer?.answer.map((correctAnswer, index) => (
@@ -207,42 +209,60 @@ export function McqMultipleBlockContent({
     [onUpdateAnswer, mode, onUpdateSubmitAnswer],
   );
 
+  const getChecked = useCallback(
+    (optionId: string) => {
+      if (mode == "solve") return submit?.answer?.includes(optionId);
+      if (mode == "edit") return answer?.answer.includes(optionId);
+      return false;
+    },
+    [mode, answer, submit],
+  );
+
+  const getSelectedClass = useCallback(
+    (optionId: string) => {
+      if (mode == "solve")
+        return submit?.answer?.includes(optionId) ? selectClass : "";
+      if (mode == "edit")
+        return answer?.answer.includes(optionId) ? okClass : "";
+      if (mode == "review") {
+        if (isCorrect) return answer?.answer.includes(optionId) ? okClass : "";
+        if (submit?.answer?.includes(optionId)) return failClass;
+        if (answer?.answer.includes(optionId)) return muteCalss;
+      }
+    },
+    [mode, answer, submit],
+  );
+
   return (
     <div className="flex flex-col gap-3">
       {content.options.map((option, index) => {
         if (option.type == "text") {
-          const name = `block-option-${option.id}`;
-          const checked = answer?.answer.includes(option.id);
-          const isSelected =
-            mode == "solve" && submit?.answer?.includes(option.id);
-
+          const checked = getChecked(option.id);
           return (
-            <div
+            <Label
               key={option.id}
-              onClick={() => handleOptionSelect(option.id)}
+              htmlFor={option.id}
               className={cn(
-                "flex items-center gap-3 rounded-lg border p-4 transition-colors",
+                "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
                 (mode == "edit" || mode == "solve") && "cursor-pointer",
-                isSelected &&
-                  isCorrect == false &&
-                  "border-destructive bg-destructive/10",
-                mode != "solve" && checked
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-card hover:bg-accent",
+                getSelectedClass(option.id),
               )}
             >
-              <input
-                type="checkbox"
-                name={name}
-                defaultChecked={checked}
-                value={option.id}
-                onChange={noop}
-                className="accent-primary"
-              />
-              <div className="flex w-full items-center justify-between gap-4">
-                <div className="flex-1 text-sm text-foreground">
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                <Checkbox
+                  id={option.id}
+                  checked={checked}
+                  onCheckedChange={() => handleOptionSelect(option.id)}
+                  className={cn(
+                    "mr-2 rounded-sm border-border bg-card",
+                    getSelectedClass(option.id) != okClass &&
+                      "data-[state=checked]:bg-muted data-[state=checked]:text-muted-foreground",
+                  )}
+                />
+
+                <span className="text-sm font-medium leading-snug">
                   {option.text}
-                </div>
+                </span>
               </div>
               {mode == "edit" && (
                 <Button
@@ -251,13 +271,13 @@ export function McqMultipleBlockContent({
                     removeOption(index);
                   }}
                   size="icon"
-                  className="size-6! hover:bg-destructive/10! hover:text-destructive! text-muted-foreground"
+                  className="size-6! text-muted-foreground ml-auto"
                   variant="ghost"
                 >
                   <XIcon className="size-3!" />
                 </Button>
               )}
-            </div>
+            </Label>
           );
         }
 
@@ -267,6 +287,14 @@ export function McqMultipleBlockContent({
           </InDevelopment>
         );
       })}
+      {mode == "preview" &&
+        content.options.length === 0 &&
+        Array.from({ length: 5 }).map((_, index) => (
+          <div
+            key={index}
+            className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
+          />
+        ))}
       {mode == "edit" && (
         <Button
           variant="outline"
@@ -336,41 +364,60 @@ export function McqSingleBlockContent({
     [onUpdateAnswer, mode, onUpdateSubmitAnswer],
   );
 
+  const getChecked = useCallback(
+    (optionId: string) => {
+      if (mode == "solve") return submit?.answer?.includes(optionId);
+      if (mode == "edit") return answer?.answer.includes(optionId);
+      return false;
+    },
+    [mode, answer, submit],
+  );
+
+  const getSelectedClass = useCallback(
+    (optionId: string) => {
+      if (mode == "solve")
+        return submit?.answer?.includes(optionId) ? selectClass : "";
+      if (mode == "edit")
+        return answer?.answer.includes(optionId) ? okClass : "";
+      if (mode == "review") {
+        if (isCorrect) return answer?.answer.includes(optionId) ? okClass : "";
+        if (submit?.answer?.includes(optionId)) return failClass;
+        if (answer?.answer.includes(optionId)) return muteCalss;
+      }
+    },
+    [mode, answer, submit],
+  );
+
   return (
     <div className="flex flex-col gap-3">
       {content.options.map((option, index) => {
         if (option.type == "text") {
-          const name = `block-option-${option.id}`;
-          const checked = answer?.answer.includes(option.id);
-          const isSelected =
-            mode == "solve" && submit?.answer?.includes(option.id);
-
+          const checked = getChecked(option.id);
           return (
-            <div
+            <Label
               key={option.id}
-              onClick={() => handleOptionSelect(option.id)}
+              htmlFor={option.id}
               className={cn(
-                "flex items-center gap-3 rounded-lg border p-4 transition-colors",
+                "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
                 (mode == "edit" || mode == "solve") && "cursor-pointer",
-                isSelected &&
-                  isCorrect == false &&
-                  "border-destructive bg-destructive/10",
-                mode != "solve" && checked
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-card hover:bg-accent",
+                getSelectedClass(option.id),
               )}
             >
-              <input
-                type="checkbox"
-                name={name}
-                checked={checked}
-                value={option.id}
-                className="accent-primary"
-              />
-              <div className="flex w-full items-center justify-between gap-4">
-                <div className="flex-1 text-sm text-foreground">
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                <Checkbox
+                  id={option.id}
+                  checked={checked}
+                  onCheckedChange={() => handleOptionSelect(option.id)}
+                  className={cn(
+                    "mr-2 rounded-sm border-border bg-card",
+                    getSelectedClass(option.id) != okClass &&
+                      "data-[state=checked]:bg-muted data-[state=checked]:text-muted-foreground",
+                  )}
+                />
+
+                <span className="text-sm font-medium leading-snug">
                   {option.text}
-                </div>
+                </span>
               </div>
               {mode == "edit" && (
                 <Button
@@ -379,13 +426,13 @@ export function McqSingleBlockContent({
                     removeOption(index);
                   }}
                   size="icon"
-                  className="size-6! hover:bg-destructive/10! hover:text-destructive! text-muted-foreground"
+                  className="size-6! text-muted-foreground ml-auto"
                   variant="ghost"
                 >
                   <XIcon className="size-3!" />
                 </Button>
               )}
-            </div>
+            </Label>
           );
         }
 
@@ -395,6 +442,14 @@ export function McqSingleBlockContent({
           </InDevelopment>
         );
       })}
+      {mode == "preview" &&
+        content.options.length === 0 &&
+        Array.from({ length: 5 }).map((_, index) => (
+          <div
+            key={index}
+            className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
+          />
+        ))}
       {mode == "edit" && (
         <Button
           variant="outline"
@@ -461,7 +516,7 @@ export function OXBlockContent({
         )}
         onClick={() => handleClick(true)}
       >
-        <CircleIcon className="size-24" />
+        <CircleIcon className="size-14 md:size-24" />
       </Button>
       <Button
         variant={"outline"}
@@ -471,7 +526,7 @@ export function OXBlockContent({
         )}
         onClick={() => handleClick(false)}
       >
-        <XIcon className="size-24 text-muted-foreground" />
+        <XIcon className="size-14 md:size-24" />
       </Button>
     </div>
   );

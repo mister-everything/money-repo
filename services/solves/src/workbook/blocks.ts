@@ -172,7 +172,7 @@ export type RankingBlockAnswerSubmit = z.infer<
  * answerSubmit: "x"
  */
 const oxBlock = blockBuilder("ox")
-  .displayName("OX")
+  .displayName("OX 퀴즈")
   .answer(
     z.object({
       answer: z.boolean(),
