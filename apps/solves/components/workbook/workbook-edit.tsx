@@ -22,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { Button } from "../ui/button";
 import { DialogClose } from "../ui/dialog";
@@ -70,9 +71,11 @@ export function WorkbookEdit({
     [isBookPending, isBlocksPending],
   );
 
+  const pendingRef = useToRef(isPending);
+
   const handleUpdateContent = useCallback(
     (id: string, content: StateUpdate<BlockContent<BlockType>>) => {
-      if (isPending) return;
+      if (pendingRef.current) return;
       setBlocks((prev) =>
         prev.map((b) =>
           b.id === id
@@ -84,12 +87,12 @@ export function WorkbookEdit({
         ),
       );
     },
-    [isPending],
+    [],
   );
 
   const handleUpdateAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswer<BlockType>>) => {
-      if (isPending) return;
+      if (pendingRef.current) return;
       setBlocks((prev) =>
         prev.map((b) =>
           b.id === id
@@ -98,42 +101,33 @@ export function WorkbookEdit({
         ),
       );
     },
-    [isPending],
+    [],
   );
 
-  const handleUpdateQuestion = useCallback(
-    (id: string, question: string) => {
-      if (isPending) return;
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, question } : b)),
-      );
-    },
-    [isPending],
-  );
-  const handleToggleEditMode = useCallback(
-    (id: string) => {
-      if (isPending) return;
-      setEditingBlockId((prev) => {
-        if (prev.includes(id)) {
-          return prev.filter((id) => id !== id);
-        }
-        return Array.from(new Set([...prev, id]));
-      });
-    },
-    [isPending],
-  );
+  const handleUpdateQuestion = useCallback((id: string, question: string) => {
+    if (pendingRef.current) return;
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, question } : b)),
+    );
+  }, []);
+  const handleToggleEditMode = useCallback((id: string) => {
+    if (pendingRef.current) return;
+    setEditingBlockId((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((id) => id !== id);
+      }
+      return Array.from(new Set([...prev, id]));
+    });
+  }, []);
 
-  const handleDeleteBlock = useCallback(
-    (id: string) => {
-      if (isPending) return;
-      setBlocks((prev) => prev.filter((b) => b.id !== id));
-      setEditingBlockId((prev) => prev.filter((id) => id !== id));
-    },
-    [isPending],
-  );
+  const handleDeleteBlock = useCallback((id: string) => {
+    if (pendingRef.current) return;
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
+    setEditingBlockId((prev) => prev.filter((id) => id !== id));
+  }, []);
 
   const handleAddBlock = useCallback(async () => {
-    if (isPending) return;
+    if (pendingRef.current) return;
     const addBlock = async (type: BlockType) => {
       const newBlock = initializeBlock(type);
       setBlocks((prev) => [...prev, newBlock]);
@@ -161,7 +155,7 @@ export function WorkbookEdit({
         </div>
       ),
     });
-  }, [isPending]);
+  }, []);
 
   const handleSave = async () => {
     const hasBookDiff = !equal(

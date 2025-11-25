@@ -211,12 +211,14 @@ export const Block = memo(PureBlock, (prev, next) => {
     "onUpdateContent",
     "onUpdateAnswer",
     "onUpdateQuestion",
+    "onDeleteBlock",
   ]);
   const nextProps = exclude(next, [
     "onToggleEditMode",
     "onUpdateContent",
     "onUpdateAnswer",
     "onUpdateQuestion",
+    "onDeleteBlock",
   ]);
   if (!equal(prevProps, nextProps)) return false;
   return true;

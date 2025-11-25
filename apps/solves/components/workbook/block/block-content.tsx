@@ -5,7 +5,7 @@ import {
   BlockContent,
   BlockType,
 } from "@service/solves/shared";
-import { deduplicate, generateUUID, noop, StateUpdate } from "@workspace/util";
+import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
 import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ const selectClass =
   "border-primary bg-primary/5 text-primary hover:text-primary";
 
 // 사용자가 선택했고 오답 일때
+// 수민이한테 한번 더 물어보기 너무 빨간게 부정적일수도
 const failClass = "border-destructive bg-destructive/5 text-destructive";
 
 // 사용자가 선택은 안했지만 (오답제출) 정답일때
@@ -464,6 +465,7 @@ export function McqSingleBlockContent({
   );
 }
 
+// OX 문제
 export function OXBlockContent({
   onUpdateSubmitAnswer,
   onUpdateAnswer,
