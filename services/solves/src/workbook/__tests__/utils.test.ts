@@ -20,12 +20,12 @@ const mcqContent = {
 
 const mcqAnswer = {
   type: "mcq" as const,
-  answer: ["1"],
+  answer: "1",
 };
 
 const mcqAnswerSubmit = {
   type: "mcq" as const,
-  answer: ["1"],
+  answer: "1",
 };
 
 describe("prob utils", () => {
