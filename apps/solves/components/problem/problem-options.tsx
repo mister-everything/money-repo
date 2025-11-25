@@ -6,7 +6,6 @@ import {
   isAnswer,
   isContent,
   type McqBlockContent,
-  type OxBlockContent,
 } from "@service/solves/shared";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,23 +66,23 @@ export const ProblemOptions = <T extends BlockType>({
   const isDefaultContent = useMemo(() => isContent.default(content), [content]);
   const isRankingContent = useMemo(() => isContent.ranking(content), [content]);
 
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<string>();
   const [textAnswer, setTextAnswer] = useState("");
   const [oxAnswer, setOxAnswer] = useState<boolean>();
 
   // submitted prop 변경 시 로컬 state 초기화
   useEffect(() => {
     if (submitted?.type !== content.type) {
-      setSelectedOptions([]);
+      setSelectedOptions(undefined);
       setOxAnswer(undefined);
       setTextAnswer("");
       return;
     }
 
     if (isMcqContent && isAnswer.mcq(submitted)) {
-      setSelectedOptions([submitted.answer]);
+      setSelectedOptions(submitted.answer);
     } else {
-      setSelectedOptions([]);
+      setSelectedOptions(undefined);
     }
 
     if (isOxContent && isAnswer.ox(submitted)) {
@@ -106,19 +105,20 @@ export const ProblemOptions = <T extends BlockType>({
         return;
       }
 
-      const updated = [optionId];
-      setSelectedOptions(updated);
+      setSelectedOptions(optionId);
       queueMicrotask(() => {
         onAnswerChange?.({
           type: content.type,
-          answer: updated,
+          answer: optionId,
         } as BlockAnswerSubmit<T>);
       });
     };
 
     // 정답 옵션 ID 목록
-    const correctOptionIds =
-      correctAnswer && isAnswer.mcq(correctAnswer) ? correctAnswer.answer : [];
+    const correctOptionId =
+      correctAnswer && isAnswer.mcq(correctAnswer)
+        ? correctAnswer.answer
+        : undefined;
 
     return (
       <div className="space-y-3">
@@ -127,8 +127,8 @@ export const ProblemOptions = <T extends BlockType>({
         </div>
 
         {content.options.map((option) => {
-          const checked = selectedOptions.includes(option.id);
-          const isCorrectOption = correctOptionIds.includes(option.id);
+          const checked = selectedOptions == option.id;
+          const isCorrectOption = correctOptionId == option.id;
           const isWrongSelection = correctAnswer && checked && !isCorrectOption;
 
           // 결과 모드 스타일
@@ -172,24 +172,20 @@ export const ProblemOptions = <T extends BlockType>({
   }
 
   // OX 문제 옵션
-  if (isOxContent && isContent.ox(content)) {
-    const handleSelect = (value: "o" | "x") => {
+  if (isContent.ox(content)) {
+    const handleSelect = (value: boolean) => {
       // 결과 모드에서는 선택 불가
       if (correctAnswer) {
         return;
       }
+      setOxAnswer(value);
 
-      const nextValue = oxAnswer === value ? null : value;
-      setOxAnswer(nextValue);
-
-      if (nextValue !== null) {
-        queueMicrotask(() => {
-          onAnswerChange?.({
-            type: content.type,
-            answer: nextValue,
-          } as BlockAnswerSubmit<T>);
-        });
-      }
+      queueMicrotask(() => {
+        onAnswerChange?.({
+          type: content.type,
+          answer: value,
+        } as BlockAnswerSubmit<T>);
+      });
     };
 
     const correctOxAnswer =
@@ -198,11 +194,11 @@ export const ProblemOptions = <T extends BlockType>({
     return (
       <div className="grid grid-cols-2 gap-4">
         {[
-          { key: "o" as const, label: "O", option: content.oOption },
-          { key: "x" as const, label: "X", option: content.xOption },
-        ].map(({ key, label, option }) => {
-          const checked = oxAnswer === key;
-          const isCorrectOption = correctOxAnswer === key;
+          { key: true, label: "O" },
+          { key: false, label: "X" },
+        ].map(({ key, label }) => {
+          const checked = oxAnswer == key;
+          const isCorrectOption = correctOxAnswer == key;
           const isWrongSelection = correctAnswer && checked && !isCorrectOption;
 
           // 결과 모드 스타일
@@ -217,7 +213,7 @@ export const ProblemOptions = <T extends BlockType>({
 
           return (
             <button
-              key={key}
+              key={label}
               type="button"
               onClick={() => handleSelect(key)}
               disabled={!!correctAnswer}
@@ -229,9 +225,7 @@ export const ProblemOptions = <T extends BlockType>({
               }`}
             >
               <span className="text-xl font-bold text-foreground">{label}</span>
-              <span className="text-sm text-muted-foreground">
-                {getOxLabel(option)}
-              </span>
+              <span className="text-sm text-muted-foreground">{label}</span>
             </button>
           );
         })}
