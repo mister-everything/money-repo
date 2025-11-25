@@ -76,7 +76,7 @@ export const workBookSubmitsTable = solvesSchema.table("prob_book_submits", {
  * 각 문제에 대한 사용자의 답안을 관리
  * Composite Primary Key: (blockId, submitId) - 한 세션에서 각 문제당 하나의 답안만
  */
-export const probBlockAnswerSubmitsTable = solvesSchema.table(
+export const workBookBlockAnswerSubmitsTable = solvesSchema.table(
   "prob_block_answer_submits",
   {
     blockId: uuid("block_id")

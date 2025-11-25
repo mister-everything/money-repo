@@ -73,7 +73,7 @@ export const createWorkBookSchema = z.object({
 export type CreateWorkBook = z.infer<typeof createWorkBookSchema>;
 
 /**
- * probBlockAnswerSubmitsTable에 대응하는 타입
+ * workBookBlockAnswerSubmitsTable에 대응하는 타입
  */
 export type WorkBookBlockAnswerSubmitRecord = {
   blockId: string;

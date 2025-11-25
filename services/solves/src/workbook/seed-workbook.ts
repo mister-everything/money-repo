@@ -5,11 +5,7 @@ import { generateUUID } from "@workspace/util";
 import { mockData } from "./mock-data";
 import { workBookService } from "./workbook.service";
 
-/**
- * Prob 모듈 시드 데이터 생성
- * 테스트 사용자 및 문제집 생성
- */
-export const seedProb = async () => {
+export const seedWorkbook = async () => {
   console.log("🌱 Seeding Prob data...");
 
   // 랜덤 테스트 유저 생성
@@ -56,7 +52,7 @@ export const seedProb = async () => {
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   import("@workspace/env");
-  seedProb()
+  seedWorkbook()
     .then(() => {
       console.log("\n✅ Seed completed!");
       process.exit(0);

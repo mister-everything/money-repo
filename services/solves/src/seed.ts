@@ -3,7 +3,7 @@ import inquirer from "inquirer";
 import { SERVICE_NAME } from "./const";
 import { seedPlans } from "./payment/seed-plans";
 import { seedPrices } from "./payment/seed-prices";
-import { seedProb } from "./workbook/seed-prob";
+import { seedWorkbook } from "./workbook/seed-workbook";
 
 console.log(`🚀 [${SERVICE_NAME}] 시드 데이터 생성 시작...\n`);
 
@@ -13,7 +13,11 @@ const answer = await inquirer.prompt([
     name: "modules",
     message: "어떤 모듈의 시드 데이터를 생성하시겠습니까?",
     choices: [
-      { name: "📝 Prob (문제집 & 문제)", value: "prob", checked: true },
+      {
+        name: "📝 workbooks (문제집 & 문제)",
+        value: "workbooks",
+        checked: true,
+      },
       { name: "💰 Payment (AI 가격 정보)", value: "payment", checked: true },
       {
         name: "📋 Subscription (구독 플랜)",
@@ -31,8 +35,8 @@ if (answer.modules.length === 0) {
 
 try {
   // Prob 모듈 시드
-  if (answer.modules.includes("prob")) {
-    await seedProb();
+  if (answer.modules.includes("workbooks")) {
+    await seedWorkbook();
   }
 
   // Payment 모듈 시드

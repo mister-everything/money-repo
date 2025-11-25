@@ -5,8 +5,8 @@ import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
-  probBlockAnswerSubmitsTable,
   tagsTable,
+  workBookBlockAnswerSubmitsTable,
   workBookSubmitsTable,
   workBooksTable,
   workBookTagsTable,
@@ -383,11 +383,11 @@ export const workBookService = {
     // 저장된 답안 조회
     const savedAnswerRecords = await pgDb
       .select({
-        blockId: probBlockAnswerSubmitsTable.blockId,
-        answer: probBlockAnswerSubmitsTable.answer,
+        blockId: workBookBlockAnswerSubmitsTable.blockId,
+        answer: workBookBlockAnswerSubmitsTable.answer,
       })
-      .from(probBlockAnswerSubmitsTable)
-      .where(eq(probBlockAnswerSubmitsTable.submitId, submitId));
+      .from(workBookBlockAnswerSubmitsTable)
+      .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
 
     const savedAnswers: Record<string, BlockAnswerSubmit> = {};
     for (const record of savedAnswerRecords) {
@@ -419,7 +419,7 @@ export const workBookService = {
     // upsert: composite primary key (blockId, submitId)로 중복 시 업데이트
     for (const [blockId, answer] of answerEntries) {
       await pgDb
-        .insert(probBlockAnswerSubmitsTable)
+        .insert(workBookBlockAnswerSubmitsTable)
         .values({
           blockId,
           submitId,
@@ -428,8 +428,8 @@ export const workBookService = {
         })
         .onConflictDoUpdate({
           target: [
-            probBlockAnswerSubmitsTable.blockId,
-            probBlockAnswerSubmitsTable.submitId,
+            workBookBlockAnswerSubmitsTable.blockId,
+            workBookBlockAnswerSubmitsTable.submitId,
           ],
           set: {
             answer,
@@ -451,7 +451,7 @@ export const workBookService = {
     answers: Record<string, BlockAnswerSubmit>,
   ): Promise<SubmitWorkBookResponse> => {
     // 문제 목록 조회
-    const probBlocks = await pgDb
+    const workBookBlocks = await pgDb
       .select()
       .from(blocksTable)
       .where(eq(blocksTable.workBookId, workBookId));
@@ -460,7 +460,7 @@ export const workBookService = {
     const correctAnswerIds: string[] = [];
 
     // 채점 및 답안 업데이트
-    for (const block of probBlocks) {
+    for (const block of workBookBlocks) {
       // 제출된 답안
       const submittedAnswer = answers[block.id];
 
@@ -482,7 +482,7 @@ export const workBookService = {
 
       // 답안 제출 기록 업데이트
       await pgDb
-        .insert(probBlockAnswerSubmitsTable)
+        .insert(workBookBlockAnswerSubmitsTable)
         .values({
           blockId: block.id,
           submitId,
@@ -491,8 +491,8 @@ export const workBookService = {
         })
         .onConflictDoUpdate({
           target: [
-            probBlockAnswerSubmitsTable.blockId,
-            probBlockAnswerSubmitsTable.submitId,
+            workBookBlockAnswerSubmitsTable.blockId,
+            workBookBlockAnswerSubmitsTable.submitId,
           ],
           set: {
             answer: submittedAnswer,
@@ -511,10 +511,10 @@ export const workBookService = {
       .where(eq(workBookSubmitsTable.id, submitId));
 
     return {
-      score: Math.round((score / probBlocks.length) * 100),
+      score: Math.round((score / workBookBlocks.length) * 100),
       correctAnswerIds,
-      totalProblems: probBlocks.length,
-      blockResults: probBlocks.map((block) => ({
+      totalProblems: workBookBlocks.length,
+      blockResults: workBookBlocks.map((block) => ({
         blockId: block.id,
         answer: block.answer,
       })),
@@ -767,12 +767,12 @@ export const workBookService = {
     // 문제 목록 및 정답 여부 조회
     const answers = await pgDb
       .select({
-        blockId: probBlockAnswerSubmitsTable.blockId,
-        isCorrect: probBlockAnswerSubmitsTable.isCorrect,
-        answer: probBlockAnswerSubmitsTable.answer,
+        blockId: workBookBlockAnswerSubmitsTable.blockId,
+        isCorrect: workBookBlockAnswerSubmitsTable.isCorrect,
+        answer: workBookBlockAnswerSubmitsTable.answer,
       })
-      .from(probBlockAnswerSubmitsTable)
-      .where(eq(probBlockAnswerSubmitsTable.submitId, session.id));
+      .from(workBookBlockAnswerSubmitsTable)
+      .where(eq(workBookBlockAnswerSubmitsTable.submitId, session.id));
 
     // 전체 문제 수 조회
     const [totalCount] = await pgDb

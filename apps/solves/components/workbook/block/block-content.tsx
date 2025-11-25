@@ -210,7 +210,7 @@ export function McqMultipleBlockContent({
     <div className="flex flex-col gap-3">
       {content.options.map((option, index) => {
         if (option.type == "text") {
-          const name = `problem-option-${option.id}`;
+          const name = `block-option-${option.id}`;
           const checked = answer?.answer.includes(option.id);
           const isSelected =
             mode == "solve" && submit?.answer?.includes(option.id);
@@ -339,7 +339,7 @@ export function McqSingleBlockContent({
     <div className="flex flex-col gap-3">
       {content.options.map((option, index) => {
         if (option.type == "text") {
-          const name = `problem-option-${option.id}`;
+          const name = `block-option-${option.id}`;
           const checked = answer?.answer.includes(option.id);
           const isSelected =
             mode == "solve" && submit?.answer?.includes(option.id);

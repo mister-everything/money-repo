@@ -28,7 +28,7 @@ const mcqAnswerSubmit = {
   answer: "1",
 };
 
-describe("prob utils", () => {
+describe("workbook utils", () => {
   it("parses known block content and rejects unknown content types", () => {
     expect(parseContent(mcqContent)).toEqual(mcqContent);
 
