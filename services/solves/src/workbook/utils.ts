@@ -1,5 +1,5 @@
-import { PublicError } from "@workspace/error";
 import { generateUUID } from "@workspace/util";
+import { log } from "../logger";
 import {
   All_BLOCKS,
   BlockAnswer,
@@ -47,32 +47,51 @@ export const isAnswerSubmit = Object.entries(All_BLOCKS).reduce(
 
 export const parseContent = (content?: BlockContent) => {
   if (!content?.type) {
-    throw new PublicError(`Content is required`);
+    throw new Error(`Content is required`);
   }
   if (!All_BLOCKS[content.type]) {
-    throw new PublicError(`Invalid content type: ${content.type}`);
+    throw new Error(`Invalid content type: ${content.type}`);
   }
   return All_BLOCKS[content.type].contentSchema.parse(content);
 };
 
 export const parseAnswer = (answer?: BlockAnswer) => {
   if (!answer?.type) {
-    throw new PublicError(`Answer is required`);
+    throw new Error(`Answer is required`);
   }
   if (!All_BLOCKS[answer.type]) {
-    throw new PublicError(`Invalid answer type: ${answer.type}`);
+    throw new Error(`Invalid answer type: ${answer.type}`);
   }
   return All_BLOCKS[answer.type].answerSchema.parse(answer);
 };
 
 export const parseAnswerSubmit = (answerSubmit?: BlockAnswerSubmit) => {
   if (!answerSubmit?.type) {
-    throw new PublicError(`Answer submit is required`);
+    throw new Error(`Answer submit is required`);
   }
   if (!All_BLOCKS[answerSubmit.type]) {
-    throw new PublicError(`Invalid answer submit type: ${answerSubmit.type}`);
+    throw new Error(`Invalid answer submit type: ${answerSubmit.type}`);
   }
   return All_BLOCKS[answerSubmit.type].answerSubmitSchema.parse(answerSubmit);
+};
+
+export const validateBlock = (block: {
+  type: BlockType;
+  content?: BlockContent;
+  answer?: BlockAnswer;
+}) => {
+  try {
+    if (block.type !== block.content?.type)
+      throw new Error(`블럭 타입과 콘텐츠 타입이 일치하지 않습니다.`);
+    if (block.type !== block.answer?.type)
+      throw new Error(`블럭 타입과 정답 타입이 일치하지 않습니다.`);
+    parseContent(block.content);
+    parseAnswer(block.answer);
+    return true;
+  } catch (error) {
+    log.error(error);
+    return false;
+  }
 };
 
 export const checkAnswer = (
@@ -190,6 +209,6 @@ export const initializeBlock = (
       };
       return oxBlock;
     default:
-      throw new PublicError(`찾을 수 없는 블럭 유형: ${blockType}`);
+      throw new Error(`찾을 수 없는 블럭 유형: ${blockType}`);
   }
 };
