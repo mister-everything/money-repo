@@ -10,8 +10,9 @@ import {
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
 import { applyStateUpdate, equal, StateUpdate } from "@workspace/util";
-import { LoaderIcon, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { processBlocksAction, updateWorkbookAction } from "@/actions/workbook";
 import { notify } from "@/components/ui/notify";
 import {
@@ -21,10 +22,23 @@ import {
 } from "@/components/ui/tooltip";
 import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { GoBackButton } from "../layouts/go-back-button";
 import { Button } from "../ui/button";
 import { Block } from "./block/block";
 import { WorkBookComponentMode } from "./types";
+import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";
+
+const extractBlockDiff = (prev: WorkBookBlock[], next: WorkBookBlock[]) => {
+  const deletedBlocks = prev.filter((b) => !next.includes(b));
+  const addedBlocks = next.filter((b) => !prev.includes(b));
+
+  const updatedBlocks = next.filter((b) => {
+    const prevBlock = prev.find((pb) => pb.id === b.id);
+    return prevBlock && !equal(b, prevBlock);
+  });
+  return { deletedBlocks, addedBlocks, updatedBlocks };
+};
 
 export function WorkbookEdit({
   book: { blocks: initialBlocks, ...initialWorkbook },
@@ -83,16 +97,18 @@ export function WorkbookEdit({
   const handleUpdateContent = useCallback(
     (id: string, content: StateUpdate<BlockContent<BlockType>>) => {
       if (pendingRef.current) return;
-      setBlocks((prev) =>
-        prev.map((b) =>
-          b.id === id
-            ? {
-                ...b,
-                content: applyStateUpdate(b.content, content),
-              }
-            : b,
-        ),
-      );
+      setBlocks((prev) => {
+        const nextBlocks = prev.map((original) => {
+          const isTarget = original.id === id;
+          if (!isTarget) return original;
+          return {
+            ...original,
+            content: applyStateUpdate(original.content, content),
+          };
+        });
+
+        return nextBlocks;
+      });
     },
     [],
   );
@@ -100,13 +116,17 @@ export function WorkbookEdit({
   const handleUpdateAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswer<BlockType>>) => {
       if (pendingRef.current) return;
-      setBlocks((prev) =>
-        prev.map((b) =>
-          b.id === id
-            ? { ...b, answer: applyStateUpdate(b.answer!, answer) }
-            : b,
-        ),
-      );
+      setBlocks((prev) => {
+        const nextBlocks = prev.map((original) => {
+          const isTarget = original.id === id;
+          if (!isTarget) return original;
+          return {
+            ...original,
+            answer: applyStateUpdate(original.answer!, answer),
+          };
+        });
+        return nextBlocks;
+      });
     },
     [],
   );
@@ -192,17 +212,17 @@ export function WorkbookEdit({
       });
     }
 
-    const deletedBlocks = snapshot.blocks.filter((b) => !blocks.includes(b));
-    const addedBlocks = blocks.filter((b) => !snapshot.blocks.includes(b));
-    const updatedBlocks = blocks.filter((b) => {
-      const snapshotBlock = snapshot.blocks.find((sb) => sb.id === b.id);
-      return snapshotBlock && !equal(b, snapshotBlock);
-    });
-    if (
+    const { deletedBlocks, addedBlocks, updatedBlocks } = extractBlockDiff(
+      snapshot.blocks,
+      blocks,
+    );
+
+    const hasBlockDiff =
       deletedBlocks.length > 0 ||
       addedBlocks.length > 0 ||
-      updatedBlocks.length > 0
-    ) {
+      updatedBlocks.length > 0;
+
+    if (hasBlockDiff) {
       await processBlocks({
         workbookId: workbook.id,
         deleteBlocks: deletedBlocks.map((b) => b.id),
@@ -212,63 +232,64 @@ export function WorkbookEdit({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto relative pt-6 pb-32">
-      {/* <div className="sticky bottom-0 left-0 w-full h-44 bg-secondary"></div> */}
-      <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-        <WorkbookHeader
-          mode={isEditBook ? "edit" : "preview"}
-          onModeChange={handleChangeWorkbookMode}
-          onChangeTitle={handleChangeTitle}
-          onChangeDescription={handleChangeDescription}
-          book={workbook}
-        />
-        <div className=""></div>
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col gap-2">
-            <Button disabled={isPending} onClick={handleSave}>
-              {isPending ? (
-                <LoaderIcon className="size-4 animate-spin" />
-              ) : null}
-              저장
-            </Button>
-          </div>
+    <div className="h-full relative">
+      <div className="h-full overflow-y-auto relative">
+        <div className="sticky top-0 z-10 py-2 bg-background">
+          <GoBackButton>처음부터 다시 만들기</GoBackButton>
         </div>
+        <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-10">
+          <WorkbookHeader
+            className="shadow-none"
+            mode={isEditBook ? "edit" : "preview"}
+            onModeChange={handleChangeWorkbookMode}
+            onChangeTitle={handleChangeTitle}
+            onChangeDescription={handleChangeDescription}
+            book={workbook}
+          />
 
-        {blocks.map((b) => {
-          return (
-            <Block
-              className={isPending ? "opacity-50" : ""}
-              mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
-              onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
-              key={b.id}
-              type={b.type}
-              question={b.question ?? ""}
-              id={b.id}
-              order={b.order}
-              answer={b.answer}
-              content={b.content}
-              onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
-              onUpdateContent={handleUpdateContent.bind(null, b.id)}
-              onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
-              onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
-            />
-          );
-        })}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              onClick={handleAddBlock}
-              className="w-full h-24 md:h-32 border-dashed"
-            >
-              <PlusIcon className="size-10 text-muted-foreground" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <span>문제 추가</span>
-          </TooltipContent>
-        </Tooltip>
+          {blocks.map((b) => {
+            return (
+              <Block
+                className={isPending ? "opacity-50" : ""}
+                mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
+                onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
+                key={b.id}
+                type={b.type}
+                question={b.question ?? ""}
+                id={b.id}
+                order={b.order}
+                answer={b.answer}
+                content={b.content}
+                onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
+                onUpdateContent={handleUpdateContent.bind(null, b.id)}
+                onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
+                onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
+              />
+            );
+          })}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={handleAddBlock}
+                className="w-full h-24 md:h-40 border-dashed"
+              >
+                <PlusIcon className="size-10 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>문제 추가</span>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
+
+      <WorkbookEditActionBar
+        isPending={isPending}
+        onAddBlock={handleAddBlock}
+        onSave={handleSave}
+        onPublish={() => toast.warning("개발중입니다.")}
+      />
     </div>
   );
 }

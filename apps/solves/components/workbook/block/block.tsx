@@ -71,7 +71,7 @@ function PureBlock<T extends BlockType = BlockType>({
   ...props
 }: BlockProps<T>) {
   return (
-    <Card className={cn("gap-2", className)} ref={ref}>
+    <Card className={cn("gap-2 shadow-none", className)} ref={ref}>
       <CardHeader>
         <div className="flex items-center gap-2">
           <Badge
