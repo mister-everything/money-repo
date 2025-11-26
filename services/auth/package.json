@@ -19,6 +19,7 @@
     "./shared": "./src/shared.ts"
   },
   "dependencies": {
+    "consola": "^3.4.2",
     "@workspace/util": "workspace:*",
     "@workspace/error": "workspace:*",
     "drizzle-orm": "^0.44.5",

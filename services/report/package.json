@@ -16,6 +16,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "consola": "^3.4.2",
     "@workspace/util": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "@workspace/error": "workspace:*",

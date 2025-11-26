@@ -24,6 +24,7 @@
     "@workspace/cache": "workspace:*",
     "@workspace/util": "workspace:*",
     "@workspace/error": "workspace:*",
+    "consola": "^3.4.2",
     "ai": "^5.0.41",
     "drizzle-orm": "^0.44.5",
     "ioredis": "^5.4.1",
