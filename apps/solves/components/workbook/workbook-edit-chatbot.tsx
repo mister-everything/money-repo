@@ -79,8 +79,8 @@ export function WorkbooksCreateChat({
   }, []);
 
   return (
-    <div className="flex flex-col h-full border rounded-2xl">
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex flex-col h-full border rounded-2xl bg-sidebar">
+      <div className="flex-1 overflow-y-auto py-4">
         {messages.length == 0 && (
           <div className="text-center text-muted-foreground h-full flex items-center justify-center">
             채팅을 시작해 보세요.
@@ -107,7 +107,8 @@ export function WorkbooksCreateChat({
             disabled={status != "ready"}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="ss"
+            placeholder="무엇이든 물어보세요"
+            className="bg-background"
           />
           <Button size={"icon"} onClick={() => send()}>
             <SendIcon />

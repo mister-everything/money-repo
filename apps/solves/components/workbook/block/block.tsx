@@ -24,6 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { WorkBookComponentMode } from "../types";
 import {
   DefaultBlockContent,
   McqMultipleBlockContent,
@@ -31,7 +32,6 @@ import {
   OXBlockContent,
 } from "./block-content";
 import { BlockQuestion } from "./block-question";
-import { BlockComponentMode } from "./types";
 
 export type BlockProps<T extends BlockType = BlockType> = {
   id: string;
@@ -41,7 +41,7 @@ export type BlockProps<T extends BlockType = BlockType> = {
   errorFeedback?: string;
   isCorrect?: boolean;
 
-  mode: BlockComponentMode;
+  mode: WorkBookComponentMode;
   onToggleEditMode?: () => void;
 
   content: BlockContent<T>;

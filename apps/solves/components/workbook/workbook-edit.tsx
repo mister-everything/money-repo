@@ -13,10 +13,7 @@ import { applyStateUpdate, equal, StateUpdate } from "@workspace/util";
 import { LoaderIcon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { processBlocksAction, updateWorkbookAction } from "@/actions/workbook";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/notify";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +23,8 @@ import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { Button } from "../ui/button";
 import { Block } from "./block/block";
+import { WorkBookComponentMode } from "./types";
+import { WorkbookHeader } from "./workbook-header";
 
 export function WorkbookEdit({
   book: { blocks: initialBlocks, ...initialWorkbook },
@@ -40,6 +39,8 @@ export function WorkbookEdit({
     useState<WorkBookWithoutBlocks>(initialWorkbook);
 
   const [blocks, setBlocks] = useState<WorkBookBlock[]>(initialBlocks);
+
+  const [isEditBook, setIsEditBook] = useState(false);
 
   const [editingBlockId, setEditingBlockId] = useState<string[]>([]);
 
@@ -72,6 +73,13 @@ export function WorkbookEdit({
 
   const pendingRef = useToRef(isPending);
 
+  const handleChangeWorkbookMode = useCallback(
+    (mode: WorkBookComponentMode) => {
+      setIsEditBook(mode === "edit");
+    },
+    [],
+  );
+
   const handleUpdateContent = useCallback(
     (id: string, content: StateUpdate<BlockContent<BlockType>>) => {
       if (pendingRef.current) return;
@@ -102,6 +110,13 @@ export function WorkbookEdit({
     },
     [],
   );
+
+  const handleChangeTitle = useCallback((title: string) => {
+    setWorkbook({ ...workbook, title });
+  }, []);
+  const handleChangeDescription = useCallback((description: string) => {
+    setWorkbook({ ...workbook, description });
+  }, []);
 
   const handleUpdateQuestion = useCallback((id: string, question: string) => {
     if (pendingRef.current) return;
@@ -197,69 +212,63 @@ export function WorkbookEdit({
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-      <div className="mb-8 space-y-4">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="title">문제집 제목</Label>
-          <Input
-            id="title"
-            value={workbook.title}
-            placeholder="문제집 제목을 입력하세요"
-            onChange={(e) =>
-              setWorkbook({ ...workbook, title: e.target.value })
-            }
-          />
-          <Label htmlFor="description">문제집 한줄 설명</Label>
-          <Textarea
-            id="description"
-            value={workbook.description ?? ""}
-            className="resize-none max-h-[100px]"
-            placeholder="문제집 설명을 입력하세요"
-            onChange={(e) =>
-              setWorkbook({ ...workbook, description: e.target.value })
-            }
-          />
-          <Button disabled={isPending} onClick={handleSave}>
-            {isPending ? <LoaderIcon className="size-4 animate-spin" /> : null}
-            저장
-          </Button>
+    <div className="flex-1 overflow-y-auto relative pt-6 pb-32">
+      {/* <div className="sticky bottom-0 left-0 w-full h-44 bg-secondary"></div> */}
+      <div className="flex flex-col gap-6 max-w-3xl mx-auto">
+        <WorkbookHeader
+          mode={isEditBook ? "edit" : "preview"}
+          onModeChange={handleChangeWorkbookMode}
+          onChangeTitle={handleChangeTitle}
+          onChangeDescription={handleChangeDescription}
+          book={workbook}
+        />
+        <div className=""></div>
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col gap-2">
+            <Button disabled={isPending} onClick={handleSave}>
+              {isPending ? (
+                <LoaderIcon className="size-4 animate-spin" />
+              ) : null}
+              저장
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {blocks.map((b) => {
-        return (
-          <Block
-            className={isPending ? "opacity-50" : ""}
-            mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
-            onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
-            key={b.id}
-            type={b.type}
-            question={b.question ?? ""}
-            id={b.id}
-            order={b.order}
-            answer={b.answer}
-            content={b.content}
-            onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
-            onUpdateContent={handleUpdateContent.bind(null, b.id)}
-            onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
-            onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
-          />
-        );
-      })}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            onClick={handleAddBlock}
-            className="w-full h-24 md:h-32"
-          >
-            <PlusIcon className="size-10 text-muted-foreground" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <span>문제 추가</span>
-        </TooltipContent>
-      </Tooltip>
+        {blocks.map((b) => {
+          return (
+            <Block
+              className={isPending ? "opacity-50" : ""}
+              mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
+              onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
+              key={b.id}
+              type={b.type}
+              question={b.question ?? ""}
+              id={b.id}
+              order={b.order}
+              answer={b.answer}
+              content={b.content}
+              onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
+              onUpdateContent={handleUpdateContent.bind(null, b.id)}
+              onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
+              onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
+            />
+          );
+        })}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              onClick={handleAddBlock}
+              className="w-full h-24 md:h-32 border-dashed"
+            >
+              <PlusIcon className="size-10 text-muted-foreground" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>문제 추가</span>
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }

@@ -4,4 +4,4 @@
  * solve: 문제 풀때 답안 제출.
  * review: 문제 풀고 난 이후 정답 확인
  */
-export type BlockComponentMode = "preview" | "edit" | "solve" | "review";
+export type WorkBookComponentMode = "preview" | "edit" | "solve" | "review";

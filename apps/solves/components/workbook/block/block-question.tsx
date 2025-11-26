@@ -2,11 +2,11 @@ import { useCallback, useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { BlockComponentMode } from "./types";
+import { WorkBookComponentMode } from "../types";
 
 interface BlockQuestionProps {
   question: string;
-  mode: BlockComponentMode;
+  mode: WorkBookComponentMode;
   onChangeQuestion?: (question: string) => void;
 }
 

@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/notify";
 import { cn } from "@/lib/utils";
-import { BlockComponentMode } from "./types";
+import { WorkBookComponentMode } from "../types";
 
 // 사용자가 선택했고 정답 일때
 const okClass = "border-primary bg-primary/5 text-primary hover:text-primary";
@@ -34,7 +34,7 @@ const muteCalss = "bg-secondary border-muted-foreground";
 
 type BlockContentProps<T extends BlockType = BlockType> = {
   content: BlockContent<T>;
-  mode: BlockComponentMode;
+  mode: WorkBookComponentMode;
   isCorrect?: boolean;
   onUpdateContent?: (content: StateUpdate<BlockContent<T>>) => void;
   onUpdateSubmitAnswer?: (answer: StateUpdate<BlockAnswerSubmit<T>>) => void;

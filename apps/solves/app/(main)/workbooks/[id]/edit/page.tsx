@@ -26,20 +26,17 @@ export default async function ProbEditPage({
   if (!book) notFound();
 
   return (
-    <div className="flex h-full flex-col p-4">
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="w-full">
-            <GoBackButton>처음부터 다시 만들기</GoBackButton>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <WorkbookEdit book={book} />
-          </div>
+    <div className="flex w-full h-screen px-4 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="w-full py-2">
+          <GoBackButton>처음부터 다시 만들기</GoBackButton>
         </div>
 
-        <div className="w-sm lg:w-md xl:w-lg p-2">
-          <WorkbooksCreateChat threadId={id} workbookId={id} />
-        </div>
+        <WorkbookEdit book={book} />
+      </div>
+
+      <div className="w-sm lg:w-md xl:w-lg p-2">
+        <WorkbooksCreateChat threadId={id} workbookId={id} />
       </div>
     </div>
   );
