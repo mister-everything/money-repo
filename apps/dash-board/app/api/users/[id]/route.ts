@@ -1,5 +1,6 @@
 import { userService } from "@service/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { log } from "@/lib/logger";
 
 export async function DELETE(
   request: NextRequest,
@@ -24,7 +25,7 @@ export async function DELETE(
       message: "사용자가 성공적으로 삭제되었습니다.",
     });
   } catch (error) {
-    console.error("사용자 삭제 실패:", error);
+    log.error("사용자 삭제 실패:", error);
     return NextResponse.json(
       { error: "사용자 삭제에 실패했습니다." },
       { status: 500 },

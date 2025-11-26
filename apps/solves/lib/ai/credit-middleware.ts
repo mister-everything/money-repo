@@ -7,16 +7,17 @@ import type {
 import { aiPriceService, creditService } from "@service/solves";
 import { isNull } from "@workspace/util";
 import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
+import { log } from "@/lib/logger";
 
 function getTokens(useage: LanguageModelV2Usage) {
   if (isNull(useage.inputTokens)) {
     // @TODO  중요 에러 일 수 있기 때문에 Notice  되도록
-    console.warn(`inputTokens is null for useage: ${JSON.stringify(useage)}`);
+    log.warn(`inputTokens is null for useage: ${JSON.stringify(useage)}`);
   }
 
   if (isNull(useage.outputTokens)) {
     // @TODO  중요 에러 일 수 있기 때문에 Notice  되도록
-    console.warn(`outputTokens is null for useage: ${JSON.stringify(useage)}`);
+    log.warn(`outputTokens is null for useage: ${JSON.stringify(useage)}`);
   }
 
   return {

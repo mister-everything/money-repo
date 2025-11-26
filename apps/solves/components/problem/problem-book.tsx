@@ -14,6 +14,7 @@ import { ProblemBlock } from "./problem-block";
 import { ProblemBookSequential } from "./problem-book-sequential";
 import { ProblemHeader } from "./problem-header";
 import { SolveModeSelector } from "./solve-mode-selector";
+import { log } from "@/lib/logger";
 
 interface ProblemBookProps {
   workBook: WorkBookWithoutAnswer;
@@ -85,7 +86,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
           setLastSavedAnswers(response.data.savedAnswers || {});
         }
       } catch (error) {
-        console.error("세션 초기화 실패:", error);
+        log.error("세션 초기화 실패:", error);
       }
     };
 
@@ -117,7 +118,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
 
         setLastSavedAnswers(answers);
       } catch (error) {
-        console.error("답안 자동 저장 실패:", error);
+        log.error("답안 자동 저장 실패:", error);
       }
     };
 
@@ -160,7 +161,7 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
         }
       })
       .catch((error) => {
-        console.error("제출 실패:", error);
+        log.error("제출 실패:", error);
         alert("답안 제출 중 오류가 발생했습니다.");
       });
   };

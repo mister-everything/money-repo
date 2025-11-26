@@ -1,6 +1,7 @@
 import { workBookService } from "@service/solves";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
+import { log } from "@/lib/logger";
 
 export async function GET(
   request: Request,
@@ -21,7 +22,7 @@ export async function GET(
 
     return nextOk(result);
   } catch (error) {
-    console.error("Error fetching result:", error);
+    log.error("Error fetching result:", error);
     return nextFail("Internal Server Error");
   }
 }

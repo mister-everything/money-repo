@@ -1,6 +1,7 @@
 import { PublicError } from "@workspace/error";
 import { eq, sql } from "drizzle-orm";
 import { pgDb } from "../db";
+import { log } from "../logger";
 import { CacheKeys, CacheTTL } from "./cache-keys";
 import {
   CreditLedgerTable,
@@ -120,7 +121,7 @@ export const creditService = {
       usageId: result.usageId,
       newBalance: result.newBalance,
     };
-    console.log(
+    log.info(
       `[consumeAICredit] ${price.displayName} cost: ${cost.totalMarketCost.toFixed(8)}, vendorCost: ${vendorCost}, marketCost: ${cost.totalMarketCost - (vendorCost || cost.totalCost)}, balance: ${result.newBalance}`,
     );
 

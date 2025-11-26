@@ -2,6 +2,7 @@ import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/prob/[id]/session/check
@@ -24,7 +25,7 @@ export async function GET(
 
     return nextOk(hasSession);
   } catch (error) {
-    console.error("Error starting/resuming prob book session:", error);
+    log.error("Error starting/resuming prob book session:", error);
     return nextFail(error);
   }
 }

@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes";
 import { Mesh, Program, Renderer, Triangle } from "ogl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { log } from "@/lib/logger";
 
 export type RaysOrigin =
   | "top-center"
@@ -348,7 +349,7 @@ void main() {
           renderer.render({ scene: mesh });
           animationIdRef.current = requestAnimationFrame(loop);
         } catch (error) {
-          console.warn("WebGL rendering error:", error);
+          log.warn("WebGL rendering error:", error);
           return;
         }
       };
@@ -393,7 +394,7 @@ void main() {
               canvas.parentNode.removeChild(canvas);
             }
           } catch (error) {
-            console.warn("Error during WebGL cleanup:", error);
+            log.warn("Error during WebGL cleanup:", error);
           }
         }
 

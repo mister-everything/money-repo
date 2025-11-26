@@ -16,6 +16,7 @@ import {
 import { GoogleIcon, KakaoIcon, NaverIcon } from "@/components/ui/custom-icon";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth/client";
+import { log } from "@/lib/logger";
 import { setInviteTokenCookie } from "./actions";
 
 const oauthProviders: {
@@ -62,7 +63,7 @@ export default function SignInForm({ inviteToken }: SignInFormProps) {
           }
         })
         .catch((error) => {
-          console.error("Failed to set invite token:", error);
+          log.error("Failed to set invite token:", error);
           toast.error("초대 토큰 처리에 실패했습니다.");
         });
     }

@@ -1,11 +1,11 @@
 import "@workspace/env";
 import inquirer from "inquirer";
-import { SERVICE_NAME } from "./const";
+import { log } from "./logger";
 import { seedPlans } from "./payment/seed-plans";
 import { seedPrices } from "./payment/seed-prices";
 import { seedWorkbook } from "./workbook/seed-workbook";
 
-console.log(`🚀 [${SERVICE_NAME}] 시드 데이터 생성 시작...\n`);
+log.info("🚀 시드 데이터 생성 시작...\n");
 
 const answer = await inquirer.prompt([
   {
@@ -29,7 +29,7 @@ const answer = await inquirer.prompt([
 ]);
 
 if (answer.modules.length === 0) {
-  console.log("⏭️  선택된 모듈이 없습니다. 종료합니다.");
+  log.info("⏭️  선택된 모듈이 없습니다. 종료합니다.");
   process.exit(0);
 }
 
@@ -49,9 +49,9 @@ try {
     await seedPlans();
   }
 
-  console.log(`✅ [${SERVICE_NAME}] 모든 시드 데이터 생성 완료! 🎉`);
+  log.info("✅ 모든 시드 데이터 생성 완료! 🎉");
 } catch (error) {
-  console.error(`❌ [${SERVICE_NAME}] 시드 데이터 생성 실패:`, error);
+  log.error("❌ 시드 데이터 생성 실패:", error);
   process.exit(1);
 }
 

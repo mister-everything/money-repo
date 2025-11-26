@@ -2,6 +2,7 @@ import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/workbooks/[id]/save
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     return nextOk({ saved: true });
   } catch (error) {
-    console.error("Error saving answer progress:", error);
+    log.error("Error saving answer progress:", error);
     return nextFail("답안 저장 중 오류가 발생했습니다.");
   }
 }

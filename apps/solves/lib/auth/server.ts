@@ -13,6 +13,7 @@ import { anonymous, customSession } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE_PREFIX } from "../const";
+import { log } from "@/lib/logger";
 export const getSession = async () => {
   "use server";
   const session = await solvesBetterAuth.api
@@ -20,11 +21,11 @@ export const getSession = async () => {
       headers: await headers(),
     })
     .catch((e) => {
-      console.error(e);
+      log.error(e);
       return null;
     });
   if (!session) {
-    console.error("No session found");
+    log.error("No session found");
     redirect("/sign-in");
   }
   return session!;
@@ -37,7 +38,7 @@ export const safeGetSession = async () => {
       headers: await headers(),
     })
     .catch((e) => {
-      console.error(e);
+      log.error(e);
       return null;
     });
   return session;

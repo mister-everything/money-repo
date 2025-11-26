@@ -10,6 +10,7 @@ import {
   SafeFunction,
   SafeResponse,
 } from "./interface";
+import { log } from "@/lib/logger";
 
 type MiddlewareConfig = {
   middleware?: {
@@ -105,9 +106,9 @@ export const createActionFactory = (ctx: MiddlewareConfig) => {
 
 const devLogger = (name: string) => (input: any) => {
   if (isSafeFail(input)) {
-    console.log(`❌ [SERVER ACTION] ${name}: ${input.message}`);
-    console.error(input.error);
-  } else console.log(`[SERVER ACTION] ${name}: ${JSON.stringify(input)}`);
+    log.info(`❌ [SERVER ACTION] ${name}: ${input.message}`);
+    log.error(input.error);
+  } else log.info(`[SERVER ACTION] ${name}: ${JSON.stringify(input)}`);
   return input;
 };
 

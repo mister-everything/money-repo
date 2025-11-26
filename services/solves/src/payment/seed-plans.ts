@@ -7,6 +7,7 @@
  */
 
 import { pgDb } from "../db";
+import { log } from "../logger";
 import { SubscriptionPlansTable } from "./schema";
 import { CreateSubscriptionPlan } from "./types";
 
@@ -14,7 +15,7 @@ import { CreateSubscriptionPlan } from "./types";
  * 구독 플랜 시드 데이터 생성
  */
 export const seedPlans = async () => {
-  console.log("🌱 Seeding Subscription Plans...");
+  log.info("🌱 Seeding Subscription Plans...");
 
   const plans: CreateSubscriptionPlan[] = [
     {
@@ -69,23 +70,23 @@ export const seedPlans = async () => {
     .onConflictDoNothing()
     .returning();
 
-  console.log(`✅ Seeded ${inserted.length} subscription plans`);
+  log.info(`✅ Seeded ${inserted.length} subscription plans`);
 
   // Print summary
   if (inserted.length > 0) {
-    console.log("\n📊 Plan Summary:");
+    log.info("\n📊 Plan Summary:");
     for (const plan of inserted) {
-      console.log(`\n  ${plan.displayName} (${plan.name}):`);
-      console.log(`    - 월 구독료: ${plan.price}원`);
-      console.log(`    - 월간 할당량: $${plan.monthlyQuota} 크레딧`);
-      console.log(
+      log.info(`\n  ${plan.displayName} (${plan.name}):`);
+      log.info(`    - 월 구독료: ${plan.price}원`);
+      log.info(`    - 월간 할당량: $${plan.monthlyQuota} 크레딧`);
+      log.info(
         `    - 정기 충전: $${plan.refillAmount} 크레딧 / ${plan.refillIntervalHours}시간마다`,
       );
-      console.log(`    - 최대 충전 횟수: 월 ${plan.maxRefillCount}회`);
+      log.info(`    - 최대 충전 횟수: 월 ${plan.maxRefillCount}회`);
     }
   }
 
-  console.log("\n✅ 구독 플랜 시드 데이터 생성 완료\n");
+  log.info("\n✅ 구독 플랜 시드 데이터 생성 완료\n");
 };
 
 // Run if called directly
@@ -93,11 +94,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   import("@workspace/env");
   seedPlans()
     .then(() => {
-      console.log("\n✅ Seed completed!");
+      log.info("\n✅ Seed completed!");
       process.exit(0);
     })
     .catch((error) => {
-      console.error("❌ Seed failed:", error);
+      log.error("❌ Seed failed:", error);
       process.exit(1);
     });
 }

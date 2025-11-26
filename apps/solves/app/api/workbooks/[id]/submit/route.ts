@@ -1,6 +1,7 @@
 import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/prob/[id]/submit
@@ -20,7 +21,7 @@ export async function GET(
 
     return nextOk(workBook);
   } catch (error) {
-    console.error("Error fetching prob book:", error);
+    log.error("Error fetching prob book:", error);
     return nextFail(error);
   }
 }
@@ -51,7 +52,7 @@ export async function POST(
 
     return nextOk(result);
   } catch (error) {
-    console.error("Error submitting prob book:", error);
+    log.error("Error submitting prob book:", error);
     return nextFail(error);
   }
 }

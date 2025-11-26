@@ -2,6 +2,7 @@ import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/prob/[id]/session
@@ -24,7 +25,7 @@ export async function GET(
 
     return nextOk(sessionData);
   } catch (error) {
-    console.error("Error starting/resuming prob book session:", error);
+    log.error("Error starting/resuming prob book session:", error);
     return nextFail(error);
   }
 }
@@ -43,7 +44,7 @@ export async function DELETE(
     await workBookService.deleteWorkBookSession(id, session.user.id);
     return nextOk("세션이 삭제 되었습니다.");
   } catch (error) {
-    console.error("Error deleting prob book session:", error);
+    log.error("Error deleting prob book session:", error);
     return nextFail(error);
   }
 }
