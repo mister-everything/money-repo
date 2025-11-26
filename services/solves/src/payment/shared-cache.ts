@@ -9,14 +9,12 @@ declare global {
 export function createCache(): Cache {
   // Force memory cache if requested
   if (!IS_PROD) {
-    console.log("[Cache] Using MemoryCache (forced)");
     return new MemoryCache();
   }
 
   const redisUrl = process.env.REDIS_URL;
 
   if (redisUrl) {
-    console.log("[Cache] Using RedisCache");
     return new RedisCache({
       url: redisUrl,
       keyPrefix: "solves:",
@@ -24,7 +22,6 @@ export function createCache(): Cache {
   }
 
   // Fall back to MemoryCache
-  console.log("[Cache] Using MemoryCache (no REDIS_URL found)");
   return new MemoryCache();
 }
 

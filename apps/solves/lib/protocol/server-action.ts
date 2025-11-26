@@ -1,6 +1,7 @@
 import { errorToString } from "@workspace/util";
 import { IS_PROD } from "@workspace/util/const";
 import z, { ZodAny, ZodType } from "zod";
+import { logger } from "@/lib/logger";
 import {
   fail,
   isSafeFail,
@@ -10,7 +11,6 @@ import {
   SafeFunction,
   SafeResponse,
 } from "./interface";
-import { log } from "@/lib/logger";
 
 type MiddlewareConfig = {
   middleware?: {
@@ -104,11 +104,13 @@ export const createActionFactory = (ctx: MiddlewareConfig) => {
   return createAction;
 };
 
+const log = logger("SERVER ACTION");
+
 const devLogger = (name: string) => (input: any) => {
   if (isSafeFail(input)) {
-    log.info(`❌ [SERVER ACTION] ${name}: ${input.message}`);
+    log.info(`❌ ${name}: ${input.message}`);
     log.error(input.error);
-  } else log.info(`[SERVER ACTION] ${name}: ${JSON.stringify(input)}`);
+  } else log.info(`${name}\n${JSON.stringify(input, null, 2)}`);
   return input;
 };
 
