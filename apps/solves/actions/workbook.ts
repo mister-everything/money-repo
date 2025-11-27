@@ -45,7 +45,7 @@ export const updateWorkbookAction = safeAction(
   },
 );
 
-export const processBlocksAction = safeAction(
+export const processUpdateBlocksAction = safeAction(
   async ({
     workbookId,
     deleteBlocks,
@@ -61,7 +61,11 @@ export const processBlocksAction = safeAction(
       session.user.id,
     );
     if (!hasPermission) return fail("권한이 없습니다.");
-    await workBookService.processBlocks(workbookId, deleteBlocks, saveBlocks);
+    await workBookService.processUpdateBlocks(
+      workbookId,
+      deleteBlocks,
+      saveBlocks,
+    );
     return ok();
   },
 );

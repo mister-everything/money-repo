@@ -1,7 +1,7 @@
 import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
+import { logger } from "@/lib/logger";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
-import { log } from "@/lib/logger";
 
 /**
  * GET /api/prob/[id]/submit
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const workBook = await workBookService.selectWorkBookWithoutAnswerById(id);
+    const workBook = await workBookService.getWorkBookWithoutAnswer(id);
 
     if (!workBook) {
       return nextFail("문제집을 찾을 수 없습니다.");
@@ -21,7 +21,7 @@ export async function GET(
 
     return nextOk(workBook);
   } catch (error) {
-    log.error("Error fetching prob book:", error);
+    logger.error("Error fetching prob book:", error);
     return nextFail(error);
   }
 }
@@ -52,7 +52,7 @@ export async function POST(
 
     return nextOk(result);
   } catch (error) {
-    log.error("Error submitting prob book:", error);
+    logger.error("Error submitting prob book:", error);
     return nextFail(error);
   }
 }

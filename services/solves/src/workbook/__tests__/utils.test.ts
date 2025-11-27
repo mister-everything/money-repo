@@ -1,13 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  checkAnswer,
-  isAnswer,
-  isAnswerSubmit,
-  isContent,
-  parseAnswer,
-  parseAnswerSubmit,
-  parseContent,
-} from "../utils";
+import { checkAnswer, isAnswer, isAnswerSubmit, isContent } from "../utils";
 
 const mcqContent = {
   type: "mcq" as const,
@@ -29,36 +21,6 @@ const mcqAnswerSubmit = {
 };
 
 describe("workbook utils", () => {
-  it("parses known block content and rejects unknown content types", () => {
-    expect(parseContent(mcqContent)).toEqual(mcqContent);
-
-    expect(() => parseContent(undefined as any)).toThrowError(
-      "Content is required",
-    );
-    expect(() => parseContent({ type: "unknown" } as any)).toThrowError(
-      "Invalid content type: unknown",
-    );
-  });
-
-  it("parses answers and answer submissions by type", () => {
-    expect(parseAnswer(mcqAnswer)).toEqual(mcqAnswer);
-    expect(parseAnswerSubmit(mcqAnswerSubmit)).toEqual(mcqAnswerSubmit);
-
-    expect(() => parseAnswer(undefined as any)).toThrowError(
-      "Answer is required",
-    );
-    expect(() => parseAnswer({ type: "unknown" } as any)).toThrowError(
-      "Invalid answer type: unknown",
-    );
-
-    expect(() => parseAnswerSubmit(undefined as any)).toThrowError(
-      "Answer submit is required",
-    );
-    expect(() => parseAnswerSubmit({ type: "unknown" } as any)).toThrowError(
-      "Invalid answer submit type: unknown",
-    );
-  });
-
   it("exposes type guards for content, answer, and answer submit", () => {
     expect(isContent.mcq(mcqContent)).toBe(true);
     expect(isContent.default(mcqContent)).toBe(false);

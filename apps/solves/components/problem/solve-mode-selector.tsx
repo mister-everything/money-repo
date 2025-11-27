@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { fetcher } from "@/lib/protocol/fetcher";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 interface SolveModeSelectorProps {
   workBook: WorkBookWithoutAnswer;
@@ -81,7 +81,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
         setHasSession(false);
       }
     } catch (error) {
-      log.error("세션 초기화 실패:", error);
+      logger.error("세션 초기화 실패:", error);
       return;
     }
 

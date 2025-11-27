@@ -5,7 +5,7 @@ import { WorkbookEdit } from "@/components/workbook/workbook-edit";
 import { WorkbooksCreateChat } from "@/components/workbook/workbook-edit-chatbot";
 import { getSession } from "@/lib/auth/server";
 
-export default async function ProbEditPage({
+export default async function WorkbookEditPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -20,7 +20,7 @@ export default async function ProbEditPage({
   );
   if (!hasPermission) return notFound();
 
-  const book = await workBookService.selectWorkBookById(id);
+  const book = await workBookService.getWorkBookWithBlocks(id);
   if (!book) notFound();
 
   return (

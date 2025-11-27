@@ -30,6 +30,7 @@ import {
   McqMultipleBlockContent,
   McqSingleBlockContent,
   OXBlockContent,
+  RankingBlockContent,
 } from "./block-content";
 import { BlockQuestion } from "./block-question";
 
@@ -188,6 +189,17 @@ function PureBlock<T extends BlockType = BlockType>({
             onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
             onUpdateAnswer={props.onUpdateAnswer}
           />
+        ) : blockPropsTypeGuard("ranking", props) ? (
+          <RankingBlockContent
+            content={props.content}
+            isCorrect={props.isCorrect}
+            answer={props.answer}
+            submit={props.submit}
+            mode={props.mode}
+            onUpdateContent={props.onUpdateContent}
+            onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
+            onUpdateAnswer={props.onUpdateAnswer}
+          />
         ) : (
           <InDevelopment className="w-full text-sm h-48">
             아직 지원하지 않는 블럭 입니다.
@@ -196,7 +208,9 @@ function PureBlock<T extends BlockType = BlockType>({
       </CardContent>
       <CardFooter>
         {props.errorFeedback && (
-          <p className="text-destructive text-sm">{props.errorFeedback}</p>
+          <p className="text-destructive text-xs whitespace-pre-wrap mt-4">
+            {props.errorFeedback}
+          </p>
         )}
       </CardFooter>
     </Card>

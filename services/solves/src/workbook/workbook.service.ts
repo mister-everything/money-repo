@@ -24,14 +24,15 @@ import {
   WorkBookWithoutBlocks,
 } from "./types";
 
-const tagsSubQuery = pgDb
+const TagsSubQuery = pgDb
   .select({
-    tags: sql<string[]>`array_agg(${tagsTable.name})`,
+    tags: sql<
+      { id: number; name: string }[]
+    >`json_agg(json_build_object('id', ${tagsTable.id}, 'name', ${tagsTable.name}))`,
   })
   .from(workBookTagsTable)
   .innerJoin(tagsTable, eq(workBookTagsTable.tagId, tagsTable.id))
-  .where(eq(workBookTagsTable.workBookId, workBooksTable.id))
-  .toSQL();
+  .where(eq(workBookTagsTable.workBookId, workBooksTable.id));
 
 const WorkBookColumnsForList = {
   id: workBooksTable.id,
@@ -41,7 +42,9 @@ const WorkBookColumnsForList = {
   thumbnail: workBooksTable.thumbnail,
   ownerName: userTable.name,
   ownerProfile: userTable.image,
-  tags: sql<string[]>`coalesce((${tagsSubQuery}), '{}')`,
+  tags: sql<
+    { id: number; name: string }[]
+  >`coalesce((${TagsSubQuery}), '[]'::json)`,
   createdAt: workBooksTable.createdAt,
 };
 
@@ -105,27 +108,9 @@ export const workBookService = {
    */
   async searchWorkBooks(options = {}): Promise<WorkBookWithoutBlocks[]> {
     const rows = await pgDb
-      .select({
-        id: workBooksTable.id,
-        title: workBooksTable.title,
-        description: workBooksTable.description,
-        isPublic: workBooksTable.isPublic,
-        thumbnail: workBooksTable.thumbnail,
-        ownerName: userTable.name,
-        ownerProfile: userTable.image,
-        tags: sql<
-          string[]
-        >`coalesce(array_agg(${tagsTable.name}) filter (where ${tagsTable.name} is not null), '{}')`,
-        createdAt: workBooksTable.createdAt,
-      })
+      .select(WorkBookColumnsForList)
       .from(workBooksTable)
-      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .leftJoin(
-        workBookTagsTable,
-        eq(workBooksTable.id, workBookTagsTable.workBookId),
-      )
-      .leftJoin(tagsTable, eq(workBookTagsTable.tagId, tagsTable.id))
-      .groupBy(workBooksTable.id, userTable.id);
+      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id));
 
     return rows.map((row) => ({
       id: row.id,
@@ -142,48 +127,29 @@ export const workBookService = {
     }));
   },
 
-  selectWorkBookWithoutAnswerById: async (
-    id: string,
-  ): Promise<WorkBookWithoutAnswer | null> => {
-    const book = await workBookService.selectWorkBookById(id);
-    if (!book) return null;
-    return {
-      ...book,
-      blocks: book.blocks.map((block) => ({
-        ...block,
-        answer: undefined,
-      })),
-    };
-  },
-
-  selectWorkBookById: async (id: string): Promise<WorkBook | null> => {
+  getWorkBook: async (id: string): Promise<WorkBookWithoutBlocks | null> => {
     const [book] = await pgDb
-      .select({
-        id: workBooksTable.id,
-        title: workBooksTable.title,
-        description: workBooksTable.description,
-        isPublic: workBooksTable.isPublic,
-        thumbnail: workBooksTable.thumbnail,
-        ownerName: userTable.name,
-        ownerProfile: userTable.image,
-        tags: sql<
-          string[]
-        >`coalesce(array_agg(${tagsTable.name}) filter (where ${tagsTable.name} is not null), '{}')`,
-        createdAt: workBooksTable.createdAt,
-      })
+      .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .leftJoin(
-        workBookTagsTable,
-        eq(workBooksTable.id, workBookTagsTable.workBookId),
-      )
-      .leftJoin(tagsTable, eq(workBookTagsTable.tagId, tagsTable.id))
-      .where(eq(workBooksTable.id, id))
-      .groupBy(workBooksTable.id, userTable.id);
+      .where(eq(workBooksTable.id, id));
 
-    if (!book) {
-      return null;
-    }
+    if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
+    return {
+      id: book.id,
+      title: book.title,
+      description: book.description || "",
+      isPublic: book.isPublic,
+      thumbnail: book.thumbnail ?? undefined,
+      owner: {
+        name: book.ownerName,
+        profile: book.ownerProfile ?? undefined,
+      },
+      tags: book.tags ?? [],
+      createdAt: book.createdAt,
+    };
+  },
+  getBlocks: async (workBookId: string): Promise<WorkBookBlock[]> => {
     const blocks = await pgDb
       .select({
         id: blocksTable.id,
@@ -194,29 +160,43 @@ export const workBookService = {
         type: blocksTable.type,
       })
       .from(blocksTable)
-      .where(eq(blocksTable.workBookId, id));
+      .where(eq(blocksTable.workBookId, workBookId))
+      .orderBy(blocksTable.order);
+    return blocks.map((block) => ({
+      id: block.id,
+      content: block.content,
+      question: block.question || "",
+      order: block.order,
+      type: block.type,
+      answer: block.answer!,
+    }));
+  },
 
+  // 풀이용 정답 제외 문제집
+  getWorkBookWithoutAnswer: async (
+    id: string,
+  ): Promise<WorkBookWithoutAnswer | null> => {
+    const book = await workBookService.getWorkBook(id);
+    if (!book) return null;
+    const blocks = await workBookService.getBlocks(id);
     return {
-      id: book.id,
-      title: book.title,
-      description: book.description ?? undefined,
-      isPublic: book.isPublic,
-      thumbnail: book.thumbnail ?? undefined,
+      ...book,
       blocks: blocks.map((block) => ({
-        id: block.id,
-        content: block.content,
-        question: block.question || "",
-        order: block.order,
-        type: block.type,
-        answer: block.answer!,
+        ...block,
+        answer: undefined,
       })),
-      owner: {
-        name: book.ownerName,
-        profile: book.ownerProfile ?? undefined,
-      },
-      tags: book.tags ?? [],
-      createdAt: book.createdAt,
-    };
+    } as WorkBookWithoutAnswer;
+  },
+
+  // 문제집 조회 수정용
+  getWorkBookWithBlocks: async (id: string): Promise<WorkBook | null> => {
+    const book = await workBookService.getWorkBook(id);
+    if (!book) return null;
+    const blocks = await workBookService.getBlocks(id);
+    return {
+      ...book,
+      blocks,
+    } as WorkBook;
   },
 
   /**
@@ -269,10 +249,6 @@ export const workBookService = {
       .insert(workBooksTable)
       .values(data)
       .returning({ id: workBooksTable.id });
-
-    // if (workBook.tags) {
-    //   await workBookService.saveTagByBookId(newWorkBook.id, workBook.tags);
-    // }
     return newWorkBook;
   },
 
@@ -289,7 +265,7 @@ export const workBookService = {
       })
       .where(eq(workBooksTable.id, workBook.id));
   },
-  processBlocks: async (
+  processUpdateBlocks: async (
     bookId: string,
     deleteBlocks: string[],
     saveBlocks: WorkBookBlock[],
@@ -576,46 +552,20 @@ export const workBookService = {
   ): Promise<WorkBookInProgress[]> => {
     const rows = await pgDb
       .select({
-        id: workBooksTable.id,
-        title: workBooksTable.title,
-        description: workBooksTable.description,
-        isPublic: workBooksTable.isPublic,
-        thumbnail: workBooksTable.thumbnail,
+        ...WorkBookColumnsForList,
         startTime: workBookSubmitsTable.startTime,
-        ownerName: userTable.name,
-        ownerProfile: userTable.image,
-        tags: sql<
-          string[]
-        >`coalesce(array_agg(${tagsTable.name}) filter (where ${tagsTable.name} is not null), '{}')`,
-        createdAt: workBooksTable.createdAt,
       })
       .from(workBookSubmitsTable)
       .innerJoin(
         workBooksTable,
         eq(workBookSubmitsTable.workBookId, workBooksTable.id),
       )
-      .leftJoin(
-        workBookTagsTable,
-        eq(workBookTagsTable.workBookId, workBooksTable.id),
-      )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .leftJoin(tagsTable, eq(workBookTagsTable.tagId, tagsTable.id))
       .where(
         and(
           eq(workBookSubmitsTable.ownerId, userId),
           isNull(workBookSubmitsTable.endTime),
         ),
-      )
-      .groupBy(
-        workBooksTable.id,
-        workBooksTable.title,
-        workBooksTable.description,
-        workBooksTable.isPublic,
-        workBooksTable.thumbnail,
-        workBooksTable.createdAt,
-        workBookSubmitsTable.startTime,
-        userTable.name,
-        userTable.image,
       );
 
     return rows.map((row) => ({
@@ -657,8 +607,8 @@ export const workBookService = {
         ownerName: userTable.name,
         ownerProfile: userTable.image,
         tags: sql<
-          string[]
-        >`coalesce(array_agg(${tagsTable.name}) filter (where ${tagsTable.name} is not null), '{}')`,
+          { id: number; name: string }[]
+        >`coalesce(json_agg(json_build_object('id', ${tagsTable.id}, 'name', ${tagsTable.name})) filter (where ${tagsTable.name} is not null), '[]'::json)`,
         createdAt: workBooksTable.createdAt,
         totalProblems: sql<number>`count(distinct ${blocksTable.id})`,
       })

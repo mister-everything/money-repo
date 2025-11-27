@@ -7,7 +7,8 @@ import {
 } from "@service/solves/shared";
 import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
 import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -60,10 +61,13 @@ export function DefaultBlockContent({
   );
 
   const addAnswer = useCallback(async () => {
+    if ((answer?.answer.length ?? 0) >= 10)
+      return toast.warning("정답은 최대 10개까지 입니다.");
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
         description: "답안을 작성하세요",
+        maxLength: 30,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -71,7 +75,7 @@ export function DefaultBlockContent({
       ...prev,
       answer: deduplicate([...(prev?.answer || []), newAnswer]),
     }));
-  }, [onUpdateAnswer]);
+  }, [onUpdateAnswer, answer?.answer.length]);
 
   const removeAnswer = useCallback(
     (index: number) => {
@@ -90,7 +94,7 @@ export function DefaultBlockContent({
           <Input
             placeholder="답안을 작성하세요"
             className="w-full"
-            value={submit?.answer}
+            value={submit?.answer || ""}
             onChange={handleChangeSubmitAnswer}
             disabled={mode == "preview"}
           />
@@ -100,7 +104,8 @@ export function DefaultBlockContent({
             <Input
               placeholder="정답을 제출하지 않았습니다."
               className="w-full"
-              value={submit?.answer}
+              value={submit?.answer || ""}
+              maxLength={30}
               disabled
             />
             {!isCorrect && (
@@ -153,10 +158,13 @@ export function McqMultipleBlockContent({
   isCorrect,
 }: BlockContentProps<"mcq-multiple">) {
   const addOption = useCallback(async () => {
+    if ((content.options.length ?? 0) >= 10)
+      return toast.warning("옵션은 최대 10개까지 입니다.");
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
         description: "답안을 작성하세요",
+        maxLength: 30,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -171,7 +179,7 @@ export function McqMultipleBlockContent({
         },
       ],
     }));
-  }, [onUpdateContent]);
+  }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
     (index: number) => {
@@ -321,10 +329,13 @@ export function McqSingleBlockContent({
   isCorrect,
 }: BlockContentProps<"mcq">) {
   const addOption = useCallback(async () => {
+    if ((content.options.length ?? 0) >= 10)
+      return toast.warning("옵션은 최대 10개까지 입니다.");
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
         description: "답안을 작성하세요",
+        maxLength: 30,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -339,7 +350,7 @@ export function McqSingleBlockContent({
         },
       ],
     }));
-  }, [onUpdateContent]);
+  }, [onUpdateContent, content.options.length]);
 
   const removeOption = useCallback(
     (index: number) => {
@@ -530,6 +541,337 @@ export function OXBlockContent({
       >
         <XIcon className="size-14 md:size-24" />
       </Button>
+    </div>
+  );
+}
+
+export function RankingBlockContent({
+  answer,
+  submit,
+  mode,
+  content,
+  onUpdateAnswer,
+  onUpdateContent,
+  onUpdateSubmitAnswer,
+}: BlockContentProps<"ranking">) {
+  const items = content.items || [];
+  const slotCount = items.length;
+
+  const [isDragging, setIsDragging] = useState(false);
+
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+
+  const currentOrder = useMemo(() => {
+    const rawOrder =
+      mode === "edit" ? answer?.order || [] : submit?.order || [];
+    const normalized: string[] = Array(slotCount).fill("");
+    rawOrder.forEach((id, index) => {
+      if (index < slotCount && id) normalized[index] = id;
+    });
+    return normalized;
+  }, [mode, answer?.order, submit?.order, slotCount]);
+
+  const poolItems = useMemo(() => {
+    const placedIds = currentOrder.filter((id) => id !== "");
+    return items.filter((item) => !placedIds.includes(item.id));
+  }, [items, currentOrder]);
+
+  const updateOrder = useCallback(
+    (newOrder: string[]) => {
+      const filtered = newOrder.filter((id) => id !== "");
+      if (mode === "edit") {
+        onUpdateAnswer?.((prev) => ({ ...prev, order: filtered }));
+      } else if (mode === "solve") {
+        onUpdateSubmitAnswer?.({ order: filtered });
+      }
+    },
+    [mode, onUpdateAnswer, onUpdateSubmitAnswer],
+  );
+
+  // 항목 추가 (edit 모드)
+  const addItem = useCallback(async () => {
+    if ((items.length ?? 0) >= 10)
+      return toast.warning("항목은 최대 10개까지 입니다.");
+    const newItem = await notify
+      .prompt({
+        title: "항목 추가",
+        description: "순위에 들어갈 항목을 작성하세요",
+        maxLength: 30,
+      })
+      .then((text) => text.trim());
+    if (!newItem) return;
+    onUpdateContent?.((prev) => ({
+      ...prev,
+      items: [
+        ...(prev?.items || []),
+        { id: generateUUID(), text: newItem, type: "text" as const },
+      ],
+    }));
+  }, [onUpdateContent, items.length]);
+
+  const removeItem = useCallback(
+    (itemId: string) => {
+      if (mode === "edit") {
+        onUpdateAnswer?.((prev) => ({
+          ...prev,
+          order: prev?.order?.filter((id) => id !== itemId) || [],
+        }));
+        onUpdateContent?.((prev) => ({
+          ...prev,
+          items: prev?.items?.filter((item) => item.id !== itemId) || [],
+        }));
+      } else if (mode === "solve") {
+        onUpdateSubmitAnswer?.((prev) => ({
+          ...prev,
+          order: prev?.order?.filter((id) => id !== itemId) || [],
+        }));
+      }
+    },
+    [mode, onUpdateAnswer, onUpdateSubmitAnswer],
+  );
+
+  const addToSlot = useCallback(
+    (itemId: string, slotIndex: number) => {
+      if (currentOrder.includes(itemId)) return;
+      if (currentOrder[slotIndex] !== "") return;
+      const newOrder = [...currentOrder];
+      newOrder[slotIndex] = itemId;
+      updateOrder(newOrder);
+    },
+    [currentOrder, updateOrder],
+  );
+
+  const removeFromSlot = useCallback(
+    (slotIndex: number) => {
+      const newOrder = [...currentOrder];
+      newOrder[slotIndex] = "";
+      updateOrder(newOrder);
+    },
+    [currentOrder, updateOrder],
+  );
+
+  const resetAll = useCallback(() => {
+    updateOrder([]);
+  }, [updateOrder]);
+
+  const handleDragStart = useCallback((e: React.DragEvent, itemId: string) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", itemId);
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+    setDragOverSlot(null);
+  }, []);
+
+  const handleDropOnSlot = useCallback(
+    (e: React.DragEvent, slotIndex: number) => {
+      e.preventDefault();
+      const itemId = e.dataTransfer.getData("text/plain");
+      if (itemId) addToSlot(itemId, slotIndex);
+      setDragOverSlot(null);
+    },
+    [addToSlot],
+  );
+
+  const getSlotStatus = useCallback(
+    (slotIndex: number) => {
+      if (mode !== "review") return null;
+      const correctOrder = answer?.order || [];
+      const submittedOrder = submit?.order || [];
+      if (!submittedOrder[slotIndex]) return "empty";
+      return submittedOrder[slotIndex] === correctOrder[slotIndex]
+        ? "correct"
+        : "wrong";
+    },
+    [mode, answer?.order, submit?.order],
+  );
+
+  const isInteractive = mode === "edit" || mode === "solve";
+  const rankBadgeClass = "bg-secondary text-secondary-foreground";
+  const filledCount = currentOrder.filter((id) => id !== "").length;
+
+  if (mode === "preview" && items.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">순위</Label>
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                    rankBadgeClass,
+                  )}
+                >
+                  {i}
+                </div>
+                <div className="flex-1 h-10 rounded-md border border-dashed bg-muted/30" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">
+          {isInteractive ? "항목 (클릭 또는 드래그하여 순위에 추가)" : "항목"}
+        </Label>
+        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg border-2 border-dashed bg-muted/20">
+          {poolItems.map((item) => (
+            <div
+              key={item.id}
+              draggable={isInteractive}
+              onDragStart={(e) => isInteractive && handleDragStart(e, item.id)}
+              onClick={() => removeItem(item.id)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1 select-none",
+                isInteractive &&
+                  "cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/5",
+              )}
+            >
+              {item.type === "text" && item.text}
+              {mode === "edit" && (
+                <span
+                  role="button"
+                  className="ml-1 text-muted-foreground p-0.5 rounded"
+                >
+                  <XIcon className="size-3" />
+                </span>
+              )}
+            </div>
+          ))}
+          {mode === "edit" && items.length <= 10 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-dashed h-8"
+              onClick={addItem}
+            >
+              <PlusIcon className="size-3 mr-1" /> 추가
+            </Button>
+          )}
+          {poolItems.length === 0 && mode !== "edit" && (
+            <span className="text-xs text-muted-foreground">
+              모든 항목이 배치되었습니다
+            </span>
+          )}
+        </div>
+      </div>
+
+      {slotCount > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">
+              순위 {mode === "solve" && `(${filledCount}/${slotCount})`}
+            </Label>
+            {isInteractive && filledCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                onClick={resetAll}
+              >
+                초기화
+              </Button>
+            )}
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: slotCount }).map((_, slotIndex) => {
+              const itemId = currentOrder[slotIndex];
+              const item = itemId ? items.find((i) => i.id === itemId) : null;
+              const slotStatus = getSlotStatus(slotIndex);
+              const correctItemId = answer?.order?.[slotIndex];
+              const correctItem = items.find((i) => i.id === correctItemId);
+              const isEmpty = !item;
+
+              return (
+                <div
+                  key={slotIndex}
+                  className="flex items-center gap-3"
+                  onDragOver={(e) => {
+                    if (!isInteractive || !isEmpty) return;
+                    e.preventDefault();
+                    setDragOverSlot(slotIndex);
+                  }}
+                  onDragLeave={() => setDragOverSlot(null)}
+                  onDrop={(e) =>
+                    isInteractive && isEmpty && handleDropOnSlot(e, slotIndex)
+                  }
+                >
+                  {/* 순위 뱃지 */}
+                  <div
+                    className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      slotStatus === "correct" &&
+                        "bg-primary text-primary-foreground",
+                      slotStatus === "wrong" &&
+                        "bg-destructive text-destructive-foreground",
+                      slotStatus !== "correct" &&
+                        slotStatus !== "wrong" &&
+                        rankBadgeClass,
+                    )}
+                  >
+                    {slotIndex + 1}
+                  </div>
+
+                  {/* 슬롯 */}
+                  {item ? (
+                    <div
+                      className={cn(
+                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card",
+                        slotStatus === "correct" && okClass,
+                        slotStatus === "wrong" && failClass,
+                      )}
+                    >
+                      <span className="text-sm font-medium flex-1">
+                        {item.type === "text" && item.text}
+                      </span>
+                      {isInteractive && (
+                        <button
+                          type="button"
+                          onClick={() => removeFromSlot(slotIndex)}
+                          className="text-muted-foreground hover:text-foreground ml-2 p-1 -mr-1 rounded hover:bg-muted"
+                        >
+                          <XIcon className="size-4" />
+                        </button>
+                      )}
+                      {mode === "review" &&
+                        slotStatus === "wrong" &&
+                        correctItem && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            (정답:{" "}
+                            {correctItem.type === "text" && correctItem.text})
+                          </span>
+                        )}
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        "flex-1 min-h-[40px] rounded-md border-2 border-dashed bg-muted/20 transition-all flex items-center justify-center",
+                        isDragging && "border-muted-foreground/30",
+                        dragOverSlot === slotIndex &&
+                          "border-primary bg-primary/10",
+                      )}
+                    >
+                      <span className="text-xs text-muted-foreground">
+                        {isInteractive ? "여기에 드래그하세요" : "비어있음"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

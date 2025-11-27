@@ -3,17 +3,17 @@ import "@workspace/env";
 import { join } from "path";
 import { SCHEMA_NAME } from "./const";
 import { pgDb } from "./db";
-import { log } from "./logger";
+import { logger } from "./logger";
 
 const runMigrate = async () => {
-  log.info("⏳ Running PostgreSQL migrations...");
+  logger.info("⏳ Running PostgreSQL migrations...");
 
   const start = Date.now();
   await migrate(pgDb, {
     migrationsFolder: join(process.cwd(), "src/migrations"),
     migrationsSchema: SCHEMA_NAME,
   }).catch((err) => {
-    log.error(
+    logger.error(
       "❌ PostgreSQL migrations failed. check the postgres instance is running.",
       err.cause,
     );
@@ -21,7 +21,7 @@ const runMigrate = async () => {
   });
   const end = Date.now();
 
-  log.info(
+  logger.info(
     `✅ PostgreSQL migrations completed in ${end - start}ms`,
   );
   process.exit(0);

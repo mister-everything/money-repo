@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { safeGetSession } from "./lib/auth/server";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -15,7 +15,7 @@ export async function proxy(request: NextRequest) {
   const session = await safeGetSession();
 
   if (!session) {
-    log.warn(`proxy ${pathname} without session`);
+    logger.warn(`proxy ${pathname} without session`);
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
   return NextResponse.next();

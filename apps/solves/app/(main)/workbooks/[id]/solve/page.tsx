@@ -18,7 +18,7 @@ export default async function Page({
 
   // if (!hasPermission) throw new Error("문제집에 접근할 수 없습니다.");
 
-  const book = await workBookService.selectWorkBookWithoutAnswerById(id);
+  const book = await workBookService.getWorkBookWithoutAnswer(id);
   if (!book) notFound();
 
   return (

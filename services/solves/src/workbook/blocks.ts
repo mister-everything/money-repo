@@ -2,16 +2,19 @@ import z from "zod";
 import { blockBuilder } from "./create-block";
 
 const textOption = z.object({
-  id: z.string(),
+  id: z.string().min(1),
   type: z.literal("text"),
-  text: z.string().min(1),
+  text: z
+    .string("필수 입력값입니다.")
+    .min(1, "필수 입력값입니다.")
+    .max(100, "최대 100자 이하로 입력해주세요."),
 });
 
 const sourceOption = z.object({
   id: z.string(),
   type: z.literal("source"),
   mimeType: z.string(),
-  url: z.string(),
+  url: z.string("필수 입력값입니다."),
 });
 
 /**
@@ -29,12 +32,20 @@ const defaultBlock = blockBuilder("default")
   .displayName("주관식")
   .answer(
     z.object({
-      answer: z.array(z.string().min(1)).min(1),
+      answer: z
+        .array(
+          z
+            .string("필수 입력값입니다.")
+            .min(1, "정답에 최소 1자 이상 입력해주세요.")
+            .max(30, "정답은 최대 30자 이하로 입력해주세요."),
+        )
+        .min(1, "정답은 최소 1개 이상 필요")
+        .max(10, "정답은 최대 10개까지 입력해주세요."),
     }),
   )
   .answerSubmit(
     z.object({
-      answer: z.string().min(1),
+      answer: z.string().default(""),
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
@@ -64,26 +75,29 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
   .displayName("객관식 다중")
   .content(
     z.object({
-      options: z.array(z.union([textOption, sourceOption])).min(2), // 최소 2개의 선택지 필요
+      options: z
+        .array(z.union([textOption, sourceOption]))
+        .min(2, "최소 2개의 선택지 필요"), // 최소 2개의 선택지 필요
     }),
   )
-
   .answer(
     z.object({
-      answer: z.array(z.string()).min(1), // 정답이 여러개 일 수 있음.
+      answer: z
+        .array(z.string("필수 입력값입니다."))
+        .min(1, "정답은 최소 1개 이상 필요")
+        .max(10, "정답은 최대 10개까지 입력해주세요."),
     }),
   )
   .answerSubmit(
     z.object({
-      answer: z.array(z.string()).min(1), // 제출된 답안은 여러개 일 수 있음.
+      answer: z.array(z.string()).default([]),
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
     const submitted = submittedAnswer.answer;
     return (
-      // TODO: 다중 정답 체크 로직 추가 필요
-      // submitted.length === correctAnswer.answer.length &&
-      correctAnswer.answer.some((answer) => submitted.includes(answer))
+      correctAnswer.answer.length === submitted.length &&
+      correctAnswer.answer.every((answer) => submitted.includes(answer))
     );
   })
   .build();
@@ -92,18 +106,20 @@ const mcqBlock = blockBuilder("mcq")
   .displayName("객관식")
   .content(
     z.object({
-      options: z.array(z.union([textOption, sourceOption])).min(2), // 최소 2개의 선택지 필요
+      options: z
+        .array(z.union([textOption, sourceOption]))
+        .min(2, "최소 2개의 선택지 필요")
+        .max(10, "최대 10개의 선택지까지 입력해주세요."),
     }),
   )
-
   .answer(
     z.object({
-      answer: z.string().min(1),
+      answer: z.string("필수 입력값입니다."),
     }),
   )
   .answerSubmit(
     z.object({
-      answer: z.string().min(1),
+      answer: z.string().default(""),
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
@@ -133,18 +149,23 @@ const rankingBlock = blockBuilder("ranking")
   .displayName("순위 맞추기")
   .content(
     z.object({
-      items: z.array(z.union([textOption, sourceOption])).min(2),
+      items: z
+        .array(z.union([textOption, sourceOption]))
+        .min(2, "최소 2개의 순위 필요")
+        .max(10, "최대 10개의 순위까지 입력해주세요."),
     }),
   )
-
   .answer(
     z.object({
-      order: z.array(z.string()).min(2),
+      order: z
+        .array(z.string())
+        .min(2, "최소 2개의 순위 필요")
+        .max(10, "최대 10개의 순위까지 입력해주세요."),
     }),
   )
   .answerSubmit(
     z.object({
-      order: z.array(z.string()),
+      order: z.array(z.string()).default([]),
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
@@ -175,7 +196,7 @@ const oxBlock = blockBuilder("ox")
   .displayName("OX 퀴즈")
   .answer(
     z.object({
-      answer: z.boolean(),
+      answer: z.boolean().default(true),
     }),
   )
   .answerSubmit(

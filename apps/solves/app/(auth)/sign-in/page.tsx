@@ -14,7 +14,7 @@ import {
 import { GoogleIcon, KakaoIcon, NaverIcon } from "@/components/ui/custom-icon";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth/client";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 const oauthProviders: {
   name: string;
@@ -48,11 +48,11 @@ export default function SignUpPage() {
     authClient.signIn
       .social({ provider })
       .catch((e: any) => {
-        log.info(`authClient.signIn.social error ${provider}`, e);
+        logger.info(`authClient.signIn.social error ${provider}`, e);
         toast.warning(`${provider} 로그인에 실패했습니다.`);
       })
       .finally(() => {
-        log.info(`end sign in with ${provider}`);
+        logger.info(`end sign in with ${provider}`);
       });
   }, []);
 

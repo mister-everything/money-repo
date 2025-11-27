@@ -1,6 +1,12 @@
 "use client";
 
-import { LoaderIcon, PlusIcon, SaveIcon } from "lucide-react";
+import {
+  ArrowUpDownIcon,
+  LoaderIcon,
+  PlayIcon,
+  PlusIcon,
+  SaveIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   FloatingActionBar,
@@ -14,17 +20,27 @@ import {
 
 interface WorkbookEditActionBarProps {
   isPending: boolean;
+  isReorderMode: boolean;
+  isSolveMode: boolean;
   onAddBlock: () => void;
   onSave: () => void;
-  onPublish?: () => void;
+  onPublish: () => void;
+  onToggleReorderMode: () => void;
+  onToggleSolveMode: () => void;
 }
 
 export function WorkbookEditActionBar({
   isPending,
+  isReorderMode,
+  isSolveMode,
   onAddBlock,
   onSave,
   onPublish,
+  onToggleReorderMode,
+  onToggleSolveMode,
 }: WorkbookEditActionBarProps) {
+  const isActionDisabled = isReorderMode || isSolveMode || isPending;
+
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
       <FloatingActionBar>
@@ -32,9 +48,10 @@ export function WorkbookEditActionBar({
           <TooltipTrigger asChild>
             <Button
               size="icon"
-              variant="secondary"
+              variant={isReorderMode ? "ghost" : "secondary"}
               onClick={onAddBlock}
               className="rounded-full"
+              disabled={isActionDisabled}
             >
               <PlusIcon className="size-4" />
             </Button>
@@ -45,8 +62,40 @@ export function WorkbookEditActionBar({
           <TooltipTrigger asChild>
             <Button
               size="icon"
+              variant={isReorderMode ? "secondary" : "ghost"}
+              onClick={onToggleReorderMode}
+              className="rounded-full"
+              disabled={isActionDisabled && !isReorderMode}
+            >
+              <ArrowUpDownIcon className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isReorderMode ? "순서 변경 완료" : "문제 순서 변경 하기"}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={isSolveMode ? "secondary" : "ghost"}
+              onClick={onToggleSolveMode}
+              className="rounded-full"
+              disabled={isActionDisabled && !isSolveMode}
+            >
+              <PlayIcon className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isSolveMode ? "문제 수정하기" : "문제 풀어보기"}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
               variant="ghost"
-              disabled={isPending}
+              disabled={isPending || isReorderMode}
               onClick={onSave}
               className="rounded-full"
             >
@@ -66,6 +115,7 @@ export function WorkbookEditActionBar({
               className="rounded-full"
               variant="ghost"
               onClick={onPublish}
+              disabled={isReorderMode}
             >
               문제집 생성
             </Button>

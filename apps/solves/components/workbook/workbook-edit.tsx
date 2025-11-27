@@ -1,19 +1,32 @@
 "use client";
 import {
   BlockAnswer,
+  BlockAnswerSubmit,
   BlockContent,
   BlockType,
   blockDisplayNames,
+  checkAnswer,
   initializeBlock,
+  initialSubmitAnswer,
+  validateBlock,
   WorkBook,
   WorkBookBlock,
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
-import { applyStateUpdate, equal, StateUpdate } from "@workspace/util";
-import { PlusIcon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import {
+  applyStateUpdate,
+  deduplicate,
+  equal,
+  objectFlow,
+  StateUpdate,
+} from "@workspace/util";
+import { GripVerticalIcon, PlusIcon } from "lucide-react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { processBlocksAction, updateWorkbookAction } from "@/actions/workbook";
+import {
+  processUpdateBlocksAction,
+  updateWorkbookAction,
+} from "@/actions/workbook";
 import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
@@ -22,6 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { cn } from "@/lib/utils";
 import { GoBackButton } from "../layouts/go-back-button";
 import { Button } from "../ui/button";
 import { Block } from "./block/block";
@@ -52,11 +66,38 @@ export function WorkbookEdit({
   const [workbook, setWorkbook] =
     useState<WorkBookWithoutBlocks>(initialWorkbook);
 
+  const ref = useRef<HTMLDivElement>(null);
+
   const [blocks, setBlocks] = useState<WorkBookBlock[]>(initialBlocks);
 
   const [isEditBook, setIsEditBook] = useState(false);
 
   const [editingBlockId, setEditingBlockId] = useState<string[]>([]);
+
+  const [isReorderMode, setIsReorderMode] = useState(false);
+
+  const [control, setControl] = useState<"edit" | "solve" | "review">("edit");
+
+  const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
+
+  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
+
+  const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
+
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
+  const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
+
+  const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
+    if (control !== "review") return {};
+    return blocks.reduce(
+      (acc, block) => {
+        if (!submits[block.id]) return acc;
+        acc[block.id] = checkAnswer(block.answer, submits[block.id]);
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+  }, [control]);
 
   const [, updateWorkbook, isBookPending] = useSafeAction(
     updateWorkbookAction,
@@ -69,8 +110,8 @@ export function WorkbookEdit({
     },
   );
 
-  const [, processBlocks, isBlocksPending] = useSafeAction(
-    processBlocksAction,
+  const [, processUpdateBlocks, isBlocksPending] = useSafeAction(
+    processUpdateBlocksAction,
     {
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, blocks: blocks }));
@@ -85,7 +126,10 @@ export function WorkbookEdit({
     [isBookPending, isBlocksPending],
   );
 
-  const pendingRef = useToRef(isPending);
+  const stateRef = useToRef({
+    isPending,
+    blocks,
+  });
 
   const handleChangeWorkbookMode = useCallback(
     (mode: WorkBookComponentMode) => {
@@ -96,7 +140,7 @@ export function WorkbookEdit({
 
   const handleUpdateContent = useCallback(
     (id: string, content: StateUpdate<BlockContent<BlockType>>) => {
-      if (pendingRef.current) return;
+      if (stateRef.current.isPending) return;
       setBlocks((prev) => {
         const nextBlocks = prev.map((original) => {
           const isTarget = original.id === id;
@@ -115,7 +159,7 @@ export function WorkbookEdit({
 
   const handleUpdateAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswer<BlockType>>) => {
-      if (pendingRef.current) return;
+      if (stateRef.current.isPending) return;
       setBlocks((prev) => {
         const nextBlocks = prev.map((original) => {
           const isTarget = original.id === id;
@@ -138,14 +182,19 @@ export function WorkbookEdit({
     setWorkbook({ ...workbook, description });
   }, []);
 
+  const deleteFeedback = useCallback((id: string) => {
+    setFeedbacks((prev) => objectFlow(prev).filter((_, key) => key !== id));
+  }, []);
+
   const handleUpdateQuestion = useCallback((id: string, question: string) => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
     setBlocks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, question } : b)),
     );
   }, []);
   const handleToggleEditMode = useCallback((id: string) => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
+    deleteFeedback(id);
     setEditingBlockId((prev) => {
       if (prev.includes(id)) {
         return prev.filter((id) => id !== id);
@@ -155,16 +204,28 @@ export function WorkbookEdit({
   }, []);
 
   const handleDeleteBlock = useCallback((id: string) => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
+    deleteFeedback(id);
     setBlocks((prev) => prev.filter((b) => b.id !== id));
     setEditingBlockId((prev) => prev.filter((id) => id !== id));
   }, []);
 
   const handleAddBlock = useCallback(async () => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
     const addBlock = async (type: BlockType) => {
       const newBlock = initializeBlock(type);
-      setBlocks((prev) => [...prev, newBlock]);
+      setBlocks((prev) => {
+        const maxOrder = Math.max(...prev.map((b) => b.order), 0);
+        const newBlocks = [
+          ...prev,
+          {
+            ...newBlock,
+            order: maxOrder + 1,
+          },
+        ];
+        return newBlocks;
+      });
+      setFocusBlockId(newBlock.id);
       setEditingBlockId((prev) => [...prev, newBlock.id]);
     };
     notify.component({
@@ -191,6 +252,85 @@ export function WorkbookEdit({
       ),
     });
   }, []);
+
+  const handleFocusBlock = useCallback((node: HTMLDivElement) => {
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
+  const handleToggleReorderMode = useCallback(() => {
+    setIsReorderMode((prev) => !prev);
+    setDraggedBlockId(null);
+    setDragOverBlockId(null);
+  }, []);
+
+  const handleReorderDragStart = useCallback(
+    (e: React.DragEvent, blockId: string) => {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", blockId);
+      setDraggedBlockId(blockId);
+    },
+    [],
+  );
+
+  const handleReorderDragOver = useCallback(
+    (e: React.DragEvent, blockId: string) => {
+      e.preventDefault();
+      if (draggedBlockId && draggedBlockId !== blockId) {
+        setDragOverBlockId(blockId);
+      }
+    },
+    [draggedBlockId],
+  );
+
+  const handleReorderDragLeave = useCallback(() => {
+    setDragOverBlockId(null);
+  }, []);
+
+  const handleReorderDrop = useCallback(
+    (e: React.DragEvent, targetId: string) => {
+      e.preventDefault();
+      if (!draggedBlockId || draggedBlockId === targetId) {
+        setDragOverBlockId(null);
+        return;
+      }
+      setBlocks((prev) => {
+        const draggedIndex = prev.findIndex((b) => b.id === draggedBlockId);
+        const targetIndex = prev.findIndex((b) => b.id === targetId);
+        if (draggedIndex === -1 || targetIndex === -1) return prev;
+        const newBlocks = [...prev];
+        const [removed] = newBlocks.splice(draggedIndex, 1);
+        newBlocks.splice(targetIndex, 0, removed);
+        return newBlocks.map((b, index) => ({ ...b, order: index }));
+      });
+      setDraggedBlockId(null);
+      setDragOverBlockId(null);
+    },
+    [draggedBlockId],
+  );
+
+  const handleReorderDragEnd = useCallback(() => {
+    setDraggedBlockId(null);
+    setDragOverBlockId(null);
+  }, []);
+
+  const handleUpdateSubmitAnswer = useCallback(
+    (id: string, answer: StateUpdate<BlockAnswerSubmit<BlockType>>) => {
+      if (stateRef.current.isPending) return;
+      setSubmits((prev) => {
+        const nextSubmits = { ...prev };
+        const block = stateRef.current.blocks.find((b) => b.id === id);
+        if (!block) return prev;
+        nextSubmits[id] = applyStateUpdate(
+          initialSubmitAnswer(block.type),
+          answer,
+        );
+        return nextSubmits;
+      });
+    },
+    [],
+  );
 
   const handleSave = async () => {
     const hasBookDiff = !equal(
@@ -223,7 +363,7 @@ export function WorkbookEdit({
       updatedBlocks.length > 0;
 
     if (hasBlockDiff) {
-      await processBlocks({
+      await processUpdateBlocks({
         workbookId: workbook.id,
         deleteBlocks: deletedBlocks.map((b) => b.id),
         saveBlocks: [...addedBlocks, ...updatedBlocks],
@@ -231,9 +371,49 @@ export function WorkbookEdit({
     }
   };
 
+  const handleChangeControl = useCallback(
+    (mode: "edit" | "solve" | "review") => {
+      if (mode === "solve") {
+        setSubmits({});
+      }
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      setControl(mode);
+    },
+    [],
+  );
+
+  const handleValidateBlocks = useCallback((blocks: WorkBookBlock[]) => {
+    const nextFeedbacks = blocks.reduce(
+      (acc, b) => {
+        const result = validateBlock(b);
+        if (!result.success) {
+          const errors = Object.values(result.errors ?? {}).flat();
+          acc[b.id] = deduplicate(errors).join("\n");
+        }
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+    setFeedbacks(nextFeedbacks);
+    if (Object.keys(nextFeedbacks).length > 0) {
+      return false;
+    }
+    return true;
+  }, []);
+
+  const handlePublish = useCallback(() => {
+    const isValid = handleValidateBlocks(blocks);
+    if (!isValid) {
+      toast.warning("문제를 먼저 수정해주세요.");
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    toast.success("아직 개발중~~");
+  }, [blocks]);
+
   return (
     <div className="h-full relative">
-      <div className="h-full overflow-y-auto relative">
+      <div ref={ref} className="h-full overflow-y-auto relative">
         <div className="sticky top-0 z-10 py-2 bg-background">
           <GoBackButton>처음부터 다시 만들기</GoBackButton>
         </div>
@@ -248,47 +428,118 @@ export function WorkbookEdit({
           />
 
           {blocks.map((b) => {
+            const isDragOver = dragOverBlockId === b.id;
             return (
-              <Block
-                className={isPending ? "opacity-50" : ""}
-                mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
-                onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
+              <div
                 key={b.id}
-                type={b.type}
-                question={b.question ?? ""}
-                id={b.id}
-                order={b.order}
-                answer={b.answer}
-                content={b.content}
-                onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
-                onUpdateContent={handleUpdateContent.bind(null, b.id)}
-                onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
-                onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
-              />
+                className={cn(
+                  "relative transition-all duration-200 rounded-xl border",
+                  isReorderMode &&
+                    "cursor-grab active:cursor-grabbing hover:border-primary/50 overflow-hidden max-h-80",
+                  isDragOver &&
+                    "border-muted-foreground bg-seborder-muted-foreground border-dashed",
+                )}
+                draggable={isReorderMode}
+                onDragStart={(e) =>
+                  isReorderMode && handleReorderDragStart(e, b.id)
+                }
+                onDragOver={(e) =>
+                  isReorderMode && handleReorderDragOver(e, b.id)
+                }
+                onDragLeave={isReorderMode ? handleReorderDragLeave : undefined}
+                onDrop={(e) => isReorderMode && handleReorderDrop(e, b.id)}
+                onDragEnd={isReorderMode ? handleReorderDragEnd : undefined}
+              >
+                {isReorderMode && !isDragOver && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
+                    <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <GripVerticalIcon className="size-6" />
+                      <span className="text-sm font-medium">
+                        드래그하여 이동
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <Block
+                  ref={focusBlockId === b.id ? handleFocusBlock : undefined}
+                  className={cn("border-none", isPending ? "opacity-50" : "")}
+                  mode={
+                    control !== "edit"
+                      ? control
+                      : editingBlockId.includes(b.id)
+                        ? "edit"
+                        : "preview"
+                  }
+                  onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
+                  type={b.type}
+                  question={b.question ?? ""}
+                  id={b.id}
+                  submit={submits[b.id]}
+                  onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
+                    null,
+                    b.id,
+                  )}
+                  order={b.order}
+                  isCorrect={correctAnswerIds[b.id]}
+                  answer={b.answer}
+                  content={b.content}
+                  onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
+                  onUpdateContent={handleUpdateContent.bind(null, b.id)}
+                  onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
+                  onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
+                  errorFeedback={feedbacks[b.id]}
+                />
+              </div>
             );
           })}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                onClick={handleAddBlock}
-                className="w-full h-24 md:h-40 border-dashed"
-              >
-                <PlusIcon className="size-10 text-muted-foreground" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <span>문제 추가</span>
-            </TooltipContent>
-          </Tooltip>
+          {control === "edit" ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={handleAddBlock}
+                  className="w-full h-24 md:h-40 border-dashed"
+                >
+                  <PlusIcon className="size-10 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>문제 추가</span>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              size={"lg"}
+              onClick={() =>
+                handleChangeControl(control === "solve" ? "review" : "edit")
+              }
+            >
+              {control === "solve" ? "체점하기" : "문제 수정하기"}
+            </Button>
+          )}
         </div>
       </div>
 
       <WorkbookEditActionBar
         isPending={isPending}
+        isReorderMode={isReorderMode}
+        isSolveMode={control != "edit"}
+        onToggleSolveMode={() => {
+          if (control === "solve") {
+            return handleChangeControl("edit");
+          }
+          const isValid = handleValidateBlocks(blocks);
+          if (!isValid) {
+            toast.warning("문제를 먼저 수정해주세요.");
+            ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+          handleChangeControl("solve");
+        }}
         onAddBlock={handleAddBlock}
         onSave={handleSave}
-        onPublish={() => toast.warning("개발중입니다.")}
+        onPublish={handlePublish}
+        onToggleReorderMode={handleToggleReorderMode}
       />
     </div>
   );

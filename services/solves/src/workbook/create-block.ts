@@ -120,22 +120,22 @@ export function blockBuilder<BlockType extends string>(
 
       const baseContentSchema = z.object({
         type: z.literal(type),
-        question: z.string().optional(),
       });
       const resolvedContentSchema = content
-        ? baseContentSchema.merge(content)
+        ? baseContentSchema.extend(content.shape)
         : baseContentSchema;
 
       const baseAnswerSchema = z.object({ type: z.literal(type) });
-      const resolvedAnswerSchema = baseAnswerSchema.merge(answer);
-      const resolvedAnswerSubmitSchema = baseAnswerSchema.merge(answerSubmit);
+      const resolvedAnswerSchema = baseAnswerSchema.extend(answer.shape);
+      const resolvedAnswerSubmitSchema = baseAnswerSchema.extend(
+        answerSubmit.shape,
+      );
 
       const block: Block<BlockType> = {
         type,
         displayName: name,
         contentSchema: resolvedContentSchema.default({
           type: type,
-          question: undefined,
         }),
         answerSchema: resolvedAnswerSchema.default({ type: type }),
         answerSubmitSchema: resolvedAnswerSubmitSchema.default({ type: type }),
