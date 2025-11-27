@@ -83,12 +83,7 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
   .answer(
     z.object({
       answer: z
-        .array(
-          z
-            .string("필수 입력값입니다.")
-            .min(1, "정답에 최소 1자 이상 입력해주세요.")
-            .max(30, "정답은 최대 30자 이하로 입력해주세요."),
-        )
+        .array(z.string("필수 입력값입니다."))
         .min(1, "정답은 최소 1개 이상 필요")
         .max(10, "정답은 최대 10개까지 입력해주세요."),
     }),
@@ -119,10 +114,7 @@ const mcqBlock = blockBuilder("mcq")
   )
   .answer(
     z.object({
-      answer: z
-        .string("필수 입력값입니다.")
-        .min(1, "정답에 최소 1자 이상 입력해주세요.")
-        .max(30, "정답은 최대 30자 이하로 입력해주세요."),
+      answer: z.string("필수 입력값입니다."),
     }),
   )
   .answerSubmit(

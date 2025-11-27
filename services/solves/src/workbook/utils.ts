@@ -1,5 +1,5 @@
 import { generateUUID } from "@workspace/util";
-import z, { prettifyError, ZodError } from "zod";
+import z, { ZodError } from "zod";
 import { logger } from "../logger";
 import {
   All_BLOCKS,
