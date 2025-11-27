@@ -1,7 +1,7 @@
 import { userService } from "@service/auth";
 import { RoleSchema } from "@service/auth/shared";
 import { NextRequest, NextResponse } from "next/server";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -40,7 +40,7 @@ export async function PATCH(
       );
     }
 
-    log.error("사용자 역할 업데이트 실패:", error);
+    logger.error("사용자 역할 업데이트 실패:", error);
     return NextResponse.json(
       { error: "사용자 역할 업데이트에 실패했습니다." },
       { status: 500 },

@@ -15,7 +15,7 @@ import { admin } from "better-auth/plugins";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE_PREFIX } from "../const";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 export const getSession = async () => {
   "use server";
@@ -24,11 +24,11 @@ export const getSession = async () => {
       headers: await headers(),
     })
     .catch((e) => {
-      log.error(e);
+      logger.error(e);
       return null;
     });
   if (!session) {
-    log.error("No session found");
+    logger.error("No session found");
     redirect("/sign-in");
   }
   return session!;
@@ -57,7 +57,7 @@ export const safeGetSession = async () => {
       headers: await headers(),
     })
     .catch((e) => {
-      log.error(e);
+      logger.error(e);
       return null;
     });
   return session;
@@ -70,7 +70,7 @@ const sessionHook = async (session: Partial<Session>) => {
     try {
       await userService.consumeInvitation(inviteToken, session.userId!);
     } catch (error) {
-      log.error("Failed to consume invite token:", error);
+      logger.error("Failed to consume invite token:", error);
     } finally {
       cookieStore.delete("admin_invite_token");
     }
@@ -124,12 +124,12 @@ export const adminBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
 
 const checkAdmin = async (id?: string) => {
   if (!id) {
-    log.error("User is not admin");
+    logger.error("User is not admin");
     return false;
   }
   const isAdmin = await userService.isAdmin(id);
   if (!isAdmin) {
-    log.error("User is not admin");
+    logger.error("User is not admin");
     return false;
   }
   return true;

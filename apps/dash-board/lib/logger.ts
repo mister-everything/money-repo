@@ -6,9 +6,9 @@ const defaultLog = createConsola({
   level: IS_PROD ? LogLevels.info : LogLevels.debug,
 });
 
-export const logger = (name: string, color?: ColorName) =>
+export const createLogger = (name: string, color?: ColorName) =>
   defaultLog.withDefaults({
     message: colorize(color || "blackBright", `${name}: `),
   });
 
-export const log = logger("dashboard");
+export const logger = createLogger("dashboard");

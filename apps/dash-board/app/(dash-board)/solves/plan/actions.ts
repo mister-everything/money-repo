@@ -5,7 +5,7 @@ import { createSubscriptionPlanSchema } from "@service/solves/shared";
 import { PublicError } from "@workspace/error";
 import { redirect } from "next/navigation";
 import { flattenError, z } from "zod";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 type FormState = {
   success: boolean;
@@ -50,7 +50,7 @@ export async function createPlanAction(
         message: "입력값을 확인해주세요.",
       };
     }
-    log.error("플랜 생성 실패:", error);
+    logger.error("플랜 생성 실패:", error);
     return {
       success: false,
       message: "플랜 생성에 실패했습니다.",
@@ -86,7 +86,7 @@ export async function updatePlanAction(
       isActive: formData.get("isActive") === "true",
     };
 
-    log.info(data);
+    logger.info(data);
     // Validation
     const validated = createSubscriptionPlanSchema.partial().parse(data);
 
@@ -99,7 +99,7 @@ export async function updatePlanAction(
         message: "입력값을 확인해주세요.",
       };
     }
-    log.error("플랜 수정 실패:", error);
+    logger.error("플랜 수정 실패:", error);
     return {
       success: false,
       message: "플랜 수정에 실패했습니다.",
@@ -120,7 +120,7 @@ export async function togglePlanActiveAction(
     await planService.setPlanActive(planId, isActive);
     // redirect는 클라이언트에서 처리
   } catch (error) {
-    log.error("플랜 상태 변경 실패:", error);
+    logger.error("플랜 상태 변경 실패:", error);
     throw new PublicError("플랜 상태 변경에 실패했습니다.");
   }
 }

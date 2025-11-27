@@ -1,5 +1,5 @@
 import { generateUUID } from "@workspace/util";
-import { log } from "../logger";
+import { logger } from "../logger";
 import {
   All_BLOCKS,
   BlockAnswer,
@@ -89,7 +89,7 @@ export const validateBlock = (block: {
     parseAnswer(block.answer);
     return true;
   } catch (error) {
-    log.error(error);
+    logger.error(error);
     return false;
   }
 };

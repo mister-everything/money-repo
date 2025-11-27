@@ -8,14 +8,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSession } from "@/lib/auth/server";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 export default async function WorkbooksPage() {
   const session = await getSession();
   const workBooks = await workBookService.searchMyWorkBooks({
     userId: session.user.id,
   });
-  log.info(workBooks);
+  logger.info(workBooks);
   return (
     <div>
       {workBooks.map((book) => (

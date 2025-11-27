@@ -6,7 +6,7 @@
  */
 
 import { pgDb } from "../db";
-import { log } from "../logger";
+import { logger } from "../logger";
 import { AiProviderPricesTable } from "./schema";
 
 /**
@@ -14,7 +14,7 @@ import { AiProviderPricesTable } from "./schema";
  * AI 제공자 가격 정보 생성
  */
 export const seedPrices = async () => {
-  log.info("🌱 Seeding AI Provider Prices...");
+  logger.info("🌱 Seeding AI Provider Prices...");
 
   const prices: (typeof AiProviderPricesTable.$inferInsert)[] = [
     // OpenAI Models
@@ -318,19 +318,19 @@ export const seedPrices = async () => {
     .onConflictDoNothing()
     .returning();
 
-  log.info(`✅ Seeded ${inserted.length} AI provider prices`);
+  logger.info(`✅ Seeded ${inserted.length} AI provider prices`);
 
   // Print summary
   if (inserted.length > 0) {
-    log.info("\n📊 Price Summary:");
+    logger.info("\n📊 Price Summary:");
     for (const price of inserted) {
-      log.info(
+      logger.info(
         `  ${price.displayName} (${price.provider}/${price.model}): $${price.inputTokenPrice}/token in, $${price.outputTokenPrice}/token out (${Number(price.markupRate) * 100 - 100}% markup)`,
       );
     }
   }
 
-  log.info("✅ Payment 시드 데이터 생성 완료\n");
+  logger.info("✅ Payment 시드 데이터 생성 완료\n");
 };
 
 // Run if called directly
@@ -338,11 +338,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   import("@workspace/env");
   seedPrices()
     .then(() => {
-      log.info("\n✅ Seed completed!");
+      logger.info("\n✅ Seed completed!");
       process.exit(0);
     })
     .catch((error) => {
-      log.error("❌ Seed failed:", error);
+      logger.error("❌ Seed failed:", error);
       process.exit(1);
     });
 }

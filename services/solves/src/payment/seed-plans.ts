@@ -7,7 +7,7 @@
  */
 
 import { pgDb } from "../db";
-import { log } from "../logger";
+import { logger } from "../logger";
 import { SubscriptionPlansTable } from "./schema";
 import { CreateSubscriptionPlan } from "./types";
 
@@ -15,7 +15,7 @@ import { CreateSubscriptionPlan } from "./types";
  * 구독 플랜 시드 데이터 생성
  */
 export const seedPlans = async () => {
-  log.info("🌱 Seeding Subscription Plans...");
+  logger.info("🌱 Seeding Subscription Plans...");
 
   const plans: CreateSubscriptionPlan[] = [
     {
@@ -70,23 +70,23 @@ export const seedPlans = async () => {
     .onConflictDoNothing()
     .returning();
 
-  log.info(`✅ Seeded ${inserted.length} subscription plans`);
+  logger.info(`✅ Seeded ${inserted.length} subscription plans`);
 
   // Print summary
   if (inserted.length > 0) {
-    log.info("\n📊 Plan Summary:");
+    logger.info("\n📊 Plan Summary:");
     for (const plan of inserted) {
-      log.info(`\n  ${plan.displayName} (${plan.name}):`);
-      log.info(`    - 월 구독료: ${plan.price}원`);
-      log.info(`    - 월간 할당량: $${plan.monthlyQuota} 크레딧`);
-      log.info(
+      logger.info(`\n  ${plan.displayName} (${plan.name}):`);
+      logger.info(`    - 월 구독료: ${plan.price}원`);
+      logger.info(`    - 월간 할당량: $${plan.monthlyQuota} 크레딧`);
+      logger.info(
         `    - 정기 충전: $${plan.refillAmount} 크레딧 / ${plan.refillIntervalHours}시간마다`,
       );
-      log.info(`    - 최대 충전 횟수: 월 ${plan.maxRefillCount}회`);
+      logger.info(`    - 최대 충전 횟수: 월 ${plan.maxRefillCount}회`);
     }
   }
 
-  log.info("\n✅ 구독 플랜 시드 데이터 생성 완료\n");
+  logger.info("\n✅ 구독 플랜 시드 데이터 생성 완료\n");
 };
 
 // Run if called directly
@@ -94,11 +94,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   import("@workspace/env");
   seedPlans()
     .then(() => {
-      log.info("\n✅ Seed completed!");
+      logger.info("\n✅ Seed completed!");
       process.exit(0);
     })
     .catch((error) => {
-      log.error("❌ Seed failed:", error);
+      logger.error("❌ Seed failed:", error);
       process.exit(1);
     });
 }

@@ -2,7 +2,7 @@ import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
-import { log } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 /**
  * DELETE /api/workbooks/[id]/session/[submitId]
@@ -18,7 +18,7 @@ export async function DELETE(
     await workBookService.deleteWorkBookSession(submitId, session.user.id);
     return nextOk({ success: true });
   } catch (error) {
-    log.error("Error deleting prob book session:", error);
+    logger.error("Error deleting prob book session:", error);
     return nextFail(error);
   }
 }
