@@ -94,7 +94,7 @@ export function DefaultBlockContent({
           <Input
             placeholder="답안을 작성하세요"
             className="w-full"
-            value={submit?.answer}
+            value={submit?.answer || ""}
             onChange={handleChangeSubmitAnswer}
             disabled={mode == "preview"}
           />
@@ -104,7 +104,7 @@ export function DefaultBlockContent({
             <Input
               placeholder="정답을 제출하지 않았습니다."
               className="w-full"
-              value={submit?.answer}
+              value={submit?.answer || ""}
               maxLength={30}
               disabled
             />

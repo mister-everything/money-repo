@@ -7,6 +7,7 @@ import {
   blockDisplayNames,
   checkAnswer,
   initializeBlock,
+  initialSubmitAnswer,
   validateBlock,
   WorkBook,
   WorkBookBlock,
@@ -96,7 +97,7 @@ export function WorkbookEdit({
       },
       {} as Record<string, boolean>,
     );
-  }, [blocks, submits, control]);
+  }, [control]);
 
   const [, updateWorkbook, isBookPending] = useSafeAction(
     updateWorkbookAction,
@@ -125,7 +126,10 @@ export function WorkbookEdit({
     [isBookPending, isBlocksPending],
   );
 
-  const pendingRef = useToRef(isPending);
+  const stateRef = useToRef({
+    isPending,
+    blocks,
+  });
 
   const handleChangeWorkbookMode = useCallback(
     (mode: WorkBookComponentMode) => {
@@ -136,7 +140,7 @@ export function WorkbookEdit({
 
   const handleUpdateContent = useCallback(
     (id: string, content: StateUpdate<BlockContent<BlockType>>) => {
-      if (pendingRef.current) return;
+      if (stateRef.current.isPending) return;
       setBlocks((prev) => {
         const nextBlocks = prev.map((original) => {
           const isTarget = original.id === id;
@@ -155,7 +159,7 @@ export function WorkbookEdit({
 
   const handleUpdateAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswer<BlockType>>) => {
-      if (pendingRef.current) return;
+      if (stateRef.current.isPending) return;
       setBlocks((prev) => {
         const nextBlocks = prev.map((original) => {
           const isTarget = original.id === id;
@@ -183,13 +187,13 @@ export function WorkbookEdit({
   }, []);
 
   const handleUpdateQuestion = useCallback((id: string, question: string) => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
     setBlocks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, question } : b)),
     );
   }, []);
   const handleToggleEditMode = useCallback((id: string) => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
     deleteFeedback(id);
     setEditingBlockId((prev) => {
       if (prev.includes(id)) {
@@ -200,14 +204,14 @@ export function WorkbookEdit({
   }, []);
 
   const handleDeleteBlock = useCallback((id: string) => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
     deleteFeedback(id);
     setBlocks((prev) => prev.filter((b) => b.id !== id));
     setEditingBlockId((prev) => prev.filter((id) => id !== id));
   }, []);
 
   const handleAddBlock = useCallback(async () => {
-    if (pendingRef.current) return;
+    if (stateRef.current.isPending) return;
     const addBlock = async (type: BlockType) => {
       const newBlock = initializeBlock(type);
       setBlocks((prev) => {
@@ -313,10 +317,15 @@ export function WorkbookEdit({
 
   const handleUpdateSubmitAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswerSubmit<BlockType>>) => {
-      if (pendingRef.current) return;
+      if (stateRef.current.isPending) return;
       setSubmits((prev) => {
         const nextSubmits = { ...prev };
-        nextSubmits[id] = applyStateUpdate(prev[id], answer);
+        const block = stateRef.current.blocks.find((b) => b.id === id);
+        if (!block) return prev;
+        nextSubmits[id] = applyStateUpdate(
+          initialSubmitAnswer(block.type),
+          answer,
+        );
         return nextSubmits;
       });
     },

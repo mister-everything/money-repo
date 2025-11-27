@@ -149,6 +149,10 @@ export const checkAnswer = (
   submittedAnswer: BlockAnswerSubmit,
 ) => {
   const correctAnswerType = correctAnswer.type;
+  console.log({
+    correctAnswer,
+    submittedAnswer,
+  });
 
   if (correctAnswerType !== submittedAnswer.type) {
     return false;
@@ -258,6 +262,38 @@ export const initializeBlock = (
         order: order ?? 0,
       };
       return oxBlock;
+    default:
+      throw new Error(`찾을 수 없는 블럭 유형: ${blockType}`);
+  }
+};
+
+export const initialSubmitAnswer = (blockType: BlockType) => {
+  switch (blockType) {
+    case "default":
+      return {
+        type: blockType,
+        answer: "",
+      };
+    case "mcq":
+      return {
+        type: blockType,
+        answer: "",
+      };
+    case "mcq-multiple":
+      return {
+        type: blockType,
+        answer: [],
+      };
+    case "ranking":
+      return {
+        type: blockType,
+        order: [],
+      };
+    case "ox":
+      return {
+        type: blockType,
+        answer: true,
+      };
     default:
       throw new Error(`찾을 수 없는 블럭 유형: ${blockType}`);
   }
