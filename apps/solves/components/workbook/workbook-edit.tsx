@@ -10,8 +10,8 @@ import {
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
 import { applyStateUpdate, equal, StateUpdate } from "@workspace/util";
-import { PlusIcon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { GripVerticalIcon, PlusIcon } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   processUpdateBlocksAction,
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { cn } from "@/lib/utils";
 import { GoBackButton } from "../layouts/go-back-button";
 import { Button } from "../ui/button";
 import { Block } from "./block/block";
@@ -60,6 +61,10 @@ export function WorkbookEdit({
   const [isEditBook, setIsEditBook] = useState(false);
 
   const [editingBlockId, setEditingBlockId] = useState<string[]>([]);
+
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
+  const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
 
   const [, updateWorkbook, isBookPending] = useSafeAction(
     updateWorkbookAction,
@@ -167,7 +172,17 @@ export function WorkbookEdit({
     if (pendingRef.current) return;
     const addBlock = async (type: BlockType) => {
       const newBlock = initializeBlock(type);
-      setBlocks((prev) => [...prev, newBlock]);
+      setBlocks((prev) => {
+        const maxOrder = Math.max(...prev.map((b) => b.order), 0);
+        const newBlocks = [
+          ...prev,
+          {
+            ...newBlock,
+            order: maxOrder + 1,
+          },
+        ];
+        return newBlocks;
+      });
       setEditingBlockId((prev) => [...prev, newBlock.id]);
     };
     notify.component({
@@ -193,6 +208,62 @@ export function WorkbookEdit({
         </div>
       ),
     });
+  }, []);
+
+  const handleToggleReorderMode = useCallback(() => {
+    setIsReorderMode((prev) => !prev);
+    setDraggedBlockId(null);
+    setDragOverBlockId(null);
+  }, []);
+
+  const handleReorderDragStart = useCallback(
+    (e: React.DragEvent, blockId: string) => {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", blockId);
+      setDraggedBlockId(blockId);
+    },
+    [],
+  );
+
+  const handleReorderDragOver = useCallback(
+    (e: React.DragEvent, blockId: string) => {
+      e.preventDefault();
+      if (draggedBlockId && draggedBlockId !== blockId) {
+        setDragOverBlockId(blockId);
+      }
+    },
+    [draggedBlockId],
+  );
+
+  const handleReorderDragLeave = useCallback(() => {
+    setDragOverBlockId(null);
+  }, []);
+
+  const handleReorderDrop = useCallback(
+    (e: React.DragEvent, targetId: string) => {
+      e.preventDefault();
+      if (!draggedBlockId || draggedBlockId === targetId) {
+        setDragOverBlockId(null);
+        return;
+      }
+      setBlocks((prev) => {
+        const draggedIndex = prev.findIndex((b) => b.id === draggedBlockId);
+        const targetIndex = prev.findIndex((b) => b.id === targetId);
+        if (draggedIndex === -1 || targetIndex === -1) return prev;
+        const newBlocks = [...prev];
+        const [removed] = newBlocks.splice(draggedIndex, 1);
+        newBlocks.splice(targetIndex, 0, removed);
+        return newBlocks.map((b, index) => ({ ...b, order: index }));
+      });
+      setDraggedBlockId(null);
+      setDragOverBlockId(null);
+    },
+    [draggedBlockId],
+  );
+
+  const handleReorderDragEnd = useCallback(() => {
+    setDraggedBlockId(null);
+    setDragOverBlockId(null);
   }, []);
 
   const handleSave = async () => {
@@ -251,23 +322,55 @@ export function WorkbookEdit({
           />
 
           {blocks.map((b) => {
+            const isDragOver = dragOverBlockId === b.id;
+
             return (
-              <Block
-                className={isPending ? "opacity-50" : ""}
-                mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
-                onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
+              <div
                 key={b.id}
-                type={b.type}
-                question={b.question ?? ""}
-                id={b.id}
-                order={b.order}
-                answer={b.answer}
-                content={b.content}
-                onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
-                onUpdateContent={handleUpdateContent.bind(null, b.id)}
-                onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
-                onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
-              />
+                className={cn(
+                  "relative transition-all duration-200 rounded-xl border",
+                  isReorderMode &&
+                    "cursor-grab active:cursor-grabbing hover:border-primary/50 overflow-hidden max-h-80",
+                  isDragOver &&
+                    "border-muted-foreground bg-seborder-muted-foreground border-dashed",
+                )}
+                draggable={isReorderMode}
+                onDragStart={(e) =>
+                  isReorderMode && handleReorderDragStart(e, b.id)
+                }
+                onDragOver={(e) =>
+                  isReorderMode && handleReorderDragOver(e, b.id)
+                }
+                onDragLeave={isReorderMode ? handleReorderDragLeave : undefined}
+                onDrop={(e) => isReorderMode && handleReorderDrop(e, b.id)}
+                onDragEnd={isReorderMode ? handleReorderDragEnd : undefined}
+              >
+                {isReorderMode && !isDragOver && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
+                    <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <GripVerticalIcon className="size-6" />
+                      <span className="text-sm font-medium">
+                        드래그하여 이동
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <Block
+                  className={cn("border-none", isPending ? "opacity-50" : "")}
+                  mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
+                  onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
+                  type={b.type}
+                  question={b.question ?? ""}
+                  id={b.id}
+                  order={b.order}
+                  answer={b.answer}
+                  content={b.content}
+                  onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
+                  onUpdateContent={handleUpdateContent.bind(null, b.id)}
+                  onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
+                  onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
+                />
+              </div>
             );
           })}
           <Tooltip>
@@ -289,9 +392,11 @@ export function WorkbookEdit({
 
       <WorkbookEditActionBar
         isPending={isPending}
+        isReorderMode={isReorderMode}
         onAddBlock={handleAddBlock}
         onSave={handleSave}
         onPublish={() => toast.warning("개발중입니다.")}
+        onToggleReorderMode={handleToggleReorderMode}
       />
     </div>
   );

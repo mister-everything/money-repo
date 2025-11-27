@@ -8,6 +8,7 @@ import {
 import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
 import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -60,10 +61,13 @@ export function DefaultBlockContent({
   );
 
   const addAnswer = useCallback(async () => {
+    if ((answer?.answer.length ?? 0) >= 10)
+      return toast.warning("정답은 최대 10개까지 입니다.");
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
         description: "답안을 작성하세요",
+        maxLength: 30,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -71,7 +75,7 @@ export function DefaultBlockContent({
       ...prev,
       answer: deduplicate([...(prev?.answer || []), newAnswer]),
     }));
-  }, [onUpdateAnswer]);
+  }, [onUpdateAnswer, answer?.answer.length]);
 
   const removeAnswer = useCallback(
     (index: number) => {
@@ -101,6 +105,7 @@ export function DefaultBlockContent({
               placeholder="정답을 제출하지 않았습니다."
               className="w-full"
               value={submit?.answer}
+              maxLength={30}
               disabled
             />
             {!isCorrect && (
@@ -153,10 +158,13 @@ export function McqMultipleBlockContent({
   isCorrect,
 }: BlockContentProps<"mcq-multiple">) {
   const addOption = useCallback(async () => {
+    if ((content.options.length ?? 0) >= 10)
+      return toast.warning("옵션은 최대 10개까지 입니다.");
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
         description: "답안을 작성하세요",
+        maxLength: 30,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -171,7 +179,7 @@ export function McqMultipleBlockContent({
         },
       ],
     }));
-  }, [onUpdateContent]);
+  }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
     (index: number) => {
@@ -321,10 +329,13 @@ export function McqSingleBlockContent({
   isCorrect,
 }: BlockContentProps<"mcq">) {
   const addOption = useCallback(async () => {
+    if ((content.options.length ?? 0) >= 10)
+      return toast.warning("옵션은 최대 10개까지 입니다.");
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
         description: "답안을 작성하세요",
+        maxLength: 30,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -339,7 +350,7 @@ export function McqSingleBlockContent({
         },
       ],
     }));
-  }, [onUpdateContent]);
+  }, [onUpdateContent, content.options.length]);
 
   const removeOption = useCallback(
     (index: number) => {
@@ -579,6 +590,8 @@ export function RankingBlockContent({
 
   // 항목 추가 (edit 모드)
   const addItem = useCallback(async () => {
+    if ((items.length ?? 0) >= 10)
+      return toast.warning("항목은 최대 10개까지 입니다.");
     const newItem = await notify
       .prompt({
         title: "항목 추가",
@@ -594,7 +607,7 @@ export function RankingBlockContent({
         { id: generateUUID(), text: newItem, type: "text" as const },
       ],
     }));
-  }, [onUpdateContent]);
+  }, [onUpdateContent, items.length]);
 
   const removeItem = useCallback(
     (itemId: string) => {

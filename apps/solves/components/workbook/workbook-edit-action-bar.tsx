@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderIcon, PlusIcon, SaveIcon } from "lucide-react";
+import { ArrowUpDownIcon, LoaderIcon, PlusIcon, SaveIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   FloatingActionBar,
@@ -14,16 +14,20 @@ import {
 
 interface WorkbookEditActionBarProps {
   isPending: boolean;
+  isReorderMode: boolean;
   onAddBlock: () => void;
   onSave: () => void;
   onPublish?: () => void;
+  onToggleReorderMode: () => void;
 }
 
 export function WorkbookEditActionBar({
   isPending,
+  isReorderMode,
   onAddBlock,
   onSave,
   onPublish,
+  onToggleReorderMode,
 }: WorkbookEditActionBarProps) {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
@@ -32,9 +36,10 @@ export function WorkbookEditActionBar({
           <TooltipTrigger asChild>
             <Button
               size="icon"
-              variant="secondary"
+              variant={isReorderMode ? "ghost" : "secondary"}
               onClick={onAddBlock}
               className="rounded-full"
+              disabled={isReorderMode}
             >
               <PlusIcon className="size-4" />
             </Button>
@@ -45,8 +50,23 @@ export function WorkbookEditActionBar({
           <TooltipTrigger asChild>
             <Button
               size="icon"
+              variant={isReorderMode ? "secondary" : "ghost"}
+              onClick={onToggleReorderMode}
+              className="rounded-full"
+            >
+              <ArrowUpDownIcon className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isReorderMode ? "순서 변경 완료" : "문제 순서 변경 하기"}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
               variant="ghost"
-              disabled={isPending}
+              disabled={isPending || isReorderMode}
               onClick={onSave}
               className="rounded-full"
             >
@@ -66,6 +86,7 @@ export function WorkbookEditActionBar({
               className="rounded-full"
               variant="ghost"
               onClick={onPublish}
+              disabled={isReorderMode}
             >
               문제집 생성
             </Button>
