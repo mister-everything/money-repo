@@ -208,7 +208,9 @@ function PureBlock<T extends BlockType = BlockType>({
       </CardContent>
       <CardFooter>
         {props.errorFeedback && (
-          <p className="text-destructive text-sm">{props.errorFeedback}</p>
+          <p className="text-destructive text-xs whitespace-pre-wrap mt-4">
+            {props.errorFeedback}
+          </p>
         )}
       </CardFooter>
     </Card>

@@ -87,7 +87,7 @@ export function WorkbookEditActionBar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {isSolveMode ? "문제 풀어보기" : "문제 수정하기"}
+            {isSolveMode ? "문제 수정하기" : "문제 풀어보기"}
           </TooltipContent>
         </Tooltip>
         <Tooltip>

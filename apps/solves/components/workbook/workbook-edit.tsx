@@ -7,13 +7,20 @@ import {
   blockDisplayNames,
   checkAnswer,
   initializeBlock,
+  validateBlock,
   WorkBook,
   WorkBookBlock,
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
-import { applyStateUpdate, equal, StateUpdate } from "@workspace/util";
+import {
+  applyStateUpdate,
+  deduplicate,
+  equal,
+  objectFlow,
+  StateUpdate,
+} from "@workspace/util";
 import { GripVerticalIcon, PlusIcon } from "lucide-react";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   processUpdateBlocksAction,
@@ -58,6 +65,8 @@ export function WorkbookEdit({
   const [workbook, setWorkbook] =
     useState<WorkBookWithoutBlocks>(initialWorkbook);
 
+  const ref = useRef<HTMLDivElement>(null);
+
   const [blocks, setBlocks] = useState<WorkBookBlock[]>(initialBlocks);
 
   const [isEditBook, setIsEditBook] = useState(false);
@@ -69,6 +78,10 @@ export function WorkbookEdit({
   const [control, setControl] = useState<"edit" | "solve" | "review">("edit");
 
   const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
+
+  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
+
+  const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
 
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
@@ -165,6 +178,10 @@ export function WorkbookEdit({
     setWorkbook({ ...workbook, description });
   }, []);
 
+  const deleteFeedback = useCallback((id: string) => {
+    setFeedbacks((prev) => objectFlow(prev).filter((_, key) => key !== id));
+  }, []);
+
   const handleUpdateQuestion = useCallback((id: string, question: string) => {
     if (pendingRef.current) return;
     setBlocks((prev) =>
@@ -173,6 +190,7 @@ export function WorkbookEdit({
   }, []);
   const handleToggleEditMode = useCallback((id: string) => {
     if (pendingRef.current) return;
+    deleteFeedback(id);
     setEditingBlockId((prev) => {
       if (prev.includes(id)) {
         return prev.filter((id) => id !== id);
@@ -183,6 +201,7 @@ export function WorkbookEdit({
 
   const handleDeleteBlock = useCallback((id: string) => {
     if (pendingRef.current) return;
+    deleteFeedback(id);
     setBlocks((prev) => prev.filter((b) => b.id !== id));
     setEditingBlockId((prev) => prev.filter((id) => id !== id));
   }, []);
@@ -202,6 +221,7 @@ export function WorkbookEdit({
         ];
         return newBlocks;
       });
+      setFocusBlockId(newBlock.id);
       setEditingBlockId((prev) => [...prev, newBlock.id]);
     };
     notify.component({
@@ -227,6 +247,12 @@ export function WorkbookEdit({
         </div>
       ),
     });
+  }, []);
+
+  const handleFocusBlock = useCallback((node: HTMLDivElement) => {
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }, []);
 
   const handleToggleReorderMode = useCallback(() => {
@@ -338,17 +364,47 @@ export function WorkbookEdit({
 
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
-      setControl(mode);
       if (mode === "solve") {
         setSubmits({});
       }
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      setControl(mode);
     },
     [],
   );
 
+  const handleValidateBlocks = useCallback((blocks: WorkBookBlock[]) => {
+    const nextFeedbacks = blocks.reduce(
+      (acc, b) => {
+        const result = validateBlock(b);
+        if (!result.success) {
+          const errors = Object.values(result.errors ?? {}).flat();
+          acc[b.id] = deduplicate(errors).join("\n");
+        }
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+    setFeedbacks(nextFeedbacks);
+    if (Object.keys(nextFeedbacks).length > 0) {
+      return false;
+    }
+    return true;
+  }, []);
+
+  const handlePublish = useCallback(() => {
+    const isValid = handleValidateBlocks(blocks);
+    if (!isValid) {
+      toast.warning("문제를 먼저 수정해주세요.");
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    toast.success("아직 개발중~~");
+  }, [blocks]);
+
   return (
     <div className="h-full relative">
-      <div className="h-full overflow-y-auto relative">
+      <div ref={ref} className="h-full overflow-y-auto relative">
         <div className="sticky top-0 z-10 py-2 bg-background">
           <GoBackButton>처음부터 다시 만들기</GoBackButton>
         </div>
@@ -364,7 +420,6 @@ export function WorkbookEdit({
 
           {blocks.map((b) => {
             const isDragOver = dragOverBlockId === b.id;
-
             return (
               <div
                 key={b.id}
@@ -397,6 +452,7 @@ export function WorkbookEdit({
                   </div>
                 )}
                 <Block
+                  ref={focusBlockId === b.id ? handleFocusBlock : undefined}
                   className={cn("border-none", isPending ? "opacity-50" : "")}
                   mode={
                     control !== "edit"
@@ -422,6 +478,7 @@ export function WorkbookEdit({
                   onUpdateContent={handleUpdateContent.bind(null, b.id)}
                   onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
                   onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
+                  errorFeedback={feedbacks[b.id]}
                 />
               </div>
             );
@@ -458,12 +515,21 @@ export function WorkbookEdit({
         isPending={isPending}
         isReorderMode={isReorderMode}
         isSolveMode={control != "edit"}
-        onToggleSolveMode={() =>
-          handleChangeControl(control === "solve" ? "edit" : "solve")
-        }
+        onToggleSolveMode={() => {
+          if (control === "solve") {
+            return handleChangeControl("edit");
+          }
+          const isValid = handleValidateBlocks(blocks);
+          if (!isValid) {
+            toast.warning("문제를 먼저 수정해주세요.");
+            ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+          handleChangeControl("solve");
+        }}
         onAddBlock={handleAddBlock}
         onSave={handleSave}
-        onPublish={() => toast.warning("개발중입니다.")}
+        onPublish={handlePublish}
         onToggleReorderMode={handleToggleReorderMode}
       />
     </div>
