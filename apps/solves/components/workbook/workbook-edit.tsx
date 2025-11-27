@@ -1,9 +1,11 @@
 "use client";
 import {
   BlockAnswer,
+  BlockAnswerSubmit,
   BlockContent,
   BlockType,
   blockDisplayNames,
+  checkAnswer,
   initializeBlock,
   WorkBook,
   WorkBookBlock,
@@ -63,8 +65,25 @@ export function WorkbookEdit({
   const [editingBlockId, setEditingBlockId] = useState<string[]>([]);
 
   const [isReorderMode, setIsReorderMode] = useState(false);
+
+  const [control, setControl] = useState<"edit" | "solve" | "review">("edit");
+
+  const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
+
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
+
+  const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
+    if (control !== "review") return {};
+    return blocks.reduce(
+      (acc, block) => {
+        if (!submits[block.id]) return acc;
+        acc[block.id] = checkAnswer(block.answer, submits[block.id]);
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+  }, [blocks, submits, control]);
 
   const [, updateWorkbook, isBookPending] = useSafeAction(
     updateWorkbookAction,
@@ -266,6 +285,18 @@ export function WorkbookEdit({
     setDragOverBlockId(null);
   }, []);
 
+  const handleUpdateSubmitAnswer = useCallback(
+    (id: string, answer: StateUpdate<BlockAnswerSubmit<BlockType>>) => {
+      if (pendingRef.current) return;
+      setSubmits((prev) => {
+        const nextSubmits = { ...prev };
+        nextSubmits[id] = applyStateUpdate(prev[id], answer);
+        return nextSubmits;
+      });
+    },
+    [],
+  );
+
   const handleSave = async () => {
     const hasBookDiff = !equal(
       {
@@ -304,6 +335,16 @@ export function WorkbookEdit({
       });
     }
   };
+
+  const handleChangeControl = useCallback(
+    (mode: "edit" | "solve" | "review") => {
+      setControl(mode);
+      if (mode === "solve") {
+        setSubmits({});
+      }
+    },
+    [],
+  );
 
   return (
     <div className="h-full relative">
@@ -357,12 +398,24 @@ export function WorkbookEdit({
                 )}
                 <Block
                   className={cn("border-none", isPending ? "opacity-50" : "")}
-                  mode={editingBlockId.includes(b.id) ? "edit" : "preview"}
+                  mode={
+                    control !== "edit"
+                      ? control
+                      : editingBlockId.includes(b.id)
+                        ? "edit"
+                        : "preview"
+                  }
                   onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
                   type={b.type}
                   question={b.question ?? ""}
                   id={b.id}
+                  submit={submits[b.id]}
+                  onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
+                    null,
+                    b.id,
+                  )}
                   order={b.order}
+                  isCorrect={correctAnswerIds[b.id]}
                   answer={b.answer}
                   content={b.content}
                   onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
@@ -373,26 +426,41 @@ export function WorkbookEdit({
               </div>
             );
           })}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                onClick={handleAddBlock}
-                className="w-full h-24 md:h-40 border-dashed"
-              >
-                <PlusIcon className="size-10 text-muted-foreground" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <span>문제 추가</span>
-            </TooltipContent>
-          </Tooltip>
+          {control === "edit" ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={handleAddBlock}
+                  className="w-full h-24 md:h-40 border-dashed"
+                >
+                  <PlusIcon className="size-10 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>문제 추가</span>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              size={"lg"}
+              onClick={() =>
+                handleChangeControl(control === "solve" ? "review" : "edit")
+              }
+            >
+              {control === "solve" ? "체점하기" : "문제 수정하기"}
+            </Button>
+          )}
         </div>
       </div>
 
       <WorkbookEditActionBar
         isPending={isPending}
         isReorderMode={isReorderMode}
+        isSolveMode={control != "edit"}
+        onToggleSolveMode={() =>
+          handleChangeControl(control === "solve" ? "edit" : "solve")
+        }
         onAddBlock={handleAddBlock}
         onSave={handleSave}
         onPublish={() => toast.warning("개발중입니다.")}
