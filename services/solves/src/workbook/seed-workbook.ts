@@ -42,7 +42,7 @@ export const seedWorkbook = async () => {
 
   log.info(`✅ 문제집 2 생성 완료: ${workBook2.id}`);
 
-  const bookDetail = await workBookService.selectWorkBookById(workBook.id);
+  const bookDetail = await workBookService.getWorkBook(workBook.id);
   log.info("\n📊 생성된 문제집 상세:");
   log.info(bookDetail);
 

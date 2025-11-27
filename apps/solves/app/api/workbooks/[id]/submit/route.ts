@@ -1,7 +1,7 @@
 import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
-import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 import { log } from "@/lib/logger";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * GET /api/prob/[id]/submit
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const workBook = await workBookService.selectWorkBookWithoutAnswerById(id);
+    const workBook = await workBookService.getWorkBookWithoutAnswer(id);
 
     if (!workBook) {
       return nextFail("문제집을 찾을 수 없습니다.");

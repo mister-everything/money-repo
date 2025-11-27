@@ -33,12 +33,12 @@ export const ProblemHeader = ({
 
           {workBook.tags && workBook.tags.length > 0 && (
             <div className="flex gap-2 flex-wrap">
-              {workBook.tags.map((tag, index) => (
+              {workBook.tags.map((tag) => (
                 <span
-                  key={index}
+                  key={tag.id}
                   className="bg-secondary text-secondary-foreground px-2 py-1 rounded text-sm "
                 >
-                  #{tag}
+                  #{tag.name}
                 </span>
               ))}
             </div>

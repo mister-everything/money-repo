@@ -32,12 +32,12 @@ export function WorkbookCard({ book }: WorkbookCardProps) {
 
       <CardContent className="flex-1 flex flex-col justify-end">
         <div className="flex flex-wrap gap-2 mb-4">
-          {book.tags?.slice(0, 4).map((tag, index) => (
+          {book.tags?.slice(0, 4).map((tag) => (
             <span
-              key={index}
+              key={tag.id}
               className="bg-secondary text-secondary-foreground text-xs px-3 py-1.5 rounded-md font-medium"
             >
-              # {tag}
+              # {tag.name}
             </span>
           ))}
           {book.tags && book.tags.length > 4 && (

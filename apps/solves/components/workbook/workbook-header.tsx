@@ -112,8 +112,8 @@ export function WorkbookHeader({
       </CardHeader>
       <CardContent>
         {book.tags.map((tag) => (
-          <Badge variant={"secondary"} key={tag}>
-            {tag}
+          <Badge variant={"secondary"} key={tag.id}>
+            {tag.name}
           </Badge>
         ))}
       </CardContent>

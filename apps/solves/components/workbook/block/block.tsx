@@ -30,6 +30,7 @@ import {
   McqMultipleBlockContent,
   McqSingleBlockContent,
   OXBlockContent,
+  RankingBlockContent,
 } from "./block-content";
 import { BlockQuestion } from "./block-question";
 
@@ -179,6 +180,17 @@ function PureBlock<T extends BlockType = BlockType>({
           />
         ) : blockPropsTypeGuard("ox", props) ? (
           <OXBlockContent
+            content={props.content}
+            isCorrect={props.isCorrect}
+            answer={props.answer}
+            submit={props.submit}
+            mode={props.mode}
+            onUpdateContent={props.onUpdateContent}
+            onUpdateSubmitAnswer={props.onUpdateSubmitAnswer}
+            onUpdateAnswer={props.onUpdateAnswer}
+          />
+        ) : blockPropsTypeGuard("ranking", props) ? (
+          <RankingBlockContent
             content={props.content}
             isCorrect={props.isCorrect}
             answer={props.answer}

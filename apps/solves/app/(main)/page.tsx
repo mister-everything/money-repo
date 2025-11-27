@@ -48,12 +48,12 @@ export default async function Page() {
 
                   <CardContent>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {book.tags?.slice(0, 3).map((tag, index) => (
+                      {book.tags?.slice(0, 3).map((tag) => (
                         <span
-                          key={index}
+                          key={tag.id}
                           className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded"
                         >
-                          #{tag}
+                          #{tag.name}
                         </span>
                       ))}
                       {book.tags && book.tags.length > 3 && (
