@@ -7,7 +7,7 @@ import {
 } from "@service/solves/shared";
 import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
 import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -534,7 +534,6 @@ export function OXBlockContent({
   );
 }
 
-// 순위 맞추기 문제 - 항목 풀 + 고정 슬롯 방식
 export function RankingBlockContent({
   answer,
   submit,
@@ -546,39 +545,35 @@ export function RankingBlockContent({
   isCorrect,
 }: BlockContentProps<"ranking">) {
   const items = content.items || [];
-  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
 
-  // 슬롯 개수는 전체 아이템 개수와 동일
-  const slotCount = items.length;
-
-  // 현재 순서 (edit: answer.order, solve/review: submit.order)
-  // 빈 슬롯은 "" 빈 문자열로 표현
+  // 현재 순서 (배치된 아이템 ID 배열)
   const currentOrder = useMemo(() => {
-    const rawOrder =
-      mode === "edit" ? answer?.order || [] : submit?.order || [];
-    // 슬롯 개수만큼의 배열로 정규화 (빈 슬롯은 "")
-    const normalized: string[] = Array(slotCount).fill("");
-    rawOrder.forEach((id, index) => {
-      if (index < slotCount && id) {
-        normalized[index] = id;
-      }
-    });
-    return normalized;
-  }, [mode, answer?.order, submit?.order, slotCount]);
+    return mode === "edit" ? answer?.order || [] : submit?.order || [];
+  }, [mode, answer?.order, submit?.order]);
 
-  // 각 슬롯의 아이템 (인덱스 = 슬롯 위치)
-  const slottedItemsMap = useMemo(() => {
-    return currentOrder.map((id) =>
-      id ? items.find((item) => item.id === id) || null : null,
-    );
+  // 배치된 아이템
+  const placedItems = useMemo(() => {
+    return currentOrder
+      .map((id) => items.find((item) => item.id === id))
+      .filter(Boolean) as typeof items;
   }, [currentOrder, items]);
 
-  // 아직 슬롯에 배치되지 않은 아이템 (항목 풀)
+  // 배치되지 않은 아이템 (항목 풀)
   const poolItems = useMemo(() => {
-    const placedIds = currentOrder.filter((id) => id !== "");
-    return items.filter((item) => !placedIds.includes(item.id));
+    return items.filter((item) => !currentOrder.includes(item.id));
   }, [items, currentOrder]);
+
+  // 순서 업데이트 헬퍼
+  const updateOrder = useCallback(
+    (newOrder: string[]) => {
+      if (mode === "edit") {
+        onUpdateAnswer?.((prev) => ({ ...prev, order: newOrder }));
+      } else if (mode === "solve") {
+        onUpdateSubmitAnswer?.({ order: newOrder });
+      }
+    },
+    [mode, onUpdateAnswer, onUpdateSubmitAnswer],
+  );
 
   // 항목 추가 (edit 모드)
   const addItem = useCallback(async () => {
@@ -589,16 +584,11 @@ export function RankingBlockContent({
       })
       .then((text) => text.trim());
     if (!newItem) return;
-    const newId = generateUUID();
     onUpdateContent?.((prev) => ({
       ...prev,
       items: [
         ...(prev?.items || []),
-        {
-          id: newId,
-          text: newItem,
-          type: "text" as const,
-        },
+        { id: generateUUID(), text: newItem, type: "text" as const },
       ],
     }));
   }, [onUpdateContent]);
@@ -610,7 +600,6 @@ export function RankingBlockContent({
         ...prev,
         items: prev?.items?.filter((item) => item.id !== itemId) || [],
       }));
-      // 순서에서도 제거
       onUpdateAnswer?.((prev) => ({
         ...prev,
         order: prev?.order?.filter((id) => id !== itemId) || [],
@@ -619,79 +608,18 @@ export function RankingBlockContent({
     [onUpdateContent, onUpdateAnswer],
   );
 
-  // 순서 업데이트
-  const updateOrder = useCallback(
-    (newOrder: string[]) => {
-      if (mode === "edit") {
-        onUpdateAnswer?.((prev) => ({
-          ...prev,
-          order: newOrder,
-        }));
-      } else if (mode === "solve") {
-        onUpdateSubmitAnswer?.({
-          order: newOrder,
-        });
-      }
-    },
-    [mode, onUpdateAnswer, onUpdateSubmitAnswer],
-  );
-
-  // 드래그 시작
-  const handleDragStart = useCallback(
-    (e: React.DragEvent, itemId: string) => {
-      if (mode === "preview" || mode === "review") return;
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", itemId);
-      setDraggedItemId(itemId);
-    },
-    [mode],
-  );
-
-  // 드래그 종료
-  const handleDragEnd = useCallback(() => {
-    setDraggedItemId(null);
-    setDragOverSlot(null);
-  }, []);
-
-  // 슬롯에 드롭
-  const handleDropOnSlot = useCallback(
-    (e: React.DragEvent, slotIndex: number) => {
-      e.preventDefault();
-      const itemId = e.dataTransfer.getData("text/plain");
-      if (!itemId) return;
-
-      const newOrder = [...currentOrder];
-      // 기존 위치에서 제거 (다른 슬롯에 있었다면)
-      const existingIndex = newOrder.indexOf(itemId);
-      if (existingIndex !== -1) {
-        newOrder[existingIndex] = "";
-      }
-      // 해당 슬롯에 배치
-      newOrder[slotIndex] = itemId;
-      updateOrder(newOrder);
-      setDragOverSlot(null);
-    },
-    [currentOrder, updateOrder],
-  );
-
-  // 풀로 드롭 (슬롯에서 제거)
-  const handleDropOnPool = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      const itemId = e.dataTransfer.getData("text/plain");
-      if (!itemId) return;
-
-      const newOrder = currentOrder.map((id) => (id === itemId ? "" : id));
-      updateOrder(newOrder);
-    },
-    [currentOrder, updateOrder],
-  );
-
-  // 슬롯에서 아이템 제거
-  const removeFromSlot = useCallback(
+  // 풀에서 순위로 추가 (맨 뒤에)
+  const addToRanking = useCallback(
     (itemId: string) => {
-      const newOrder = currentOrder.map((id) => (id === itemId ? "" : id));
-      updateOrder(newOrder);
+      updateOrder([...currentOrder, itemId]);
+    },
+    [currentOrder, updateOrder],
+  );
+
+  // 순위에서 제거
+  const removeFromRanking = useCallback(
+    (itemId: string) => {
+      updateOrder(currentOrder.filter((id) => id !== itemId));
     },
     [currentOrder, updateOrder],
   );
@@ -702,27 +630,25 @@ export function RankingBlockContent({
       if (mode !== "review") return null;
       const correctOrder = answer?.order || [];
       const submittedOrder = submit?.order || [];
-      const submittedItemId = submittedOrder[slotIndex];
-      const correctItemId = correctOrder[slotIndex];
-      if (!submittedItemId) return "empty";
-      if (submittedItemId === correctItemId) return "correct";
-      return "wrong";
+      if (!submittedOrder[slotIndex]) return "empty";
+      return submittedOrder[slotIndex] === correctOrder[slotIndex]
+        ? "correct"
+        : "wrong";
     },
     [mode, answer?.order, submit?.order],
   );
 
-  // 순위 뱃지 색상 (secondary 통일)
+  const isInteractive = mode === "edit" || mode === "solve";
   const rankBadgeClass = "bg-secondary text-secondary-foreground";
 
   // preview 모드: placeholder
   if (mode === "preview" && items.length === 0) {
     return (
       <div className="space-y-4">
-        {/* 항목 풀 placeholder */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">항목</Label>
           <div className="flex flex-wrap gap-2">
-            {Array.from({ length: 3 }).map((_, i) => (
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className="h-8 w-16 rounded-md border border-dashed bg-muted/30"
@@ -730,11 +656,10 @@ export function RankingBlockContent({
             ))}
           </div>
         </div>
-        {/* 순위 슬롯 placeholder */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">순위</Label>
           <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center gap-3">
                 <div
                   className={cn(
@@ -742,7 +667,7 @@ export function RankingBlockContent({
                     rankBadgeClass,
                   )}
                 >
-                  {i + 1}
+                  {i}
                 </div>
                 <div className="flex-1 h-10 rounded-md border border-dashed bg-muted/30" />
               </div>
@@ -753,58 +678,40 @@ export function RankingBlockContent({
     );
   }
 
-  const isInteractive = mode === "edit" || mode === "solve";
-
   return (
     <div className="space-y-4">
       {/* 항목 풀 */}
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">
-          {mode === "edit" ? "항목 (드래그하여 순위에 배치)" : "항목"}
+          {isInteractive ? "항목 (클릭하여 순위에 추가)" : "항목"}
         </Label>
-        <div
-          className={cn(
-            "flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg border-2 border-dashed transition-colors",
-            isInteractive && "bg-muted/20",
-            draggedItemId && isInteractive && "border-muted-foreground/30",
-          )}
-          onDragOver={(e) => isInteractive && e.preventDefault()}
-          onDrop={(e) => isInteractive && handleDropOnPool(e)}
-        >
-          {poolItems.map((item) => {
-            if (item.type !== "text") return null;
-            return (
-              <div
-                key={item.id}
-                draggable={isInteractive}
-                onDragStart={(e) => handleDragStart(e, item.id)}
-                onDragEnd={handleDragEnd}
-                className={cn(
-                  "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all",
-                  isInteractive &&
-                    "cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/5",
-                  draggedItemId === item.id && "opacity-50",
-                )}
-              >
-                {item.text}
-                {mode === "edit" && (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      removeItem(item.id);
-                    }}
-                    className="ml-2 text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-destructive/10"
-                  >
-                    <XIcon className="size-3" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg border-2 border-dashed bg-muted/20">
+          {poolItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => isInteractive && addToRanking(item.id)}
+              className={cn(
+                "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1",
+                isInteractive &&
+                  "cursor-pointer hover:border-primary hover:bg-primary/5",
+              )}
+            >
+              {item.type === "text" && item.text}
+              {mode === "edit" && (
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeItem(item.id);
+                  }}
+                  className="ml-1 text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-destructive/10"
+                >
+                  <XIcon className="size-3" />
+                </span>
+              )}
+            </button>
+          ))}
           {mode === "edit" && (
             <Button
               variant="outline"
@@ -823,117 +730,71 @@ export function RankingBlockContent({
         </div>
       </div>
 
-      {/* 순위 슬롯 */}
-      {slotCount > 0 && (
+      {/* 순위 */}
+      {items.length > 0 && (
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">
-            순위{" "}
-            {mode === "solve" &&
-              `(${currentOrder.filter((id) => id !== "").length}/${slotCount})`}
+            순위 {mode === "solve" && `(${placedItems.length}/${items.length})`}
           </Label>
           <div className="space-y-2">
-            {Array.from({ length: slotCount }).map((_, slotIndex) => {
-              const slottedItem = slottedItemsMap[slotIndex];
-              const slotStatus = getSlotStatus(slotIndex);
-              const correctItemId = answer?.order?.[slotIndex];
-              const correctItem = items.find(
-                (item) => item.id === correctItemId,
-              );
+            {placedItems.length === 0 ? (
+              <div className="flex items-center gap-3 text-muted-foreground text-sm py-4 justify-center border-2 border-dashed rounded-md">
+                {isInteractive
+                  ? "위 항목을 클릭하여 순위를 정하세요"
+                  : "배치된 항목이 없습니다"}
+              </div>
+            ) : (
+              placedItems.map((item, index) => {
+                const slotStatus = getSlotStatus(index);
+                const correctItemId = answer?.order?.[index];
+                const correctItem = items.find((i) => i.id === correctItemId);
 
-              return (
-                <div
-                  key={slotIndex}
-                  className="flex items-center gap-3"
-                  onDragOver={(e) => {
-                    if (!isInteractive) return;
-                    e.preventDefault();
-                    setDragOverSlot(slotIndex);
-                  }}
-                  onDragLeave={() => setDragOverSlot(null)}
-                  onDrop={(e) =>
-                    isInteractive && handleDropOnSlot(e, slotIndex)
-                  }
-                >
-                  {/* 순위 뱃지 */}
-                  <div
-                    className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                      slotStatus === "correct" &&
-                        "bg-primary text-primary-foreground",
-                      slotStatus === "wrong" &&
-                        "bg-destructive text-destructive-foreground",
-                      slotStatus !== "correct" &&
-                        slotStatus !== "wrong" &&
-                        rankBadgeClass,
-                    )}
-                  >
-                    {slotIndex + 1}
-                  </div>
-
-                  {/* 슬롯 */}
-                  <div
-                    className={cn(
-                      "flex-1 min-h-[40px] rounded-md border-2 transition-all flex items-center px-2",
-                      !slottedItem && "border-dashed bg-muted/20",
-                      slottedItem && "border-transparent bg-transparent",
-                      dragOverSlot === slotIndex &&
-                        isInteractive &&
-                        "border-primary bg-primary/10",
-                      slotStatus === "correct" && "border-primary/50",
-                      slotStatus === "wrong" && "border-destructive/50",
-                    )}
-                  >
-                    {slottedItem ? (
-                      <div
-                        draggable={isInteractive}
-                        onDragStart={(e) => handleDragStart(e, slottedItem.id)}
-                        onDragEnd={handleDragEnd}
-                        className={cn(
-                          "flex items-center w-full px-3 py-2 rounded-md border transition-all",
-                          isInteractive &&
-                            "cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/5 active:scale-[0.98]",
-                          draggedItemId === slottedItem.id && "opacity-50",
-                          slotStatus === "correct" && okClass,
-                          slotStatus === "wrong" && failClass,
-                          !slotStatus && "bg-card",
-                        )}
-                      >
-                        <span className="text-sm font-medium flex-1">
-                          {slottedItem.type === "text" && slottedItem.text}
-                        </span>
-                        {isInteractive && (
-                          <button
-                            type="button"
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              removeFromSlot(slottedItem.id);
-                            }}
-                            className="text-muted-foreground hover:text-foreground ml-2 p-1 -mr-1 rounded hover:bg-muted"
-                          >
-                            <XIcon className="size-4" />
-                          </button>
-                        )}
-                        {mode === "review" &&
-                          slotStatus === "wrong" &&
-                          correctItem && (
-                            <span className="text-xs text-muted-foreground ml-2">
-                              (정답:{" "}
-                              {correctItem.type === "text" && correctItem.text})
-                            </span>
-                          )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground px-1">
-                        {isInteractive ? "여기로 드래그하세요" : "비어있음"}
+                return (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                        slotStatus === "correct" &&
+                          "bg-primary text-primary-foreground",
+                        slotStatus === "wrong" &&
+                          "bg-destructive text-destructive-foreground",
+                        !slotStatus && rankBadgeClass,
+                      )}
+                    >
+                      {index + 1}
+                    </div>
+                    <div
+                      className={cn(
+                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card",
+                        slotStatus === "correct" && okClass,
+                        slotStatus === "wrong" && failClass,
+                      )}
+                    >
+                      <span className="text-sm font-medium flex-1">
+                        {item.type === "text" && item.text}
                       </span>
-                    )}
+                      {isInteractive && (
+                        <button
+                          type="button"
+                          onClick={() => removeFromRanking(item.id)}
+                          className="text-muted-foreground hover:text-foreground ml-2 p-1 -mr-1 rounded hover:bg-muted"
+                        >
+                          <XIcon className="size-4" />
+                        </button>
+                      )}
+                      {mode === "review" &&
+                        slotStatus === "wrong" &&
+                        correctItem && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            (정답:{" "}
+                            {correctItem.type === "text" && correctItem.text})
+                          </span>
+                        )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}

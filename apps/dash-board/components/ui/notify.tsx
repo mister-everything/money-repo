@@ -131,6 +131,7 @@ export const notify = {
       placeholder?: string;
       okText?: ReactNode;
       cancelText?: ReactNode;
+      maxLength?: number;
     },
   ) => {
     return new Promise<string>((resolve) => {
@@ -165,6 +166,7 @@ export const notify = {
                     placeholder={prompt.placeholder}
                     autoFocus
                     value={text}
+                    maxLength={prompt.maxLength}
                     onKeyDown={handleKeyDown}
                     onChange={(e) => setText(e.target.value)}
                   />
@@ -173,6 +175,7 @@ export const notify = {
                     placeholder={prompt.placeholder}
                     autoFocus
                     value={text}
+                    maxLength={prompt.maxLength}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={handleKeyDown}
                   />
