@@ -13,7 +13,10 @@ import { applyStateUpdate, equal, StateUpdate } from "@workspace/util";
 import { PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { processBlocksAction, updateWorkbookAction } from "@/actions/workbook";
+import {
+  processUpdateBlocksAction,
+  updateWorkbookAction,
+} from "@/actions/workbook";
 import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
@@ -69,8 +72,8 @@ export function WorkbookEdit({
     },
   );
 
-  const [, processBlocks, isBlocksPending] = useSafeAction(
-    processBlocksAction,
+  const [, processUpdateBlocks, isBlocksPending] = useSafeAction(
+    processUpdateBlocksAction,
     {
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, blocks: blocks }));
@@ -223,7 +226,7 @@ export function WorkbookEdit({
       updatedBlocks.length > 0;
 
     if (hasBlockDiff) {
-      await processBlocks({
+      await processUpdateBlocks({
         workbookId: workbook.id,
         deleteBlocks: deletedBlocks.map((b) => b.id),
         saveBlocks: [...addedBlocks, ...updatedBlocks],

@@ -7,7 +7,7 @@ import {
 } from "@service/solves/shared";
 import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
 import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -542,34 +542,36 @@ export function RankingBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
-  isCorrect,
 }: BlockContentProps<"ranking">) {
   const items = content.items || [];
+  const slotCount = items.length;
 
-  // 현재 순서 (배치된 아이템 ID 배열)
+  const [isDragging, setIsDragging] = useState(false);
+
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+
   const currentOrder = useMemo(() => {
-    return mode === "edit" ? answer?.order || [] : submit?.order || [];
-  }, [mode, answer?.order, submit?.order]);
+    const rawOrder =
+      mode === "edit" ? answer?.order || [] : submit?.order || [];
+    const normalized: string[] = Array(slotCount).fill("");
+    rawOrder.forEach((id, index) => {
+      if (index < slotCount && id) normalized[index] = id;
+    });
+    return normalized;
+  }, [mode, answer?.order, submit?.order, slotCount]);
 
-  // 배치된 아이템
-  const placedItems = useMemo(() => {
-    return currentOrder
-      .map((id) => items.find((item) => item.id === id))
-      .filter(Boolean) as typeof items;
-  }, [currentOrder, items]);
-
-  // 배치되지 않은 아이템 (항목 풀)
   const poolItems = useMemo(() => {
-    return items.filter((item) => !currentOrder.includes(item.id));
+    const placedIds = currentOrder.filter((id) => id !== "");
+    return items.filter((item) => !placedIds.includes(item.id));
   }, [items, currentOrder]);
 
-  // 순서 업데이트 헬퍼
   const updateOrder = useCallback(
     (newOrder: string[]) => {
+      const filtered = newOrder.filter((id) => id !== "");
       if (mode === "edit") {
-        onUpdateAnswer?.((prev) => ({ ...prev, order: newOrder }));
+        onUpdateAnswer?.((prev) => ({ ...prev, order: filtered }));
       } else if (mode === "solve") {
-        onUpdateSubmitAnswer?.({ order: newOrder });
+        onUpdateSubmitAnswer?.({ order: filtered });
       }
     },
     [mode, onUpdateAnswer, onUpdateSubmitAnswer],
@@ -581,6 +583,7 @@ export function RankingBlockContent({
       .prompt({
         title: "항목 추가",
         description: "순위에 들어갈 항목을 작성하세요",
+        maxLength: 30,
       })
       .then((text) => text.trim());
     if (!newItem) return;
@@ -593,38 +596,72 @@ export function RankingBlockContent({
     }));
   }, [onUpdateContent]);
 
-  // 항목 삭제 (edit 모드)
   const removeItem = useCallback(
     (itemId: string) => {
-      onUpdateContent?.((prev) => ({
-        ...prev,
-        items: prev?.items?.filter((item) => item.id !== itemId) || [],
-      }));
-      onUpdateAnswer?.((prev) => ({
-        ...prev,
-        order: prev?.order?.filter((id) => id !== itemId) || [],
-      }));
+      if (mode === "edit") {
+        onUpdateAnswer?.((prev) => ({
+          ...prev,
+          order: prev?.order?.filter((id) => id !== itemId) || [],
+        }));
+        onUpdateContent?.((prev) => ({
+          ...prev,
+          items: prev?.items?.filter((item) => item.id !== itemId) || [],
+        }));
+      } else if (mode === "solve") {
+        onUpdateSubmitAnswer?.((prev) => ({
+          ...prev,
+          order: prev?.order?.filter((id) => id !== itemId) || [],
+        }));
+      }
     },
-    [onUpdateContent, onUpdateAnswer],
+    [mode, onUpdateAnswer, onUpdateSubmitAnswer],
   );
 
-  // 풀에서 순위로 추가 (맨 뒤에)
-  const addToRanking = useCallback(
-    (itemId: string) => {
-      updateOrder([...currentOrder, itemId]);
+  const addToSlot = useCallback(
+    (itemId: string, slotIndex: number) => {
+      if (currentOrder.includes(itemId)) return;
+      if (currentOrder[slotIndex] !== "") return;
+      const newOrder = [...currentOrder];
+      newOrder[slotIndex] = itemId;
+      updateOrder(newOrder);
     },
     [currentOrder, updateOrder],
   );
 
-  // 순위에서 제거
-  const removeFromRanking = useCallback(
-    (itemId: string) => {
-      updateOrder(currentOrder.filter((id) => id !== itemId));
+  const removeFromSlot = useCallback(
+    (slotIndex: number) => {
+      const newOrder = [...currentOrder];
+      newOrder[slotIndex] = "";
+      updateOrder(newOrder);
     },
     [currentOrder, updateOrder],
   );
 
-  // review 모드에서 정답 여부 확인
+  const resetAll = useCallback(() => {
+    updateOrder([]);
+  }, [updateOrder]);
+
+  const handleDragStart = useCallback((e: React.DragEvent, itemId: string) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", itemId);
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+    setDragOverSlot(null);
+  }, []);
+
+  const handleDropOnSlot = useCallback(
+    (e: React.DragEvent, slotIndex: number) => {
+      e.preventDefault();
+      const itemId = e.dataTransfer.getData("text/plain");
+      if (itemId) addToSlot(itemId, slotIndex);
+      setDragOverSlot(null);
+    },
+    [addToSlot],
+  );
+
   const getSlotStatus = useCallback(
     (slotIndex: number) => {
       if (mode !== "review") return null;
@@ -640,22 +677,11 @@ export function RankingBlockContent({
 
   const isInteractive = mode === "edit" || mode === "solve";
   const rankBadgeClass = "bg-secondary text-secondary-foreground";
+  const filledCount = currentOrder.filter((id) => id !== "").length;
 
-  // preview 모드: placeholder
   if (mode === "preview" && items.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">항목</Label>
-          <div className="flex flex-wrap gap-2">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-8 w-16 rounded-md border border-dashed bg-muted/30"
-              />
-            ))}
-          </div>
-        </div>
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">순위</Label>
           <div className="space-y-2">
@@ -680,39 +706,36 @@ export function RankingBlockContent({
 
   return (
     <div className="space-y-4">
-      {/* 항목 풀 */}
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">
-          {isInteractive ? "항목 (클릭하여 순위에 추가)" : "항목"}
+          {isInteractive ? "항목 (클릭 또는 드래그하여 순위에 추가)" : "항목"}
         </Label>
         <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg border-2 border-dashed bg-muted/20">
           {poolItems.map((item) => (
-            <button
+            <div
               key={item.id}
-              type="button"
-              onClick={() => isInteractive && addToRanking(item.id)}
+              draggable={isInteractive}
+              onDragStart={(e) => isInteractive && handleDragStart(e, item.id)}
+              onClick={() => removeItem(item.id)}
+              onDragEnd={handleDragEnd}
               className={cn(
-                "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1",
+                "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1 select-none",
                 isInteractive &&
-                  "cursor-pointer hover:border-primary hover:bg-primary/5",
+                  "cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/5",
               )}
             >
               {item.type === "text" && item.text}
               {mode === "edit" && (
                 <span
                   role="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeItem(item.id);
-                  }}
-                  className="ml-1 text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-destructive/10"
+                  className="ml-1 text-muted-foreground p-0.5 rounded"
                 >
                   <XIcon className="size-3" />
                 </span>
               )}
-            </button>
+            </div>
           ))}
-          {mode === "edit" && (
+          {mode === "edit" && items.length <= 10 && (
             <Button
               variant="outline"
               size="sm"
@@ -730,39 +753,64 @@ export function RankingBlockContent({
         </div>
       </div>
 
-      {/* 순위 */}
-      {items.length > 0 && (
+      {slotCount > 0 && (
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">
-            순위 {mode === "solve" && `(${placedItems.length}/${items.length})`}
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">
+              순위 {mode === "solve" && `(${filledCount}/${slotCount})`}
+            </Label>
+            {isInteractive && filledCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                onClick={resetAll}
+              >
+                초기화
+              </Button>
+            )}
+          </div>
           <div className="space-y-2">
-            {placedItems.length === 0 ? (
-              <div className="flex items-center gap-3 text-muted-foreground text-sm py-4 justify-center border-2 border-dashed rounded-md">
-                {isInteractive
-                  ? "위 항목을 클릭하여 순위를 정하세요"
-                  : "배치된 항목이 없습니다"}
-              </div>
-            ) : (
-              placedItems.map((item, index) => {
-                const slotStatus = getSlotStatus(index);
-                const correctItemId = answer?.order?.[index];
-                const correctItem = items.find((i) => i.id === correctItemId);
+            {Array.from({ length: slotCount }).map((_, slotIndex) => {
+              const itemId = currentOrder[slotIndex];
+              const item = itemId ? items.find((i) => i.id === itemId) : null;
+              const slotStatus = getSlotStatus(slotIndex);
+              const correctItemId = answer?.order?.[slotIndex];
+              const correctItem = items.find((i) => i.id === correctItemId);
+              const isEmpty = !item;
 
-                return (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                        slotStatus === "correct" &&
-                          "bg-primary text-primary-foreground",
-                        slotStatus === "wrong" &&
-                          "bg-destructive text-destructive-foreground",
-                        !slotStatus && rankBadgeClass,
-                      )}
-                    >
-                      {index + 1}
-                    </div>
+              return (
+                <div
+                  key={slotIndex}
+                  className="flex items-center gap-3"
+                  onDragOver={(e) => {
+                    if (!isInteractive || !isEmpty) return;
+                    e.preventDefault();
+                    setDragOverSlot(slotIndex);
+                  }}
+                  onDragLeave={() => setDragOverSlot(null)}
+                  onDrop={(e) =>
+                    isInteractive && isEmpty && handleDropOnSlot(e, slotIndex)
+                  }
+                >
+                  {/* 순위 뱃지 */}
+                  <div
+                    className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      slotStatus === "correct" &&
+                        "bg-primary text-primary-foreground",
+                      slotStatus === "wrong" &&
+                        "bg-destructive text-destructive-foreground",
+                      slotStatus !== "correct" &&
+                        slotStatus !== "wrong" &&
+                        rankBadgeClass,
+                    )}
+                  >
+                    {slotIndex + 1}
+                  </div>
+
+                  {/* 슬롯 */}
+                  {item ? (
                     <div
                       className={cn(
                         "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card",
@@ -776,7 +824,7 @@ export function RankingBlockContent({
                       {isInteractive && (
                         <button
                           type="button"
-                          onClick={() => removeFromRanking(item.id)}
+                          onClick={() => removeFromSlot(slotIndex)}
                           className="text-muted-foreground hover:text-foreground ml-2 p-1 -mr-1 rounded hover:bg-muted"
                         >
                           <XIcon className="size-4" />
@@ -791,10 +839,23 @@ export function RankingBlockContent({
                           </span>
                         )}
                     </div>
-                  </div>
-                );
-              })
-            )}
+                  ) : (
+                    <div
+                      className={cn(
+                        "flex-1 min-h-[40px] rounded-md border-2 border-dashed bg-muted/20 transition-all flex items-center justify-center",
+                        isDragging && "border-muted-foreground/30",
+                        dragOverSlot === slotIndex &&
+                          "border-primary bg-primary/10",
+                      )}
+                    >
+                      <span className="text-xs text-muted-foreground">
+                        {isInteractive ? "여기에 드래그하세요" : "비어있음"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -160,7 +160,8 @@ export const workBookService = {
         type: blocksTable.type,
       })
       .from(blocksTable)
-      .where(eq(blocksTable.workBookId, workBookId));
+      .where(eq(blocksTable.workBookId, workBookId))
+      .orderBy(blocksTable.order);
     return blocks.map((block) => ({
       id: block.id,
       content: block.content,
@@ -264,7 +265,7 @@ export const workBookService = {
       })
       .where(eq(workBooksTable.id, workBook.id));
   },
-  processBlocks: async (
+  processUpdateBlocks: async (
     bookId: string,
     deleteBlocks: string[],
     saveBlocks: WorkBookBlock[],
