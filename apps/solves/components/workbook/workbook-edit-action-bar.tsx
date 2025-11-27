@@ -117,10 +117,10 @@ export function WorkbookEditActionBar({
               onClick={onPublish}
               disabled={isReorderMode}
             >
-              문제집 생성
+              문제집 배포
             </Button>
           </TooltipTrigger>
-          <TooltipContent>문제집 생성하여 공유....</TooltipContent>
+          <TooltipContent>문제집 배포하여 공유....</TooltipContent>
         </Tooltip>
       </FloatingActionBar>
     </div>
