@@ -14,18 +14,21 @@ CREATE TYPE "solves"."invoice_type" AS ENUM('subscription', 'credit_purchase');
 END IF;
 END $$;
 --> statement-breakpoint
+
 DO $$ BEGIN
 IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE t.typname = 'subscription_period_status' AND n.nspname = 'solves') THEN
 CREATE TYPE "solves"."subscription_period_status" AS ENUM('active', 'completed', 'failed', 'refunded');
 END IF;
 END $$;
 --> statement-breakpoint
+
 DO $$ BEGIN
 IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE t.typname = 'subscription_status' AND n.nspname = 'solves') THEN
 CREATE TYPE "solves"."subscription_status" AS ENUM('active', 'past_due', 'canceled', 'expired');
 END IF;
 END $$;
 --> statement-breakpoint
+
 CREATE TABLE IF NOT EXISTS "solves"."chat_message" (
 	"id" text PRIMARY KEY NOT NULL,
 	"thread_id" uuid NOT NULL,
@@ -41,6 +44,14 @@ CREATE TABLE IF NOT EXISTS "solves"."chat_thread" (
 	"user_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."workbook_create_chat_thread" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" text NOT NULL,
+	"workbook_id" uuid NOT NULL,
+	"thread_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."ai_provider_prices" (
@@ -66,7 +77,9 @@ CREATE TABLE IF NOT EXISTS "solves"."credit_ledger" (
 	"delta" numeric(15, 8) NOT NULL,
 	"running_balance" numeric(15, 8) NOT NULL,
 	"reason" text,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"idempotency_key" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "credit_ledger_idempotency_key_unique" UNIQUE("idempotency_key")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."credit_wallet" (
@@ -155,59 +168,88 @@ CREATE TABLE IF NOT EXISTS "solves"."usage_events" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "solves"."prob_block_answer_submits" (
-	"block_id" uuid NOT NULL,
-	"submit_id" uuid NOT NULL,
-	"answer" jsonb NOT NULL,
-	"is_correct" boolean NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "prob_block_answer_submits_block_id_submit_id_pk" PRIMARY KEY("block_id","submit_id")
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "solves"."prob_blocks" (
+CREATE TABLE IF NOT EXISTS "solves"."blocks" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"prob_book_id" uuid NOT NULL,
+	"work_book_id" uuid NOT NULL,
 	"order" integer DEFAULT 0 NOT NULL,
 	"type" text NOT NULL,
-	"question" text,
+	"question" text DEFAULT '' NOT NULL,
 	"content" jsonb NOT NULL,
 	"answer" jsonb,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "solves"."prob_book_submits" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"prob_book_id" uuid NOT NULL,
-	"owner_id" text NOT NULL,
-	"start_time" timestamp NOT NULL,
-	"end_time" timestamp,
-	"score" integer DEFAULT 0 NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "solves"."prob_book_tags" (
-	"prob_book_id" uuid NOT NULL,
-	"tag_id" integer NOT NULL,
-	CONSTRAINT "prob_book_tags_prob_book_id_tag_id_pk" PRIMARY KEY("prob_book_id","tag_id")
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "solves"."prob_books" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"title" varchar(150) NOT NULL,
-	"description" text,
-	"owner_id" text NOT NULL,
-	"is_public" boolean DEFAULT false NOT NULL,
-	"thumbnail" text,
+CREATE TABLE IF NOT EXISTS "solves"."category_main" (
+	"category_main_id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(50) NOT NULL,
+	"description" varchar(300),
+	"ai_prompt" varchar(300),
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"created_id" text,
+	CONSTRAINT "category_main_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."category_sub" (
+	"category_sub_id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(50) NOT NULL,
+	"category_main_id" integer NOT NULL,
+	"description" varchar(300),
+	"ai_prompt" varchar(300),
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_id" text,
+	CONSTRAINT "category_sub_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "solves"."tags" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
+	"created_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "tags_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."block_submits" (
+	"block_id" uuid NOT NULL,
+	"submit_id" uuid NOT NULL,
+	"answer" jsonb NOT NULL,
+	"is_correct" boolean NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "block_submits_block_id_submit_id_pk" PRIMARY KEY("block_id","submit_id")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."work_book_category" (
+	"work_book_id" uuid NOT NULL,
+	"category_main_id" integer NOT NULL,
+	"category_sub_id" integer NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "work_book_category_work_book_id_category_main_id_category_sub_id_pk" PRIMARY KEY("work_book_id","category_main_id","category_sub_id")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."work_book_submits" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"work_book_id" uuid NOT NULL,
+	"owner_id" text NOT NULL,
+	"start_time" timestamp DEFAULT now() NOT NULL,
+	"end_time" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."work_book_tags" (
+	"work_book_id" uuid NOT NULL,
+	"tag_id" integer NOT NULL,
+	CONSTRAINT "work_book_tags_work_book_id_tag_id_pk" PRIMARY KEY("work_book_id","tag_id")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "solves"."work_books" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"title" varchar(150) NOT NULL,
+	"description" text,
+	"owner_id" text NOT NULL,
+	"is_public" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"published_at" timestamp
 );
 --> statement-breakpoint
 DO $$ BEGIN
@@ -218,6 +260,24 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
 ALTER TABLE "solves"."chat_thread" ADD CONSTRAINT "chat_thread_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."workbook_create_chat_thread" ADD CONSTRAINT "workbook_create_chat_thread_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."workbook_create_chat_thread" ADD CONSTRAINT "workbook_create_chat_thread_workbook_id_work_books_id_fk" FOREIGN KEY ("workbook_id") REFERENCES "solves"."work_books"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."workbook_create_chat_thread" ADD CONSTRAINT "workbook_create_chat_thread_thread_id_chat_thread_id_fk" FOREIGN KEY ("thread_id") REFERENCES "solves"."chat_thread"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
@@ -289,64 +349,119 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_block_answer_submits" ADD CONSTRAINT "prob_block_answer_submits_block_id_prob_blocks_id_fk" FOREIGN KEY ("block_id") REFERENCES "solves"."prob_blocks"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."blocks" ADD CONSTRAINT "blocks_work_book_id_work_books_id_fk" FOREIGN KEY ("work_book_id") REFERENCES "solves"."work_books"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_block_answer_submits" ADD CONSTRAINT "prob_block_answer_submits_submit_id_prob_book_submits_id_fk" FOREIGN KEY ("submit_id") REFERENCES "solves"."prob_book_submits"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."category_main" ADD CONSTRAINT "category_main_created_id_user_id_fk" FOREIGN KEY ("created_id") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_blocks" ADD CONSTRAINT "prob_blocks_prob_book_id_prob_books_id_fk" FOREIGN KEY ("prob_book_id") REFERENCES "solves"."prob_books"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."category_sub" ADD CONSTRAINT "category_sub_category_main_id_category_main_category_main_id_fk" FOREIGN KEY ("category_main_id") REFERENCES "solves"."category_main"("category_main_id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_book_submits" ADD CONSTRAINT "prob_book_submits_prob_book_id_prob_books_id_fk" FOREIGN KEY ("prob_book_id") REFERENCES "solves"."prob_books"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."category_sub" ADD CONSTRAINT "category_sub_created_id_user_id_fk" FOREIGN KEY ("created_id") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_book_submits" ADD CONSTRAINT "prob_book_submits_owner_id_user_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."tags" ADD CONSTRAINT "tags_created_id_user_id_fk" FOREIGN KEY ("created_id") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_book_tags" ADD CONSTRAINT "prob_book_tags_prob_book_id_prob_books_id_fk" FOREIGN KEY ("prob_book_id") REFERENCES "solves"."prob_books"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."block_submits" ADD CONSTRAINT "block_submits_block_id_blocks_id_fk" FOREIGN KEY ("block_id") REFERENCES "solves"."blocks"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_book_tags" ADD CONSTRAINT "prob_book_tags_tag_id_tags_id_fk" FOREIGN KEY ("tag_id") REFERENCES "solves"."tags"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."block_submits" ADD CONSTRAINT "block_submits_submit_id_work_book_submits_id_fk" FOREIGN KEY ("submit_id") REFERENCES "solves"."work_book_submits"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
-ALTER TABLE "solves"."prob_books" ADD CONSTRAINT "prob_books_owner_id_user_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "solves"."work_book_category" ADD CONSTRAINT "work_book_category_work_book_id_work_books_id_fk" FOREIGN KEY ("work_book_id") REFERENCES "solves"."work_books"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
 	WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "ai_provider_prices_provider_model_idx" ON "solves"."ai_provider_prices" USING btree ("provider","model");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "credit_ledger_kind_created_idx" ON "solves"."credit_ledger" USING btree ("kind","created_at");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "credit_ledger_user_idx" ON "solves"."credit_ledger" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "credit_wallet_user_unique" ON "solves"."credit_wallet" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "invoices_user_created_idx" ON "solves"."invoices" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "invoices_external_ref_idx" ON "solves"."invoices" USING btree ("external_ref");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "subscription_periods_sub_idx" ON "solves"."subscription_periods" USING btree ("subscription_id","period_start");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "subscription_periods_status_idx" ON "solves"."subscription_periods" USING btree ("status","period_end");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "subscription_periods_date_idx" ON "solves"."subscription_periods" USING btree ("period_start");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "subscriptions_user_idx" ON "solves"."subscriptions" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "subscriptions_status_idx" ON "solves"."subscriptions" USING btree ("status");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "subscriptions_period_end_idx" ON "solves"."subscriptions" USING btree ("current_period_end","status");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "usage_events_user_created_idx" ON "solves"."usage_events" USING btree ("user_id","created_at");--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."work_book_category" ADD CONSTRAINT "work_book_category_category_main_id_category_main_category_main_id_fk" FOREIGN KEY ("category_main_id") REFERENCES "solves"."category_main"("category_main_id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."work_book_category" ADD CONSTRAINT "work_book_category_category_sub_id_category_sub_category_sub_id_fk" FOREIGN KEY ("category_sub_id") REFERENCES "solves"."category_sub"("category_sub_id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."work_book_submits" ADD CONSTRAINT "work_book_submits_work_book_id_work_books_id_fk" FOREIGN KEY ("work_book_id") REFERENCES "solves"."work_books"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."work_book_submits" ADD CONSTRAINT "work_book_submits_owner_id_user_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."work_book_tags" ADD CONSTRAINT "work_book_tags_work_book_id_work_books_id_fk" FOREIGN KEY ("work_book_id") REFERENCES "solves"."work_books"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."work_book_tags" ADD CONSTRAINT "work_book_tags_tag_id_tags_id_fk" FOREIGN KEY ("tag_id") REFERENCES "solves"."tags"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ALTER TABLE "solves"."work_books" ADD CONSTRAINT "work_books_owner_id_user_id_fk" FOREIGN KEY ("owner_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+	WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "ai_provider_prices_provider_model_idx" ON "solves"."ai_provider_prices" USING btree ("provider","model");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "credit_ledger_kind_created_idx" ON "solves"."credit_ledger" USING btree ("kind","created_at");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "credit_ledger_user_idx" ON "solves"."credit_ledger" USING btree ("user_id");
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "credit_wallet_user_unique" ON "solves"."credit_wallet" USING btree ("user_id");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_user_created_idx" ON "solves"."invoices" USING btree ("user_id");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_external_ref_idx" ON "solves"."invoices" USING btree ("external_ref");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "subscription_periods_sub_idx" ON "solves"."subscription_periods" USING btree ("subscription_id","period_start");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "subscription_periods_status_idx" ON "solves"."subscription_periods" USING btree ("status","period_end");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "subscription_periods_date_idx" ON "solves"."subscription_periods" USING btree ("period_start");
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "subscriptions_user_idx" ON "solves"."subscriptions" USING btree ("user_id");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "subscriptions_status_idx" ON "solves"."subscriptions" USING btree ("status");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "subscriptions_period_end_idx" ON "solves"."subscriptions" USING btree ("current_period_end","status");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "usage_events_user_created_idx" ON "solves"."usage_events" USING btree ("user_id","created_at");
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "usage_events_price_idx" ON "solves"."usage_events" USING btree ("price_id");

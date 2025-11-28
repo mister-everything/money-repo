@@ -348,7 +348,7 @@ export function WorkbookEdit({
       await updateWorkbook({
         id: workbook.id,
         title: workbook.title,
-        description: workbook.description,
+        description: workbook.description || "",
       });
     }
 

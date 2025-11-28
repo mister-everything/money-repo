@@ -48,7 +48,7 @@ export function WorkbookCard({ book }: WorkbookCardProps) {
         </div>
 
         <div className="text-xs text-muted-foreground mt-auto">
-          {book.owner.name}
+          {book.ownerName}
         </div>
       </CardContent>
     </Card>

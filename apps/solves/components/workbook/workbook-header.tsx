@@ -101,7 +101,7 @@ export function WorkbookHeader({
           <Textarea
             placeholder="문제집 한줄 설명을 작성하세요"
             className="resize-none max-h-[100px]"
-            value={book.description}
+            value={book.description || ""}
             onChange={handleChangeDescription}
           />
         ) : (

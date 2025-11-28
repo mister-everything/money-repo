@@ -1,4 +1,3 @@
-import { Owner } from "@service/auth/shared";
 import z from "zod";
 import {
   All_BLOCKS,
@@ -37,13 +36,14 @@ export type WorkBookBlockWithoutAnswer = Omit<WorkBookBlock, "answer">;
 export type WorkBook = {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   blocks: WorkBookBlock[];
   tags: { id: number; name: string }[];
   isPublic: boolean;
-  owner: Owner;
-  thumbnail?: string;
+  ownerName: string;
+  ownerProfile?: string | null;
   createdAt: Date;
+  publishedAt?: Date | null;
 };
 
 /**
@@ -96,7 +96,6 @@ export type WorkBookSubmitSession = {
  * 문제집 제출 결과 타입
  */
 export type SubmitWorkBookResponse = {
-  score: number;
   correctAnswerIds: string[];
   totalProblems: number;
   blockResults: Array<{
@@ -112,6 +111,5 @@ export type WorkBookInProgress = WorkBookWithoutBlocks & {
 export type WorkBookCompleted = WorkBookWithoutBlocks & {
   startTime: Date;
   endTime: Date;
-  score: number;
   totalProblems: number;
 };
