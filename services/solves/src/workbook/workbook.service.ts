@@ -1,6 +1,6 @@
 import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
@@ -23,6 +23,7 @@ import {
   WorkBookWithoutAnswer,
   WorkBookWithoutBlocks,
 } from "./types";
+import { isPublished } from "./utils";
 
 const TagsSubQuery = pgDb
   .select({
@@ -62,18 +63,37 @@ export const workBookService = {
     return workBook?.ownerId === userId;
   },
 
+  hasEditPermission: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<boolean> => {
+    const [workBook] = await pgDb
+      .select({
+        ownerId: workBooksTable.ownerId,
+        publishedAt: workBooksTable.publishedAt,
+      })
+      .from(workBooksTable)
+      .where(eq(workBooksTable.id, workBookId));
+
+    return workBook?.ownerId === userId && !isPublished(workBook);
+  },
+
   searchMyWorkBooks: async (options: {
     userId: string;
     page?: number;
     limit?: number;
-    isPublic?: boolean;
+    isPublished?: boolean;
   }): Promise<WorkBookWithoutBlocks[]> => {
-    const { userId, page = 1, limit = 100, isPublic } = options;
+    const { userId, page = 1, limit = 100, isPublished } = options;
     const offset = (page - 1) * limit;
 
     const where = [eq(workBooksTable.ownerId, userId)];
-    if (isPublic !== undefined) {
-      where.push(eq(workBooksTable.isPublic, isPublic));
+    if (isPublished !== undefined) {
+      where.push(
+        isPublished
+          ? isNotNull(workBooksTable.publishedAt)
+          : isNull(workBooksTable.publishedAt),
+      );
     }
 
     const query = pgDb
@@ -239,10 +259,16 @@ export const workBookService = {
       .where(eq(workBooksTable.id, workBook.id));
   },
   processUpdateBlocks: async (
+    userId: string,
     bookId: string,
     deleteBlocks: string[],
     saveBlocks: WorkBookBlock[],
   ): Promise<void> => {
+    const hasPermission = await workBookService.hasEditPermission(
+      bookId,
+      userId,
+    );
+    if (!hasPermission) throw new PublicError("권한이 없습니다.");
     await pgDb.transaction(async (tx) => {
       if (saveBlocks.length > 0) {
         const saveResult = await tx

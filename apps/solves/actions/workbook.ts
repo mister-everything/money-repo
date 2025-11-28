@@ -56,12 +56,8 @@ export const processUpdateBlocksAction = safeAction(
     saveBlocks: WorkBookBlock[];
   }) => {
     const session = await getSession();
-    const hasPermission = await workBookService.isWorkBookOwner(
-      workbookId,
-      session.user.id,
-    );
-    if (!hasPermission) return fail("권한이 없습니다.");
     await workBookService.processUpdateBlocks(
+      session.user.id,
       workbookId,
       deleteBlocks,
       saveBlocks,

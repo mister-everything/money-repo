@@ -298,3 +298,9 @@ export const initialSubmitAnswer = (blockType: BlockType) => {
       throw new Error(`찾을 수 없는 블럭 유형: ${blockType}`);
   }
 };
+
+export const isPublished = (book: {
+  publishedAt?: Date | null;
+}): book is { publishedAt: Date } => {
+  return book.publishedAt !== null;
+};
