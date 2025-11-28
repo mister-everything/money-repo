@@ -39,9 +39,9 @@ const WorkBookColumnsForList = {
   title: workBooksTable.title,
   description: workBooksTable.description,
   isPublic: workBooksTable.isPublic,
-  thumbnail: workBooksTable.thumbnail,
   ownerName: userTable.name,
   ownerProfile: userTable.image,
+  publishedAt: workBooksTable.publishedAt,
   tags: sql<
     { id: number; name: string }[]
   >`coalesce((${TagsSubQuery}), '[]'::json)`,
@@ -87,19 +87,7 @@ export const workBookService = {
 
     const rows = await query;
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description ?? undefined,
-      tags: row.tags,
-      isPublic: row.isPublic,
-      owner: {
-        name: row.ownerName,
-        profile: row.ownerProfile ?? undefined,
-      },
-      thumbnail: row.thumbnail ?? undefined,
-      createdAt: row.createdAt,
-    }));
+    return rows;
   },
 
   /**
@@ -112,19 +100,7 @@ export const workBookService = {
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id));
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description ?? undefined,
-      tags: row.tags ?? [],
-      isPublic: row.isPublic,
-      owner: {
-        name: row.ownerName,
-        profile: row.ownerProfile ?? undefined,
-      },
-      thumbnail: row.thumbnail ?? undefined,
-      createdAt: row.createdAt,
-    }));
+    return rows;
   },
 
   getWorkBook: async (id: string): Promise<WorkBookWithoutBlocks | null> => {
@@ -135,19 +111,7 @@ export const workBookService = {
       .where(eq(workBooksTable.id, id));
 
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
-    return {
-      id: book.id,
-      title: book.title,
-      description: book.description || "",
-      isPublic: book.isPublic,
-      thumbnail: book.thumbnail ?? undefined,
-      owner: {
-        name: book.ownerName,
-        profile: book.ownerProfile ?? undefined,
-      },
-      tags: book.tags ?? [],
-      createdAt: book.createdAt,
-    };
+    return book;
   },
   getBlocks: async (workBookId: string): Promise<WorkBookBlock[]> => {
     const blocks = await pgDb
@@ -165,7 +129,7 @@ export const workBookService = {
     return blocks.map((block) => ({
       id: block.id,
       content: block.content,
-      question: block.question || "",
+      question: block.question,
       order: block.order,
       type: block.type,
       answer: block.answer!,
@@ -196,13 +160,21 @@ export const workBookService = {
     return {
       ...book,
       blocks,
-    } as WorkBook;
+    };
   },
 
   /**
    * 문제집에 태그 저장
    */
-  saveTagByBookId: async (bookId: string, tags: string[]): Promise<void> => {
+  saveTagByBookId: async ({
+    bookId,
+    tags,
+    userId,
+  }: {
+    bookId: string;
+    tags: string[];
+    userId: string;
+  }): Promise<void> => {
     // 기존 태그 삭제
     await pgDb
       .delete(workBookTagsTable)
@@ -214,6 +186,7 @@ export const workBookService = {
       .values(
         tags.map((tag) => ({
           name: tag,
+          createdId: userId,
         })),
       )
       .onConflictDoNothing({
@@ -432,7 +405,6 @@ export const workBookService = {
       .from(blocksTable)
       .where(eq(blocksTable.workBookId, workBookId));
 
-    let score = 0;
     const correctAnswerIds: string[] = [];
 
     // 채점 및 답안 업데이트
@@ -453,7 +425,6 @@ export const workBookService = {
       // 정답 여부 체크 결과가 참이면 정답 리스트에 추가하고 점수 증가
       if (isCorrect) {
         correctAnswerIds.push(block.id);
-        score++;
       }
 
       // 답안 제출 기록 업데이트
@@ -482,12 +453,10 @@ export const workBookService = {
       .update(workBookSubmitsTable)
       .set({
         endTime: new Date(),
-        score,
       })
       .where(eq(workBookSubmitsTable.id, submitId));
 
     return {
-      score: Math.round((score / workBookBlocks.length) * 100),
       correctAnswerIds,
       totalProblems: workBookBlocks.length,
       blockResults: workBookBlocks.map((block) => ({
@@ -569,17 +538,7 @@ export const workBookService = {
       );
 
     return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description ?? undefined,
-      tags: row.tags ?? [],
-      isPublic: row.isPublic,
-      thumbnail: row.thumbnail ?? undefined,
-      owner: {
-        name: row.ownerName,
-        profile: row.ownerProfile ?? undefined,
-      },
-      createdAt: row.createdAt,
+      ...row,
       startTime: row.startTime,
     })) as WorkBookInProgress[];
   },
@@ -600,10 +559,9 @@ export const workBookService = {
         title: workBooksTable.title,
         description: workBooksTable.description,
         isPublic: workBooksTable.isPublic,
-        thumbnail: workBooksTable.thumbnail,
+        publishedAt: workBooksTable.publishedAt,
         startTime: workBookSubmitsTable.startTime,
         endTime: workBookSubmitsTable.endTime,
-        score: workBookSubmitsTable.score,
         ownerName: userTable.name,
         ownerProfile: userTable.image,
         tags: sql<
@@ -655,31 +613,18 @@ export const workBookService = {
         workBooksTable.title,
         workBooksTable.description,
         workBooksTable.isPublic,
-        workBooksTable.thumbnail,
         workBooksTable.createdAt,
         workBookSubmitsTable.startTime,
         workBookSubmitsTable.endTime,
-        workBookSubmitsTable.score,
         userTable.name,
         userTable.image,
       )
       .orderBy(sql`${workBookSubmitsTable.endTime} desc`);
 
     return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description ?? undefined,
-      tags: row.tags ?? [],
-      isPublic: row.isPublic,
-      thumbnail: row.thumbnail ?? undefined,
-      owner: {
-        name: row.ownerName,
-        profile: row.ownerProfile ?? undefined,
-      },
-      createdAt: row.createdAt,
+      ...row,
       startTime: row.startTime,
       endTime: row.endTime!,
-      score: row.score,
       totalProblems: Number(row.totalProblems),
     })) as WorkBookCompleted[];
   },
@@ -697,7 +642,6 @@ export const workBookService = {
     const [session] = await pgDb
       .select({
         id: workBookSubmitsTable.id,
-        score: workBookSubmitsTable.score,
       })
       .from(workBookSubmitsTable)
       .where(
@@ -758,7 +702,6 @@ export const workBookService = {
     }));
 
     return {
-      score: session.score,
       correctAnswerIds,
       totalProblems: Number(totalCount.count),
       blockResults,

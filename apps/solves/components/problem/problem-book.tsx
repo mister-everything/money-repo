@@ -9,12 +9,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { logger } from "@/lib/logger";
 import { fetcher } from "@/lib/protocol/fetcher";
 import { ProblemBlock } from "./problem-block";
 import { ProblemBookSequential } from "./problem-book-sequential";
 import { ProblemHeader } from "./problem-header";
 import { SolveModeSelector } from "./solve-mode-selector";
-import { logger } from "@/lib/logger";
 
 interface ProblemBookProps {
   workBook: WorkBookWithoutAnswer;
@@ -199,9 +199,6 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
                     {submitResult.correctAnswerIds.length}
                   </span>{" "}
                   문제 정답입니다.
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {submitResult.score} <span className="text-xl">점</span>
                 </p>
               </div>
             </div>
