@@ -22,31 +22,31 @@ import {
  * 문제집 테이블
  * 문제들의 모음을 관리하는 테이블
  */
-export const workBooksTable = solvesSchema.table("prob_books", {
+export const workBooksTable = solvesSchema.table("work_books", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   title: varchar("title", { length: 150 }).notNull(),
   description: text("description"),
   ownerId: text("owner_id")
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
-  isPublic: boolean("is_public").default(false).notNull(),
-  thumbnail: text("thumbnail"), // 썸네일 이미지 URL
+  isPublic: boolean("is_public").default(true).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  publishedAt: timestamp("published_at"),
 });
 
 /**
  * 문제 블록 테이블
  * 개별 문제를 관리하는 테이블
  */
-export const blocksTable = solvesSchema.table("prob_blocks", {
+export const blocksTable = solvesSchema.table("blocks", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  workBookId: uuid("prob_book_id")
+  workBookId: uuid("work_book_id")
     .notNull()
     .references(() => workBooksTable.id, { onDelete: "cascade" }),
   order: integer("order").notNull().default(0), // 문제 순서 (정렬용)
   type: text("type").$type<BlockType>().notNull(), // 문제 타입 (검색 최적화)
-  question: text("question"), // 문제 텍스트 (검색 최적화)
+  question: text("question").notNull().default(""), // 문제 텍스트 (검색 최적화)
   content: jsonb("content").notNull().$type<BlockContent>(), // 문제 내용 (타입별 구조 다름)
   answer: jsonb("answer").$type<BlockAnswer>(), // 정답 (퀴즈 모드에서만 사용)
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -54,20 +54,18 @@ export const blocksTable = solvesSchema.table("prob_blocks", {
 });
 
 /**
- * 문제집 제출 세션 테이블
- * 사용자가 문제집을 푸는 세션을 관리 (한 번의 시도)
+ * 문제집 제출 테이블
  */
-export const workBookSubmitsTable = solvesSchema.table("prob_book_submits", {
+export const workBookSubmitsTable = solvesSchema.table("work_book_submits", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  workBookId: uuid("prob_book_id")
+  workBookId: uuid("work_book_id")
     .notNull()
     .references(() => workBooksTable.id, { onDelete: "cascade" }),
   ownerId: text("owner_id")
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
-  startTime: timestamp("start_time").notNull(), // 시작 시간
+  startTime: timestamp("start_time").notNull().defaultNow(), // 시작 시간
   endTime: timestamp("end_time"), // 종료 시간 (진행 중이면 null)
-  score: integer("score").notNull().default(0), // 총점
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -77,7 +75,7 @@ export const workBookSubmitsTable = solvesSchema.table("prob_book_submits", {
  * Composite Primary Key: (blockId, submitId) - 한 세션에서 각 문제당 하나의 답안만
  */
 export const workBookBlockAnswerSubmitsTable = solvesSchema.table(
-  "prob_block_answer_submits",
+  "block_submits",
   {
     blockId: uuid("block_id")
       .notNull()
@@ -99,6 +97,9 @@ export const workBookBlockAnswerSubmitsTable = solvesSchema.table(
 export const tagsTable = solvesSchema.table("tags", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
+  createdId: text("created_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -107,9 +108,9 @@ export const tagsTable = solvesSchema.table("tags", {
  * 문제집과 태그의 연결을 관리
  */
 export const workBookTagsTable = solvesSchema.table(
-  "prob_book_tags",
+  "work_book_tags",
   {
-    workBookId: uuid("prob_book_id")
+    workBookId: uuid("work_book_id")
       .notNull()
       .references(() => workBooksTable.id, { onDelete: "cascade" }),
     tagId: integer("tag_id")
@@ -125,9 +126,13 @@ export const workBookTagsTable = solvesSchema.table(
  */
 export const categoryMainTable = solvesSchema.table("category_main", {
   id: serial("category_main_id").primaryKey(),
-  code: varchar("code", { length: 20 }).notNull().unique(),
-  name: varchar("name", { length: 50 }).notNull(),
+  name: varchar("name", { length: 50 }).notNull().unique(),
+  description: varchar("description", { length: 300 }),
+  aiPrompt: varchar("ai_prompt", { length: 300 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdId: text("created_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }),
 });
 
 /**
@@ -136,12 +141,16 @@ export const categoryMainTable = solvesSchema.table("category_main", {
  */
 export const categorySubTable = solvesSchema.table("category_sub", {
   id: serial("category_sub_id").primaryKey(),
-  code: varchar("code", { length: 20 }).notNull().unique(),
-  name: varchar("name", { length: 50 }).notNull(),
+  name: varchar("name", { length: 50 }).notNull().unique(),
   mainId: integer("category_main_id")
     .notNull()
     .references(() => categoryMainTable.id, { onDelete: "cascade" }),
+  description: varchar("description", { length: 300 }),
+  aiPrompt: varchar("ai_prompt", { length: 300 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdId: text("created_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }),
 });
 
 /**
@@ -149,9 +158,9 @@ export const categorySubTable = solvesSchema.table("category_sub", {
  * 문제집 생성 시 추가 필요
  */
 export const workBookCategoryTable = solvesSchema.table(
-  "prob_book_category",
+  "work_book_category",
   {
-    workBookId: uuid("prob_book_id")
+    workBookId: uuid("work_book_id")
       .notNull()
       .references(() => workBooksTable.id, { onDelete: "cascade" }),
     categoryMainId: integer("category_main_id")
