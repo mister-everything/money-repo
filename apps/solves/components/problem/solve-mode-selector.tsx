@@ -21,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { fetcher } from "@/lib/protocol/fetcher";
 import { logger } from "@/lib/logger";
+import { fetcher } from "@/lib/protocol/fetcher";
 
 interface SolveModeSelectorProps {
   workBook: WorkBookWithoutAnswer;
@@ -40,14 +40,14 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   );
 
   const fetchSession = useCallback(async () => {
-    const response = await fetcher<{
-      success: boolean;
-      data: boolean;
-    }>(`/api/workbooks/${workBook.id}/session/check`, {
-      method: "GET",
-    });
-    if (response?.success && response.data) {
-      setHasSession(response.data);
+    const response = await fetcher<boolean>(
+      `/api/workbooks/${workBook.id}/session/check`,
+      {
+        method: "GET",
+      },
+    );
+    if (response) {
+      setHasSession(response);
     }
   }, [workBook.id]);
 

@@ -2,19 +2,16 @@
 import {
   BlockAnswerSubmit,
   SubmitWorkBookResponse,
+  WorkBookSubmitSession,
   WorkBookWithoutAnswer,
 } from "@service/solves/shared";
 import confetti from "canvas-confetti";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
 import { fetcher } from "@/lib/protocol/fetcher";
-import { ProblemBlock } from "./problem-block";
-import { ProblemBookSequential } from "./problem-book-sequential";
-import { ProblemHeader } from "./problem-header";
-import { SolveModeSelector } from "./solve-mode-selector";
+import { WorkBookReview } from "../workbook/workbook-review";
+import { WorkBookSolve } from "../workbook/workbook-solve";
 
 interface ProblemBookProps {
   workBook: WorkBookWithoutAnswer;
@@ -69,21 +66,18 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
 
     const initSession = async () => {
       try {
-        const response = await fetcher<{
-          success: boolean;
-          data: {
-            submitId: string;
-            startTime: Date;
-            savedAnswers: Record<string, BlockAnswerSubmit>;
-          };
-        }>(`/api/workbooks/${workBook.id}/session`, {
-          method: "GET",
-        });
-
-        if (response?.success && response.data) {
-          setSubmitId(response.data.submitId);
-          setAnswers(response.data.savedAnswers || {});
-          setLastSavedAnswers(response.data.savedAnswers || {});
+        const response = await fetcher<WorkBookSubmitSession>(
+          `/api/workbooks/${workBook.id}/session`,
+          {
+            method: "GET",
+          },
+        );
+        console.log(response);
+        if (response) {
+          logger.info("세션 초기화 성공:", response);
+          setSubmitId(response.submitId);
+          setAnswers(response.savedAnswers || {});
+          setLastSavedAnswers(response.savedAnswers || {});
         }
       } catch (error) {
         logger.error("세션 초기화 실패:", error);
@@ -144,19 +138,19 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
       return;
     }
 
-    await fetcher<{
-      success: boolean;
-      data: SubmitWorkBookResponse;
-    }>(`/api/workbooks/${workBook.id}/submit`, {
-      method: "POST",
-      body: JSON.stringify({
-        submitId,
-        answer: answers,
-      }),
-    })
+    await fetcher<SubmitWorkBookResponse>(
+      `/api/workbooks/${workBook.id}/submit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          submitId,
+          answer: answers,
+        }),
+      },
+    )
       .then((response) => {
-        if (response?.success) {
-          setSubmitResult(response.data);
+        if (response) {
+          setSubmitResult(response);
           handleConfetti();
         }
       })
@@ -170,121 +164,26 @@ export const ProblemBook: React.FC<ProblemBookProps> = ({ workBook }) => {
     router.replace(`/workbooks/${workBook.id}/solve?mode=${selectedMode}`);
   };
 
-  // 모드가 선택되지 않았으면 모드 선택 화면 표시
-  if (!mode) {
+  // 결과 화면이 있으면 결과 화면 표시
+  if (submitResult) {
     return (
-      <SolveModeSelector workBook={workBook} onModeSelect={handleModeSelect} />
+      <WorkBookReview
+        workBook={workBook}
+        submitResult={submitResult}
+        answers={answers}
+      />
     );
   }
 
-  // 공통 헤더 및 결과 요약 UI
-  const renderHeader = () => (
-    <>
-      {/* 결과 요약 섹션 */}
-      {submitResult && (
-        <Card className="mb-8 border-2 border-primary">
-          <CardHeader>
-            <div className="flex items-center justify-center">
-              <div className="space-y-2 text-center">
-                <h3 className="text-3xl font-bold text-foreground">
-                  문제 풀이 결과
-                </h3>
-                <p className="text-base text-muted-foreground">
-                  총{" "}
-                  <span className="font-bold text-primary">
-                    {submitResult.totalProblems}
-                  </span>{" "}
-                  문제 중{" "}
-                  <span className="font-bold text-primary">
-                    {submitResult.correctAnswerIds.length}
-                  </span>{" "}
-                  문제 정답입니다.
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-      )}
-      <ProblemHeader workBook={workBook} />
-    </>
-  );
-
-  // 한 문제씩 풀이 모드
-  if (mode === "sequential") {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        {renderHeader()}
-        <ProblemBookSequential
-          workBook={workBook}
-          answers={answers}
-          onAnswerChange={handleAnswerChange}
-          onSubmit={handleSubmit}
-          submitResult={submitResult}
-        />
-      </div>
-    );
-  }
-
-  // 전체 풀이 모드 (기존 방식)
+  // 풀이 화면 표시
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {renderHeader()}
-
-      {/* 문제들 */}
-      <div className="space-y-6">
-        {workBook.blocks.map((problem, index) => {
-          // 해당 블록의 결과 찾기
-          const blockResult = submitResult?.blockResults.find(
-            (result) => result.blockId === problem.id,
-          );
-
-          return (
-            <ProblemBlock
-              key={problem.id}
-              problem={problem}
-              problemNumber={index + 1}
-              submittedAnswer={answers[problem.id]}
-              onAnswerChange={handleAnswerChange}
-              blockResult={
-                blockResult && submitResult
-                  ? {
-                      isCorrect: submitResult.correctAnswerIds.includes(
-                        problem.id,
-                      ),
-                      correctAnswer: blockResult.answer,
-                    }
-                  : undefined
-              }
-            />
-          );
-        })}
-      </div>
-
-      {/* 제출 버튼 */}
-      {!submitResult && (
-        <div className="mt-8 text-center">
-          <Button
-            onClick={handleSubmit}
-            size="lg"
-            variant="outline"
-            className="px-8 py-3 bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground/90 hover:border-primary/90"
-          >
-            답안 제출
-          </Button>
-        </div>
-      )}
-
-      {/* 답안 현황 (개발용) */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle className="text-lg">현재 답안 상황</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className="text-sm text-muted-foreground overflow-auto bg-secondary p-4 rounded-md">
-            {JSON.stringify(answers, null, 2)}
-          </pre>
-        </CardContent>
-      </Card>
-    </div>
+    <WorkBookSolve
+      workBook={workBook}
+      mode={mode}
+      answers={answers}
+      onAnswerChange={handleAnswerChange}
+      onSubmit={handleSubmit}
+      onModeSelect={handleModeSelect}
+    />
   );
 };

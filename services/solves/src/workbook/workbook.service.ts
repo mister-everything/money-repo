@@ -733,4 +733,88 @@ export const workBookService = {
       blockResults,
     } as SubmitWorkBookResponse;
   },
+
+  /**
+   * 문제집 최신 결과 및 제출 답안 조회
+   * @param workBookId 문제집 ID
+   * @param userId 사용자 ID
+   */
+  getLatestWorkBookResultWithAnswers: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<{
+    result: SubmitWorkBookResponse;
+    answers: Record<string, BlockAnswerSubmit>;
+  } | null> => {
+    // 최신 제출 세션 조회
+    const [session] = await pgDb
+      .select({
+        id: workBookSubmitsTable.id,
+      })
+      .from(workBookSubmitsTable)
+      .where(
+        and(
+          eq(workBookSubmitsTable.workBookId, workBookId),
+          eq(workBookSubmitsTable.ownerId, userId),
+          sql`${workBookSubmitsTable.endTime} is not null`,
+        ),
+      )
+      .orderBy(sql`${workBookSubmitsTable.endTime} desc`)
+      .limit(1);
+
+    if (!session) {
+      return null;
+    }
+
+    // 문제 목록 및 정답 여부 조회
+    const answerRecords = await pgDb
+      .select({
+        blockId: workBookBlockAnswerSubmitsTable.blockId,
+        isCorrect: workBookBlockAnswerSubmitsTable.isCorrect,
+        answer: workBookBlockAnswerSubmitsTable.answer,
+      })
+      .from(workBookBlockAnswerSubmitsTable)
+      .where(eq(workBookBlockAnswerSubmitsTable.submitId, session.id));
+
+    // 전체 문제 수 조회
+    const [totalCount] = await pgDb
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(blocksTable)
+      .where(eq(blocksTable.workBookId, workBookId));
+
+    const correctAnswerIds = answerRecords
+      .filter((a) => a.isCorrect)
+      .map((a) => a.blockId);
+
+    // 문제집의 정답 데이터 조회
+    const blocks = await pgDb
+      .select({
+        id: blocksTable.id,
+        answer: blocksTable.answer,
+      })
+      .from(blocksTable)
+      .where(eq(blocksTable.workBookId, workBookId));
+
+    const blockResults = blocks.map((block) => ({
+      blockId: block.id,
+      answer: block.answer,
+    }));
+
+    // 제출된 답안을 Record 형태로 변환
+    const answers: Record<string, BlockAnswerSubmit> = {};
+    for (const record of answerRecords) {
+      answers[record.blockId] = record.answer;
+    }
+
+    return {
+      result: {
+        correctAnswerIds,
+        totalProblems: Number(totalCount.count),
+        blockResults,
+      } as SubmitWorkBookResponse,
+      answers,
+    };
+  },
 };
