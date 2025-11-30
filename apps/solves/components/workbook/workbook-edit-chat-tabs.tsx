@@ -2,7 +2,13 @@
 
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface ChatThread {
@@ -17,7 +23,6 @@ interface WorkbookEditChatTabsProps {
   currentThreadId?: string;
   onThreadChange: (threadId: string) => void;
   onNewChat: () => void;
-  children: (threadId: string) => React.ReactNode;
 }
 
 export function WorkbookEditChatTabs({
@@ -25,45 +30,51 @@ export function WorkbookEditChatTabs({
   currentThreadId,
   onThreadChange,
   onNewChat,
-  children,
 }: WorkbookEditChatTabsProps) {
+  const hasThreads = threads.length > 0;
+  const activeThreadId = currentThreadId ?? (hasThreads ? threads[0].id : "");
+
+  const showTemporaryTab =
+    !!currentThreadId &&
+    !threads.some((thread) => thread.id === currentThreadId);
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex w-full items-center gap-2">
       <Tabs
-        value={currentThreadId || "new"}
-        onValueChange={(value) => {
-          if (value === "new") {
-            onNewChat();
-          } else {
-            onThreadChange(value);
-          }
-        }}
-        className="flex flex-col h-full"
+        value={activeThreadId}
+        onValueChange={onThreadChange}
+        className="w-full"
       >
-        <div className="flex items-center gap-2 px-2 py-2 border-b">
-          <TabsList className="flex-1 justify-start overflow-x-auto">
+        <ScrollArea className="w-full">
+          <TabsList className="flex w-full items-center gap-2 bg-transparent p-0">
+            {/* 채팅 리스트 모두 표출 */}
             {threads.map((thread) => (
               <TabsTrigger
                 key={thread.id}
                 value={thread.id}
                 className={cn(
-                  "max-w-[200px] truncate",
-                  thread.title || "New Chat",
+                  "flex h-9 min-w-[120px] items-center rounded-full border border-transparent bg-muted/60 px-3 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground",
                 )}
               >
-                {thread.title || "New Chat"}
+                <span className="truncate">
+                  {thread.title?.trim() || "New Chat"}
+                </span>
               </TabsTrigger>
             ))}
-            {currentThreadId &&
-              !threads.find((t) => t.id === currentThreadId) && (
-                <TabsTrigger
-                  value={currentThreadId}
-                  className="max-w-[200px] truncate"
-                >
-                  New Chat
-                </TabsTrigger>
-              )}
+            {showTemporaryTab && currentThreadId && (
+              <TabsTrigger
+                value={currentThreadId}
+                className="flex h-9 min-w-[120px] items-center rounded-full border border-dashed border-border/70 bg-muted/30 px-3 text-sm font-medium text-muted-foreground"
+              >
+                New Chat
+              </TabsTrigger>
+            )}
           </TabsList>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </Tabs>
+      <Tooltip>
+        <TooltipTrigger>
           <Button
             size="icon"
             variant="ghost"
@@ -72,22 +83,9 @@ export function WorkbookEditChatTabs({
           >
             <PlusIcon className="size-4" />
           </Button>
-        </div>
-        {threads.map((thread) => (
-          <TabsContent
-            key={thread.id}
-            value={thread.id}
-            className="flex-1 m-0 mt-0"
-          >
-            {children(thread.id)}
-          </TabsContent>
-        ))}
-        {currentThreadId && !threads.find((t) => t.id === currentThreadId) && (
-          <TabsContent value={currentThreadId} className="flex-1 m-0 mt-0">
-            {children(currentThreadId)}
-          </TabsContent>
-        )}
-      </Tabs>
+        </TooltipTrigger>
+        <TooltipContent>New Chat</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

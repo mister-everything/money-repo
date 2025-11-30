@@ -1,7 +1,8 @@
 "use client";
 
 import { generateUUID } from "@workspace/util";
-import { useCallback, useState } from "react";
+import { UIMessage } from "ai";
+import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/protocol/fetcher";
 import {
@@ -29,36 +30,53 @@ export function WorkbooksCreateChatManager({
     },
   );
 
-  const [currentThreadId, setCurrentThreadId] = useState<string | undefined>(
-    // 일단 새 채팅 임시 아이디 생성
-    () => generateUUID(),
+  // 무조건 새로운 채팅방 생성 (커서맹키로)
+  const [currentThreadId, setCurrentThreadId] = useState<string>(() =>
+    generateUUID(),
   );
 
-  // 새 채팅 생성
   const handleNewChat = useCallback(() => {
     const newThreadId = generateUUID();
     setCurrentThreadId(newThreadId);
   }, []);
 
-  // thread 변경
   const handleThreadChange = useCallback((threadId: string) => {
     setCurrentThreadId(threadId);
   }, []);
 
+  const hasPersistedThread =
+    !!currentThreadId &&
+    threads.some((thread) => thread.id === currentThreadId);
+
+  const { data: initialMessages } = useSWR<UIMessage[]>(
+    hasPersistedThread && currentThreadId
+      ? `/api/ai/chat/workbook/${workbookId}/threads/${currentThreadId}/messages`
+      : null,
+    fetcher,
+  );
+
+  const header = useMemo(
+    () => (
+      <WorkbookEditChatTabs
+        threads={threads}
+        currentThreadId={currentThreadId}
+        onThreadChange={handleThreadChange}
+        onNewChat={handleNewChat}
+      />
+    ),
+    [threads, currentThreadId, handleThreadChange, handleNewChat],
+  );
+
+  if (!currentThreadId) {
+    return <div className="h-full rounded-2xl border bg-sidebar" />;
+  }
+
   return (
-    <WorkbookEditChatTabs
-      threads={threads}
-      currentThreadId={currentThreadId}
-      onThreadChange={handleThreadChange}
-      onNewChat={handleNewChat}
-    >
-      {(threadId) => (
-        <WorkbooksCreateChat
-          threadId={threadId}
-          workbookId={workbookId}
-          // initialMessages={/* threadId로 메시지 조회 */}
-        />
-      )}
-    </WorkbookEditChatTabs>
+    <WorkbooksCreateChat
+      threadId={currentThreadId}
+      workbookId={workbookId}
+      initialMessages={initialMessages}
+      header={header}
+    />
   );
 }
