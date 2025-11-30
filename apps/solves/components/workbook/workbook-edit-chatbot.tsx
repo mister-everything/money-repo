@@ -5,7 +5,7 @@ import { ChatModel } from "@service/solves/shared";
 import { generateUUID } from "@workspace/util";
 import { DefaultChatTransport, UIMessage } from "ai";
 import { SendIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { ReactNode, useCallback, useState } from "react";
 import { Message } from "@/components/chat/message";
 import { ModelDropDownMenu } from "@/components/chat/model-drop-down-menu";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,14 @@ interface WorkbooksCreateChatProps {
   threadId?: string;
   initialMessages?: UIMessage[];
   workbookId: string;
+  header?: ReactNode;
 }
 
 export function WorkbooksCreateChat({
   threadId,
   initialMessages,
   workbookId,
+  header,
 }: WorkbooksCreateChatProps) {
   const [model, setModel] = useState<ChatModel>({
     provider: "openai",
@@ -80,12 +82,8 @@ export function WorkbooksCreateChat({
 
   return (
     <div className="flex flex-col h-full border rounded-2xl bg-sidebar">
-      <div className="flex-1 overflow-y-auto py-4">
-        {messages.length == 0 && (
-          <div className="text-center text-muted-foreground h-full flex items-center justify-center">
-            채팅을 시작해 보세요.
-          </div>
-        )}
+      {header && <div className="px-4 py-2 border-b">{header}</div>}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
         {messages.map((message, index) => {
           return (
             <Message

@@ -1,6 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { pgDb } from "../db";
-import { ChatMessageTable, ChatThreadTable } from "./schema";
+import {
+  ChatMessageTable,
+  ChatThreadTable,
+  WorkbookCreateChatThreadTable,
+} from "./schema";
 import { ChatMessage } from "./types";
 
 export const chatService = {
@@ -55,5 +59,50 @@ export const chatService = {
           metadata: message.metadata,
         },
       });
+  },
+  /**
+   * workbookId로 연결된 thread 목록 조회
+   * @param param - workbookId와 userId
+   * @returns thread 목록 (최신순)
+   */
+  async selectThreadsByWorkbookId(param: {
+    workbookId: string;
+    userId: string;
+  }) {
+    const threads = await pgDb
+      .select({
+        id: ChatThreadTable.id,
+        title: ChatThreadTable.title,
+        createdAt: ChatThreadTable.createdAt,
+        updatedAt: ChatThreadTable.updatedAt,
+      })
+      .from(WorkbookCreateChatThreadTable)
+      .innerJoin(
+        ChatThreadTable,
+        eq(WorkbookCreateChatThreadTable.threadId, ChatThreadTable.id),
+      )
+      .where(
+        and(
+          eq(WorkbookCreateChatThreadTable.workbookId, param.workbookId),
+          eq(WorkbookCreateChatThreadTable.userId, param.userId),
+        ),
+      )
+      .orderBy(desc(ChatThreadTable.updatedAt));
+    return threads;
+  },
+  /**
+   * workbookId와 threadId를 연결
+   * @param param - workbookId, threadId, userId
+   */
+  async linkThreadToWorkbook(param: {
+    workbookId: string;
+    threadId: string;
+    userId: string;
+  }) {
+    await pgDb.insert(WorkbookCreateChatThreadTable).values({
+      workbookId: param.workbookId,
+      threadId: param.threadId,
+      userId: param.userId,
+    });
   },
 };
