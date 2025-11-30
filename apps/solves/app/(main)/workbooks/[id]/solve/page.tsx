@@ -1,7 +1,7 @@
 import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import { GoBackButton } from "@/components/layouts/go-back-button";
-import { ProblemBook } from "@/components/problem/problem-book";
+import { WorkBookSolve } from "@/components/workbook/workbook-solve";
 
 export default async function Page({
   params,
@@ -29,7 +29,7 @@ export default async function Page({
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <ProblemBook workBook={book} />
+          <WorkBookSolve workBook={book} />
         </div>
       </div>
     </div>
