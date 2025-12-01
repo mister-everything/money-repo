@@ -47,7 +47,7 @@ export function WorkbookEditActionBar({
   const isActionDisabled = isReorderMode || isSolveMode || isPending;
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 ">
       <FloatingActionBar>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -92,7 +92,7 @@ export function WorkbookEditActionBar({
             <Button
               size="icon"
               variant="ghost"
-              disabled={isPending || isReorderMode}
+              disabled={isActionDisabled && !isPending}
               onClick={onSave}
               className="rounded-full"
             >
@@ -121,20 +121,24 @@ export function WorkbookEditActionBar({
             {isSolveMode ? "문제 수정" : "최종 검토"}
           </TooltipContent>
         </Tooltip>
-        <FloatingActionBarDivider />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              className="rounded-full"
-              variant="ghost"
-              onClick={onPublish}
-              disabled={isReorderMode}
-            >
-              문제집 배포
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>문제집 배포하여 공유....</TooltipContent>
-        </Tooltip>
+        {isSolveMode && (
+          <>
+            <FloatingActionBarDivider />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  className="rounded-full"
+                  variant="ghost"
+                  onClick={onPublish}
+                  disabled={isReorderMode}
+                >
+                  문제집 배포
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>문제집 배포하여 공유....</TooltipContent>
+            </Tooltip>
+          </>
+        )}
       </FloatingActionBar>
     </div>
   );
