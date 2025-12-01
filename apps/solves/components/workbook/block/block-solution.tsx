@@ -20,9 +20,9 @@ export function BlockSolution({
   const handleToggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
-  if (mode == "solve" || mode == "preview") return null;
+  if (mode == "solve") return null;
 
-  if (mode == "edit") {
+  if (mode == "edit")
     return (
       <div
         className={cn(
@@ -75,16 +75,33 @@ export function BlockSolution({
         )}
       </div>
     );
-  }
 
-  if (solution) {
-    return (
-      <div className="w-full text-xs text-muted-foreground mb-2">
-        <div className="mb-2 flex gap-2 items-start">
-          <LightbulbIcon className="size-3" />
-          <p className="w-full whitespace-pre-wrap">{solution.trim()}</p>
-        </div>
+  return (
+    <div
+      className={cn(
+        "w-full border rounded-lg bg-secondary px-2 py-3 flex flex-col transition-colors",
+        !isExpanded && "cursor-pointer hover:bg-input",
+      )}
+    >
+      <div
+        className={cn("flex items-center justify-between")}
+        onClick={handleToggleExpanded}
+      >
+        <span className="ml-2 font-semibold">
+          {isExpanded ? "해설" : "해설 보기"}
+        </span>
+        <Button variant="ghost" size="icon" className="ml-auto">
+          {isExpanded ? <LightbulbIcon /> : <ChevronDownIcon />}
+        </Button>
       </div>
-    );
-  }
+
+      {isExpanded && (
+        <div className="px-2 pb-2">
+          <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+            {solution.trim() || "해설이 없습니다."}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
