@@ -19,19 +19,11 @@ import { notify } from "@/components/ui/notify";
 import { cn } from "@/lib/utils";
 import { WorkBookComponentMode } from "../types";
 
-// 사용자가 선택했고 정답 일때
+// 정답 일때
 const okClass = "border-primary bg-primary/5 text-primary hover:text-primary";
 
-// 문제를 풀때 선택한 것 일단 ok 랑 동일하게
-const selectClass =
-  "border-primary bg-primary/5 text-primary hover:text-primary";
-
 // 사용자가 선택했고 오답 일때
-// 수민이한테 한번 더 물어보기 너무 빨간게 부정적일수도
 const failClass = "border-destructive bg-destructive/5 text-destructive";
-
-// 사용자가 선택은 안했지만 (오답제출) 정답일때
-const muteCalss = "bg-secondary border-muted-foreground";
 
 type BlockContentProps<T extends BlockType = BlockType> = {
   content: BlockContent<T>;
@@ -157,7 +149,6 @@ export function McqMultipleBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
-  isCorrect,
 }: BlockContentProps<"mcq-multiple">) {
   const addOption = useCallback(async () => {
     if ((content.options.length ?? 0) >= 5)
@@ -232,13 +223,12 @@ export function McqMultipleBlockContent({
   const getSelectedClass = useCallback(
     (optionId: string) => {
       if (mode == "solve")
-        return submit?.answer?.includes(optionId) ? selectClass : "";
+        return submit?.answer?.includes(optionId) ? okClass : "";
       if (mode == "edit")
         return answer?.answer.includes(optionId) ? okClass : "";
       if (mode == "review") {
-        if (isCorrect) return answer?.answer.includes(optionId) ? okClass : "";
+        if (answer?.answer.includes(optionId)) return okClass;
         if (submit?.answer?.includes(optionId)) return failClass;
-        if (answer?.answer.includes(optionId)) return muteCalss;
       }
     },
     [mode, answer, submit],
@@ -328,7 +318,6 @@ export function McqSingleBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
-  isCorrect,
 }: BlockContentProps<"mcq">) {
   const addOption = useCallback(async () => {
     if ((content.options.length ?? 0) >= 5)
@@ -390,13 +379,12 @@ export function McqSingleBlockContent({
   const getSelectedClass = useCallback(
     (optionId: string) => {
       if (mode == "solve")
-        return submit?.answer?.includes(optionId) ? selectClass : "";
+        return submit?.answer?.includes(optionId) ? okClass : "";
       if (mode == "edit")
         return answer?.answer.includes(optionId) ? okClass : "";
       if (mode == "review") {
-        if (isCorrect) return answer?.answer.includes(optionId) ? okClass : "";
+        if (answer?.answer.includes(optionId)) return okClass;
         if (submit?.answer?.includes(optionId)) return failClass;
-        if (answer?.answer.includes(optionId)) return muteCalss;
       }
     },
     [mode, answer, submit],
@@ -507,18 +495,17 @@ export function OXBlockContent({
   const getSelectedClass = useCallback(
     (value: boolean) => {
       if (mode == "solve") {
-        return submit?.answer === value ? selectClass : "";
+        return submit?.answer === value ? okClass : "";
       }
       if (mode == "edit") {
         return answer?.answer === value ? okClass : "";
       }
       if (mode == "review") {
-        if (isCorrect) return answer?.answer === value ? okClass : "";
         if (submit?.answer === value) return failClass;
-        if (answer?.answer === value) return muteCalss;
+        if (answer?.answer === value) return okClass;
       }
     },
-    [mode, answer, submit, isCorrect],
+    [mode, answer, submit],
   );
 
   return (
@@ -838,10 +825,9 @@ export function RankingBlockContent({
                       {slotIndex + 1}
                     </div>
                     <div
-                      className={cn(
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all",
-                        muteCalss,
-                      )}
+                      className={
+                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-secondary border-muted-foreground"
+                      }
                     >
                       <span className="text-sm font-medium">
                         {correctItem?.type === "text" && correctItem.text}
