@@ -27,7 +27,7 @@ export interface Block<
 export interface BlockBuilderContext<
   BlockType extends string,
   Content = { type: BlockType },
-  Answer = { type: BlockType },
+  Answer = { type: BlockType; solution?: string },
   AnswerSubmit = { type: BlockType },
   O extends string = never,
 > {
@@ -49,7 +49,7 @@ export interface BlockBuilderContext<
     BlockBuilderContext<
       BlockType,
       Content,
-      z.infer<T> & { type: BlockType },
+      z.infer<T> & { type: BlockType; solution?: string },
       AnswerSubmit,
       O | "answer"
     >,
@@ -125,7 +125,10 @@ export function blockBuilder<BlockType extends string>(
         ? baseContentSchema.extend(content.shape)
         : baseContentSchema;
 
-      const baseAnswerSchema = z.object({ type: z.literal(type) });
+      const baseAnswerSchema = z.object({
+        type: z.literal(type),
+        solution: z.string().describe("정답 설명").optional(),
+      });
       const resolvedAnswerSchema = baseAnswerSchema.extend(answer.shape);
       const resolvedAnswerSubmitSchema = baseAnswerSchema.extend(
         answerSubmit.shape,

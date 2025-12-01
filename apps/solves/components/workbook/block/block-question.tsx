@@ -34,7 +34,7 @@ export function BlockQuestion({
     <div className={cn("w-full py-2", !question && "text-muted-foreground")}>
       {isEditable ? (
         <Textarea
-          className="min-h-[100px] max-h-[300px] resize-none"
+          className="min-h-[100px] max-h-[300px] resize-none shadow-none"
           value={question}
           placeholder={placeholder}
           maxLength={300}

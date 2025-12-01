@@ -68,6 +68,7 @@ export function WorkbookHeader({
             <Input
               placeholder={placeholder}
               autoFocus
+              className="text-xl!"
               value={book.title}
               onChange={handleChangeTitle}
             />

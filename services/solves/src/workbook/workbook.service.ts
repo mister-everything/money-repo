@@ -96,7 +96,7 @@ export const workBookService = {
       );
     }
 
-    const query = pgDb
+    const rows = await pgDb
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
@@ -104,8 +104,6 @@ export const workBookService = {
       .offset(offset)
       .limit(limit)
       .orderBy(sql`${workBooksTable.createdAt} desc`);
-
-    const rows = await query;
 
     return rows;
   },

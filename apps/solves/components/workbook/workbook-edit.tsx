@@ -4,7 +4,6 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
-  blockDisplayNames,
   checkAnswer,
   initializeBlock,
   initialSubmitAnswer,
@@ -27,18 +26,19 @@ import {
   processUpdateBlocksAction,
   updateWorkbookAction,
 } from "@/actions/workbook";
-import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToRef } from "@/hooks/use-to-ref";
+import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { GoBackButton } from "../layouts/go-back-button";
 import { Button } from "../ui/button";
 import { Block } from "./block/block";
+import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";
@@ -175,6 +175,13 @@ export function WorkbookEdit({
     [],
   );
 
+  const handleUpdateSolution = useCallback(
+    (id: string, solution: string) => {
+      handleUpdateAnswer(id, { solution });
+    },
+    [handleUpdateAnswer],
+  );
+
   const handleChangeTitle = useCallback((title: string) => {
     setWorkbook({ ...workbook, title });
   }, []);
@@ -210,47 +217,26 @@ export function WorkbookEdit({
     setEditingBlockId((prev) => prev.filter((id) => id !== id));
   }, []);
 
-  const handleAddBlock = useCallback(async () => {
+  const handleAddBlock = useCallback(async (blockType: BlockType) => {
     if (stateRef.current.isPending) return;
-    const addBlock = async (type: BlockType) => {
-      const newBlock = initializeBlock(type);
-      setBlocks((prev) => {
-        const maxOrder = Math.max(...prev.map((b) => b.order), 0);
-        const newBlocks = [
-          ...prev,
-          {
-            ...newBlock,
-            order: maxOrder + 1,
-          },
-        ];
-        return newBlocks;
-      });
-      setFocusBlockId(newBlock.id);
-      setEditingBlockId((prev) => [...prev, newBlock.id]);
-    };
-    notify.component({
-      renderer: ({ close }) => (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">
-            생성할 문제 유형을 선택하세요
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(blockDisplayNames).map(([type, displayName]) => (
-              <Button
-                key={type}
-                variant="outline"
-                onClick={() => {
-                  addBlock(type as BlockType);
-                  close();
-                }}
-              >
-                {displayName}
-              </Button>
-            ))}
-          </div>
-        </div>
-      ),
+    if (stateRef.current.blocks.length >= MAX_BLOCK_COUNT) {
+      toast.warning(`문제는 최대 ${MAX_BLOCK_COUNT}개까지 입니다.`);
+      return;
+    }
+    const newBlock = initializeBlock(blockType);
+    setBlocks((prev) => {
+      const maxOrder = Math.max(...prev.map((b) => b.order), 0);
+      const newBlocks = [
+        ...prev,
+        {
+          ...newBlock,
+          order: maxOrder + 1,
+        },
+      ];
+      return newBlocks;
     });
+    setFocusBlockId(newBlock.id);
+    setEditingBlockId((prev) => [...prev, newBlock.id]);
   }, []);
 
   const handleFocusBlock = useCallback((node: HTMLDivElement) => {
@@ -414,10 +400,13 @@ export function WorkbookEdit({
   return (
     <div className="h-full relative">
       <div ref={ref} className="h-full overflow-y-auto relative">
-        <div className="sticky top-0 z-10 py-2 bg-background">
+        <div className="sticky top-0 z-10 py-2 bg-background flex items-center gap-2">
           <GoBackButton>처음부터 다시 만들기</GoBackButton>
+          <div className="flex-1" />
+          <Button className="rounded-full">임시 소제</Button>
+          <Button className="rounded-full">임시 소제 {">"} 소재</Button>
         </div>
-        <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-10">
+        <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
             className="shadow-none"
             mode={isEditBook ? "edit" : "preview"}
@@ -427,7 +416,7 @@ export function WorkbookEdit({
             book={workbook}
           />
 
-          {blocks.map((b) => {
+          {blocks.map((b, index) => {
             const isDragOver = dragOverBlockId === b.id;
             return (
               <div
@@ -461,6 +450,8 @@ export function WorkbookEdit({
                   </div>
                 )}
                 <Block
+                  index={index}
+                  isPending={isPending}
                   ref={focusBlockId === b.id ? handleFocusBlock : undefined}
                   className={cn("border-none", isPending ? "opacity-50" : "")}
                   mode={
@@ -483,6 +474,7 @@ export function WorkbookEdit({
                   isCorrect={correctAnswerIds[b.id]}
                   answer={b.answer}
                   content={b.content}
+                  onUpdateSolution={handleUpdateSolution.bind(null, b.id)}
                   onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
                   onUpdateContent={handleUpdateContent.bind(null, b.id)}
                   onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
@@ -492,22 +484,27 @@ export function WorkbookEdit({
               </div>
             );
           })}
-          {control === "edit" ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  onClick={handleAddBlock}
-                  className="w-full h-24 md:h-40 border-dashed"
-                >
-                  <PlusIcon className="size-10 text-muted-foreground" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <span>문제 추가</span>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
+          {control === "edit" &&
+            stateRef.current.blocks.length < MAX_BLOCK_COUNT && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <BlockSelectPopup onSelected={handleAddBlock}>
+                      <Button
+                        variant="outline"
+                        className="w-full h-16 md:h-28 border-dashed"
+                      >
+                        <PlusIcon className="size-10 text-muted-foreground" />
+                      </Button>
+                    </BlockSelectPopup>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>문제 추가</span>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          {control !== "edit" && (
             <Button
               size={"lg"}
               onClick={() =>
@@ -524,6 +521,7 @@ export function WorkbookEdit({
         isPending={isPending}
         isReorderMode={isReorderMode}
         isSolveMode={control != "edit"}
+        isMaxBlockCount={blocks.length >= MAX_BLOCK_COUNT}
         onToggleSolveMode={() => {
           if (control === "solve") {
             return handleChangeControl("edit");
