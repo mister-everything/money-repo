@@ -4,7 +4,6 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
-  blockDisplayNames,
   checkAnswer,
   initializeBlock,
   initialSubmitAnswer,
@@ -27,7 +26,6 @@ import {
   processUpdateBlocksAction,
   updateWorkbookAction,
 } from "@/actions/workbook";
-import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
   TooltipContent,
@@ -39,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { GoBackButton } from "../layouts/go-back-button";
 import { Button } from "../ui/button";
 import { Block } from "./block/block";
+import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";
@@ -210,47 +209,22 @@ export function WorkbookEdit({
     setEditingBlockId((prev) => prev.filter((id) => id !== id));
   }, []);
 
-  const handleAddBlock = useCallback(async () => {
+  const handleAddBlock = useCallback(async (blockType: BlockType) => {
     if (stateRef.current.isPending) return;
-    const addBlock = async (type: BlockType) => {
-      const newBlock = initializeBlock(type);
-      setBlocks((prev) => {
-        const maxOrder = Math.max(...prev.map((b) => b.order), 0);
-        const newBlocks = [
-          ...prev,
-          {
-            ...newBlock,
-            order: maxOrder + 1,
-          },
-        ];
-        return newBlocks;
-      });
-      setFocusBlockId(newBlock.id);
-      setEditingBlockId((prev) => [...prev, newBlock.id]);
-    };
-    notify.component({
-      renderer: ({ close }) => (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">
-            생성할 문제 유형을 선택하세요
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(blockDisplayNames).map(([type, displayName]) => (
-              <Button
-                key={type}
-                variant="outline"
-                onClick={() => {
-                  addBlock(type as BlockType);
-                  close();
-                }}
-              >
-                {displayName}
-              </Button>
-            ))}
-          </div>
-        </div>
-      ),
+    const newBlock = initializeBlock(blockType);
+    setBlocks((prev) => {
+      const maxOrder = Math.max(...prev.map((b) => b.order), 0);
+      const newBlocks = [
+        ...prev,
+        {
+          ...newBlock,
+          order: maxOrder + 1,
+        },
+      ];
+      return newBlocks;
     });
+    setFocusBlockId(newBlock.id);
+    setEditingBlockId((prev) => [...prev, newBlock.id]);
   }, []);
 
   const handleFocusBlock = useCallback((node: HTMLDivElement) => {
@@ -414,10 +388,13 @@ export function WorkbookEdit({
   return (
     <div className="h-full relative">
       <div ref={ref} className="h-full overflow-y-auto relative">
-        <div className="sticky top-0 z-10 py-2 bg-background">
+        <div className="sticky top-0 z-10 py-2 bg-background flex items-center gap-2">
           <GoBackButton>처음부터 다시 만들기</GoBackButton>
+          <div className="flex-1" />
+          <Button className="rounded-full">임시 소제</Button>
+          <Button className="rounded-full">임시 소제 {">"} 소재</Button>
         </div>
-        <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-10">
+        <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
             className="shadow-none"
             mode={isEditBook ? "edit" : "preview"}
@@ -495,13 +472,16 @@ export function WorkbookEdit({
           {control === "edit" ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  onClick={handleAddBlock}
-                  className="w-full h-24 md:h-40 border-dashed"
-                >
-                  <PlusIcon className="size-10 text-muted-foreground" />
-                </Button>
+                <div>
+                  <BlockSelectPopup onSelected={handleAddBlock}>
+                    <Button
+                      variant="outline"
+                      className="w-full h-16 md:h-28 border-dashed"
+                    >
+                      <PlusIcon className="size-10 text-muted-foreground" />
+                    </Button>
+                  </BlockSelectPopup>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <span>문제 추가</span>

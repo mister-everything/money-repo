@@ -1,5 +1,6 @@
 "use client";
 
+import { BlockType } from "@service/solves/shared";
 import {
   ArrowUpDownIcon,
   LoaderIcon,
@@ -17,12 +18,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { BlockSelectPopup } from "./block/block-select-popup";
 
 interface WorkbookEditActionBarProps {
   isPending: boolean;
   isReorderMode: boolean;
   isSolveMode: boolean;
-  onAddBlock: () => void;
+  onAddBlock: (blockType: BlockType) => void;
   onSave: () => void;
   onPublish: () => void;
   onToggleReorderMode: () => void;
@@ -46,15 +48,18 @@ export function WorkbookEditActionBar({
       <FloatingActionBar>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={isReorderMode ? "ghost" : "secondary"}
-              onClick={onAddBlock}
-              className="rounded-full"
-              disabled={isActionDisabled}
-            >
-              <PlusIcon className="size-4" />
-            </Button>
+            <div>
+              <BlockSelectPopup onSelected={onAddBlock}>
+                <Button
+                  size="icon"
+                  variant={isReorderMode ? "ghost" : "secondary"}
+                  className="rounded-full"
+                  disabled={isActionDisabled}
+                >
+                  <PlusIcon className="size-4" />
+                </Button>
+              </BlockSelectPopup>
+            </div>
           </TooltipTrigger>
           <TooltipContent>문제 추가</TooltipContent>
         </Tooltip>
