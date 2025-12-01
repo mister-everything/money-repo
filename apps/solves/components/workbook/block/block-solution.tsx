@@ -80,6 +80,8 @@ export function BlockSolution({
       </div>
     );
 
+  if (!solution.trim()) return null;
+
   return (
     <div
       className={cn(

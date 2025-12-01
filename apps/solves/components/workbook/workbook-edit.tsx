@@ -309,7 +309,8 @@ export function WorkbookEdit({
         const block = stateRef.current.blocks.find((b) => b.id === id);
         if (!block) return prev;
         nextSubmits[id] = applyStateUpdate(
-          initialSubmitAnswer(block.type),
+          { ...initialSubmitAnswer(block.type), ...nextSubmits[id] },
+
           answer,
         );
         return nextSubmits;
@@ -359,7 +360,7 @@ export function WorkbookEdit({
 
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
-      if (mode === "solve") {
+      if (mode === "edit") {
         setSubmits({});
       }
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -409,7 +410,7 @@ export function WorkbookEdit({
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
             className="shadow-none"
-            mode={isEditBook ? "edit" : "preview"}
+            mode={control != "edit" ? "solve" : isEditBook ? "edit" : "preview"}
             onModeChange={handleChangeWorkbookMode}
             onChangeTitle={handleChangeTitle}
             onChangeDescription={handleChangeDescription}
@@ -418,6 +419,12 @@ export function WorkbookEdit({
 
           {blocks.map((b, index) => {
             const isDragOver = dragOverBlockId === b.id;
+            const mode =
+              control !== "edit"
+                ? control
+                : editingBlockId.includes(b.id)
+                  ? "edit"
+                  : "preview";
             return (
               <div
                 key={b.id}
@@ -453,14 +460,14 @@ export function WorkbookEdit({
                   index={index}
                   isPending={isPending}
                   ref={focusBlockId === b.id ? handleFocusBlock : undefined}
-                  className={cn("border-none", isPending ? "opacity-50" : "")}
-                  mode={
-                    control !== "edit"
-                      ? control
-                      : editingBlockId.includes(b.id)
-                        ? "edit"
-                        : "preview"
-                  }
+                  className={cn(
+                    "border-none",
+                    isPending ? "opacity-50" : "",
+                    mode == "review" &&
+                      !correctAnswerIds[b.id] &&
+                      "bg-muted-foreground/5",
+                  )}
+                  mode={mode}
                   onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
                   type={b.type}
                   question={b.question ?? ""}
