@@ -1,6 +1,6 @@
 "use client";
 import { ChevronDownIcon, LightbulbIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,10 @@ export function BlockSolution({
   const handleToggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
+
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [mode]);
   if (mode == "solve") return null;
 
   if (mode == "edit")
@@ -75,6 +79,8 @@ export function BlockSolution({
         )}
       </div>
     );
+
+  if (!solution.trim()) return null;
 
   return (
     <div

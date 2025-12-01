@@ -309,7 +309,8 @@ export function WorkbookEdit({
         const block = stateRef.current.blocks.find((b) => b.id === id);
         if (!block) return prev;
         nextSubmits[id] = applyStateUpdate(
-          initialSubmitAnswer(block.type),
+          { ...initialSubmitAnswer(block.type), ...nextSubmits[id] },
+
           answer,
         );
         return nextSubmits;
@@ -359,7 +360,7 @@ export function WorkbookEdit({
 
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
-      if (mode === "solve") {
+      if (mode !== "review") {
         setSubmits({});
       }
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -409,7 +410,7 @@ export function WorkbookEdit({
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
             className="shadow-none"
-            mode={isEditBook ? "edit" : "preview"}
+            mode={control != "edit" ? "solve" : isEditBook ? "edit" : "preview"}
             onModeChange={handleChangeWorkbookMode}
             onChangeTitle={handleChangeTitle}
             onChangeDescription={handleChangeDescription}
@@ -418,6 +419,12 @@ export function WorkbookEdit({
 
           {blocks.map((b, index) => {
             const isDragOver = dragOverBlockId === b.id;
+            const mode =
+              control !== "edit"
+                ? control
+                : editingBlockId.includes(b.id)
+                  ? "edit"
+                  : "preview";
             return (
               <div
                 key={b.id}
@@ -440,7 +447,7 @@ export function WorkbookEdit({
                 onDragEnd={isReorderMode ? handleReorderDragEnd : undefined}
               >
                 {isReorderMode && !isDragOver && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
                     <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
                       <GripVerticalIcon className="size-6" />
                       <span className="text-sm font-medium">
@@ -453,14 +460,14 @@ export function WorkbookEdit({
                   index={index}
                   isPending={isPending}
                   ref={focusBlockId === b.id ? handleFocusBlock : undefined}
-                  className={cn("border-none", isPending ? "opacity-50" : "")}
-                  mode={
-                    control !== "edit"
-                      ? control
-                      : editingBlockId.includes(b.id)
-                        ? "edit"
-                        : "preview"
-                  }
+                  className={cn(
+                    "border-none",
+                    isPending ? "opacity-50" : "",
+                    mode == "review" &&
+                      !correctAnswerIds[b.id] &&
+                      "bg-muted-foreground/5",
+                  )}
+                  mode={mode}
                   onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
                   type={b.type}
                   question={b.question ?? ""}
@@ -508,10 +515,10 @@ export function WorkbookEdit({
             <Button
               size={"lg"}
               onClick={() =>
-                handleChangeControl(control === "solve" ? "review" : "edit")
+                handleChangeControl(control === "solve" ? "review" : "solve")
               }
             >
-              {control === "solve" ? "체점하기" : "문제 수정하기"}
+              {control === "solve" ? "체점" : "다시 풀기"}
             </Button>
           )}
         </div>
@@ -532,7 +539,7 @@ export function WorkbookEdit({
             ref.current?.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }
-          handleChangeControl("solve");
+          handleChangeControl("edit");
         }}
         onAddBlock={handleAddBlock}
         onSave={handleSave}
