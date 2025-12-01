@@ -409,7 +409,7 @@ export function WorkbookEdit({
             book={workbook}
           />
 
-          {blocks.map((b) => {
+          {blocks.map((b, index) => {
             const isDragOver = dragOverBlockId === b.id;
             return (
               <div
@@ -443,6 +443,7 @@ export function WorkbookEdit({
                   </div>
                 )}
                 <Block
+                  index={index}
                   ref={focusBlockId === b.id ? handleFocusBlock : undefined}
                   className={cn("border-none", isPending ? "opacity-50" : "")}
                   mode={

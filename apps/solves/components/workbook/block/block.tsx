@@ -37,6 +37,7 @@ import { BlockQuestion } from "./block-question";
 export type BlockProps<T extends BlockType = BlockType> = {
   id: string;
   question: string;
+  index: number;
   order: number;
   type: T;
   errorFeedback?: string;
@@ -78,14 +79,15 @@ function PureBlock<T extends BlockType = BlockType>({
           <Badge
             variant={
               props.mode !== "review"
-                ? "secondary"
+                ? "default"
                 : props.isCorrect
                   ? "default"
                   : "destructive"
             }
           >
-            {getBlockDisplayName(props.type)}
+            문제 {props.index + 1}
           </Badge>
+          <Badge variant="secondary">{getBlockDisplayName(props.type)}</Badge>
 
           <div className="flex-1" />
           {props.mode === "preview" && props.onToggleEditMode && (

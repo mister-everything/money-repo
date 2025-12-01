@@ -3,8 +3,8 @@
 import { BlockType } from "@service/solves/shared";
 import {
   ArrowUpDownIcon,
+  ClipboardCheckIcon,
   LoaderIcon,
-  PlayIcon,
   PlusIcon,
   SaveIcon,
 } from "lucide-react";
@@ -83,25 +83,10 @@ export function WorkbookEditActionBar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {isReorderMode ? "순서 변경 완료" : "문제 순서 변경 하기"}
+            {isReorderMode ? "순서 변경 완료" : "문제 순서 변경"}
           </TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={isSolveMode ? "secondary" : "ghost"}
-              onClick={onToggleSolveMode}
-              className="rounded-full"
-              disabled={isActionDisabled && !isSolveMode}
-            >
-              <PlayIcon className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {isSolveMode ? "문제 수정하기" : "문제 풀어보기"}
-          </TooltipContent>
-        </Tooltip>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -119,6 +104,22 @@ export function WorkbookEditActionBar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>임시 저장</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={isSolveMode ? "secondary" : "ghost"}
+              onClick={onToggleSolveMode}
+              className="rounded-full"
+              disabled={isActionDisabled && !isSolveMode}
+            >
+              <ClipboardCheckIcon className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isSolveMode ? "문제 수정" : "최종 검토"}
+          </TooltipContent>
         </Tooltip>
         <FloatingActionBarDivider />
         <Tooltip>
