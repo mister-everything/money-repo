@@ -40,7 +40,7 @@ const defaultBlock = blockBuilder("default")
             .max(30, "정답은 최대 30자 이하로 입력해주세요."),
         )
         .min(1, "정답은 최소 1개 이상 필요")
-        .max(10, "정답은 최대 10개까지 입력해주세요."),
+        .max(5, "정답은 최대 5개까지 입력해주세요."),
     }),
   )
   .answerSubmit(
@@ -77,7 +77,8 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
     z.object({
       options: z
         .array(z.union([textOption, sourceOption]))
-        .min(2, "최소 2개의 선택지 필요"), // 최소 2개의 선택지 필요
+        .min(4, "최소 4개의 선택지 필요") // 최소 4개의 선택지 필요
+        .max(5, "최대 5개의 선택지까지 입력해주세요."),
     }),
   )
   .answer(
@@ -85,7 +86,7 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
       answer: z
         .array(z.string("필수 입력값입니다."))
         .min(1, "정답은 최소 1개 이상 필요")
-        .max(10, "정답은 최대 10개까지 입력해주세요."),
+        .max(5, "정답은 최대 5개까지 입력해주세요."),
     }),
   )
   .answerSubmit(
@@ -108,8 +109,8 @@ const mcqBlock = blockBuilder("mcq")
     z.object({
       options: z
         .array(z.union([textOption, sourceOption]))
-        .min(2, "최소 2개의 선택지 필요")
-        .max(10, "최대 10개의 선택지까지 입력해주세요."),
+        .min(4, "최소 4개의 선택지 필요")
+        .max(5, "최대 5개의 선택지까지 입력해주세요."),
     }),
   )
   .answer(

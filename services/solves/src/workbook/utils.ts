@@ -73,7 +73,7 @@ export const parseAnswerSubmit = (answerSubmit: BlockAnswerSubmit) => {
 };
 
 export const validateBlock = (
-  block: WorkBookBlock,
+  block: Pick<WorkBookBlock, "question" | "content" | "answer" | "type">,
 ):
   | { success: true }
   | {
