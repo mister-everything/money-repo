@@ -5,10 +5,11 @@ import {
   BlockContent,
   BlockType,
   getBlockDisplayName,
+  validateBlock,
 } from "@service/solves/shared";
 import { equal, exclude, StateUpdate } from "@workspace/util";
 import { CheckIcon, PencilIcon, TrashIcon, XIcon } from "lucide-react";
-import { memo, Ref } from "react";
+import { memo, Ref, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,6 +73,23 @@ function PureBlock<T extends BlockType = BlockType>({
   ref,
   ...props
 }: BlockProps<T>) {
+  const blockErrorMessage = useMemo(() => {
+    if (props.mode != "edit") return;
+    const result = validateBlock({
+      question: props.question,
+      content: props.content,
+      answer: props.answer ?? ({} as BlockAnswer<T>),
+      type: props.type,
+    });
+
+    if (result.success) return;
+    return (
+      Object.values(result.errors ?? {})
+        .flat()
+        .join("\n") || result.message
+    );
+  }, [props.mode, props.answer, props.content, props.question, props.type]);
+
   return (
     <Card className={cn("gap-2 shadow-none", className)} ref={ref}>
       <CardHeader>
@@ -96,6 +114,7 @@ function PureBlock<T extends BlockType = BlockType>({
                 <Button
                   onClick={props.onToggleEditMode}
                   variant="ghost"
+                  className="hover:bg-primary hover:text-primary-foreground"
                   size="icon"
                 >
                   <PencilIcon />
@@ -112,25 +131,41 @@ function PureBlock<T extends BlockType = BlockType>({
                 <Button
                   onClick={props.onDeleteBlock}
                   variant="ghost"
+                  className="hover:bg-primary hover:text-primary-foreground"
                   size="icon"
                 >
-                  <TrashIcon className="hover:text-destructive" />
+                  <TrashIcon />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <span>문제 삭제하기</span>
+                <span>문제 삭제</span>
               </TooltipContent>
             </Tooltip>
           )}
 
           {props.mode === "edit" && (
-            <Button
-              onClick={props.onToggleEditMode}
-              variant="secondary"
-              size="icon"
-            >
-              <CheckIcon />
-            </Button>
+            <Tooltip open={blockErrorMessage ? undefined : false}>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button
+                    onClick={props.onToggleEditMode}
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "hover:bg-primary hover:text-primary-foreground",
+                      !blockErrorMessage &&
+                        "text-primary-foreground bg-primary",
+                    )}
+                    disabled={Boolean(blockErrorMessage)}
+                  >
+                    <CheckIcon />
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="whitespace-pre-wrap">
+                {blockErrorMessage}
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {props.mode === "review" &&
