@@ -18,6 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { BlockSelectPopup } from "./block/block-select-popup";
 
 interface WorkbookEditActionBarProps {
@@ -29,6 +30,7 @@ interface WorkbookEditActionBarProps {
   onPublish: () => void;
   onToggleReorderMode: () => void;
   onToggleSolveMode: () => void;
+  isMaxBlockCount: boolean;
 }
 
 export function WorkbookEditActionBar({
@@ -40,6 +42,7 @@ export function WorkbookEditActionBar({
   onPublish,
   onToggleReorderMode,
   onToggleSolveMode,
+  isMaxBlockCount,
 }: WorkbookEditActionBarProps) {
   const isActionDisabled = isReorderMode || isSolveMode || isPending;
 
@@ -54,14 +57,18 @@ export function WorkbookEditActionBar({
                   size="icon"
                   variant={isReorderMode ? "ghost" : "secondary"}
                   className="rounded-full"
-                  disabled={isActionDisabled}
+                  disabled={isActionDisabled || isMaxBlockCount}
                 >
                   <PlusIcon className="size-4" />
                 </Button>
               </BlockSelectPopup>
             </div>
           </TooltipTrigger>
-          <TooltipContent>문제 추가</TooltipContent>
+          <TooltipContent>
+            {isMaxBlockCount
+              ? `문제는 최대 ${MAX_BLOCK_COUNT}개까지 입니다.`
+              : "문제 추가"}
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>

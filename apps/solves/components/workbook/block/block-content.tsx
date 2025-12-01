@@ -61,8 +61,8 @@ export function DefaultBlockContent({
   );
 
   const addAnswer = useCallback(async () => {
-    if ((answer?.answer.length ?? 0) >= 10)
-      return toast.warning("정답은 최대 10개까지 입니다.");
+    if ((answer?.answer.length ?? 0) >= 5)
+      return toast.warning("정답은 최대 5개까지 입니다.");
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
@@ -132,13 +132,15 @@ export function DefaultBlockContent({
                 <XIcon />
               </Button>
             ))}
-            <Button
-              onClick={addAnswer}
-              variant="outline"
-              className="border-dashed"
-            >
-              <PlusIcon /> 정답 추가
-            </Button>
+            {(answer?.answer.length ?? 0) < 5 && (
+              <Button
+                onClick={addAnswer}
+                variant="outline"
+                className="border-dashed"
+              >
+                <PlusIcon /> 정답 추가
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -158,12 +160,12 @@ export function McqMultipleBlockContent({
   isCorrect,
 }: BlockContentProps<"mcq-multiple">) {
   const addOption = useCallback(async () => {
-    if ((content.options.length ?? 0) >= 10)
-      return toast.warning("옵션은 최대 10개까지 입니다.");
+    if ((content.options.length ?? 0) >= 5)
+      return toast.warning("보기는 최대 5개까지 입니다.");
     const newAnswer = await notify
       .prompt({
-        title: "정답 추가",
-        description: "답안을 작성하세요",
+        title: "보기 추가",
+        description: "선택지를 작성하세요",
         maxLength: 30,
       })
       .then((answer) => answer.trim());
@@ -311,7 +313,7 @@ export function McqMultipleBlockContent({
           className="border-dashed w-full py-6!"
           onClick={addOption}
         >
-          <PlusIcon /> 옵션 추가
+          <PlusIcon /> 보기 추가
         </Button>
       )}
     </div>
@@ -329,12 +331,12 @@ export function McqSingleBlockContent({
   isCorrect,
 }: BlockContentProps<"mcq">) {
   const addOption = useCallback(async () => {
-    if ((content.options.length ?? 0) >= 10)
-      return toast.warning("옵션은 최대 10개까지 입니다.");
+    if ((content.options.length ?? 0) >= 5)
+      return toast.warning("보기는 최대 5개까지 입니다.");
     const newAnswer = await notify
       .prompt({
-        title: "정답 추가",
-        description: "답안을 작성하세요",
+        title: "보기 추가",
+        description: "선택지를 작성하세요",
         maxLength: 30,
       })
       .then((answer) => answer.trim());
@@ -462,14 +464,14 @@ export function McqSingleBlockContent({
             className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
           />
         ))}
-      {mode == "edit" && (
+      {mode == "edit" && (content.options.length ?? 0) < 5 && (
         <Button
           variant="outline"
           size="lg"
           className="border-dashed w-full py-6!"
           onClick={addOption}
         >
-          <PlusIcon /> 옵션 추가
+          <PlusIcon /> 보기 추가
         </Button>
       )}
     </div>

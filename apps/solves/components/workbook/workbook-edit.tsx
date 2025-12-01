@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToRef } from "@/hooks/use-to-ref";
+import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { GoBackButton } from "../layouts/go-back-button";
@@ -211,6 +212,10 @@ export function WorkbookEdit({
 
   const handleAddBlock = useCallback(async (blockType: BlockType) => {
     if (stateRef.current.isPending) return;
+    if (stateRef.current.blocks.length >= MAX_BLOCK_COUNT) {
+      toast.warning(`문제는 최대 ${MAX_BLOCK_COUNT}개까지 입니다.`);
+      return;
+    }
     const newBlock = initializeBlock(blockType);
     setBlocks((prev) => {
       const maxOrder = Math.max(...prev.map((b) => b.order), 0);
@@ -469,25 +474,27 @@ export function WorkbookEdit({
               </div>
             );
           })}
-          {control === "edit" ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <BlockSelectPopup onSelected={handleAddBlock}>
-                    <Button
-                      variant="outline"
-                      className="w-full h-16 md:h-28 border-dashed"
-                    >
-                      <PlusIcon className="size-10 text-muted-foreground" />
-                    </Button>
-                  </BlockSelectPopup>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <span>문제 추가</span>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
+          {control === "edit" &&
+            stateRef.current.blocks.length < MAX_BLOCK_COUNT && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <BlockSelectPopup onSelected={handleAddBlock}>
+                      <Button
+                        variant="outline"
+                        className="w-full h-16 md:h-28 border-dashed"
+                      >
+                        <PlusIcon className="size-10 text-muted-foreground" />
+                      </Button>
+                    </BlockSelectPopup>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>문제 추가</span>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          {control !== "edit" && (
             <Button
               size={"lg"}
               onClick={() =>
@@ -504,6 +511,7 @@ export function WorkbookEdit({
         isPending={isPending}
         isReorderMode={isReorderMode}
         isSolveMode={control != "edit"}
+        isMaxBlockCount={blocks.length >= MAX_BLOCK_COUNT}
         onToggleSolveMode={() => {
           if (control === "solve") {
             return handleChangeControl("edit");
