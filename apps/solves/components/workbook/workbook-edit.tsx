@@ -447,7 +447,7 @@ export function WorkbookEdit({
                 onDragEnd={isReorderMode ? handleReorderDragEnd : undefined}
               >
                 {isReorderMode && !isDragOver && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
                     <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
                       <GripVerticalIcon className="size-6" />
                       <span className="text-sm font-medium">
