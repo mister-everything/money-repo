@@ -34,12 +34,14 @@ import {
   RankingBlockContent,
 } from "./block-content";
 import { BlockQuestion } from "./block-question";
+import { BlockSolution } from "./block-solution";
 
 export type BlockProps<T extends BlockType = BlockType> = {
   id: string;
   question: string;
   index: number;
   order: number;
+  isPending?: boolean;
   type: T;
   errorFeedback?: string;
   isCorrect?: boolean;
@@ -54,6 +56,7 @@ export type BlockProps<T extends BlockType = BlockType> = {
   onUpdateContent?: (content: StateUpdate<BlockContent<T>>) => void;
   onUpdateAnswer?: (answer: StateUpdate<BlockAnswer<T>>) => void;
   onUpdateQuestion?: (question: string) => void;
+  onUpdateSolution?: (solution: string) => void;
   onUpdateSubmitAnswer?: (submit: StateUpdate<BlockAnswerSubmit<T>>) => void;
   onDeleteBlock?: () => void;
 
@@ -243,7 +246,12 @@ function PureBlock<T extends BlockType = BlockType>({
           </InDevelopment>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col mt-2">
+        <BlockSolution
+          solution={props.answer?.solution ?? ""}
+          mode={props.mode}
+          onChangeSolution={props.onUpdateSolution}
+        />
         {props.errorFeedback && (
           <p className="text-destructive text-xs whitespace-pre-wrap mt-4">
             {props.errorFeedback}
@@ -263,6 +271,8 @@ export const Block = memo(PureBlock, (prev, next) => {
     "onUpdateAnswer",
     "onUpdateQuestion",
     "onDeleteBlock",
+    "onUpdateSolution",
+    "onUpdateSubmitAnswer",
   ]);
   const nextProps = exclude(next, [
     "onToggleEditMode",
@@ -270,6 +280,8 @@ export const Block = memo(PureBlock, (prev, next) => {
     "onUpdateAnswer",
     "onUpdateQuestion",
     "onDeleteBlock",
+    "onUpdateSolution",
+    "onUpdateSubmitAnswer",
   ]);
   if (!equal(prevProps, nextProps)) return false;
   return true;

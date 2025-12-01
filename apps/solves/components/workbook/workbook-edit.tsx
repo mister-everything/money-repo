@@ -175,6 +175,13 @@ export function WorkbookEdit({
     [],
   );
 
+  const handleUpdateSolution = useCallback(
+    (id: string, solution: string) => {
+      handleUpdateAnswer(id, { solution });
+    },
+    [handleUpdateAnswer],
+  );
+
   const handleChangeTitle = useCallback((title: string) => {
     setWorkbook({ ...workbook, title });
   }, []);
@@ -444,6 +451,7 @@ export function WorkbookEdit({
                 )}
                 <Block
                   index={index}
+                  isPending={isPending}
                   ref={focusBlockId === b.id ? handleFocusBlock : undefined}
                   className={cn("border-none", isPending ? "opacity-50" : "")}
                   mode={
@@ -466,6 +474,7 @@ export function WorkbookEdit({
                   isCorrect={correctAnswerIds[b.id]}
                   answer={b.answer}
                   content={b.content}
+                  onUpdateSolution={handleUpdateSolution.bind(null, b.id)}
                   onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
                   onUpdateContent={handleUpdateContent.bind(null, b.id)}
                   onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
