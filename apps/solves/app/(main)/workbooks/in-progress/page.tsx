@@ -8,14 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSession } from "@/lib/auth/server";
-import { logger } from "@/lib/logger";
 
 export default async function InProgressWorkbooksPage() {
   const session = await getSession();
   const inProgressWorkbooks = await workBookService.getWorkBookInProgress(
     session.user.id,
   );
-  logger.info(inProgressWorkbooks);
   return (
     <div className="h-screen">
       {/* 헤더 */}

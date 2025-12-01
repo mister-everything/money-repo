@@ -112,4 +112,5 @@ export type WorkBookCompleted = WorkBookWithoutBlocks & {
   startTime: Date;
   endTime: Date;
   totalProblems: number;
+  correctAnswerCount: number;
 };

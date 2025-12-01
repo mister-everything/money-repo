@@ -1,6 +1,6 @@
 import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
@@ -578,7 +578,28 @@ export const workBookService = {
     userId: string,
   ): Promise<WorkBookCompleted[]> => {
     // 각 문제집별 최신 제출 ID 조회
-    // 위 방식은 UUID라 위험함. Window function 사용
+    // 1단계: 각 문제집별 최신 제출 ID 조회 (Drizzle selectDistinctOn 사용)
+    const latestSubmits = await pgDb
+      .selectDistinctOn([workBookSubmitsTable.workBookId], {
+        id: workBookSubmitsTable.id,
+      })
+      .from(workBookSubmitsTable)
+      .where(
+        and(
+          eq(workBookSubmitsTable.ownerId, userId),
+          isNotNull(workBookSubmitsTable.endTime),
+        ),
+      )
+      .orderBy(
+        workBookSubmitsTable.workBookId,
+        desc(workBookSubmitsTable.endTime),
+      );
+
+    if (latestSubmits.length === 0) return [];
+
+    const submitIds = latestSubmits.map((s) => s.id);
+
+    // 2단계: 상세 정보 조회 (정답 개수 포함)
     const rows = await pgDb
       .select({
         id: workBooksTable.id,
@@ -592,9 +613,10 @@ export const workBookService = {
         ownerProfile: userTable.image,
         tags: sql<
           { id: number; name: string }[]
-        >`coalesce(json_agg(json_build_object('id', ${tagsTable.id}, 'name', ${tagsTable.name})) filter (where ${tagsTable.name} is not null), '[]'::json)`,
+        >`coalesce(json_agg(distinct jsonb_build_object('id', ${tagsTable.id}, 'name', ${tagsTable.name})) filter (where ${tagsTable.name} is not null), '[]'::json)`,
         createdAt: workBooksTable.createdAt,
         totalProblems: sql<number>`count(distinct ${blocksTable.id})`,
+        correctAnswerCount: sql<number>`count(distinct ${workBookBlockAnswerSubmitsTable.blockId}) filter (where ${workBookBlockAnswerSubmitsTable.isCorrect} = true)`,
       })
       .from(workBookSubmitsTable)
       .innerJoin(
@@ -603,55 +625,36 @@ export const workBookService = {
       )
       .innerJoin(blocksTable, eq(workBooksTable.id, blocksTable.workBookId))
       .leftJoin(
+        workBookBlockAnswerSubmitsTable,
+        eq(workBookBlockAnswerSubmitsTable.submitId, workBookSubmitsTable.id),
+      )
+      .leftJoin(
         workBookTagsTable,
         eq(workBookTagsTable.workBookId, workBooksTable.id),
       )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
       .leftJoin(tagsTable, eq(workBookTagsTable.tagId, tagsTable.id))
-      .where(
-        and(
-          eq(workBookSubmitsTable.ownerId, userId),
-          sql`${workBookSubmitsTable.endTime} is not null`,
-          // 최신 제출만 필터링하는 조건이 필요함.
-          // 복잡해지므로 쿼리를 분리하거나 distinct on을 사용
-          inArray(
-            workBookSubmitsTable.id,
-            pgDb
-              .select({
-                id: sql<string>`distinct on (${workBookSubmitsTable.workBookId}) ${workBookSubmitsTable.id}`,
-              })
-              .from(workBookSubmitsTable)
-              .where(
-                and(
-                  eq(workBookSubmitsTable.ownerId, userId),
-                  sql`${workBookSubmitsTable.endTime} is not null`,
-                ),
-              )
-              .orderBy(
-                workBookSubmitsTable.workBookId,
-                sql`${workBookSubmitsTable.endTime} desc`,
-              ),
-          ),
-        ),
-      )
+      .where(inArray(workBookSubmitsTable.id, submitIds))
       .groupBy(
         workBooksTable.id,
         workBooksTable.title,
         workBooksTable.description,
         workBooksTable.isPublic,
         workBooksTable.createdAt,
+        workBooksTable.publishedAt,
         workBookSubmitsTable.startTime,
         workBookSubmitsTable.endTime,
         userTable.name,
         userTable.image,
       )
-      .orderBy(sql`${workBookSubmitsTable.endTime} desc`);
+      .orderBy(desc(workBookSubmitsTable.endTime));
 
     return rows.map((row) => ({
       ...row,
       startTime: row.startTime,
       endTime: row.endTime!,
       totalProblems: Number(row.totalProblems),
+      correctAnswerCount: Number(row.correctAnswerCount),
     })) as WorkBookCompleted[];
   },
 
