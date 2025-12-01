@@ -747,7 +747,12 @@ export function RankingBlockContent({
         <Label className="text-xs text-muted-foreground">
           {isInteractive ? "항목 (클릭 또는 드래그하여 순위에 추가)" : "항목"}
         </Label>
-        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-primary/5 border border-primary">
+        <div
+          className={cn(
+            mode != "review" && "bg-primary/5 border border-primary",
+            "flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg",
+          )}
+        >
           {poolItems.map((item) => (
             <div
               key={item.id}

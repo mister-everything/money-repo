@@ -360,7 +360,7 @@ export function WorkbookEdit({
 
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
-      if (mode === "edit") {
+      if (mode !== "review") {
         setSubmits({});
       }
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -515,10 +515,10 @@ export function WorkbookEdit({
             <Button
               size={"lg"}
               onClick={() =>
-                handleChangeControl(control === "solve" ? "review" : "edit")
+                handleChangeControl(control === "solve" ? "review" : "solve")
               }
             >
-              {control === "solve" ? "체점하기" : "문제 수정하기"}
+              {control === "solve" ? "체점" : "다시 풀기"}
             </Button>
           )}
         </div>
@@ -539,7 +539,7 @@ export function WorkbookEdit({
             ref.current?.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }
-          handleChangeControl("solve");
+          handleChangeControl("edit");
         }}
         onAddBlock={handleAddBlock}
         onSave={handleSave}
