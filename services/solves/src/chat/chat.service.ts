@@ -6,7 +6,7 @@ import {
   ChatThreadTable,
   WorkbookCreateChatThreadTable,
 } from "./schema";
-import { ChatMessage } from "./types";
+import { ChatMessage, ChatThread } from "./types";
 
 export const chatService = {
   async createThreadIfNotExists(param: {
@@ -47,6 +47,15 @@ export const chatService = {
   async deleteThread(threadId: string) {
     await pgDb.delete(ChatThreadTable).where(eq(ChatThreadTable.id, threadId));
   },
+
+  async hasThreadPermission(threadId: string, userId: string) {
+    const [thread] = await pgDb
+      .select({ userId: ChatThreadTable.userId })
+      .from(ChatThreadTable)
+      .where(and(eq(ChatThreadTable.id, threadId)));
+    return thread?.userId === userId;
+  },
+
   async selectMessages(threadId: string) {
     const result = await pgDb
       .select()
@@ -67,6 +76,7 @@ export const chatService = {
         },
       });
   },
+
   /**
    * workbookId로 연결된 thread 목록 조회
    * @param param - workbookId와 userId
@@ -75,13 +85,12 @@ export const chatService = {
   async selectThreadsByWorkbookId(param: {
     workbookId: string;
     userId: string;
-  }) {
+  }): Promise<ChatThread[]> {
     const threads = await pgDb
       .select({
         id: ChatThreadTable.id,
         title: ChatThreadTable.title,
         createdAt: ChatThreadTable.createdAt,
-        updatedAt: ChatThreadTable.updatedAt,
       })
       .from(WorkbookCreateChatThreadTable)
       .innerJoin(

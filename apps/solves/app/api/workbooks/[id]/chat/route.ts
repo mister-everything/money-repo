@@ -4,20 +4,16 @@ import { getSession } from "@/lib/auth/server";
 import { logger } from "@/lib/logger";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
-/**
- * GET /api/ai/chat/workbook/[workbookId]/threads
- * workbookId로 연결된 thread 목록 조회
- */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ workbookId: string }> },
+  _: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { workbookId } = await params;
+    const { id } = await params;
     const session = await getSession();
 
     const threads = await chatService.selectThreadsByWorkbookId({
-      workbookId,
+      workbookId: id,
       userId: session.user.id,
     });
 
