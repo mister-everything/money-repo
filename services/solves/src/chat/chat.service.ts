@@ -1,3 +1,4 @@
+import { PublicError } from "@workspace/error";
 import { and, desc, eq } from "drizzle-orm";
 import { pgDb } from "../db";
 import {
@@ -8,35 +9,41 @@ import {
 import { ChatMessage } from "./types";
 
 export const chatService = {
-  // upsert
-  async saveThread(thread: { id?: string; userId: string; title?: string }) {
-    const [result] = await pgDb
+  async createThreadIfNotExists(param: {
+    threadId: string;
+    userId: string;
+    title?: string;
+  }) {
+    const [thread] = await pgDb
+      .select({ id: ChatThreadTable.id, ownerId: ChatThreadTable.userId })
+      .from(ChatThreadTable)
+      .where(and(eq(ChatThreadTable.id, param.threadId)));
+
+    if (thread) {
+      if (thread.ownerId !== param.userId) {
+        throw new PublicError("Thread not found");
+      }
+      return {
+        ...thread,
+        isNew: false,
+      };
+    }
+
+    const newThread = await pgDb
       .insert(ChatThreadTable)
       .values({
-        title: "",
-        ...thread,
-      })
-      .onConflictDoUpdate({
-        target: [ChatThreadTable.id],
-        set: {
-          title: thread.title,
-        },
+        id: param.threadId,
+        userId: param.userId,
+        title: param.title ?? "",
       })
       .returning();
-    return result;
+
+    return {
+      ...newThread,
+      isNew: true,
+    };
   },
-  async isThreadOwner(param: { threadId: string; userId: string }) {
-    const [thread] = await pgDb
-      .select({ id: ChatThreadTable })
-      .from(ChatThreadTable)
-      .where(
-        and(
-          eq(ChatThreadTable.id, param.threadId),
-          eq(ChatThreadTable.userId, param.userId),
-        ),
-      );
-    return thread != null;
-  },
+
   async deleteThread(threadId: string) {
     await pgDb.delete(ChatThreadTable).where(eq(ChatThreadTable.id, threadId));
   },
