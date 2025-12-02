@@ -149,10 +149,6 @@ export const checkAnswer = (
   submittedAnswer: BlockAnswerSubmit,
 ) => {
   const correctAnswerType = correctAnswer.type;
-  console.log({
-    correctAnswer,
-    submittedAnswer,
-  });
 
   if (correctAnswerType !== submittedAnswer.type) {
     return false;
