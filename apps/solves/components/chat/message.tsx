@@ -27,7 +27,7 @@ const PurePreviewMessage = ({
     return null; // system message 는 표기하지 않음
   }
   return (
-    <div className="w-full mx-auto max-w-3xl px-6 group/message">
+    <div className="w-full mx-auto max-w-3xl px-2 group/message">
       <div className="flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl">
         <div className="flex flex-col gap-4 w-full">
           {message.parts.map((part, index) => {

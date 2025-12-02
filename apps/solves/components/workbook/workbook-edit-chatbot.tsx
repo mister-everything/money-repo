@@ -2,16 +2,13 @@
 
 import { useChat } from "@ai-sdk/react";
 import { ChatModel, ChatThread } from "@service/solves/shared";
-import {
-  deduplicateByKey,
-  generateUUID,
-  truncateString,
-} from "@workspace/util";
+import { deduplicateByKey, generateUUID } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
-import { MoreHorizontalIcon, PlusIcon, SendIcon } from "lucide-react";
+import { LoaderIcon, PlusIcon, SendIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { deleteThreadAction } from "@/actions/chat";
 import { Message } from "@/components/chat/message";
 import { ModelDropDownMenu } from "@/components/chat/model-drop-down-menu";
 import { Button } from "@/components/ui/button";
@@ -19,33 +16,48 @@ import { Input } from "@/components/ui/input";
 import { useToRef } from "@/hooks/use-to-ref";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
+import { notify } from "../ui/notify";
 import { Skeleton } from "../ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface WorkbooksCreateChatProps {
   workbookId: string;
 }
 
 export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
-  const [threadId, setThreadId] = useState(() => generateUUID());
+  const [threadId, setThreadId] = useState<string>();
 
-  const [tempThreadList, setTempThreadList] = useState<ChatThread[]>(() => {
-    return [
-      {
-        id: threadId,
-        title: "",
-        createdAt: new Date(),
-      },
-    ];
+  const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
+
+  const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+
+  const [, deleteAction] = useSafeAction(deleteThreadAction, {
+    failMessage: "채팅 삭제에 실패했습니다. 다시 시도해주세요.",
+    onBefore: (threadId) => {
+      setDeletingThreadId(threadId);
+      return threadId;
+    },
+    onFinish: () => {
+      refreshThread();
+      setDeletingThreadId(null);
+    },
   });
 
   const {
     data: savedThreadList = [],
     isLoading: isThreadLoading,
+    isValidating: isThreadValidating,
     mutate: refreshThread,
   } = useSWR<ChatThread[]>(`/api/workbooks/${workbookId}/chat`, {
     onError: handleErrorToast,
     fallbackData: [],
+    onSuccess: (data) => {
+      if (latest.current.threadId) return;
+      if (data.length > 0) setThreadId(data.at(0)?.id);
+      else addNewThread();
+    },
     dedupingInterval: 0,
   });
 
@@ -59,6 +71,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const latest = useToRef({ model, threadId, tempThreadList });
 
   const [input, setInput] = useState<string>("");
+
+  const threadList = useMemo(() => {
+    const sortByCreatedAtDesc = [...tempThreadList, ...savedThreadList].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    return deduplicateByKey(sortByCreatedAtDesc, "id");
+  }, [savedThreadList, tempThreadList]);
 
   const onFinish = useCallback<ChatOnFinishCallback<UIMessage>>(async (ctx) => {
     if (ctx.isError) return;
@@ -97,13 +117,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     }),
   });
 
-  const threadList = useMemo(() => {
-    const sortByCreatedAtDesc = [...tempThreadList, ...savedThreadList].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  const isChatPending = useMemo(() => {
+    return (
+      isMessagesLoading ||
+      isThreadValidating ||
+      status == "submitted" ||
+      status == "streaming"
     );
-    return deduplicateByKey(sortByCreatedAtDesc, "id");
-  }, [savedThreadList, tempThreadList]);
+  }, [isMessagesLoading, isThreadValidating, status]);
 
   const fetchThreadMessages = useCallback(async (threadId: string) => {
     try {
@@ -131,11 +152,16 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      if (
+        e.key === "Enter" &&
+        !e.shiftKey &&
+        !e.nativeEvent.isComposing &&
+        !isChatPending
+      ) {
         send();
       }
     },
-    [send],
+    [send, isChatPending],
   );
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,9 +181,39 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     setThreadId(id);
   }, []);
 
+  const handleThreadClick = useCallback(
+    (threadId: string) => {
+      if (isChatPending) return;
+      setThreadId(threadId);
+    },
+    [isChatPending],
+  );
+
+  const handleDeleteThread = useCallback(
+    async (threadId: string) => {
+      if (isChatPending) return;
+      const isSavedThread = savedThreadList.some((t) => t.id === threadId);
+      if (isSavedThread) {
+        const isConfirmed = await notify.confirm({
+          title: "채팅 삭제",
+          description: "정말 삭제하시겠습니까?",
+          okText: "삭제",
+          cancelText: "취소",
+        });
+        if (isConfirmed) {
+          deleteAction(threadId);
+        }
+      } else {
+        setTempThreadList((prev) => prev.filter((t) => t.id !== threadId));
+      }
+    },
+    [savedThreadList, isChatPending],
+  );
+
   useEffect(() => {
-    const isTempThread = tempThreadList.some((t) => t.id === threadId);
-    if (isTempThread) return;
+    if (!threadId) return;
+    const isSavedThread = savedThreadList.some((t) => t.id === threadId);
+    if (!isSavedThread) return;
     fetchThreadMessages(threadId)
       .then((messages) => {
         setMessages(messages ?? []);
@@ -182,25 +238,53 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             threadList.map((thread) => (
               <Button
                 key={thread.id}
-                size={"sm"}
-                variant="secondary"
-                onClick={() => setThreadId(thread.id)}
-                disabled={
-                  isMessagesLoading || isThreadLoading || status != "ready"
-                }
-                className={cn("min-w-0", thread.id == threadId && "bg-input")}
+                size="sm"
+                variant="ghost"
+                onClick={() => handleThreadClick(thread.id)}
+                className={cn(
+                  "group min-w-0 max-w-40 text-xs",
+                  thread.id == threadId ? "bg-input" : "hover:bg-input/50",
+                )}
               >
-                {truncateString(thread.title || "새로운 채팅", 10)}
+                <span className="flex-1 min-w-0 text-left truncate">
+                  {thread.title || "새로운 채팅"}
+                </span>
+
+                {deletingThreadId == thread.id ? (
+                  <LoaderIcon className="size-3 animate-spin" />
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteThread(thread.id);
+                        }}
+                        className="shrink-0 hidden group-hover:block hover:bg-background transition-all p-1 rounded-sm"
+                      >
+                        <XIcon className="size-3" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>채팅 삭제</TooltipContent>
+                  </Tooltip>
+                )}
               </Button>
             ))
           )}
         </div>
-        <Button size="icon" variant="ghost" onClick={addNewThread}>
-          <PlusIcon />
-        </Button>
-        <Button size="icon" variant="ghost">
-          <MoreHorizontalIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={addNewThread}
+              className="hover:bg-input! size-8!"
+            >
+              <PlusIcon />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>새로운 채팅</TooltipContent>
+        </Tooltip>
       </div>
       <div
         className={cn(
@@ -208,38 +292,31 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           isMessagesLoading && "bg-background/20",
         )}
       >
-        {isMessagesLoading ? (
-          <Skeleton className="w-full h-14 bg-input" />
-        ) : null}
-        {messages.map((message, index) => {
-          return (
-            <Message
-              key={index}
-              message={message}
-              isLastMessage={index === messages.length - 1}
-              status={status}
-            />
-          );
-        })}
+        {!isMessagesLoading &&
+          messages.map((message, index) => {
+            return (
+              <Message
+                key={index}
+                message={message}
+                isLastMessage={index === messages.length - 1}
+                status={status}
+              />
+            );
+          })}
       </div>
-      <div className="p-4 flex flex-col gap-2">
+      <div className={cn("p-4 flex flex-col gap-2", !threadId && "hidden")}>
         <div className="w-full flex justify-end">
           <ModelDropDownMenu defaultModel={model} onModelChange={setModel} />
         </div>
         <div className="flex gap-2 items-center">
           <Input
             value={input}
-            disabled={status != "ready" || isMessagesLoading}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="무엇이든 물어보세요"
             className="bg-background"
           />
-          <Button
-            size={"icon"}
-            onClick={() => send()}
-            disabled={status != "ready" || isMessagesLoading}
-          >
+          <Button size={"icon"} onClick={() => send()} disabled={isChatPending}>
             <SendIcon />
           </Button>
         </div>
