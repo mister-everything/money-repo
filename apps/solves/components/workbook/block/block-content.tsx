@@ -16,25 +16,23 @@ import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
 import { CheckIcon, CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InDevelopment } from "@/components/ui/in-development";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/notify";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { WorkBookComponentMode } from "../types";
 
 // 정답 일때
-const okClass = "border-primary bg-primary/5 text-primary hover:text-primary";
+const okClass =
+  "border-primary bg-primary/5 text-primary hover:text-primary hover:bg-primary/10";
 
 // 사용자가 선택했고 오답 일때
-const failClass = "border-destructive bg-destructive/5 text-destructive";
-
-const muteClass =
-  "border-muted-foreground bg-muted-foreground/5 text-muted-foreground";
+const failClass =
+  "border-destructive bg-destructive/5 text-destructive hover:text-destructive hover:bg-destructive/10";
 
 type BlockContentProps<T extends BlockType = BlockType> = {
   content: BlockContent<T>;
@@ -108,31 +106,24 @@ export function DefaultBlockContent({
           <div className="flex flex-col gap-2 text-muted-foreground w-full">
             <div
               className={cn(
-                !submit?.answer ? muteClass : isCorrect ? okClass : failClass,
+                isCorrect ? okClass : failClass,
                 "w-full rounded-lg p-4 border flex items-center",
               )}
             >
-              {submit?.answer ? (
+              {isCorrect ? (
                 <CheckIcon className="size-5 mr-2 stroke-3" />
               ) : (
                 <XIcon className="size-5 mr-2 stroke-3" />
               )}
               {submit?.answer || "정답을 제출하지 않았습니다."}
-            </div>
-            <p className="mt-4">정답</p>
-            <div className="flex flex-wrap items-center gap-2">
-              {answer?.answer.map((correctAnswer, index) => (
-                <Button
-                  size="lg"
-                  key={index}
-                  variant="outline"
-                  className={
-                    correctAnswer === submit?.answer ? okClass : muteClass
-                  }
-                >
-                  {correctAnswer}
-                </Button>
-              ))}
+              <Badge
+                className={cn(
+                  "ml-auto",
+                  isCorrect ? "bg-primary" : "bg-destructive",
+                )}
+              >
+                {isCorrect ? "정답" : "오답"}
+              </Badge>
             </div>
           </div>
         )}
@@ -174,7 +165,6 @@ export function McqMultipleBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
-  isCorrect,
 }: BlockContentProps<"mcq-multiple">) {
   const addOption = useCallback(async () => {
     if ((content.options.length ?? 0) >= MCQ_BLOCK_MAX_OPTIONS)
@@ -240,15 +230,6 @@ export function McqMultipleBlockContent({
     [onUpdateAnswer, mode, onUpdateSubmitAnswer],
   );
 
-  const getChecked = useCallback(
-    (optionId: string) => {
-      if (mode == "solve") return submit?.answer?.includes(optionId);
-      if (mode == "edit") return answer?.answer.includes(optionId);
-      return false;
-    },
-    [mode, answer, submit],
-  );
-
   const getSelectedClass = useCallback(
     (optionId: string) => {
       if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
@@ -256,6 +237,7 @@ export function McqMultipleBlockContent({
       if (mode == "review") {
         if (answer?.answer.includes(optionId)) return okClass;
         if (submit?.answer?.includes(optionId)) return failClass;
+        return "bg-card text-muted-foreground/50";
       }
 
       return "hover:bg-muted-foreground/5 hover:border-muted-foreground";
@@ -267,11 +249,19 @@ export function McqMultipleBlockContent({
     <div className="flex flex-col gap-3">
       {content.options.map((option, index) => {
         if (option.type == "text") {
-          const checked = getChecked(option.id);
+          const status =
+            mode == "review" && answer?.answer.includes(option.id)
+              ? "correct"
+              : mode == "review" && submit?.answer?.includes(option.id)
+                ? "incorrect"
+                : mode == "review"
+                  ? "unchecked"
+                  : undefined;
+
           return (
-            <Label
+            <div
               key={option.id}
-              htmlFor={option.id}
+              onClick={() => handleOptionSelect(option.id)}
               className={cn(
                 "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
                 (mode == "edit" || mode == "solve") && "cursor-pointer",
@@ -279,37 +269,53 @@ export function McqMultipleBlockContent({
               )}
             >
               <div className="flex items-center gap-1.5 overflow-hidden">
-                {mode == "review" && answer?.answer.includes(option.id) ? (
+                {status == "correct" ? (
                   <CheckIcon className="size-5 mr-2 stroke-3" />
-                ) : mode == "review" && submit?.answer?.includes(option.id) ? (
+                ) : status == "incorrect" ? (
                   <XIcon className="size-5 mr-2 stroke-3" />
-                ) : (
+                ) : mode == "edit" ? (
                   <Checkbox
                     id={option.id}
-                    checked={checked}
-                    onCheckedChange={() => handleOptionSelect(option.id)}
+                    checked={answer?.answer.includes(option.id)}
                     className="mr-3 rounded-sm border-border bg-card"
                   />
+                ) : (
+                  <div
+                    className={cn(
+                      "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      status == "unchecked" &&
+                        "border-muted-foreground/50 text-muted-foreground/50",
+                    )}
+                  >
+                    {index + 1}
+                  </div>
                 )}
 
                 <span className="text-sm font-medium leading-snug">
                   {option.text}
                 </span>
               </div>
-              {mode == "edit" && (
+              <div className="flex-1" />
+              {mode == "edit" ? (
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     removeOption(index);
                   }}
                   size="icon"
-                  className="size-6! text-muted-foreground ml-auto"
+                  className="size-6! text-muted-foreground"
                   variant="ghost"
                 >
                   <XIcon className="size-3!" />
                 </Button>
-              )}
-            </Label>
+              ) : status == "correct" ? (
+                <Badge className="bg-primary text-primary-foreground">
+                  정답
+                </Badge>
+              ) : status == "incorrect" ? (
+                <Badge className="bg-destructive">오답</Badge>
+              ) : undefined}
+            </div>
           );
         }
 
@@ -374,7 +380,7 @@ export function McqSingleBlockContent({
         },
       ],
     }));
-  }, [onUpdateContent, content.options.length]);
+  }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
     (index: number) => {
@@ -388,25 +394,20 @@ export function McqSingleBlockContent({
 
   const handleOptionSelect = useCallback(
     (optionId: string) => {
-      if (mode == "solve")
-        return onUpdateSubmitAnswer?.({
-          answer: optionId,
-        });
-      if (mode == "edit")
-        return onUpdateAnswer?.({
-          answer: optionId,
-        });
+      if (mode == "solve") return onUpdateSubmitAnswer?.({ answer: optionId });
+      if (mode == "edit") return onUpdateAnswer?.({ answer: optionId });
     },
     [onUpdateAnswer, mode, onUpdateSubmitAnswer],
   );
 
   const getSelectedClass = useCallback(
     (optionId: string) => {
-      if (mode == "solve" && submit?.answer == optionId) return okClass;
-      if (mode == "edit" && answer?.answer == optionId) return okClass;
+      if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
+      if (mode == "edit" && answer?.answer.includes(optionId)) return okClass;
       if (mode == "review") {
-        if (answer?.answer == optionId) return okClass;
-        if (submit?.answer == optionId) return failClass;
+        if (answer?.answer.includes(optionId)) return okClass;
+        if (submit?.answer?.includes(optionId)) return failClass;
+        return "bg-card text-muted-foreground/50";
       }
 
       return "hover:bg-muted-foreground/5 hover:border-muted-foreground";
@@ -416,83 +417,102 @@ export function McqSingleBlockContent({
 
   return (
     <div className="flex flex-col gap-3">
-      <RadioGroup
-        value={mode == "solve" ? submit?.answer : answer?.answer}
-        onValueChange={handleOptionSelect}
-      >
-        {content.options.map((option, index) => {
-          if (option.type == "text") {
-            return (
-              <Label
-                key={option.id}
-                htmlFor={option.id}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
-                  (mode == "edit" || mode == "solve") && "cursor-pointer",
-                  getSelectedClass(option.id),
-                )}
-              >
-                <div className="flex items-center gap-1.5 overflow-hidden">
-                  {mode == "review" && answer?.answer.includes(option.id) ? (
-                    <CheckIcon className="size-5 mr-2 stroke-3" />
-                  ) : mode == "review" &&
-                    submit?.answer?.includes(option.id) ? (
-                    <XIcon className="size-5 mr-2 stroke-3" />
-                  ) : (
-                    <RadioGroupItem
-                      id={option.id}
-                      value={option.id}
-                      className="mr-3 border-border bg-card"
-                    />
-                  )}
-
-                  <span className="text-sm font-medium leading-snug">
-                    {option.text}
-                  </span>
-                </div>
-                {mode == "edit" && (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeOption(index);
-                    }}
-                    size="icon"
-                    className="size-6! text-muted-foreground ml-auto"
-                    variant="ghost"
-                  >
-                    <XIcon className="size-3!" />
-                  </Button>
-                )}
-              </Label>
-            );
-          }
+      {content.options.map((option, index) => {
+        if (option.type == "text") {
+          const status =
+            mode == "review" && answer?.answer == option.id
+              ? "correct"
+              : mode == "review" && submit?.answer == option.id
+                ? "incorrect"
+                : mode == "review"
+                  ? "unchecked"
+                  : undefined;
 
           return (
-            <InDevelopment key={option.id} className="w-full text-sm h-48">
-              아직 지원하지 않는 옵션 입니다.
-            </InDevelopment>
-          );
-        })}
-        {mode == "preview" &&
-          content.options.length === 0 &&
-          Array.from({ length: 5 }).map((_, index) => (
             <div
-              key={index}
-              className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
-            />
-          ))}
-        {mode == "edit" &&
-          (content.options.length ?? 0) < MCQ_BLOCK_MAX_OPTIONS && (
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-dashed w-full py-6!"
-              onClick={addOption}
+              key={option.id}
+              onClick={() => handleOptionSelect(option.id)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
+                (mode == "edit" || mode == "solve") && "cursor-pointer",
+                getSelectedClass(option.id),
+              )}
             >
-              <PlusIcon /> 보기 추가
-            </Button>
-          )}
-      </RadioGroup>
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                {status == "correct" ? (
+                  <CheckIcon className="size-5 mr-2 stroke-3" />
+                ) : status == "incorrect" ? (
+                  <XIcon className="size-5 mr-2 stroke-3" />
+                ) : mode == "edit" ? (
+                  <Checkbox
+                    id={option.id}
+                    checked={answer?.answer == option.id}
+                    className="mr-3 rounded-sm border-border bg-card"
+                  />
+                ) : (
+                  <div
+                    className={cn(
+                      "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      status == "unchecked" &&
+                        "border-muted-foreground/50 text-muted-foreground/50",
+                    )}
+                  >
+                    {index + 1}
+                  </div>
+                )}
+
+                <span className="text-sm font-medium leading-snug">
+                  {option.text}
+                </span>
+              </div>
+              <div className="flex-1" />
+              {mode == "edit" ? (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeOption(index);
+                  }}
+                  size="icon"
+                  className="size-6! text-muted-foreground"
+                  variant="ghost"
+                >
+                  <XIcon className="size-3!" />
+                </Button>
+              ) : status == "correct" ? (
+                <Badge className="bg-primary text-primary-foreground">
+                  정답
+                </Badge>
+              ) : status == "incorrect" ? (
+                <Badge className="bg-destructive">오답</Badge>
+              ) : undefined}
+            </div>
+          );
+        }
+
+        return (
+          <InDevelopment key={option.id} className="w-full text-sm h-48">
+            아직 지원하지 않는 옵션 입니다.
+          </InDevelopment>
+        );
+      })}
+      {mode == "preview" &&
+        content.options.length === 0 &&
+        Array.from({ length: 5 }).map((_, index) => (
+          <div
+            key={index}
+            className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
+          />
+        ))}
+      {mode == "edit" && content.options.length <= MCQ_BLOCK_MIN_OPTIONS && (
+        <Button
+          variant="outline"
+          size="lg"
+          className="border-dashed w-full py-6!"
+          onClick={addOption}
+        >
+          <PlusIcon /> 보기 추가
+        </Button>
+      )}
     </div>
   );
 }
@@ -795,11 +815,10 @@ export function RankingBlockContent({
         </div>
       </div>
 
-      {slotCount > 0 && mode === "review" && !isCorrect && (
+      {slotCount > 0 && mode === "review" && (
         <div className="space-y-4">
           {/* 내 제출 순서 */}
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">내 순서</Label>
             <div className="space-y-2">
               {Array.from({ length: slotCount }).map((_, slotIndex) => {
                 const itemId = currentOrder[slotIndex];
@@ -810,66 +829,38 @@ export function RankingBlockContent({
                   <div key={slotIndex} className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                        slotStatus === "correct" &&
-                          "bg-primary text-primary-foreground",
-                        slotStatus === "wrong" &&
-                          "bg-destructive/5 text-destructive",
-                        slotStatus !== "correct" &&
-                          slotStatus !== "wrong" &&
-                          rankBadgeClass,
-                      )}
-                    >
-                      {slotIndex + 1}
-                    </div>
-                    <div
-                      className={cn(
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card",
-                        slotStatus === "correct" && okClass,
-                        slotStatus === "wrong" && failClass,
-                        !item && "border-dashed bg-muted/20",
-                      )}
-                    >
-                      <span className="text-sm font-medium">
-                        {item
-                          ? item.type === "text" && item.text
-                          : "제출하지 않음"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 정답 순서 */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">정답 순서</Label>
-            <div className="space-y-2">
-              {Array.from({ length: slotCount }).map((_, slotIndex) => {
-                const correctItemId = answer?.order?.[slotIndex];
-                const correctItem = correctItemId
-                  ? items.find((i) => i.id === correctItemId)
-                  : null;
-
-                return (
-                  <div key={slotIndex} className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                        "size-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                         rankBadgeClass,
                       )}
                     >
                       {slotIndex + 1}
                     </div>
                     <div
-                      className={
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-secondary border-muted-foreground"
-                      }
+                      className={cn(
+                        "flex-1 flex items-center px-4 py-3 rounded-md border transition-all bg-card",
+                        slotStatus === "correct" ? okClass : failClass,
+                      )}
                     >
+                      {slotStatus === "correct" ? (
+                        <CheckIcon className="size-4 mr-2 stroke-3" />
+                      ) : (
+                        <XIcon className="size-4 mr-2 stroke-3" />
+                      )}
                       <span className="text-sm font-medium">
-                        {correctItem?.type === "text" && correctItem.text}
+                        {item
+                          ? item.type === "text" && item.text
+                          : "제출하지 않음"}
                       </span>
+                      <Badge
+                        className={cn(
+                          "ml-auto",
+                          slotStatus === "correct"
+                            ? "bg-primary"
+                            : "bg-destructive",
+                        )}
+                      >
+                        {slotStatus === "correct" ? "정답" : "오답"}
+                      </Badge>
                     </div>
                   </div>
                 );
@@ -879,7 +870,7 @@ export function RankingBlockContent({
         </div>
       )}
 
-      {slotCount > 0 && !(mode === "review" && !isCorrect) && (
+      {slotCount > 0 && mode !== "review" && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">

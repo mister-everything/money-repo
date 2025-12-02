@@ -106,7 +106,7 @@ export function BlockSelectPopup({
           ))}
         </div>
         <div className="w-full flex justify-end mt-6">
-          <DialogClose>
+          <DialogClose asChild>
             <Button onClick={() => onSelected?.(block)}>
               문제집에 문제 넣기
             </Button>
