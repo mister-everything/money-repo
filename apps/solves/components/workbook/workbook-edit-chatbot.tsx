@@ -4,7 +4,13 @@ import { useChat } from "@ai-sdk/react";
 import { ChatModel, ChatThread } from "@service/solves/shared";
 import { deduplicateByKey, generateUUID } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
-import { LoaderIcon, PlusIcon, SendIcon, XIcon } from "lucide-react";
+import {
+  LoaderIcon,
+  PlusIcon,
+  SendIcon,
+  SquareIcon,
+  XIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -103,7 +109,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     addNewThread();
   }, []);
 
-  const { messages, sendMessage, status, setMessages } = useChat({
+  const { messages, sendMessage, status, setMessages, stop } = useChat({
     id: threadId,
     generateId: generateUUID,
     onError: handleErrorToast,
@@ -374,8 +380,16 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             placeholder="무엇이든 물어보세요"
             className="bg-background"
           />
-          <Button size={"icon"} onClick={() => send()} disabled={isPending}>
-            <SendIcon />
+          <Button
+            size={"icon"}
+            onClick={() => (isChatPending ? stop() : send())}
+            disabled={!isChatPending && isPending}
+          >
+            {isChatPending ? (
+              <SquareIcon className="fill-primary-foreground" />
+            ) : (
+              <SendIcon />
+            )}
           </Button>
         </div>
       </div>
