@@ -1,4 +1,5 @@
 "use client";
+import { BlockAnswer } from "@service/solves/shared";
 import { ChevronDownIcon, LightbulbIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,12 @@ export function BlockSolution({
   solution,
   mode,
   onChangeSolution,
+  answer,
 }: {
   solution: string;
   mode: WorkBookComponentMode;
   onChangeSolution?: (solution: string) => void;
+  answer?: BlockAnswer;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const handleToggleExpanded = useCallback(() => {

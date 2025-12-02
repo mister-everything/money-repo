@@ -305,20 +305,15 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                 {deletingThreadId == thread.id ? (
                   <LoaderIcon className="size-3 animate-spin" />
                 ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteThread(thread.id);
-                        }}
-                        className="shrink-0 hidden group-hover:block hover:bg-background transition-all p-1 rounded-sm"
-                      >
-                        <XIcon className="size-3" />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>채팅 삭제</TooltipContent>
-                  </Tooltip>
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteThread(thread.id);
+                    }}
+                    className="shrink-0 hidden group-hover:block hover:bg-background transition-all p-1 rounded-sm"
+                  >
+                    <XIcon className="size-3" />
+                  </span>
                 )}
               </Button>
             ))

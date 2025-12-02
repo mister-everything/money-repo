@@ -8,7 +8,13 @@ import {
   validateBlock,
 } from "@service/solves/shared";
 import { equal, exclude, StateUpdate } from "@workspace/util";
-import { CheckIcon, PencilIcon, TrashIcon, XIcon } from "lucide-react";
+import {
+  CheckIcon,
+  CircleIcon,
+  PencilIcon,
+  TrashIcon,
+  XIcon,
+} from "lucide-react";
 import { memo, Ref, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -98,13 +104,14 @@ function PureBlock<T extends BlockType = BlockType>({
       <CardHeader>
         <div className="flex items-center gap-2">
           <Badge
-            variant={
+            className={cn(
               props.mode !== "review"
-                ? "default"
+                ? ""
                 : props.isCorrect
-                  ? "default"
-                  : "destructive"
-            }
+                  ? "bg-primary"
+                  : "bg-destructive",
+            )}
+            variant="default"
           >
             문제 {props.index + 1}
           </Badge>
@@ -173,9 +180,9 @@ function PureBlock<T extends BlockType = BlockType>({
 
           {props.mode === "review" &&
             (props.isCorrect ? (
-              <CheckIcon className="text-primary" />
+              <CircleIcon className="text-primary stroke-4" />
             ) : (
-              <XIcon className="text-destructive" />
+              <XIcon className="text-destructive stroke-4" />
             ))}
         </div>
         <BlockQuestion
@@ -251,6 +258,7 @@ function PureBlock<T extends BlockType = BlockType>({
           solution={props.answer?.solution ?? ""}
           mode={props.mode}
           onChangeSolution={props.onUpdateSolution}
+          answer={props.answer}
         />
         {props.errorFeedback && (
           <p className="text-destructive text-xs whitespace-pre-wrap mt-4">
