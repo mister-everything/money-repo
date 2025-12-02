@@ -27,10 +27,12 @@ import { cn } from "@/lib/utils";
 import { WorkBookComponentMode } from "../types";
 
 // 정답 일때
-const okClass = "border-primary bg-primary/5 text-primary hover:text-primary";
+const okClass =
+  "border-primary bg-primary/5 text-primary hover:text-primary hover:bg-primary/10";
 
 // 사용자가 선택했고 오답 일때
-const failClass = "border-destructive bg-destructive/5 text-destructive";
+const failClass =
+  "border-destructive bg-destructive/5 text-destructive hover:text-destructive hover:bg-destructive/10";
 
 type BlockContentProps<T extends BlockType = BlockType> = {
   content: BlockContent<T>;
@@ -813,11 +815,10 @@ export function RankingBlockContent({
         </div>
       </div>
 
-      {slotCount > 0 && mode === "review" && !isCorrect && (
+      {slotCount > 0 && mode === "review" && (
         <div className="space-y-4">
           {/* 내 제출 순서 */}
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">내 순서</Label>
             <div className="space-y-2">
               {Array.from({ length: slotCount }).map((_, slotIndex) => {
                 const itemId = currentOrder[slotIndex];
@@ -828,66 +829,38 @@ export function RankingBlockContent({
                   <div key={slotIndex} className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                        slotStatus === "correct" &&
-                          "bg-primary text-primary-foreground",
-                        slotStatus === "wrong" &&
-                          "bg-destructive/5 text-destructive",
-                        slotStatus !== "correct" &&
-                          slotStatus !== "wrong" &&
-                          rankBadgeClass,
-                      )}
-                    >
-                      {slotIndex + 1}
-                    </div>
-                    <div
-                      className={cn(
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card",
-                        slotStatus === "correct" && okClass,
-                        slotStatus === "wrong" && failClass,
-                        !item && "border-dashed bg-muted/20",
-                      )}
-                    >
-                      <span className="text-sm font-medium">
-                        {item
-                          ? item.type === "text" && item.text
-                          : "제출하지 않음"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 정답 순서 */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">정답 순서</Label>
-            <div className="space-y-2">
-              {Array.from({ length: slotCount }).map((_, slotIndex) => {
-                const correctItemId = answer?.order?.[slotIndex];
-                const correctItem = correctItemId
-                  ? items.find((i) => i.id === correctItemId)
-                  : null;
-
-                return (
-                  <div key={slotIndex} className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                        "size-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                         rankBadgeClass,
                       )}
                     >
                       {slotIndex + 1}
                     </div>
                     <div
-                      className={
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-secondary border-muted-foreground"
-                      }
+                      className={cn(
+                        "flex-1 flex items-center px-4 py-3 rounded-md border transition-all bg-card",
+                        slotStatus === "correct" ? okClass : failClass,
+                      )}
                     >
+                      {slotStatus === "correct" ? (
+                        <CheckIcon className="size-4 mr-2 stroke-3" />
+                      ) : (
+                        <XIcon className="size-4 mr-2 stroke-3" />
+                      )}
                       <span className="text-sm font-medium">
-                        {correctItem?.type === "text" && correctItem.text}
+                        {item
+                          ? item.type === "text" && item.text
+                          : "제출하지 않음"}
                       </span>
+                      <Badge
+                        className={cn(
+                          "ml-auto",
+                          slotStatus === "correct"
+                            ? "bg-primary"
+                            : "bg-destructive",
+                        )}
+                      >
+                        {slotStatus === "correct" ? "정답" : "오답"}
+                      </Badge>
                     </div>
                   </div>
                 );
@@ -897,7 +870,7 @@ export function RankingBlockContent({
         </div>
       )}
 
-      {slotCount > 0 && !(mode === "review" && !isCorrect) && (
+      {slotCount > 0 && mode !== "review" && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">
