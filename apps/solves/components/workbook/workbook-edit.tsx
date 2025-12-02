@@ -29,6 +29,8 @@ import {
   publishWorkbookAction,
   updateWorkbookAction,
 } from "@/actions/workbook";
+import { Button } from "@/components/ui/button";
+import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
   TooltipContent,
@@ -39,8 +41,6 @@ import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { GoBackButton } from "../layouts/go-back-button";
-import { Button } from "../ui/button";
-import { notify } from "../ui/notify";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";

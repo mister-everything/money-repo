@@ -5,7 +5,7 @@ import { ChatModel, ChatThread } from "@service/solves/shared";
 import { deduplicateByKey, generateUUID } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
 import { LoaderIcon, PlusIcon, SendIcon, XIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { deleteThreadAction } from "@/actions/chat";
@@ -13,14 +13,18 @@ import { Message } from "@/components/chat/message";
 import { ModelDropDownMenu } from "@/components/chat/model-drop-down-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { notify } from "@/components/ui/notify";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToRef } from "@/hooks/use-to-ref";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
-import { notify } from "../ui/notify";
-import { Skeleton } from "../ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface WorkbooksCreateChatProps {
   workbookId: string;
@@ -32,6 +36,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
 
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef(false);
 
   const [, deleteAction] = useSafeAction(deleteThreadAction, {
     failMessage: "채팅 삭제에 실패했습니다. 다시 시도해주세요.",
@@ -118,13 +124,12 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   });
 
   const isChatPending = useMemo(() => {
-    return (
-      isMessagesLoading ||
-      isThreadValidating ||
-      status == "submitted" ||
-      status == "streaming"
-    );
-  }, [isMessagesLoading, isThreadValidating, status]);
+    return status == "submitted" || status == "streaming";
+  }, [status]);
+
+  const isPending = useMemo(() => {
+    return isMessagesLoading || isThreadValidating || isChatPending;
+  }, [isMessagesLoading, isThreadValidating, isChatPending]);
 
   const fetchThreadMessages = useCallback(async (threadId: string) => {
     try {
@@ -156,12 +161,12 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         e.key === "Enter" &&
         !e.shiftKey &&
         !e.nativeEvent.isComposing &&
-        !isChatPending
+        !isPending
       ) {
         send();
       }
     },
-    [send, isChatPending],
+    [send, isPending],
   );
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,15 +188,15 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const handleThreadClick = useCallback(
     (threadId: string) => {
-      if (isChatPending) return;
+      if (isPending) return;
       setThreadId(threadId);
     },
-    [isChatPending],
+    [isPending],
   );
 
   const handleDeleteThread = useCallback(
     async (threadId: string) => {
-      if (isChatPending) return;
+      if (isPending) return;
       const isSavedThread = savedThreadList.some((t) => t.id === threadId);
       if (isSavedThread) {
         const isConfirmed = await notify.confirm({
@@ -202,12 +207,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         });
         if (isConfirmed) {
           deleteAction(threadId);
+          addNewThread();
         }
       } else {
         setTempThreadList((prev) => prev.filter((t) => t.id !== threadId));
+        addNewThread();
       }
     },
-    [savedThreadList, isChatPending],
+    [savedThreadList, isPending],
   );
 
   useEffect(() => {
@@ -222,6 +229,45 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         setMessages([]);
       });
   }, [threadId]);
+
+  useEffect(() => {
+    if (autoScrollRef.current || messages.at(-1)?.role == "user") {
+      messagesContainerRef.current?.scrollTo({
+        top: messagesContainerRef.current?.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const isLoading = status == "submitted" || status == "streaming";
+    if (isLoading) {
+      autoScrollRef.current = true;
+      const handleScroll = () => {
+        const el = messagesContainerRef.current!;
+        const isAtBottom =
+          el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+        if (!isAtBottom) {
+          autoScrollRef.current = false;
+        }
+      };
+      messagesContainerRef.current?.addEventListener("scroll", handleScroll);
+      return () => {
+        messagesContainerRef.current?.removeEventListener(
+          "scroll",
+          handleScroll,
+        );
+      };
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (!isMessagesLoading) {
+      messagesContainerRef.current?.scrollTo({
+        top: messagesContainerRef.current?.scrollHeight,
+      });
+    }
+  }, [isMessagesLoading]);
 
   return (
     <div className="flex flex-col h-full border rounded-2xl bg-sidebar">
@@ -287,22 +333,34 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         </Tooltip>
       </div>
       <div
+        ref={messagesContainerRef}
         className={cn(
           "flex-1 overflow-y-auto px-4 py-4",
           isMessagesLoading && "bg-background/20",
         )}
       >
-        {!isMessagesLoading &&
-          messages.map((message, index) => {
-            return (
-              <Message
-                key={index}
-                message={message}
-                isLastMessage={index === messages.length - 1}
-                status={status}
-              />
-            );
-          })}
+        {!isMessagesLoading && (
+          <>
+            {messages.map((message, index) => {
+              const isLastMessage = index === messages.length - 1;
+              return (
+                <Message
+                  key={index}
+                  message={message}
+                  isLastMessage={isLastMessage}
+                  status={status}
+                  className={
+                    !isLastMessage
+                      ? undefined
+                      : message.role == "assistant"
+                        ? "min-h-[calc(65dvh-30px)]"
+                        : "min-h-[calc(65dvh+70px)]"
+                  }
+                />
+              );
+            })}
+          </>
+        )}
       </div>
       <div className={cn("p-4 flex flex-col gap-2", !threadId && "hidden")}>
         <div className="w-full flex justify-end">
@@ -316,7 +374,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             placeholder="무엇이든 물어보세요"
             className="bg-background"
           />
-          <Button size={"icon"} onClick={() => send()} disabled={isChatPending}>
+          <Button size={"icon"} onClick={() => send()} disabled={isPending}>
             <SendIcon />
           </Button>
         </div>
