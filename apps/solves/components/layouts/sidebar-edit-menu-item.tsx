@@ -28,8 +28,10 @@ export function SidebarEditMenuItem({
   const showSubMenu = useMemo(
     () =>
       state === "expanded" &&
-      [rootHref, inProgressBooksHref].some((href) => path === href),
-    [state, path, rootHref, inProgressBooksHref],
+      [publishedBooksHref, rootHref, inProgressBooksHref].some(
+        (href) => path === href,
+      ),
+    [state, path, rootHref, inProgressBooksHref, publishedBooksHref],
   );
 
   return (
