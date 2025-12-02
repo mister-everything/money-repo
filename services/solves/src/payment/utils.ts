@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { sharedCache } from "./shared-cache";
+import { sharedCache } from "../shared-cache";
 import type { AIPrice } from "./types";
 
 /**

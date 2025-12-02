@@ -14,11 +14,10 @@ export default async function WorkbookEditPage({
 
   const session = await getSession();
 
-  const hasPermission = await workBookService.isWorkBookOwner(
+  await workBookService.checkEditPermission(
     z.uuid().parse(id),
     session.user.id,
   );
-  if (!hasPermission) return notFound();
 
   const book = await workBookService.getWorkBookWithBlocks(id);
   if (!book) notFound();

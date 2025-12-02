@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
+import { CacheKeys, CacheTTL } from "../cache-keys";
 import { INITIAL_CREDIT_BALANCE } from "../const";
 import { pgDb } from "../db";
-import { CacheKeys, CacheTTL } from "./cache-keys";
+import { sharedCache } from "../shared-cache";
 import { CreditWalletTable } from "./schema";
-import { sharedCache } from "./shared-cache";
 import type { Wallet } from "./types";
 import { toDecimal } from "./utils";
 
