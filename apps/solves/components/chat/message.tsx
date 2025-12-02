@@ -3,7 +3,9 @@
 import { equal } from "@workspace/util";
 import { ChatStatus, isToolUIPart, type UIMessage } from "ai";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { Think } from "@/components/ui/think";
+import { cn } from "@/lib/utils";
 import { AssistantTextPart, ReasoningPart, UserMessagePart } from "./part";
 
 function isStreamingMessage(
@@ -16,18 +18,32 @@ export interface MessageProps {
   message: UIMessage;
   isLastMessage?: boolean;
   status?: ChatStatus;
+  className?: string;
 }
 
 const PurePreviewMessage = ({
   message,
   status,
   isLastMessage,
+  className,
 }: MessageProps) => {
   if (message.role == "system") {
     return null; // system message 는 표기하지 않음
   }
+
+  const showThink = useMemo(() => {
+    if (!isLastMessage) return false;
+    if (status == "ready" || status == "error") return false;
+    if (message.role == "user") return true;
+    return (
+      message.parts.filter((part) => part.type == "step-start").length == 0
+    );
+  }, [isLastMessage, status, message.parts.length]);
+
   return (
-    <div className="w-full mx-auto max-w-3xl px-6 group/message">
+    <div
+      className={cn("w-full mx-auto max-w-3xl px-2 group/message", className)}
+    >
       <div className="flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl">
         <div className="flex flex-col gap-4 w-full">
           {message.parts.map((part, index) => {
@@ -79,6 +95,11 @@ const PurePreviewMessage = ({
           })}
         </div>
       </div>
+      {showThink && (
+        <div className="px-2">
+          <Think />
+        </div>
+      )}
     </div>
   );
 };
@@ -90,9 +111,11 @@ export const Message = memo(
       return false;
 
     if (prevProps.message.id !== nextProps.message.id) return false;
+    if (prevProps.isLastMessage !== nextProps.isLastMessage) return false;
 
     if (!equal(prevProps.message.metadata, nextProps.message.metadata))
       return false;
+    if (prevProps.className !== nextProps.className) return false;
 
     if (prevProps.message.parts.length !== nextProps.message.parts.length) {
       return false;
@@ -100,6 +123,7 @@ export const Message = memo(
     if (!equal(prevProps.message.parts, nextProps.message.parts)) {
       return false;
     }
+    if (prevProps.status !== nextProps.status) return false;
     return true;
   },
 );

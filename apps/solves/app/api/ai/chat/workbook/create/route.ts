@@ -48,8 +48,6 @@ export async function POST(req: Request) {
         role: "assistant",
         parts: [{ type: "text", text: ctx.text }],
       });
-
-      logger.info("Chat finished", ctx.text);
     },
     onError: (error) => {
       logger.error("Chat error", error);

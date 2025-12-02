@@ -1,5 +1,3 @@
-"use server";
-
 import { chatService } from "@service/solves";
 import { UIMessage } from "ai";
 import { NextRequest } from "next/server";
@@ -8,21 +6,20 @@ import { logger } from "@/lib/logger";
 import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ workbookId: string; threadId: string }> },
+  _: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { workbookId, threadId } = await params;
+    const { id: threadId } = await params;
     const session = await getSession();
 
-    const threads = await chatService.selectThreadsByWorkbookId({
-      workbookId,
-      userId: session.user.id,
-    });
+    const isOwner = await chatService.hasThreadPermission(
+      threadId,
+      session.user.id,
+    );
 
-    const hasAccess = threads.some((thread) => thread.id === threadId);
-    if (!hasAccess) {
-      return nextFail("Thread not found", 404);
+    if (!isOwner) {
+      return nextFail("권한이 없습니다.");
     }
 
     const messages = await chatService.selectMessages(threadId);
@@ -31,6 +28,7 @@ export async function GET(
       role: message.role,
       parts: message.parts,
       createdAt: message.createdAt,
+      metadata: message.metadata,
     }));
 
     return nextOk(uiMessages);
