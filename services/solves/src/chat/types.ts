@@ -4,6 +4,12 @@ export type ChatMetadata = {
   // 어떤 데이터 할 쥐  고 민 중!
 };
 
+export type ChatThread = {
+  title: string;
+  id: string;
+  createdAt: Date;
+};
+
 export type ChatMessage = {
   id: string;
   threadId: string;

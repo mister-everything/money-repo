@@ -1,8 +1,8 @@
 import { chatService } from "@service/solves";
-import { getSession } from "@/lib/auth/server";
-import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
-import { logger } from "@/lib/logger";
 import { NextRequest } from "next/server";
+import { getSession } from "@/lib/auth/server";
+import { logger } from "@/lib/logger";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * GET /api/ai/chat/workbook/[workbookId]/threads
@@ -27,4 +27,3 @@ export async function GET(
     return nextFail(error);
   }
 }
-
