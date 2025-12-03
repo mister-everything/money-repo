@@ -27,6 +27,11 @@ export type WorkBookBlock<T extends BlockType = BlockType> = {
   order: number;
 };
 
+export type WorkBookBlockWithSubmit<T extends BlockType = BlockType> =
+  WorkBookBlock<T> & {
+    submit?: BlockAnswerSubmit<T>;
+  };
+
 // 풀이 모드에서 사용하는 문제 블록
 export type WorkBookBlockWithoutAnswer = Omit<WorkBookBlock, "answer">;
 
@@ -112,4 +117,9 @@ export type WorkBookCompleted = WorkBookWithoutBlocks & {
   startTime: Date;
   endTime: Date;
   totalProblems: number;
+  correctAnswerCount: number;
+};
+
+export type SubmitWorkBook = WorkBookCompleted & {
+  blocks: WorkBookBlockWithSubmit[];
 };

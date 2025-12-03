@@ -1,25 +1,22 @@
 import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import { GoBackButton } from "@/components/layouts/go-back-button";
-import { WorkBookSolve } from "@/components/workbook/workbook-solve";
+import { WorkBookReview } from "@/components/workbook/workbook-review";
+import { getSession } from "@/lib/auth/server";
 
-export default async function Page({
+export default async function ReviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  // const session = await getSession();
+  const session = await getSession();
 
-  // const hasPermission = await workBookService.hasWorkBookPermission(
-  //   z.uuid().parse(id),
-  //   session.user.id,
-  // );
-
-  // if (!hasPermission) throw new Error("문제집에 접근할 수 없습니다.");
-
-  const book = await workBookService.getWorkBookWithoutAnswer(id);
-  if (!book) notFound();
+  const workBook = await workBookService.getLatestWorkBookWithAnswers(
+    id,
+    session.user.id,
+  );
+  if (!workBook) notFound();
 
   return (
     <div className="bg-background flex h-full flex-col overflow-hidden">
@@ -29,7 +26,7 @@ export default async function Page({
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <WorkBookSolve workBook={book} />
+          <WorkBookReview workBook={workBook} />
         </div>
       </div>
     </div>

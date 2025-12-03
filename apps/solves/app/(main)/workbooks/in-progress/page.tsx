@@ -8,14 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSession } from "@/lib/auth/server";
-import { logger } from "@/lib/logger";
 
 export default async function InProgressWorkbooksPage() {
   const session = await getSession();
   const inProgressWorkbooks = await workBookService.getWorkBookInProgress(
     session.user.id,
   );
-  logger.info(inProgressWorkbooks);
   return (
     <div className="h-screen">
       {/* 헤더 */}
@@ -30,7 +28,7 @@ export default async function InProgressWorkbooksPage() {
         </div>
       </div>
       {/* 문제집 목록 */}
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {inProgressWorkbooks.length > 0 ? (
             inProgressWorkbooks.map((book) => (

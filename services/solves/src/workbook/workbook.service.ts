@@ -1,6 +1,6 @@
 import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
@@ -14,7 +14,7 @@ import {
 import {
   CreateWorkBook,
   createWorkBookSchema,
-  SubmitWorkBookResponse,
+  SubmitWorkBook,
   WorkBook,
   WorkBookBlock,
   WorkBookCompleted,
@@ -431,17 +431,26 @@ export const workBookService = {
     submitId: string,
     workBookId: string,
     answers: Record<string, BlockAnswerSubmit>,
-  ): Promise<SubmitWorkBookResponse> => {
-    // 문제 목록 조회
-    const workBookBlocks = await pgDb
-      .select()
-      .from(blocksTable)
-      .where(eq(blocksTable.workBookId, workBookId));
+  ): Promise<SubmitWorkBook | null> => {
+    // 세션 정보 조회
+    const [session] = await pgDb
+      .select({
+        id: workBookSubmitsTable.id,
+        startTime: workBookSubmitsTable.startTime,
+      })
+      .from(workBookSubmitsTable)
+      .where(eq(workBookSubmitsTable.id, submitId));
 
-    const correctAnswerIds: string[] = [];
+    if (!session) return null;
+
+    // 문제집 정보 조회
+    const book = await workBookService.getWorkBookWithBlocks(workBookId);
+    if (!book) return null;
+
+    let correctAnswerCount = 0;
 
     // 채점 및 답안 업데이트
-    for (const block of workBookBlocks) {
+    for (const block of book.blocks) {
       // 제출된 답안
       const submittedAnswer = answers[block.id];
 
@@ -455,9 +464,9 @@ export const workBookService = {
         submittedAnswer,
       );
 
-      // 정답 여부 체크 결과가 참이면 정답 리스트에 추가하고 점수 증가
+      // 정답 여부 체크 결과가 참이면 정답 카운트 증가
       if (isCorrect) {
-        correctAnswerIds.push(block.id);
+        correctAnswerCount++;
       }
 
       // 답안 제출 기록 업데이트
@@ -481,22 +490,26 @@ export const workBookService = {
         });
     }
 
-    // 세션 종료 (endTime, score 업데이트)
+    // 세션 종료 (endTime 업데이트)
+    const endTime = new Date();
     await pgDb
       .update(workBookSubmitsTable)
       .set({
-        endTime: new Date(),
+        endTime,
       })
       .where(eq(workBookSubmitsTable.id, submitId));
 
     return {
-      correctAnswerIds,
-      totalProblems: workBookBlocks.length,
-      blockResults: workBookBlocks.map((block) => ({
-        blockId: block.id,
-        answer: block.answer,
+      ...book,
+      correctAnswerCount,
+      totalProblems: book.blocks.length,
+      startTime: session.startTime,
+      endTime,
+      blocks: book.blocks.map((block) => ({
+        ...block,
+        submit: answers[block.id],
       })),
-    } as SubmitWorkBookResponse;
+    };
   },
 
   /**
@@ -585,7 +598,28 @@ export const workBookService = {
     userId: string,
   ): Promise<WorkBookCompleted[]> => {
     // 각 문제집별 최신 제출 ID 조회
-    // 위 방식은 UUID라 위험함. Window function 사용
+    // 1단계: 각 문제집별 최신 제출 ID 조회 (Drizzle selectDistinctOn 사용)
+    const latestSubmits = await pgDb
+      .selectDistinctOn([workBookSubmitsTable.workBookId], {
+        id: workBookSubmitsTable.id,
+      })
+      .from(workBookSubmitsTable)
+      .where(
+        and(
+          eq(workBookSubmitsTable.ownerId, userId),
+          isNotNull(workBookSubmitsTable.endTime),
+        ),
+      )
+      .orderBy(
+        workBookSubmitsTable.workBookId,
+        desc(workBookSubmitsTable.endTime),
+      );
+
+    if (latestSubmits.length === 0) return [];
+
+    const submitIds = latestSubmits.map((s) => s.id);
+
+    // 2단계: 상세 정보 조회 (정답 개수 포함)
     const rows = await pgDb
       .select({
         id: workBooksTable.id,
@@ -599,9 +633,10 @@ export const workBookService = {
         ownerProfile: userTable.image,
         tags: sql<
           { id: number; name: string }[]
-        >`coalesce(json_agg(json_build_object('id', ${tagsTable.id}, 'name', ${tagsTable.name})) filter (where ${tagsTable.name} is not null), '[]'::json)`,
+        >`coalesce(json_agg(distinct jsonb_build_object('id', ${tagsTable.id}, 'name', ${tagsTable.name})) filter (where ${tagsTable.name} is not null), '[]'::json)`,
         createdAt: workBooksTable.createdAt,
         totalProblems: sql<number>`count(distinct ${blocksTable.id})`,
+        correctAnswerCount: sql<number>`count(distinct ${workBookBlockAnswerSubmitsTable.blockId}) filter (where ${workBookBlockAnswerSubmitsTable.isCorrect} = true)`,
       })
       .from(workBookSubmitsTable)
       .innerJoin(
@@ -610,86 +645,74 @@ export const workBookService = {
       )
       .innerJoin(blocksTable, eq(workBooksTable.id, blocksTable.workBookId))
       .leftJoin(
+        workBookBlockAnswerSubmitsTable,
+        eq(workBookBlockAnswerSubmitsTable.submitId, workBookSubmitsTable.id),
+      )
+      .leftJoin(
         workBookTagsTable,
         eq(workBookTagsTable.workBookId, workBooksTable.id),
       )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
       .leftJoin(tagsTable, eq(workBookTagsTable.tagId, tagsTable.id))
-      .where(
-        and(
-          eq(workBookSubmitsTable.ownerId, userId),
-          sql`${workBookSubmitsTable.endTime} is not null`,
-          // 최신 제출만 필터링하는 조건이 필요함.
-          // 복잡해지므로 쿼리를 분리하거나 distinct on을 사용
-          inArray(
-            workBookSubmitsTable.id,
-            pgDb
-              .select({
-                id: sql<string>`distinct on (${workBookSubmitsTable.workBookId}) ${workBookSubmitsTable.id}`,
-              })
-              .from(workBookSubmitsTable)
-              .where(
-                and(
-                  eq(workBookSubmitsTable.ownerId, userId),
-                  sql`${workBookSubmitsTable.endTime} is not null`,
-                ),
-              )
-              .orderBy(
-                workBookSubmitsTable.workBookId,
-                sql`${workBookSubmitsTable.endTime} desc`,
-              ),
-          ),
-        ),
-      )
+      .where(inArray(workBookSubmitsTable.id, submitIds))
       .groupBy(
         workBooksTable.id,
         workBooksTable.title,
         workBooksTable.description,
         workBooksTable.isPublic,
         workBooksTable.createdAt,
+        workBooksTable.publishedAt,
         workBookSubmitsTable.startTime,
         workBookSubmitsTable.endTime,
         userTable.name,
         userTable.image,
       )
-      .orderBy(sql`${workBookSubmitsTable.endTime} desc`);
+      .orderBy(desc(workBookSubmitsTable.endTime));
 
     return rows.map((row) => ({
       ...row,
       startTime: row.startTime,
       endTime: row.endTime!,
       totalProblems: Number(row.totalProblems),
+      correctAnswerCount: Number(row.correctAnswerCount),
     })) as WorkBookCompleted[];
   },
 
   /**
-   * 문제집 최신 결과 조회
+   * 문제집 최신 결과 및 제출 답안 조회
    * @param workBookId 문제집 ID
    * @param userId 사용자 ID
    */
-  getLatestWorkBookResult: async (
-    workBookId: string,
+  async getLatestWorkBookWithAnswers(
+    workbookId: string,
     userId: string,
-  ): Promise<SubmitWorkBookResponse | null> => {
-    // 최신 제출 세션 조회
+  ): Promise<SubmitWorkBook | null> {
     const [session] = await pgDb
       .select({
         id: workBookSubmitsTable.id,
+        workBookId: workBookSubmitsTable.workBookId,
+        startTime: workBookSubmitsTable.startTime,
+        endTime: workBookSubmitsTable.endTime,
       })
       .from(workBookSubmitsTable)
       .where(
         and(
-          eq(workBookSubmitsTable.workBookId, workBookId),
+          eq(workBookSubmitsTable.workBookId, workbookId),
           eq(workBookSubmitsTable.ownerId, userId),
-          sql`${workBookSubmitsTable.endTime} is not null`,
+          isNotNull(workBookSubmitsTable.endTime),
         ),
-      )
-      .orderBy(sql`${workBookSubmitsTable.endTime} desc`)
-      .limit(1);
+      );
 
+    console.log(session);
     if (!session) {
       return null;
     }
+
+    const book = await workBookService.getWorkBookWithBlocks(
+      session.workBookId,
+    );
+
+    if (!book) return null;
 
     // 문제 목록 및 정답 여부 조회
     const answers = await pgDb
@@ -701,43 +724,27 @@ export const workBookService = {
       .from(workBookBlockAnswerSubmitsTable)
       .where(eq(workBookBlockAnswerSubmitsTable.submitId, session.id));
 
-    // 전체 문제 수 조회
-    const [totalCount] = await pgDb
-      .select({
-        count: sql<number>`count(*)`,
-      })
-      .from(blocksTable)
-      .where(eq(blocksTable.workBookId, workBookId));
-
-    const correctAnswerIds = answers
-      .filter((a) => a.isCorrect)
-      .map((a) => a.blockId);
-
-    // 블록별 정답 데이터 구성 (클라이언트에서 보여줄 때 필요)
-    // 원래 정답은 보안상 클라이언트에 주면 안되지만, 결과 화면에서는 보여줘야 할 수도 있음.
-    // 여기서는 사용자가 제출한 답과 정답 여부만 내려주고,
-    // 실제 정답 데이터는 workBookService.selectWorkBookById 에서 가져온 블록 정보에는 answer가 포함되어 있지 않음 (풀이 모드라).
-    // 결과 모드에서는 정답을 보여줘야 한다면 selectWorkBookById를 수정하거나 별도 로직 필요.
-    // 일단 SubmitWorkBookResponse 타입에 맞춰서 반환.
-
-    // 문제집의 정답 데이터 조회
-    const blocks = await pgDb
-      .select({
-        id: blocksTable.id,
-        answer: blocksTable.answer,
-      })
-      .from(blocksTable)
-      .where(eq(blocksTable.workBookId, workBookId));
-
-    const blockResults = blocks.map((block) => ({
-      blockId: block.id,
-      answer: block.answer,
-    }));
-
+    console.log({
+      ...book,
+      correctAnswerCount: answers.filter((a) => a.isCorrect).length,
+      totalProblems: book.blocks.length,
+      startTime: session.startTime,
+      endTime: session.endTime!,
+      blocks: book?.blocks.map((block) => ({
+        ...block,
+        submit: answers.find((a) => a.blockId === block.id)?.answer,
+      })),
+    });
     return {
-      correctAnswerIds,
-      totalProblems: Number(totalCount.count),
-      blockResults,
-    } as SubmitWorkBookResponse;
+      ...book,
+      correctAnswerCount: answers.filter((a) => a.isCorrect).length,
+      totalProblems: book.blocks.length,
+      startTime: session.startTime,
+      endTime: session.endTime!,
+      blocks: book?.blocks.map((block) => ({
+        ...block,
+        submit: answers.find((a) => a.blockId === block.id)?.answer,
+      })),
+    };
   },
 };

@@ -21,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { fetcher } from "@/lib/protocol/fetcher";
 import { logger } from "@/lib/logger";
+import { fetcher } from "@/lib/protocol/fetcher";
 
 interface SolveModeSelectorProps {
   workBook: WorkBookWithoutAnswer;
@@ -40,14 +40,14 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
   );
 
   const fetchSession = useCallback(async () => {
-    const response = await fetcher<{
-      success: boolean;
-      data: boolean;
-    }>(`/api/workbooks/${workBook.id}/session/check`, {
-      method: "GET",
-    });
-    if (response?.success && response.data) {
-      setHasSession(response.data);
+    const response = await fetcher<boolean>(
+      `/api/workbooks/${workBook.id}/session/check`,
+      {
+        method: "GET",
+      },
+    );
+    if (response) {
+      setHasSession(response);
     }
   }, [workBook.id]);
 
@@ -96,9 +96,9 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
       <div className="max-w-4xl mx-auto p-6">
         <ProblemHeader workBook={workBook} />
         {/* 전체 풀이 모드 */}
-        <Card className="text-primary border-1">
+        <Card className="text-primary border-none">
           <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow border-1 hover:border-primary mr-4 ml-4"
+            className="cursor-pointer hover:shadow-lg transition-shadow  hover:border-primary mr-4 ml-4"
             onClick={() => handleModeClick("all")}
           >
             <CardHeader>
@@ -120,7 +120,7 @@ export const SolveModeSelector: React.FC<SolveModeSelectorProps> = ({
 
           {/* 한 문제씩 풀이 모드 */}
           <Card
-            className="cursor-pointer hover:shadow-lg transition-shadow border-1 hover:border-primary mr-4 ml-4"
+            className="cursor-pointer hover:shadow-lg transition-shadow hover:border-primary mr-4 ml-4"
             onClick={() => handleModeClick("sequential")}
           >
             <CardHeader>
