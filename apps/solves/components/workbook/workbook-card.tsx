@@ -6,7 +6,7 @@ import {
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InDevelopment } from "../ui/in-development";
+import { InDevelopment } from "@/components/ui/in-development";
 
 type WorkBookCardType =
   | WorkBookWithoutBlocks
