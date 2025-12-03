@@ -1,12 +1,12 @@
 import { workBookService } from "@service/solves";
 import Link from "next/link";
-import { WorkbookCard } from "@/components/problem/workbook-card";
 import {
   Card,
   CardContent,
   CardDescription,
   CardTitle,
 } from "@/components/ui/card";
+import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { getSession } from "@/lib/auth/server";
 
 export default async function InProgressWorkbooksPage() {

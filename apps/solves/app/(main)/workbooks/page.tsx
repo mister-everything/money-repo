@@ -1,12 +1,6 @@
 import { workBookService } from "@service/solves";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { getSession } from "@/lib/auth/server";
 
 export default async function WorkbooksPage() {
@@ -16,22 +10,19 @@ export default async function WorkbooksPage() {
     isPublished: false,
   });
   return (
-    <div>
+    <div className="p-4 flex flex-wrap gap-4">
       {!workBooks.length ? (
         <div className="w-full h-full p-8 text-xl font-bold">
           아직 없어요 만든게
         </div>
       ) : (
         workBooks.map((book) => (
-          <Link href={`/workbooks/${book.id}/edit`} key={book.id}>
-            <Card>
-              <CardHeader>
-                <CardTitle>{book.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{book.description}</CardDescription>
-              </CardContent>
-            </Card>
+          <Link
+            href={`/workbooks/${book.id}/edit`}
+            key={book.id}
+            className="w-1/3"
+          >
+            <WorkbookCard book={book} />
           </Link>
         ))
       )}

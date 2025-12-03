@@ -14,7 +14,7 @@ function InDevelopment({ className, children, ...props }: InDevelopmentProps) {
       )}
       {...props}
     >
-      {children || "아직 지원하지 않는 블럭 입니다."}
+      {children || "개발중 입니다."}
     </div>
   );
 }
