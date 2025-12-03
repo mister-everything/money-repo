@@ -2,7 +2,7 @@
 
 import {
   BlockAnswerSubmit,
-  SubmitWorkBookResponse,
+  SubmitWorkBook,
   WorkBookSubmitSession,
   WorkBookWithoutAnswer,
 } from "@service/solves/shared";
@@ -62,7 +62,7 @@ export const WorkBookSolve: React.FC<WorkBookSolveProps> = ({ workBook }) => {
   const [lastSavedAnswers, setLastSavedAnswers] = useState<
     Record<string, BlockAnswerSubmit>
   >({});
-  const [submitResult, setSubmitResult] = useState<SubmitWorkBookResponse>();
+  const [submitResult, setSubmitResult] = useState<SubmitWorkBook>();
 
   // 세션 초기화 (모드가 선택된 후에만)
   useEffect(() => {
@@ -145,16 +145,13 @@ export const WorkBookSolve: React.FC<WorkBookSolveProps> = ({ workBook }) => {
       return;
     }
 
-    await fetcher<SubmitWorkBookResponse>(
-      `/api/workbooks/${workBook.id}/submit`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          submitId,
-          answer: answers,
-        }),
-      },
-    )
+    await fetcher<SubmitWorkBook>(`/api/workbooks/${workBook.id}/submit`, {
+      method: "POST",
+      body: JSON.stringify({
+        submitId,
+        answer: answers,
+      }),
+    })
       .then((response) => {
         if (response) {
           setSubmitResult(response);
@@ -173,13 +170,7 @@ export const WorkBookSolve: React.FC<WorkBookSolveProps> = ({ workBook }) => {
 
   // 결과 화면이 있으면 결과 화면 표시
   if (submitResult) {
-    return (
-      <WorkBookReview
-        workBook={workBook}
-        submitResult={submitResult}
-        answers={answers}
-      />
-    );
+    return <WorkBookReview workBook={submitResult} />;
   }
 
   // 모드가 선택되지 않았으면 모드 선택 화면 표시

@@ -48,23 +48,21 @@ export function WorkbookCard({ book }: WorkbookCardProps) {
         <InDevelopment className="w-full text-sm h-6">
           Description
         </InDevelopment>
-        {isWorkBookCompleted(book) && (
+        {isWorkBookCompleted(book) ? (
           <Badge
             variant="outline"
             className="w-fit bg-green-50 text-green-700 border-green-200"
           >
             풀이 완료 {book.correctAnswerCount}/{book.totalProblems}
           </Badge>
-        )}
-        {isWorkBookInProgress(book) && (
+        ) : isWorkBookInProgress(book) ? (
           <Badge
             variant="outline"
             className="w-fit bg-blue-50 text-blue-500 border-none"
           >
             풀이 중
           </Badge>
-        )}
-        {!isWorkBookCompleted(book) && !isWorkBookInProgress(book) && (
+        ) : (
           <Badge
             variant="outline"
             className="w-fit bg-gray-50 text-gray-700 border-gray-200"

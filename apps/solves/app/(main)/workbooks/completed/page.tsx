@@ -30,7 +30,7 @@ export default async function CompletedWorkbooksPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {completedWorkbooks.length > 0 ? (
             completedWorkbooks.map((book) => (
-              <Link href={`/workbooks/${book.id}/result`} key={book.id}>
+              <Link href={`/workbooks/${book.id}/review`} key={book.id}>
                 <WorkbookCard book={book} />
               </Link>
             ))

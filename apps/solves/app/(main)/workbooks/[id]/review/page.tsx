@@ -4,7 +4,7 @@ import { GoBackButton } from "@/components/layouts/go-back-button";
 import { WorkBookReview } from "@/components/workbook/workbook-review";
 import { getSession } from "@/lib/auth/server";
 
-export default async function ResultPage({
+export default async function ReviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -12,18 +12,11 @@ export default async function ResultPage({
   const { id } = await params;
   const session = await getSession();
 
-  const workBook = await workBookService.getWorkBookWithoutAnswer(id);
-  if (!workBook) notFound();
-
-  // 결과 및 제출 답안 가져오기
-  const resultData = await workBookService.getLatestWorkBookResultWithAnswers(
+  const workBook = await workBookService.getLatestWorkBookWithAnswers(
     id,
     session.user.id,
   );
-
-  if (!resultData) {
-    notFound();
-  }
+  if (!workBook) notFound();
 
   return (
     <div className="bg-background flex h-full flex-col overflow-hidden">
@@ -33,11 +26,7 @@ export default async function ResultPage({
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <WorkBookReview
-            workBook={workBook}
-            submitResult={resultData.result}
-            answers={resultData.answers}
-          />
+          <WorkBookReview workBook={workBook} />
         </div>
       </div>
     </div>

@@ -1,24 +1,15 @@
 "use client";
 
-import {
-  BlockAnswerSubmit,
-  SubmitWorkBookResponse,
-  WorkBookWithoutAnswer,
-} from "@service/solves/shared";
+import { SubmitWorkBook } from "@service/solves/shared";
 import { Card, CardHeader } from "@/components/ui/card";
-import { ProblemBlock } from "../problem/problem-block";
+
+import { Block } from "./block/block";
 
 interface WorkBookReviewProps {
-  workBook: WorkBookWithoutAnswer;
-  submitResult: SubmitWorkBookResponse;
-  answers: Record<string, BlockAnswerSubmit>;
+  workBook: SubmitWorkBook;
 }
 
-export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
-  workBook,
-  submitResult,
-  answers,
-}) => {
+export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ workBook }) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* 결과 요약 섹션 */}
@@ -32,11 +23,11 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
               <p className="text-base text-muted-foreground">
                 총{" "}
                 <span className="font-bold text-primary">
-                  {submitResult.totalProblems}
+                  {workBook.totalProblems}
                 </span>{" "}
                 문제 중{" "}
                 <span className="font-bold text-primary">
-                  {submitResult.correctAnswerIds.length}
+                  {workBook.correctAnswerCount}
                 </span>{" "}
                 문제 정답입니다.
               </p>
@@ -49,26 +40,19 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
       <div className="space-y-6">
         {workBook.blocks.map((problem, index) => {
           // 해당 블록의 결과 찾기
-          const blockResult = submitResult.blockResults.find(
-            (result) => result.blockId === problem.id,
-          );
 
           return (
-            <ProblemBlock
+            <Block
+              index={index}
               key={problem.id}
-              problem={problem}
-              problemNumber={index + 1}
-              submittedAnswer={answers[problem.id]}
-              blockResult={
-                blockResult
-                  ? {
-                      isCorrect: submitResult.correctAnswerIds.includes(
-                        problem.id,
-                      ),
-                      correctAnswer: blockResult.answer,
-                    }
-                  : undefined
-              }
+              id={problem.id}
+              question={problem.question}
+              order={problem.order}
+              type={problem.type}
+              content={problem.content}
+              answer={problem.answer}
+              submit={problem.submit}
+              mode="review"
             />
           );
         })}
