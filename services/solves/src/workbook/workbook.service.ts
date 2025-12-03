@@ -24,7 +24,7 @@ import {
   WorkBookWithoutAnswer,
   WorkBookWithoutBlocks,
 } from "./types";
-import { isPublished } from "./utils";
+import { isPublished, validateBlock } from "./utils";
 
 const TagsSubQuery = pgDb
   .select({
@@ -64,10 +64,7 @@ export const workBookService = {
     return workBook?.ownerId === userId;
   },
 
-  hasEditPermission: async (
-    workBookId: string,
-    userId: string,
-  ): Promise<boolean> => {
+  checkEditPermission: async (workBookId: string, userId: string) => {
     const [workBook] = await pgDb
       .select({
         ownerId: workBooksTable.ownerId,
@@ -75,8 +72,11 @@ export const workBookService = {
       })
       .from(workBooksTable)
       .where(eq(workBooksTable.id, workBookId));
-
-    return workBook?.ownerId === userId && !isPublished(workBook);
+    if (!workBook) throw new PublicError("문제집을 찾을수 없습니다.");
+    if (workBook?.ownerId !== userId)
+      throw new PublicError("문제집에 권한이 없습니다.");
+    if (isPublished(workBook))
+      throw new PublicError("이미 배포된 문제집 입니다.");
   },
 
   searchMyWorkBooks: async (options: {
@@ -153,6 +153,21 @@ export const workBookService = {
       type: block.type,
       answer: block.answer!,
     }));
+  },
+  publishWorkbook: async (workBookId: string) => {
+    const book = await workBookService.getWorkBookWithBlocks(workBookId);
+    if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
+    if (!book.blocks.length) throw new PublicError("최소 1개이상의 문제 필요.");
+    const isPublishAble = book.blocks
+      .map(validateBlock)
+      .every((r) => r.success);
+    if (!isPublishAble) throw new PublicError("문제를 확인해보세요.");
+    await pgDb
+      .update(workBooksTable)
+      .set({
+        publishedAt: new Date(),
+      })
+      .where(eq(workBooksTable.id, workBookId));
   },
 
   // 풀이용 정답 제외 문제집
@@ -258,16 +273,10 @@ export const workBookService = {
       .where(eq(workBooksTable.id, workBook.id));
   },
   processUpdateBlocks: async (
-    userId: string,
     bookId: string,
     deleteBlocks: string[],
     saveBlocks: WorkBookBlock[],
   ): Promise<void> => {
-    const hasPermission = await workBookService.hasEditPermission(
-      bookId,
-      userId,
-    );
-    if (!hasPermission) throw new PublicError("권한이 없습니다.");
     await pgDb.transaction(async (tx) => {
       if (saveBlocks.length > 0) {
         const saveResult = await tx

@@ -1,4 +1,49 @@
-@import 'tailwindcss';
-@import '@workspace/tailwind-config';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "@workspace/tailwind-config";
+@import "tw-animate-css";
 @source "../../node_modules/streamdown/dist/index.js";
+
+/* Global Scrollbar Styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.7 0 0 / 0.2) transparent;
+}
+
+*:hover {
+  scrollbar-color: oklch(0.6 0 0 / 0.35) transparent;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0 0 / 0.2);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.5 0 0 / 0.4);
+}
+
+.dark * {
+  scrollbar-color: oklch(0.9 0 0 / 0.15) transparent;
+}
+
+.dark *:hover {
+  scrollbar-color: oklch(0.9 0 0 / 0.3) transparent;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: oklch(0.9 0 0 / 0.15);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.9 0 0 / 0.35);
+}

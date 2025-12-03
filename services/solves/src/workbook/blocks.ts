@@ -1,4 +1,13 @@
 import z from "zod";
+import {
+  BLOCK_OPTION_TEXT_MAX_LENGTH,
+  DEFAULT_BLOCK_ANSWER_MAX_LENGTH,
+  DEFAULT_BLOCK_MAX_ANSWERS,
+  MCQ_BLOCK_MAX_OPTIONS,
+  MCQ_BLOCK_MIN_OPTIONS,
+  RANKING_BLOCK_MAX_ITEMS,
+  RANKING_BLOCK_MIN_ITEMS,
+} from "./block-config";
 import { blockBuilder } from "./create-block";
 
 const textOption = z.object({
@@ -7,7 +16,10 @@ const textOption = z.object({
   text: z
     .string("필수 입력값입니다.")
     .min(1, "필수 입력값입니다.")
-    .max(100, "최대 100자 이하로 입력해주세요."),
+    .max(
+      BLOCK_OPTION_TEXT_MAX_LENGTH,
+      `최대 ${BLOCK_OPTION_TEXT_MAX_LENGTH}자 이하로 입력해주세요.`,
+    ),
 });
 
 const sourceOption = z.object({
@@ -37,10 +49,16 @@ const defaultBlock = blockBuilder("default")
           z
             .string("필수 입력값입니다.")
             .min(1, "정답에 최소 1자 이상 입력해주세요.")
-            .max(30, "정답은 최대 30자 이하로 입력해주세요."),
+            .max(
+              DEFAULT_BLOCK_ANSWER_MAX_LENGTH,
+              `정답은 최대 ${DEFAULT_BLOCK_ANSWER_MAX_LENGTH}자 이하로 입력해주세요.`,
+            ),
         )
         .min(1, "정답은 최소 1개 이상 필요")
-        .max(5, "정답은 최대 5개까지 입력해주세요."),
+        .max(
+          DEFAULT_BLOCK_MAX_ANSWERS,
+          `정답은 최대 ${DEFAULT_BLOCK_MAX_ANSWERS}개까지 입력해주세요.`,
+        ),
     }),
   )
   .answerSubmit(
@@ -77,8 +95,11 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
     z.object({
       options: z
         .array(z.union([textOption, sourceOption]))
-        .min(4, "최소 4개의 선택지 필요") // 최소 4개의 선택지 필요
-        .max(5, "최대 5개의 선택지까지 입력해주세요."),
+        .min(MCQ_BLOCK_MIN_OPTIONS, `최소 ${MCQ_BLOCK_MIN_OPTIONS}개의 선택지 필요`)
+        .max(
+          MCQ_BLOCK_MAX_OPTIONS,
+          `최대 ${MCQ_BLOCK_MAX_OPTIONS}개의 선택지까지 입력해주세요.`,
+        ),
     }),
   )
   .answer(
@@ -86,7 +107,10 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
       answer: z
         .array(z.string("필수 입력값입니다."))
         .min(1, "정답은 최소 1개 이상 필요")
-        .max(5, "정답은 최대 5개까지 입력해주세요."),
+        .max(
+          MCQ_BLOCK_MAX_OPTIONS,
+          `정답은 최대 ${MCQ_BLOCK_MAX_OPTIONS}개까지 입력해주세요.`,
+        ),
     }),
   )
   .answerSubmit(
@@ -109,8 +133,11 @@ const mcqBlock = blockBuilder("mcq")
     z.object({
       options: z
         .array(z.union([textOption, sourceOption]))
-        .min(4, "최소 4개의 선택지 필요")
-        .max(5, "최대 5개의 선택지까지 입력해주세요."),
+        .min(MCQ_BLOCK_MIN_OPTIONS, `최소 ${MCQ_BLOCK_MIN_OPTIONS}개의 선택지 필요`)
+        .max(
+          MCQ_BLOCK_MAX_OPTIONS,
+          `최대 ${MCQ_BLOCK_MAX_OPTIONS}개의 선택지까지 입력해주세요.`,
+        ),
     }),
   )
   .answer(
@@ -152,16 +179,22 @@ const rankingBlock = blockBuilder("ranking")
     z.object({
       items: z
         .array(z.union([textOption, sourceOption]))
-        .min(2, "최소 2개의 순위 필요")
-        .max(10, "최대 10개의 순위까지 입력해주세요."),
+        .min(RANKING_BLOCK_MIN_ITEMS, `최소 ${RANKING_BLOCK_MIN_ITEMS}개의 순위 필요`)
+        .max(
+          RANKING_BLOCK_MAX_ITEMS,
+          `최대 ${RANKING_BLOCK_MAX_ITEMS}개의 순위까지 입력해주세요.`,
+        ),
     }),
   )
   .answer(
     z.object({
       order: z
         .array(z.string())
-        .min(2, "최소 2개의 순위 필요")
-        .max(10, "최대 10개의 순위까지 입력해주세요."),
+        .min(RANKING_BLOCK_MIN_ITEMS, `최소 ${RANKING_BLOCK_MIN_ITEMS}개의 순위 필요`)
+        .max(
+          RANKING_BLOCK_MAX_ITEMS,
+          `최대 ${RANKING_BLOCK_MAX_ITEMS}개의 순위까지 입력해주세요.`,
+        ),
     }),
   )
   .answerSubmit(

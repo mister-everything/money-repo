@@ -4,9 +4,16 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
+  DEFAULT_BLOCK_ANSWER_MAX_LENGTH,
+  DEFAULT_BLOCK_MAX_ANSWERS,
+  MCQ_BLOCK_MAX_OPTIONS,
+  MCQ_BLOCK_MIN_OPTIONS,
+  MCQ_BLOCK_OPTION_MAX_LENGTH,
+  RANKING_BLOCK_ITEM_MAX_LENGTH,
+  RANKING_BLOCK_MAX_ITEMS,
 } from "@service/solves/shared";
 import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
-import { CircleIcon, PlusIcon, XIcon } from "lucide-react";
+import { CheckIcon, CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -19,19 +26,13 @@ import { notify } from "@/components/ui/notify";
 import { cn } from "@/lib/utils";
 import { WorkBookComponentMode } from "../types";
 
-// 사용자가 선택했고 정답 일때
-const okClass = "border-primary bg-primary/5 text-primary hover:text-primary";
-
-// 문제를 풀때 선택한 것 일단 ok 랑 동일하게
-const selectClass =
-  "border-primary bg-primary/5 text-primary hover:text-primary";
+// 정답 일때
+const okClass =
+  "border-primary bg-primary/5 text-primary hover:text-primary hover:bg-primary/10";
 
 // 사용자가 선택했고 오답 일때
-// 수민이한테 한번 더 물어보기 너무 빨간게 부정적일수도
-const failClass = "border-destructive bg-destructive/5 text-destructive";
-
-// 사용자가 선택은 안했지만 (오답제출) 정답일때
-const muteCalss = "bg-secondary border-muted-foreground";
+const failClass =
+  "border-destructive bg-destructive/5 text-destructive hover:text-destructive hover:bg-destructive/10";
 
 type BlockContentProps<T extends BlockType = BlockType> = {
   content: BlockContent<T>;
@@ -61,13 +62,15 @@ export function DefaultBlockContent({
   );
 
   const addAnswer = useCallback(async () => {
-    if ((answer?.answer.length ?? 0) >= 5)
-      return toast.warning("정답은 최대 5개까지 입니다.");
+    if ((answer?.answer.length ?? 0) >= DEFAULT_BLOCK_MAX_ANSWERS)
+      return toast.warning(
+        `정답은 최대 ${DEFAULT_BLOCK_MAX_ANSWERS}개까지 입니다.`,
+      );
     const newAnswer = await notify
       .prompt({
         title: "정답 추가",
         description: "답안을 작성하세요",
-        maxLength: 30,
+        maxLength: DEFAULT_BLOCK_ANSWER_MAX_LENGTH,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -93,31 +96,35 @@ export function DefaultBlockContent({
         {(mode == "solve" || mode == "preview") && (
           <Input
             placeholder="답안을 작성하세요"
-            className="w-full"
+            className="w-full shadow-none"
             value={submit?.answer || ""}
             onChange={handleChangeSubmitAnswer}
             disabled={mode == "preview"}
           />
         )}
         {mode == "review" && (
-          <div className="text-sm flex flex-col gap-2 text-muted-foreground">
-            <Input
-              placeholder="정답을 제출하지 않았습니다."
-              className="w-full"
-              value={submit?.answer || ""}
-              maxLength={30}
-              disabled
-            />
-            {!isCorrect && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="pr-2">정답:</span>
-                {answer?.answer.map((correctAnswer, index) => (
-                  <Badge key={index} variant="secondary">
-                    {correctAnswer}
-                  </Badge>
-                ))}
-              </div>
-            )}
+          <div className="flex flex-col gap-2 text-muted-foreground w-full">
+            <div
+              className={cn(
+                isCorrect ? okClass : failClass,
+                "w-full rounded-lg p-4 border flex items-center",
+              )}
+            >
+              {isCorrect ? (
+                <CheckIcon className="size-5 mr-2 stroke-3" />
+              ) : (
+                <XIcon className="size-5 mr-2 stroke-3" />
+              )}
+              {submit?.answer || "정답을 제출하지 않았습니다."}
+              <Badge
+                className={cn(
+                  "ml-auto",
+                  isCorrect ? "bg-primary" : "bg-destructive",
+                )}
+              >
+                {isCorrect ? "정답" : "오답"}
+              </Badge>
+            </div>
           </div>
         )}
         {mode == "edit" && (
@@ -125,14 +132,15 @@ export function DefaultBlockContent({
             {answer?.answer.map((correctAnswer, index) => (
               <Button
                 onClick={() => removeAnswer(index)}
-                variant="secondary"
+                variant="outline"
+                className={okClass}
                 key={index}
               >
                 {correctAnswer}
                 <XIcon />
               </Button>
             ))}
-            {(answer?.answer.length ?? 0) < 5 && (
+            {(answer?.answer.length ?? 0) < DEFAULT_BLOCK_MAX_ANSWERS && (
               <Button
                 onClick={addAnswer}
                 variant="outline"
@@ -157,16 +165,17 @@ export function McqMultipleBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
-  isCorrect,
 }: BlockContentProps<"mcq-multiple">) {
   const addOption = useCallback(async () => {
-    if ((content.options.length ?? 0) >= 5)
-      return toast.warning("보기는 최대 5개까지 입니다.");
+    if ((content.options.length ?? 0) >= MCQ_BLOCK_MAX_OPTIONS)
+      return toast.warning(
+        `보기는 최대 ${MCQ_BLOCK_MAX_OPTIONS}개까지 입니다.`,
+      );
     const newAnswer = await notify
       .prompt({
         title: "보기 추가",
         description: "선택지를 작성하세요",
-        maxLength: 30,
+        maxLength: MCQ_BLOCK_OPTION_MAX_LENGTH,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -199,6 +208,7 @@ export function McqMultipleBlockContent({
         return onUpdateSubmitAnswer?.((prev) => {
           const prevAnswer = prev?.answer ?? [];
           const hasOption = prevAnswer?.includes(optionId);
+
           return {
             answer: hasOption
               ? prevAnswer?.filter((id) => id !== optionId)
@@ -220,26 +230,17 @@ export function McqMultipleBlockContent({
     [onUpdateAnswer, mode, onUpdateSubmitAnswer],
   );
 
-  const getChecked = useCallback(
-    (optionId: string) => {
-      if (mode == "solve") return submit?.answer?.includes(optionId);
-      if (mode == "edit") return answer?.answer.includes(optionId);
-      return false;
-    },
-    [mode, answer, submit],
-  );
-
   const getSelectedClass = useCallback(
     (optionId: string) => {
-      if (mode == "solve")
-        return submit?.answer?.includes(optionId) ? selectClass : "";
-      if (mode == "edit")
-        return answer?.answer.includes(optionId) ? okClass : "";
+      if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
+      if (mode == "edit" && answer?.answer.includes(optionId)) return okClass;
       if (mode == "review") {
-        if (isCorrect) return answer?.answer.includes(optionId) ? okClass : "";
+        if (answer?.answer.includes(optionId)) return okClass;
         if (submit?.answer?.includes(optionId)) return failClass;
-        if (answer?.answer.includes(optionId)) return muteCalss;
+        return "bg-card text-muted-foreground/50";
       }
+
+      return "hover:bg-muted-foreground/5 hover:border-muted-foreground";
     },
     [mode, answer, submit],
   );
@@ -248,11 +249,19 @@ export function McqMultipleBlockContent({
     <div className="flex flex-col gap-3">
       {content.options.map((option, index) => {
         if (option.type == "text") {
-          const checked = getChecked(option.id);
+          const status =
+            mode == "review" && answer?.answer.includes(option.id)
+              ? "correct"
+              : mode == "review" && submit?.answer?.includes(option.id)
+                ? "incorrect"
+                : mode == "review"
+                  ? "unchecked"
+                  : undefined;
+
           return (
-            <Label
+            <div
               key={option.id}
-              htmlFor={option.id}
+              onClick={() => handleOptionSelect(option.id)}
               className={cn(
                 "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
                 (mode == "edit" || mode == "solve") && "cursor-pointer",
@@ -260,35 +269,53 @@ export function McqMultipleBlockContent({
               )}
             >
               <div className="flex items-center gap-1.5 overflow-hidden">
-                <Checkbox
-                  id={option.id}
-                  checked={checked}
-                  onCheckedChange={() => handleOptionSelect(option.id)}
-                  className={cn(
-                    "mr-2 rounded-sm border-border bg-card",
-                    getSelectedClass(option.id) != okClass &&
-                      "data-[state=checked]:bg-muted data-[state=checked]:text-muted-foreground",
-                  )}
-                />
+                {status == "correct" ? (
+                  <CheckIcon className="size-5 mr-2 stroke-3" />
+                ) : status == "incorrect" ? (
+                  <XIcon className="size-5 mr-2 stroke-3" />
+                ) : mode == "edit" ? (
+                  <Checkbox
+                    id={option.id}
+                    checked={answer?.answer.includes(option.id)}
+                    className="mr-3 rounded-sm border-border bg-card"
+                  />
+                ) : (
+                  <div
+                    className={cn(
+                      "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      status == "unchecked" &&
+                        "border-muted-foreground/50 text-muted-foreground/50",
+                    )}
+                  >
+                    {index + 1}
+                  </div>
+                )}
 
                 <span className="text-sm font-medium leading-snug">
                   {option.text}
                 </span>
               </div>
-              {mode == "edit" && (
+              <div className="flex-1" />
+              {mode == "edit" ? (
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     removeOption(index);
                   }}
                   size="icon"
-                  className="size-6! text-muted-foreground ml-auto"
+                  className="size-6! text-muted-foreground"
                   variant="ghost"
                 >
                   <XIcon className="size-3!" />
                 </Button>
-              )}
-            </Label>
+              ) : status == "correct" ? (
+                <Badge className="bg-primary text-primary-foreground">
+                  정답
+                </Badge>
+              ) : status == "incorrect" ? (
+                <Badge className="bg-destructive">오답</Badge>
+              ) : undefined}
+            </div>
           );
         }
 
@@ -306,7 +333,7 @@ export function McqMultipleBlockContent({
             className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
           />
         ))}
-      {mode == "edit" && (
+      {mode == "edit" && content.options.length <= MCQ_BLOCK_MIN_OPTIONS && (
         <Button
           variant="outline"
           size="lg"
@@ -328,16 +355,17 @@ export function McqSingleBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
-  isCorrect,
 }: BlockContentProps<"mcq">) {
   const addOption = useCallback(async () => {
-    if ((content.options.length ?? 0) >= 5)
-      return toast.warning("보기는 최대 5개까지 입니다.");
+    if ((content.options.length ?? 0) >= MCQ_BLOCK_MAX_OPTIONS)
+      return toast.warning(
+        `보기는 최대 ${MCQ_BLOCK_MAX_OPTIONS}개까지 입니다.`,
+      );
     const newAnswer = await notify
       .prompt({
         title: "보기 추가",
         description: "선택지를 작성하세요",
-        maxLength: 30,
+        maxLength: MCQ_BLOCK_OPTION_MAX_LENGTH,
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
@@ -352,7 +380,7 @@ export function McqSingleBlockContent({
         },
       ],
     }));
-  }, [onUpdateContent, content.options.length]);
+  }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
     (index: number) => {
@@ -366,38 +394,23 @@ export function McqSingleBlockContent({
 
   const handleOptionSelect = useCallback(
     (optionId: string) => {
-      if (mode == "solve")
-        return onUpdateSubmitAnswer?.({
-          answer: optionId,
-        });
-      if (mode == "edit")
-        return onUpdateAnswer?.({
-          answer: optionId,
-        });
+      if (mode == "solve") return onUpdateSubmitAnswer?.({ answer: optionId });
+      if (mode == "edit") return onUpdateAnswer?.({ answer: optionId });
     },
     [onUpdateAnswer, mode, onUpdateSubmitAnswer],
   );
 
-  const getChecked = useCallback(
-    (optionId: string) => {
-      if (mode == "solve") return submit?.answer?.includes(optionId);
-      if (mode == "edit") return answer?.answer.includes(optionId);
-      return false;
-    },
-    [mode, answer, submit],
-  );
-
   const getSelectedClass = useCallback(
     (optionId: string) => {
-      if (mode == "solve")
-        return submit?.answer?.includes(optionId) ? selectClass : "";
-      if (mode == "edit")
-        return answer?.answer.includes(optionId) ? okClass : "";
+      if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
+      if (mode == "edit" && answer?.answer.includes(optionId)) return okClass;
       if (mode == "review") {
-        if (isCorrect) return answer?.answer.includes(optionId) ? okClass : "";
+        if (answer?.answer.includes(optionId)) return okClass;
         if (submit?.answer?.includes(optionId)) return failClass;
-        if (answer?.answer.includes(optionId)) return muteCalss;
+        return "bg-card text-muted-foreground/50";
       }
+
+      return "hover:bg-muted-foreground/5 hover:border-muted-foreground";
     },
     [mode, answer, submit],
   );
@@ -406,11 +419,19 @@ export function McqSingleBlockContent({
     <div className="flex flex-col gap-3">
       {content.options.map((option, index) => {
         if (option.type == "text") {
-          const checked = getChecked(option.id);
+          const status =
+            mode == "review" && answer?.answer == option.id
+              ? "correct"
+              : mode == "review" && submit?.answer == option.id
+                ? "incorrect"
+                : mode == "review"
+                  ? "unchecked"
+                  : undefined;
+
           return (
-            <Label
+            <div
               key={option.id}
-              htmlFor={option.id}
+              onClick={() => handleOptionSelect(option.id)}
               className={cn(
                 "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
                 (mode == "edit" || mode == "solve") && "cursor-pointer",
@@ -418,35 +439,53 @@ export function McqSingleBlockContent({
               )}
             >
               <div className="flex items-center gap-1.5 overflow-hidden">
-                <Checkbox
-                  id={option.id}
-                  checked={checked}
-                  onCheckedChange={() => handleOptionSelect(option.id)}
-                  className={cn(
-                    "mr-2 rounded-sm border-border bg-card",
-                    getSelectedClass(option.id) != okClass &&
-                      "data-[state=checked]:bg-muted data-[state=checked]:text-muted-foreground",
-                  )}
-                />
+                {status == "correct" ? (
+                  <CheckIcon className="size-5 mr-2 stroke-3" />
+                ) : status == "incorrect" ? (
+                  <XIcon className="size-5 mr-2 stroke-3" />
+                ) : mode == "edit" ? (
+                  <Checkbox
+                    id={option.id}
+                    checked={answer?.answer == option.id}
+                    className="mr-3 rounded-sm border-border bg-card"
+                  />
+                ) : (
+                  <div
+                    className={cn(
+                      "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      status == "unchecked" &&
+                        "border-muted-foreground/50 text-muted-foreground/50",
+                    )}
+                  >
+                    {index + 1}
+                  </div>
+                )}
 
                 <span className="text-sm font-medium leading-snug">
                   {option.text}
                 </span>
               </div>
-              {mode == "edit" && (
+              <div className="flex-1" />
+              {mode == "edit" ? (
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     removeOption(index);
                   }}
                   size="icon"
-                  className="size-6! text-muted-foreground ml-auto"
+                  className="size-6! text-muted-foreground"
                   variant="ghost"
                 >
                   <XIcon className="size-3!" />
                 </Button>
-              )}
-            </Label>
+              ) : status == "correct" ? (
+                <Badge className="bg-primary text-primary-foreground">
+                  정답
+                </Badge>
+              ) : status == "incorrect" ? (
+                <Badge className="bg-destructive">오답</Badge>
+              ) : undefined}
+            </div>
           );
         }
 
@@ -464,7 +503,7 @@ export function McqSingleBlockContent({
             className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
           />
         ))}
-      {mode == "edit" && (content.options.length ?? 0) < 5 && (
+      {mode == "edit" && content.options.length <= MCQ_BLOCK_MIN_OPTIONS && (
         <Button
           variant="outline"
           size="lg"
@@ -507,18 +546,17 @@ export function OXBlockContent({
   const getSelectedClass = useCallback(
     (value: boolean) => {
       if (mode == "solve") {
-        return submit?.answer === value ? selectClass : "";
+        return submit?.answer === value ? okClass : "";
       }
       if (mode == "edit") {
         return answer?.answer === value ? okClass : "";
       }
       if (mode == "review") {
-        if (isCorrect) return answer?.answer === value ? okClass : "";
+        if (answer?.answer === value) return okClass;
         if (submit?.answer === value) return failClass;
-        if (answer?.answer === value) return muteCalss;
       }
     },
-    [mode, answer, submit, isCorrect],
+    [mode, answer, submit],
   );
 
   return (
@@ -594,13 +632,15 @@ export function RankingBlockContent({
 
   // 항목 추가 (edit 모드)
   const addItem = useCallback(async () => {
-    if ((items.length ?? 0) >= 10)
-      return toast.warning("항목은 최대 10개까지 입니다.");
+    if ((items.length ?? 0) >= RANKING_BLOCK_MAX_ITEMS)
+      return toast.warning(
+        `항목은 최대 ${RANKING_BLOCK_MAX_ITEMS}개까지 입니다.`,
+      );
     const newItem = await notify
       .prompt({
         title: "항목 추가",
         description: "순위에 들어갈 항목을 작성하세요",
-        maxLength: 30,
+        maxLength: RANKING_BLOCK_ITEM_MAX_LENGTH,
       })
       .then((text) => text.trim());
     if (!newItem) return;
@@ -727,7 +767,12 @@ export function RankingBlockContent({
         <Label className="text-xs text-muted-foreground">
           {isInteractive ? "항목 (클릭 또는 드래그하여 순위에 추가)" : "항목"}
         </Label>
-        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-primary/5 border border-primary">
+        <div
+          className={cn(
+            mode != "review" && "bg-primary/5 border border-primary",
+            "flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg",
+          )}
+        >
           {poolItems.map((item) => (
             <div
               key={item.id}
@@ -752,7 +797,7 @@ export function RankingBlockContent({
               )}
             </div>
           ))}
-          {mode === "edit" && items.length <= 10 && (
+          {mode === "edit" && items.length < RANKING_BLOCK_MAX_ITEMS && (
             <Button
               variant="outline"
               size="sm"
@@ -770,11 +815,10 @@ export function RankingBlockContent({
         </div>
       </div>
 
-      {slotCount > 0 && mode === "review" && !isCorrect && (
+      {slotCount > 0 && mode === "review" && (
         <div className="space-y-4">
           {/* 내 제출 순서 */}
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">내 순서</Label>
             <div className="space-y-2">
               {Array.from({ length: slotCount }).map((_, slotIndex) => {
                 const itemId = currentOrder[slotIndex];
@@ -785,53 +829,7 @@ export function RankingBlockContent({
                   <div key={slotIndex} className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                        slotStatus === "correct" &&
-                          "bg-primary text-primary-foreground",
-                        slotStatus === "wrong" &&
-                          "bg-destructive text-destructive-foreground",
-                        slotStatus !== "correct" &&
-                          slotStatus !== "wrong" &&
-                          rankBadgeClass,
-                      )}
-                    >
-                      {slotIndex + 1}
-                    </div>
-                    <div
-                      className={cn(
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card",
-                        slotStatus === "correct" && okClass,
-                        slotStatus === "wrong" && failClass,
-                        !item && "border-dashed bg-muted/20",
-                      )}
-                    >
-                      <span className="text-sm font-medium">
-                        {item
-                          ? item.type === "text" && item.text
-                          : "제출하지 않음"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 정답 순서 */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">정답 순서</Label>
-            <div className="space-y-2">
-              {Array.from({ length: slotCount }).map((_, slotIndex) => {
-                const correctItemId = answer?.order?.[slotIndex];
-                const correctItem = correctItemId
-                  ? items.find((i) => i.id === correctItemId)
-                  : null;
-
-                return (
-                  <div key={slotIndex} className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                        "size-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                         rankBadgeClass,
                       )}
                     >
@@ -839,13 +837,30 @@ export function RankingBlockContent({
                     </div>
                     <div
                       className={cn(
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all",
-                        muteCalss,
+                        "flex-1 flex items-center px-4 py-3 rounded-md border transition-all bg-card",
+                        slotStatus === "correct" ? okClass : failClass,
                       )}
                     >
+                      {slotStatus === "correct" ? (
+                        <CheckIcon className="size-4 mr-2 stroke-3" />
+                      ) : (
+                        <XIcon className="size-4 mr-2 stroke-3" />
+                      )}
                       <span className="text-sm font-medium">
-                        {correctItem?.type === "text" && correctItem.text}
+                        {item
+                          ? item.type === "text" && item.text
+                          : "제출하지 않음"}
                       </span>
+                      <Badge
+                        className={cn(
+                          "ml-auto",
+                          slotStatus === "correct"
+                            ? "bg-primary"
+                            : "bg-destructive",
+                        )}
+                      >
+                        {slotStatus === "correct" ? "정답" : "오답"}
+                      </Badge>
                     </div>
                   </div>
                 );
@@ -855,7 +870,7 @@ export function RankingBlockContent({
         </div>
       )}
 
-      {slotCount > 0 && !(mode === "review" && !isCorrect) && (
+      {slotCount > 0 && mode !== "review" && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-xs text-muted-foreground">
@@ -865,7 +880,7 @@ export function RankingBlockContent({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                className="h-6 text-xs text-muted-foreground hover:text-foreground shadow-none"
                 onClick={resetAll}
               >
                 초기화

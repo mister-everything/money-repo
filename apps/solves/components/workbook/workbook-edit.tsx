@@ -1,4 +1,5 @@
 "use client";
+
 import {
   BlockAnswer,
   BlockAnswerSubmit,
@@ -20,12 +21,16 @@ import {
   StateUpdate,
 } from "@workspace/util";
 import { GripVerticalIcon, PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   processUpdateBlocksAction,
+  publishWorkbookAction,
   updateWorkbookAction,
 } from "@/actions/workbook";
+import { Button } from "@/components/ui/button";
+import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
   TooltipContent,
@@ -36,7 +41,6 @@ import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { GoBackButton } from "../layouts/go-back-button";
-import { Button } from "../ui/button";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
@@ -67,6 +71,8 @@ export function WorkbookEdit({
     useState<WorkBookWithoutBlocks>(initialWorkbook);
 
   const ref = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
 
   const [blocks, setBlocks] = useState<WorkBookBlock[]>(initialBlocks);
 
@@ -110,6 +116,14 @@ export function WorkbookEdit({
     },
   );
 
+  const [, publish, isPublishing] = useSafeAction(publishWorkbookAction, {
+    failMessage: "배포에 실패했습니다.",
+    successMessage: "발행이 완료되었어요. 화면 이동중",
+    onSuccess: () => {
+      router.push(`/workbooks/${workbook.id}/preview`);
+    },
+  });
+
   const [, processUpdateBlocks, isBlocksPending] = useSafeAction(
     processUpdateBlocksAction,
     {
@@ -122,8 +136,8 @@ export function WorkbookEdit({
   );
 
   const isPending = useMemo(
-    () => isBookPending || isBlocksPending,
-    [isBookPending, isBlocksPending],
+    () => isBookPending || isBlocksPending || isPublishing,
+    [isBookPending, isBlocksPending, isPublishing],
   );
 
   const stateRef = useToRef({
@@ -309,7 +323,8 @@ export function WorkbookEdit({
         const block = stateRef.current.blocks.find((b) => b.id === id);
         if (!block) return prev;
         nextSubmits[id] = applyStateUpdate(
-          initialSubmitAnswer(block.type),
+          { ...initialSubmitAnswer(block.type), ...nextSubmits[id] },
+
           answer,
         );
         return nextSubmits;
@@ -359,7 +374,7 @@ export function WorkbookEdit({
 
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
-      if (mode === "solve") {
+      if (mode !== "review") {
         setSubmits({});
       }
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -387,15 +402,22 @@ export function WorkbookEdit({
     return true;
   }, []);
 
-  const handlePublish = useCallback(() => {
-    const isValid = handleValidateBlocks(blocks);
+  const handlePublish = useCallback(async () => {
+    const isValid = handleValidateBlocks(stateRef.current.blocks);
     if (!isValid) {
       toast.warning("문제를 먼저 수정해주세요.");
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    toast.success("아직 개발중~~");
-  }, [blocks]);
+    const asnwer = await notify.confirm({
+      okText: "발행하기",
+      title: "문제집 발행",
+      description: "이것저것 확인했죠? 머 ... 저장안되고 이런거",
+    });
+
+    if (!asnwer) return;
+    publish(workbook.id);
+  }, [publish]);
 
   return (
     <div className="h-full relative">
@@ -409,7 +431,7 @@ export function WorkbookEdit({
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
             className="shadow-none"
-            mode={isEditBook ? "edit" : "preview"}
+            mode={control != "edit" ? "solve" : isEditBook ? "edit" : "preview"}
             onModeChange={handleChangeWorkbookMode}
             onChangeTitle={handleChangeTitle}
             onChangeDescription={handleChangeDescription}
@@ -418,6 +440,12 @@ export function WorkbookEdit({
 
           {blocks.map((b, index) => {
             const isDragOver = dragOverBlockId === b.id;
+            const mode =
+              control !== "edit"
+                ? control
+                : editingBlockId.includes(b.id)
+                  ? "edit"
+                  : "preview";
             return (
               <div
                 key={b.id}
@@ -440,7 +468,7 @@ export function WorkbookEdit({
                 onDragEnd={isReorderMode ? handleReorderDragEnd : undefined}
               >
                 {isReorderMode && !isDragOver && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
                     <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
                       <GripVerticalIcon className="size-6" />
                       <span className="text-sm font-medium">
@@ -453,14 +481,14 @@ export function WorkbookEdit({
                   index={index}
                   isPending={isPending}
                   ref={focusBlockId === b.id ? handleFocusBlock : undefined}
-                  className={cn("border-none", isPending ? "opacity-50" : "")}
-                  mode={
-                    control !== "edit"
-                      ? control
-                      : editingBlockId.includes(b.id)
-                        ? "edit"
-                        : "preview"
-                  }
+                  className={cn(
+                    "border-none",
+                    isPending ? "opacity-50" : "",
+                    mode == "review" &&
+                      !correctAnswerIds[b.id] &&
+                      "bg-muted-foreground/5",
+                  )}
+                  mode={mode}
                   onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
                   type={b.type}
                   question={b.question ?? ""}
@@ -508,10 +536,10 @@ export function WorkbookEdit({
             <Button
               size={"lg"}
               onClick={() =>
-                handleChangeControl(control === "solve" ? "review" : "edit")
+                handleChangeControl(control === "solve" ? "review" : "solve")
               }
             >
-              {control === "solve" ? "체점하기" : "문제 수정하기"}
+              {control === "solve" ? "체점" : "다시 풀기"}
             </Button>
           )}
         </div>
@@ -532,7 +560,7 @@ export function WorkbookEdit({
             ref.current?.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }
-          handleChangeControl("solve");
+          handleChangeControl(control == "edit" ? "solve" : "edit");
         }}
         onAddBlock={handleAddBlock}
         onSave={handleSave}

@@ -26,7 +26,6 @@ export const seedWorkbook = async () => {
   });
 
   await workBookService.processUpdateBlocks(
-    testUser[0].id,
     workBook.id,
     [],
     mockData.slice(0, 2),
@@ -44,7 +43,6 @@ export const seedWorkbook = async () => {
   });
 
   await workBookService.processUpdateBlocks(
-    testUser[0].id,
     workBook2.id,
     [],
     mockData.slice(2, 4),

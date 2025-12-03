@@ -6,7 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale/ko";
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
-import { fail, ok } from "@/lib/protocol/interface";
+import { ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
 const generateDefaultTitle = () => {
@@ -35,11 +35,8 @@ export const updateWorkbookAction = safeAction(
   }),
   async ({ id, title, description }) => {
     const session = await getSession();
-    const hasPermission = await workBookService.isWorkBookOwner(
-      id,
-      session.user.id,
-    );
-    if (!hasPermission) return fail("권한이 없습니다.");
+    await workBookService.checkEditPermission(id, session.user.id);
+
     await workBookService.updateWorkBook({ id, title, description });
     return ok();
   },
@@ -56,8 +53,8 @@ export const processUpdateBlocksAction = safeAction(
     saveBlocks: WorkBookBlock[];
   }) => {
     const session = await getSession();
+    await workBookService.checkEditPermission(workbookId, session.user.id);
     await workBookService.processUpdateBlocks(
-      session.user.id,
       workbookId,
       deleteBlocks,
       saveBlocks,
@@ -65,3 +62,10 @@ export const processUpdateBlocksAction = safeAction(
     return ok();
   },
 );
+
+export const publishWorkbookAction = safeAction(async (workbookId: string) => {
+  const session = await getSession();
+  await workBookService.checkEditPermission(workbookId, session.user.id);
+  await workBookService.publishWorkbook(workbookId);
+  return ok();
+});

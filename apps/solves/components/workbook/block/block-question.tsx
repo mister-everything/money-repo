@@ -42,7 +42,9 @@ export function BlockQuestion({
           onChange={handleChangeQuestion}
         />
       ) : (
-        <Streamdown>{question || placeholder}</Streamdown>
+        <div className="p-2">
+          <Streamdown>{question || placeholder}</Streamdown>
+        </div>
       )}
     </div>
   );

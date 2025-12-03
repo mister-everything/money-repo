@@ -2,7 +2,7 @@ import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import z from "zod";
 import { WorkbookEdit } from "@/components/workbook/workbook-edit";
-import { WorkbooksCreateChatManager } from "@/components/workbook/workbook-edit-chatbot-manager";
+import { WorkbooksCreateChat } from "@/components/workbook/workbook-edit-chatbot";
 import { getSession } from "@/lib/auth/server";
 
 export default async function WorkbookEditPage({
@@ -14,11 +14,10 @@ export default async function WorkbookEditPage({
 
   const session = await getSession();
 
-  const hasPermission = await workBookService.isWorkBookOwner(
+  await workBookService.checkEditPermission(
     z.uuid().parse(id),
     session.user.id,
   );
-  if (!hasPermission) return notFound();
 
   const book = await workBookService.getWorkBookWithBlocks(id);
   if (!book) notFound();
@@ -29,7 +28,7 @@ export default async function WorkbookEditPage({
         <WorkbookEdit book={book} />
       </div>
       <div className="w-sm lg:w-md xl:w-lg 2xl:w-2xl h-full overflow-hidden p-2">
-        <WorkbooksCreateChatManager workbookId={id} />
+        <WorkbooksCreateChat workbookId={id} />
       </div>
     </div>
   );
