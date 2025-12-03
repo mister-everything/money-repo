@@ -15,7 +15,6 @@ import {
   CreateWorkBook,
   createWorkBookSchema,
   SubmitWorkBook,
-  SubmitWorkBookResponse,
   WorkBook,
   WorkBookBlock,
   WorkBookCompleted,
