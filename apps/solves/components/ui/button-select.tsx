@@ -21,6 +21,7 @@ type ButtonSelectProps = {
     label: ReactNode;
     value: string;
   }[];
+  disabled?: boolean;
   name?: string;
 } & ValueHandler &
   ComponentProps<"div">;
@@ -29,6 +30,7 @@ export function ButtonSelect({
   options,
   value,
   name,
+  disabled = false,
   onChange,
   multiple = false,
   className,
@@ -62,7 +64,14 @@ export function ButtonSelect({
   );
 
   return (
-    <div className={cn("flex flex-wrap gap-2", className)} {...props}>
+    <div
+      className={cn(
+        "flex flex-wrap gap-2",
+        disabled && "opacity-70",
+        className,
+      )}
+      {...props}
+    >
       {options.map((option) => {
         const checked = isSelected(option.value);
         const key = option.value;
@@ -85,6 +94,7 @@ export function ButtonSelect({
             <div className="flex items-center gap-1.5 overflow-hidden">
               <Checkbox
                 id={key}
+                disabled={disabled}
                 checked={checked}
                 onCheckedChange={() => handleClick(option.value)}
                 className={cn(

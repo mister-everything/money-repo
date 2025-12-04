@@ -14,13 +14,12 @@ import {
 
 export function SidebarEditMenuItem({
   rootHref,
-  inProgressBooksHref,
-  publishedBooksHref,
+  myWorkbooksHref,
+
   ...sidebarMenuItemProps
 }: {
   rootHref: string;
-  inProgressBooksHref: string;
-  publishedBooksHref: string;
+  myWorkbooksHref: string;
 } & React.ComponentProps<typeof SidebarMenuItem>) {
   const { setOpenMobile, state } = useSidebar();
   const path = usePathname();
@@ -28,10 +27,8 @@ export function SidebarEditMenuItem({
   const showSubMenu = useMemo(
     () =>
       state === "expanded" &&
-      [publishedBooksHref, rootHref, inProgressBooksHref].some(
-        (href) => path === href,
-      ),
-    [state, path, rootHref, inProgressBooksHref, publishedBooksHref],
+      [myWorkbooksHref, rootHref].some((href) => path === href),
+    [state, path, rootHref, myWorkbooksHref],
   );
 
   return (
@@ -52,19 +49,8 @@ export function SidebarEditMenuItem({
       >
         <SidebarMenuSub>
           <SidebarMenuSubItem>
-            <SidebarMenuSubButton
-              asChild
-              isActive={path === inProgressBooksHref}
-            >
-              <Link href={inProgressBooksHref}>만들고 있는 문제집</Link>
-            </SidebarMenuSubButton>
-          </SidebarMenuSubItem>
-          <SidebarMenuSubItem>
-            <SidebarMenuSubButton
-              asChild
-              isActive={path === publishedBooksHref}
-            >
-              <Link href={publishedBooksHref}>발행된 문제집</Link>
+            <SidebarMenuSubButton asChild isActive={path === myWorkbooksHref}>
+              <Link href={myWorkbooksHref}>내가 만든 문제집</Link>
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         </SidebarMenuSub>

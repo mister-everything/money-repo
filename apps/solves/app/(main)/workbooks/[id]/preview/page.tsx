@@ -42,7 +42,7 @@ export default async function WorkbookPreviewPage({
     <div className="flex w-full h-screen px-4 gap-4">
       <div className="flex-1">
         <InDevelopment className="mx-4 my-8">
-          <Streamdown>{message}</Streamdown>
+          <Streamdown mode="static">{message}</Streamdown>
         </InDevelopment>
         <WorkbookPreview book={book} />
       </div>

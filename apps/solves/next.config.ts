@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: "bottom-right",
   },
-  serverExternalPackages: ["shiki", "streamdown"],
   experimental: {
     globalNotFound: true,
   },

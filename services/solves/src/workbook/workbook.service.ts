@@ -1,7 +1,17 @@
 import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { pgDb } from "../db";
+import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
@@ -103,7 +113,7 @@ export const workBookService = {
       .where(and(...where))
       .offset(offset)
       .limit(limit)
-      .orderBy(sql`${workBooksTable.createdAt} desc`);
+      .orderBy(desc(workBooksTable.updatedAt));
 
     return rows;
   },
@@ -153,7 +163,16 @@ export const workBookService = {
       answer: block.answer!,
     }));
   },
-  publishWorkbook: async (workBookId: string) => {
+  publishWorkbook: async ({
+    workBookId,
+    userId,
+    tags,
+  }: {
+    workBookId: string;
+    userId: string;
+    tags?: string[];
+  }) => {
+    await workBookService.checkEditPermission(workBookId, userId);
     const book = await workBookService.getWorkBookWithBlocks(workBookId);
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
     if (!book.blocks.length) throw new PublicError("최소 1개이상의 문제 필요.");
@@ -161,12 +180,47 @@ export const workBookService = {
       .map(validateBlock)
       .every((r) => r.success);
     if (!isPublishAble) throw new PublicError("문제를 확인해보세요.");
-    await pgDb
-      .update(workBooksTable)
-      .set({
-        publishedAt: new Date(),
-      })
-      .where(eq(workBooksTable.id, workBookId));
+
+    await pgDb.transaction(async (tx) => {
+      if (tags?.length) {
+        await tx
+          .delete(workBookTagsTable)
+          .where(eq(workBookTagsTable.workBookId, workBookId));
+
+        // 태그 저장
+        await tx
+          .insert(tagsTable)
+          .values(
+            tags.map((tag) => ({
+              name: tag,
+              createdId: userId,
+            })),
+          )
+          .onConflictDoNothing({
+            target: [tagsTable.name],
+          });
+        const selectedTags = await tx
+          .select({
+            id: tagsTable.id,
+          })
+          .from(tagsTable)
+          .where(inArray(tagsTable.name, tags));
+
+        // 새 태그 저장
+        await tx.insert(workBookTagsTable).values(
+          selectedTags.map((tag) => ({
+            workBookId,
+            tagId: tag.id,
+          })),
+        );
+      }
+      await tx
+        .update(workBooksTable)
+        .set({
+          publishedAt: new Date(),
+        })
+        .where(eq(workBooksTable.id, workBookId));
+    });
   },
 
   // 풀이용 정답 제외 문제집
@@ -196,49 +250,19 @@ export const workBookService = {
     };
   },
 
-  /**
-   * 문제집에 태그 저장
-   */
-  saveTagByBookId: async ({
-    bookId,
-    tags,
-    userId,
-  }: {
-    bookId: string;
-    tags: string[];
-    userId: string;
-  }): Promise<void> => {
-    // 기존 태그 삭제
-    await pgDb
-      .delete(workBookTagsTable)
-      .where(eq(workBookTagsTable.workBookId, bookId));
-
-    // 태그 저장
-    await pgDb
-      .insert(tagsTable)
-      .values(
-        tags.map((tag) => ({
-          name: tag,
-          createdId: userId,
-        })),
-      )
-      .onConflictDoNothing({
-        target: [tagsTable.name],
-      });
-    const selectedTags = await pgDb
-      .select({
-        id: tagsTable.id,
-      })
-      .from(tagsTable)
-      .where(inArray(tagsTable.name, tags));
-
-    // 새 태그 저장
-    await pgDb.insert(workBookTagsTable).values(
-      selectedTags.map((tag) => ({
-        workBookId: bookId,
-        tagId: tag.id,
-      })),
-    );
+  isMaxInprogressWorkbookCreateCount: async (
+    ownerId: string,
+  ): Promise<boolean> => {
+    const [inprogressWorkbook] = await pgDb
+      .select({ count: count(workBooksTable.id) })
+      .from(workBooksTable)
+      .where(
+        and(
+          eq(workBooksTable.ownerId, ownerId),
+          isNull(workBooksTable.publishedAt),
+        ),
+      );
+    return inprogressWorkbook.count >= MAX_INPROGRESS_WORKBOOK_CREATE_COUNT;
   },
 
   /**
@@ -246,6 +270,17 @@ export const workBookService = {
    */
   createWorkBook: async (workBook: CreateWorkBook): Promise<{ id: string }> => {
     const parsedWorkBook = createWorkBookSchema.parse(workBook);
+
+    const isMaxInprogressWorkbookCreateCount =
+      await workBookService.isMaxInprogressWorkbookCreateCount(
+        workBook.ownerId,
+      );
+
+    if (isMaxInprogressWorkbookCreateCount)
+      throw new PublicError(
+        `최대 ${MAX_INPROGRESS_WORKBOOK_CREATE_COUNT}개의 문제집을 생성할 수 있습니다.`,
+      );
+
     const data: typeof workBooksTable.$inferInsert = {
       ownerId: parsedWorkBook.ownerId,
       title: parsedWorkBook.title,
