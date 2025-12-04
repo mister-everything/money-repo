@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:local": "NO_HTTPS=1 next build",
     "start": "next start",
     "lint": "biome lint . --write",
     "check": "pnpm run lint && pnpm run check-types && pnpm run test",

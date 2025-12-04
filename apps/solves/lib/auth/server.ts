@@ -12,8 +12,8 @@ import { nextCookies } from "better-auth/next-js";
 import { anonymous, customSession } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE_PREFIX } from "../const";
 import { logger } from "@/lib/logger";
+import { AUTH_COOKIE_PREFIX } from "../const";
 export const getSession = async () => {
   "use server";
   const session = await solvesBetterAuth.api

@@ -1,7 +1,17 @@
 import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { pgDb } from "../db";
+import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
@@ -103,7 +113,7 @@ export const workBookService = {
       .where(and(...where))
       .offset(offset)
       .limit(limit)
-      .orderBy(sql`${workBooksTable.createdAt} desc`);
+      .orderBy(desc(workBooksTable.updatedAt));
 
     return rows;
   },
@@ -241,11 +251,37 @@ export const workBookService = {
     );
   },
 
+  isMaxInprogressWorkbookCreateCount: async (
+    ownerId: string,
+  ): Promise<boolean> => {
+    const [inprogressWorkbook] = await pgDb
+      .select({ count: count(workBooksTable.id) })
+      .from(workBooksTable)
+      .where(
+        and(
+          eq(workBooksTable.ownerId, ownerId),
+          isNull(workBooksTable.publishedAt),
+        ),
+      );
+    return inprogressWorkbook.count >= MAX_INPROGRESS_WORKBOOK_CREATE_COUNT;
+  },
+
   /**
    * 문제집 생성
    */
   createWorkBook: async (workBook: CreateWorkBook): Promise<{ id: string }> => {
     const parsedWorkBook = createWorkBookSchema.parse(workBook);
+
+    const isMaxInprogressWorkbookCreateCount =
+      await workBookService.isMaxInprogressWorkbookCreateCount(
+        workBook.ownerId,
+      );
+
+    if (isMaxInprogressWorkbookCreateCount)
+      throw new PublicError(
+        `최대 ${MAX_INPROGRESS_WORKBOOK_CREATE_COUNT}개의 문제집을 생성할 수 있습니다.`,
+      );
+
     const data: typeof workBooksTable.$inferInsert = {
       ownerId: parsedWorkBook.ownerId,
       title: parsedWorkBook.title,
