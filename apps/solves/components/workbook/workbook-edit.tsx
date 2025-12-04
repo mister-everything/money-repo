@@ -30,7 +30,6 @@ import {
   updateWorkbookAction,
 } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
-import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
   TooltipContent,
@@ -46,6 +45,7 @@ import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";
+import { WorkbookPublishPopup } from "./workbook-publish-popup";
 
 const extractBlockDiff = (prev: WorkBookBlock[], next: WorkBookBlock[]) => {
   const deletedBlocks = prev.filter((b) => !next.includes(b));
@@ -92,6 +92,8 @@ export function WorkbookEdit({
 
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
+
+  const [isPublishPopupOpen, setIsPublishPopupOpen] = useState(false);
 
   const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
     if (control !== "review") return {};
@@ -402,7 +404,7 @@ export function WorkbookEdit({
     return true;
   }, []);
 
-  const handlePublish = useCallback(async () => {
+  const handleOpenPublishPopup = useCallback(() => {
     if (stateRef.current.blocks.length === 0) {
       toast.warning("문제를 최소 1개 이상 추가해주세요.");
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -414,16 +416,17 @@ export function WorkbookEdit({
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    const asnwer = await notify.confirm({
-      okText: "발행하기",
-      title: "문제집 발행",
-      description: "이것저것 확인했죠? 머 ... 저장안되고 이런거",
-    });
-    await handleSave();
+    setIsPublishPopupOpen(true);
+  }, []);
 
-    if (!asnwer) return;
-    publish({ workBookId: workbook.id, tags: ["test-tag-1", "test-tag-2"] });
-  }, [publish]);
+  const handlePublish = useCallback(
+    async (tags: string[]) => {
+      await handleSave();
+      publish({ workBookId: workbook.id, tags });
+      setIsPublishPopupOpen(false);
+    },
+    [publish, workbook.id],
+  );
 
   return (
     <div className="h-full relative">
@@ -570,8 +573,15 @@ export function WorkbookEdit({
         }}
         onAddBlock={handleAddBlock}
         onSave={handleSave}
-        onPublish={handlePublish}
+        onPublish={handleOpenPublishPopup}
         onToggleReorderMode={handleToggleReorderMode}
+      />
+
+      <WorkbookPublishPopup
+        open={isPublishPopupOpen}
+        onOpenChange={setIsPublishPopupOpen}
+        onPublish={handlePublish}
+        isPending={isPublishing}
       />
     </div>
   );
