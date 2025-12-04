@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -37,7 +37,7 @@
   --sidebar-ring: oklch(0.841 0.238 128.85);
   --correct: oklch(0.648 0.2 131.684);
   --incorrect: #ff5f57;
-  --warning: #f57c00;
+  --point: #f57c00;
 }
 
 .dark {
@@ -122,7 +122,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --color-warning: var(--warning);
+  --color-point: var(--point);
 }
 
 @layer base {

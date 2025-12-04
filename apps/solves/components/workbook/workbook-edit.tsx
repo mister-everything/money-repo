@@ -403,6 +403,11 @@ export function WorkbookEdit({
   }, []);
 
   const handlePublish = useCallback(async () => {
+    if (stateRef.current.blocks.length === 0) {
+      toast.warning("문제를 최소 1개 이상 추가해주세요.");
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     const isValid = handleValidateBlocks(stateRef.current.blocks);
     if (!isValid) {
       toast.warning("문제를 먼저 수정해주세요.");
@@ -414,9 +419,10 @@ export function WorkbookEdit({
       title: "문제집 발행",
       description: "이것저것 확인했죠? 머 ... 저장안되고 이런거",
     });
+    await handleSave();
 
     if (!asnwer) return;
-    publish(workbook.id);
+    publish({ workBookId: workbook.id, tags: ["test-tag-1", "test-tag-2"] });
   }, [publish]);
 
   return (

@@ -63,9 +63,25 @@ export const processUpdateBlocksAction = safeAction(
   },
 );
 
-export const publishWorkbookAction = safeAction(async (workbookId: string) => {
-  const session = await getSession();
-  await workBookService.checkEditPermission(workbookId, session.user.id);
-  await workBookService.publishWorkbook(workbookId);
-  return ok();
-});
+export const publishWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    tags: z
+      .array(
+        z
+          .string()
+          .min(1, "최소 1글자 이상의 태그를 입력해주세요.")
+          .max(10, "최대 10글자 이하의 태그를 입력해주세요."),
+      )
+      .optional(),
+  }),
+  async ({ workBookId, tags }) => {
+    const session = await getSession();
+    await workBookService.publishWorkbook({
+      workBookId,
+      userId: session.user.id,
+      tags,
+    });
+    return ok();
+  },
+);

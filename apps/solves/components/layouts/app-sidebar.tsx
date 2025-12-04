@@ -49,8 +49,7 @@ export function AppSidebar() {
           />
           <SidebarEditMenuItem
             rootHref="/workbooks/new"
-            inProgressBooksHref="/workbooks"
-            publishedBooksHref="/workbooks/published"
+            myWorkbooksHref="/workbooks"
           />
         </SidebarGroup>
       </SidebarContent>

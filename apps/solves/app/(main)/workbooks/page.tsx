@@ -5,27 +5,46 @@ import { getSession } from "@/lib/auth/server";
 
 export default async function WorkbooksPage() {
   const session = await getSession();
-  const workBooks = await workBookService.searchMyWorkBooks({
+  const inProgressWorkbooks = await workBookService.searchMyWorkBooks({
     userId: session.user.id,
     isPublished: false,
+    limit: 3,
   });
+  const publishedWorkbooks = await workBookService.searchMyWorkBooks({
+    userId: session.user.id,
+    isPublished: true,
+  });
+
   return (
-    <div className="p-4 flex flex-wrap gap-4">
-      {!workBooks.length ? (
-        <div className="w-full h-full p-8 text-xl font-bold">
-          아직 없어요 만든게
+    <div className="p-6 lg:p-8 w-full">
+      {inProgressWorkbooks.length > 0 && (
+        <div className="flex flex-col gap-3 mb-12">
+          <label className="text-sm font-bold text-foreground">진행중</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {inProgressWorkbooks.map((book) => (
+              <Link href={`/workbooks/${book.id}/edit`} key={book.id}>
+                <WorkbookCard book={book} />
+              </Link>
+            ))}
+          </div>
         </div>
-      ) : (
-        workBooks.map((book) => (
-          <Link
-            href={`/workbooks/${book.id}/edit`}
-            key={book.id}
-            className="w-1/3"
-          >
-            <WorkbookCard book={book} />
-          </Link>
-        ))
       )}
+      <div className="flex flex-col gap-3 mb-6">
+        <label className="text-sm font-bold text-foreground">다만든거</label>
+        {publishedWorkbooks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {publishedWorkbooks.map((book) => (
+              <Link href={`/workbooks/${book.id}/preview`} key={book.id}>
+                <WorkbookCard book={book} />
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground py-18 w-full h-full flex items-center justify-center">
+            <p>아직 배포된 문제집이 없어요</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
