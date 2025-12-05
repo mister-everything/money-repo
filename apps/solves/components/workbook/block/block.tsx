@@ -261,6 +261,7 @@ function PureBlock<T extends BlockType = BlockType>({
           isCorrect={props.isCorrect}
           onChangeSolution={props.onUpdateSolution}
           answer={props.answer}
+          submit={props.submit}
         />
         {props.errorFeedback && (
           <p className="text-destructive text-xs whitespace-pre-wrap mt-4">
