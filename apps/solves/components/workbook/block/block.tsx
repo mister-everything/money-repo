@@ -4,8 +4,8 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
+  blockValidate,
   getBlockDisplayName,
-  validateBlock,
 } from "@service/solves/shared";
 import { equal, exclude, StateUpdate } from "@workspace/util";
 import {
@@ -84,7 +84,7 @@ function PureBlock<T extends BlockType = BlockType>({
 }: BlockProps<T>) {
   const blockErrorMessage = useMemo(() => {
     if (props.mode != "edit") return;
-    const result = validateBlock({
+    const result = blockValidate({
       question: props.question,
       content: props.content,
       answer: props.answer ?? ({} as BlockAnswer<T>),
@@ -258,6 +258,7 @@ function PureBlock<T extends BlockType = BlockType>({
           content={props.content}
           solution={props.answer?.solution ?? ""}
           mode={props.mode}
+          isCorrect={props.isCorrect}
           onChangeSolution={props.onUpdateSolution}
           answer={props.answer}
         />

@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 import { pgDb } from "../db";
 import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
+import { blockValidate } from "./block-validate";
 import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
@@ -25,6 +26,7 @@ import {
   CreateWorkBook,
   createWorkBookSchema,
   SubmitWorkBook,
+  UpdateBlock,
   WorkBook,
   WorkBookBlock,
   WorkBookCompleted,
@@ -33,7 +35,7 @@ import {
   WorkBookWithoutAnswer,
   WorkBookWithoutBlocks,
 } from "./types";
-import { isPublished, validateBlock } from "./utils";
+import { isPublished } from "./utils";
 
 const TagsSubQuery = pgDb
   .select({
@@ -177,7 +179,7 @@ export const workBookService = {
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
     if (!book.blocks.length) throw new PublicError("최소 1개이상의 문제 필요.");
     const isPublishAble = book.blocks
-      .map(validateBlock)
+      .map(blockValidate)
       .every((r) => r.success);
     if (!isPublishAble) throw new PublicError("문제를 확인해보세요.");
 
@@ -308,27 +310,35 @@ export const workBookService = {
   },
   processUpdateBlocks: async (
     bookId: string,
-    deleteBlocks: string[],
-    saveBlocks: WorkBookBlock[],
+    {
+      deleteBlocks,
+      insertBlocks,
+      updateBlocks,
+    }: {
+      deleteBlocks: string[];
+      insertBlocks: WorkBookBlock[];
+      updateBlocks: UpdateBlock[];
+    },
   ): Promise<void> => {
     await pgDb.transaction(async (tx) => {
-      if (saveBlocks.length > 0) {
-        const saveResult = await tx
+      if (insertBlocks.length > 0) {
+        const insertResult = await tx
           .insert(blocksTable)
-          .values(saveBlocks.map((block) => ({ ...block, workBookId: bookId })))
-          .onConflictDoUpdate({
-            target: [blocksTable.id],
-            set: {
-              answer: sql.raw(`excluded.${blocksTable.answer.name}`),
-              content: sql.raw(`excluded.${blocksTable.content.name}`),
-              question: sql.raw(`excluded.${blocksTable.question.name}`),
-              order: sql.raw(`excluded.${blocksTable.order.name}`),
-              type: sql.raw(`excluded.${blocksTable.type.name}`),
-            },
-          });
-        if (saveResult.rowCount !== saveBlocks.length) {
-          throw new PublicError("Failed to save blocks");
+          .values(
+            insertBlocks.map((block) => ({ ...block, workBookId: bookId })),
+          );
+        if (insertResult.rowCount !== insertBlocks.length) {
+          throw new PublicError("Failed to insert blocks");
         }
+      }
+      if (updateBlocks.length > 0) {
+        const updateQueries = updateBlocks.map(async (block) => {
+          return await tx
+            .update(blocksTable)
+            .set(block)
+            .where(eq(blocksTable.id, block.id));
+        });
+        await Promise.all(updateQueries);
       }
       if (deleteBlocks.length > 0) {
         const deleteResult = await tx

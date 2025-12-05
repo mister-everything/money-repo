@@ -1,7 +1,7 @@
 "use server";
 
 import { workBookService } from "@service/solves";
-import { WorkBookBlock } from "@service/solves/shared";
+import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale/ko";
 import z from "zod";
@@ -46,19 +46,21 @@ export const processUpdateBlocksAction = safeAction(
   async ({
     workbookId,
     deleteBlocks,
-    saveBlocks,
+    insertBlocks,
+    updateBlocks,
   }: {
     workbookId: string;
     deleteBlocks: string[];
-    saveBlocks: WorkBookBlock[];
+    insertBlocks: WorkBookBlock[];
+    updateBlocks: UpdateBlock[];
   }) => {
     const session = await getSession();
     await workBookService.checkEditPermission(workbookId, session.user.id);
-    await workBookService.processUpdateBlocks(
-      workbookId,
+    await workBookService.processUpdateBlocks(workbookId, {
       deleteBlocks,
-      saveBlocks,
-    );
+      insertBlocks,
+      updateBlocks,
+    });
     return ok();
   },
 );

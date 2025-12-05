@@ -5,16 +5,18 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
+  blockValidate,
   checkAnswer,
   initializeBlock,
   initialSubmitAnswer,
-  validateBlock,
+  UpdateBlock,
   WorkBook,
   WorkBookBlock,
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
 import {
   applyStateUpdate,
+  arrayToObject,
   deduplicate,
   equal,
   objectFlow,
@@ -48,13 +50,31 @@ import { WorkbookHeader } from "./workbook-header";
 import { WorkbookPublishPopup } from "./workbook-publish-popup";
 
 const extractBlockDiff = (prev: WorkBookBlock[], next: WorkBookBlock[]) => {
-  const deletedBlocks = prev.filter((b) => !next.includes(b));
-  const addedBlocks = next.filter((b) => !prev.includes(b));
+  const prevBlockById = arrayToObject(prev, (v) => v.id);
+  const nextBlockById = arrayToObject(next, (v) => v.id);
+  const deletedBlocks = prev.filter((b) => !nextBlockById[b.id]);
+  const addedBlocks = next.filter((b) => !prevBlockById[b.id]);
 
-  const updatedBlocks = next.filter((b) => {
-    const prevBlock = prev.find((pb) => pb.id === b.id);
-    return prevBlock && !equal(b, prevBlock);
-  });
+  const updatedBlocks = next
+    .filter((b) => {
+      const prevBlock = prevBlockById[b.id];
+      return prevBlock && !equal(b, prevBlock);
+    })
+    .map((b) => {
+      const updatePayload: UpdateBlock = {
+        id: b.id,
+      };
+      const diffCheckKeys = ["question", "content", "answer", "order"];
+      diffCheckKeys.forEach((key) => {
+        const oldValue = prevBlockById[b.id][key];
+        const newValue = b[key];
+        if (oldValue !== newValue) {
+          updatePayload[key] = newValue;
+        }
+      });
+      return updatePayload;
+    });
+
   return { deletedBlocks, addedBlocks, updatedBlocks };
 };
 
@@ -229,7 +249,17 @@ export function WorkbookEdit({
   const handleDeleteBlock = useCallback((id: string) => {
     if (stateRef.current.isPending) return;
     deleteFeedback(id);
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+    setBlocks((prev) =>
+      prev
+        .filter((b) => b.id !== id)
+        .map((b, i) => {
+          if ((b.order = i)) return b;
+          return {
+            ...b,
+            order: i,
+          };
+        }),
+    );
     setEditingBlockId((prev) => prev.filter((id) => id !== id));
   }, []);
 
@@ -369,7 +399,8 @@ export function WorkbookEdit({
       await processUpdateBlocks({
         workbookId: workbook.id,
         deleteBlocks: deletedBlocks.map((b) => b.id),
-        saveBlocks: [...addedBlocks, ...updatedBlocks],
+        insertBlocks: addedBlocks,
+        updateBlocks: updatedBlocks,
       });
     }
   };
@@ -388,7 +419,7 @@ export function WorkbookEdit({
   const handleValidateBlocks = useCallback((blocks: WorkBookBlock[]) => {
     const nextFeedbacks = blocks.reduce(
       (acc, b) => {
-        const result = validateBlock(b);
+        const result = blockValidate(b);
         if (!result.success) {
           const errors = Object.values(result.errors ?? {}).flat();
           acc[b.id] = deduplicate(errors).join("\n");

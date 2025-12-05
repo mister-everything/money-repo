@@ -25,11 +25,11 @@ export const seedWorkbook = async () => {
     title: "상식 테스트 문제 입니다",
   });
 
-  await workBookService.processUpdateBlocks(
-    workBook.id,
-    [],
-    mockData.slice(0, 2),
-  );
+  await workBookService.processUpdateBlocks(workBook.id, {
+    deleteBlocks: [],
+    insertBlocks: mockData.slice(0, 2),
+    updateBlocks: [],
+  });
 
   logger.info(`✅ 문제집 1 생성 완료: ${workBook.id}`);
 
@@ -42,11 +42,11 @@ export const seedWorkbook = async () => {
     // tags: ["test", "OX", "순서맞추기"],
   });
 
-  await workBookService.processUpdateBlocks(
-    workBook2.id,
-    [],
-    mockData.slice(2, 4),
-  );
+  await workBookService.processUpdateBlocks(workBook2.id, {
+    deleteBlocks: [],
+    insertBlocks: mockData.slice(2, 4),
+    updateBlocks: [],
+  });
 
   logger.info(`✅ 문제집 2 생성 완료: ${workBook2.id}`);
 

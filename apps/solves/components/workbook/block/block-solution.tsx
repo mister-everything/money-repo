@@ -1,13 +1,20 @@
 "use client";
 import {
   BlockAnswer,
+  BlockAnswerSubmit,
   BlockContent,
   BlockType,
+  McqBlockAnswerSubmit,
   McqBlockContent,
   RankingBlockContent,
 } from "@service/solves/shared";
 import { toAny } from "@workspace/util";
-import { ChevronDownIcon, LightbulbIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  CircleIcon,
+  LightbulbIcon,
+  XIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -21,12 +28,16 @@ export function BlockSolution<T extends BlockType = BlockType>({
   onChangeSolution,
   answer,
   content,
+  submit,
+  isCorrect,
 }: {
   solution: string;
   mode: WorkBookComponentMode;
   content: BlockContent<T>;
   onChangeSolution?: (solution: string) => void;
   answer?: BlockAnswer<T>;
+  submit?: BlockAnswerSubmit<T>;
+  isCorrect?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const handleToggleExpanded = useCallback(() => {
@@ -35,17 +46,64 @@ export function BlockSolution<T extends BlockType = BlockType>({
 
   const correctAnswerMessage = useMemo(() => {
     if (answer?.type == "default")
-      return <span>{answer?.answer?.join(" ") || "정답이 없습니다."}</span>;
+      return (
+        <div className="flex gap-2 text-primary font-semibold items-center">
+          <span className="w-16">여러 정답</span>
+          {answer?.answer.length ? (
+            <div className="flex gap-3">
+              {answer?.answer.map((a) => (
+                <span>{a}</span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">정답이 없습니다.</span>
+          )}
+        </div>
+      );
 
     if (answer?.type == "mcq") {
-      if (!answer?.answer?.length) return <span>정답이 없습니다.</span>;
       const option = (content as McqBlockContent)?.options ?? [];
-      const index = option.findIndex((option) => option.id == answer.answer);
-      if (index == -1) return <span>정답이 없습니다.</span>;
+      const correctIndex = option.findIndex(
+        (option) => option.id == answer?.answer,
+      );
+      const submitIndex = option.findIndex(
+        (option) => option.id == (submit as McqBlockAnswerSubmit)?.answer,
+      );
+
       return (
-        <span>
-          {index + 1} {toAny(option[index]).text}
-        </span>
+        <>
+          {mode == "review" && !isCorrect && (
+            <div className="flex gap-2 text-destructive font-semibold items-center">
+              <span className="w-16">내가 고른 답 </span>
+
+              <div className="flex gap-3">
+                {submitIndex == -1 ? (
+                  <span className="text-muted-foreground">
+                    정답을 제출하지 않았습니다.
+                  </span>
+                ) : (
+                  <div className="flex gap-1">
+                    <div className="size-4 rounded-full bg-destructive text-foreground flex items-center justify-center">
+                      {submitIndex + 1}
+                    </div>
+                    {toAny(option[submitIndex]).text}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2 text-primary font-semibold items-center">
+            <span className="w-16">정답 </span>
+
+            <div className="flex gap-3">
+              {answer?.answer ? (
+                <CircleIcon className="size-2.5 stroke-3" />
+              ) : (
+                <XIcon className="size-2.5 stroke-3" />
+              )}
+            </div>
+          </div>
+        </>
       );
     }
     if (answer?.type == "mcq-multiple") {
@@ -69,16 +127,39 @@ export function BlockSolution<T extends BlockType = BlockType>({
       );
     }
     if (answer?.type == "ox") {
-      return <span>{answer.answer ? "O" : "X"}</span>;
+      return (
+        <div className="flex gap-2 text-primary font-semibold items-center">
+          <span className="w-16">정답 </span>
+
+          <div className="flex gap-3">
+            {answer?.answer ? (
+              <CircleIcon className="size-2.5 stroke-3" />
+            ) : (
+              <XIcon className="size-2.5 stroke-3" />
+            )}
+          </div>
+        </div>
+      );
     }
     if (answer?.type == "ranking") {
-      const options = (content as RankingBlockContent)?.items ?? [];
-      if (!options.length || !answer.order?.length)
-        return <span>정답이 없습니다.</span>;
-      const sortedOptions = options.sort(
+      const options = [...((content as RankingBlockContent)?.items ?? [])].sort(
         (a, b) => answer.order.indexOf(a.id) - answer.order.indexOf(b.id),
       );
-      return <span>{sortedOptions.map((v) => toAny(v).text).join(" ")}</span>;
+      return (
+        <div className="flex gap-2 text-primary font-semibold items-center">
+          <span className="w-16">정답 순서</span>
+          {!options.length || !answer.order?.length ? (
+            <span className="text-muted-foreground">정답이 없습니다.</span>
+          ) : (
+            <div className="flex gap-3">
+              {options.map((v) => {
+                if (v.type != "text") return <span>지원되지 않는 유형</span>;
+                return <span>{v.text}</span>;
+              })}
+            </div>
+          )}
+        </div>
+      );
     }
     return <span>지원되지 않는 유형입니다.</span>;
   }, [answer, content]);
@@ -161,13 +242,8 @@ export function BlockSolution<T extends BlockType = BlockType>({
         </div>
 
         {isExpanded && (
-          <div className="px-2 pb-2 flex flex-col gap-2 text-muted-foreground">
-            <div className="flex gap-2">
-              <span className="w-16 text-muted-foreground/50 font-semibold">
-                정답
-              </span>
-              {correctAnswerMessage}
-            </div>
+          <div className="px-2 pb-2 flex flex-col gap-4 text-muted-foreground text-xs">
+            {correctAnswerMessage}
             <div className="flex gap-2">
               <span className="w-16 text-muted-foreground/50 font-semibold">
                 해설

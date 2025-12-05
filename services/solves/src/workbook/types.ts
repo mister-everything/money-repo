@@ -27,6 +27,10 @@ export type WorkBookBlock<T extends BlockType = BlockType> = {
   order: number;
 };
 
+export type UpdateBlock<T extends BlockType = BlockType> = {
+  id: string;
+} & Partial<Omit<WorkBookBlock<T>, "id" | "type">>;
+
 export type WorkBookBlockWithSubmit<T extends BlockType = BlockType> =
   WorkBookBlock<T> & {
     submit?: BlockAnswerSubmit<T>;

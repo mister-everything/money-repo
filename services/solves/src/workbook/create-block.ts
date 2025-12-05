@@ -19,6 +19,7 @@ export interface Block<
   answerSchema: ZodType<Answer>;
   answerSubmitSchema: ZodType<AnswerSubmit>;
   checkAnswer: (correctAnswer: unknown, submittedAnswer: unknown) => boolean; // 오답 시 예외 발생
+
   isMaybeContent: (block: any) => block is Content;
   isMaybeAnswer: (block: any) => block is Answer;
   isMaybeAnswerSubmit: (block: any) => block is AnswerSubmit;
