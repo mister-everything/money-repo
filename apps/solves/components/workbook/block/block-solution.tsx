@@ -75,15 +75,14 @@ export function BlockSolution<T extends BlockType = BlockType>({
           {mode == "review" && !isCorrect && (
             <div className="flex gap-2 text-destructive font-semibold items-center">
               <span className="w-16">내가 고른 답 </span>
-
               <div className="flex gap-3">
                 {submitIndex == -1 ? (
                   <span className="text-muted-foreground">
                     정답을 제출하지 않았습니다.
                   </span>
                 ) : (
-                  <div className="flex gap-1">
-                    <div className="size-4 rounded-full bg-destructive text-foreground flex items-center justify-center">
+                  <div className="flex gap-1 items-center">
+                    <div className="size-3.5 text-[10px] rounded-full border border-destructive text-destructive flex items-center justify-center">
                       {submitIndex + 1}
                     </div>
                     {toAny(option[submitIndex]).text}
@@ -94,12 +93,16 @@ export function BlockSolution<T extends BlockType = BlockType>({
           )}
           <div className="flex gap-2 text-primary font-semibold items-center">
             <span className="w-16">정답 </span>
-
             <div className="flex gap-3">
-              {answer?.answer ? (
-                <CircleIcon className="size-2.5 stroke-3" />
+              {correctIndex == -1 ? (
+                <span className="text-muted-foreground">정답이 없습니다.</span>
               ) : (
-                <XIcon className="size-2.5 stroke-3" />
+                <div className="flex gap-1 items-center">
+                  <div className="size-3.5 text-[10px] rounded-full border border-primary text-primary flex items-center justify-center">
+                    {correctIndex + 1}
+                  </div>
+                  {toAny(option[correctIndex]).text}
+                </div>
               )}
             </div>
           </div>
@@ -107,23 +110,61 @@ export function BlockSolution<T extends BlockType = BlockType>({
       );
     }
     if (answer?.type == "mcq-multiple") {
-      if (!answer?.answer?.length) return <span>정답이 없습니다.</span>;
       const option = ((content as McqBlockContent)?.options ?? []).map(
-        (v, index) => ({
-          ...v,
-          index,
-        }),
+        (option, index) => ({ ...option, index }),
       );
-      const correctOptions = option.filter((option) =>
-        answer.answer.includes(option.id),
+      const correctIndex = option.filter((option) =>
+        answer?.answer?.includes(option.id),
+      );
+      const submitIndex = option.filter((option) =>
+        (submit as McqBlockAnswerSubmit)?.answer?.includes(option.id),
       );
 
       return (
-        <span>
-          {correctOptions
-            .map((option) => `${option.index + 1} ${toAny(option).text}`)
-            .join(", ")}
-        </span>
+        <>
+          {mode == "review" && !isCorrect && (
+            <div className="flex gap-2 text-destructive font-semibold items-center">
+              <span className="w-16">내가 고른 답 </span>
+              <div className="flex gap-3">
+                {submitIndex.length == 0 ? (
+                  <span className="text-muted-foreground">
+                    정답을 제출하지 않았습니다.
+                  </span>
+                ) : (
+                  <div className="flex gap-3 flex-wrap">
+                    {submitIndex.map((v) => (
+                      <div className="flex items-center gap-1" key={v.id}>
+                        <div className="size-3.5 text-[10px] rounded-full border border-destructive text-destructive flex items-center justify-center">
+                          {v.index + 1}
+                        </div>
+                        {toAny(v).text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2 text-primary font-semibold items-center">
+            <span className="w-16">정답 </span>
+            <div className="flex gap-3">
+              {correctIndex.length == 0 ? (
+                <span className="text-muted-foreground">정답이 없습니다.</span>
+              ) : (
+                <div className="flex gap-3 flex-wrap">
+                  {correctIndex.map((v) => (
+                    <div className="flex items-center gap-1" key={v.id}>
+                      <div className="size-3.5 text-[10px] rounded-full border border-primary text-primary flex items-center justify-center">
+                        {v.index + 1}
+                      </div>
+                      {toAny(v).text}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       );
     }
     if (answer?.type == "ox") {
@@ -153,8 +194,9 @@ export function BlockSolution<T extends BlockType = BlockType>({
           ) : (
             <div className="flex gap-3">
               {options.map((v) => {
-                if (v.type != "text") return <span>지원되지 않는 유형</span>;
-                return <span>{v.text}</span>;
+                if (v.type != "text")
+                  return <span key={v.id}>지원되지 않는 유형</span>;
+                return <span key={v.id}>{v.text}</span>;
               })}
             </div>
           )}

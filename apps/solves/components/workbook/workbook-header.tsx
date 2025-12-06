@@ -1,7 +1,7 @@
 "use client";
 
 import { WorkBookWithoutBlocks } from "@service/solves/shared";
-import { CheckIcon, PencilIcon } from "lucide-react";
+import { CheckIcon, HashIcon, PencilIcon } from "lucide-react";
 import { ComponentProps, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -112,11 +112,14 @@ export function WorkbookHeader({
         )}
       </CardHeader>
       <CardContent>
-        {book.tags.map((tag) => (
-          <Badge variant={"secondary"} key={tag.id}>
-            {tag.name}
-          </Badge>
-        ))}
+        <div className="flex gap-2 flex-wrap justify-end">
+          {book.tags.map((tag) => (
+            <Badge variant={"secondary"} key={tag.id} className="rounded-xs">
+              <HashIcon className="size-2.5" />
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

@@ -159,7 +159,7 @@ const mcqBlock = blockBuilder("mcq")
   )
   .answer(
     z.object({
-      answer: z.string("필수 입력값입니다.").min(1, "필수 입력값입니다."),
+      answer: z.string("필수 입력값입니다.").min(1, "정답을 선택해주세요."),
     }),
   )
   .answerSubmit(
@@ -224,10 +224,6 @@ const rankingBlock = blockBuilder("ranking")
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
-    console.log({
-      correctAnswer,
-      submittedAnswer,
-    });
     const correct = correctAnswer.order;
     const submitted = submittedAnswer.order;
     if (correct.length !== submitted.length) return false;

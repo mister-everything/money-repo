@@ -283,6 +283,8 @@ export function McqMultipleBlockContent({
                   <div
                     className={cn(
                       "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      submit?.answer?.includes(option.id) &&
+                        "border-primary text-primary",
                       status == "unchecked" &&
                         "border-muted-foreground/50 text-muted-foreground/50",
                     )}
@@ -453,6 +455,9 @@ export function McqSingleBlockContent({
                   <div
                     className={cn(
                       "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      mode == "solve" &&
+                        submit?.answer == option.id &&
+                        "border-primary text-primary",
                       status == "unchecked" &&
                         "border-muted-foreground/50 text-muted-foreground/50",
                     )}

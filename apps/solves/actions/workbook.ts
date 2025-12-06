@@ -2,25 +2,17 @@
 
 import { workBookService } from "@service/solves";
 import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale/ko";
+
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
 import { ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
-const generateDefaultTitle = () => {
-  return `${formatDistanceToNow(new Date(), {
-    addSuffix: true,
-    locale: ko,
-  })} 문제집`;
-};
-
 export const createWorkbookAction = safeAction(async (formData: FormData) => {
   const session = await getSession();
 
   const savedWorkBook = await workBookService.createWorkBook({
-    title: (formData.get("title") as string) || generateDefaultTitle(),
+    title: (formData.get("title") as string) || "",
     ownerId: session.user.id,
   });
 
