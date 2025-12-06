@@ -25,12 +25,12 @@ import {
 import {
   CreateWorkBook,
   createWorkBookSchema,
-  SubmitWorkBook,
+  ReviewWorkBook,
   UpdateBlock,
   WorkBook,
   WorkBookBlock,
-  WorkBookCompleted,
-  WorkBookInProgress,
+  WorkBookSolveCompleted,
+  WorkBookSolveInProgress,
   WorkBookSubmitSession,
   WorkBookWithoutAnswer,
   WorkBookWithoutBlocks,
@@ -176,6 +176,10 @@ export const workBookService = {
   }) => {
     await workBookService.checkEditPermission(workBookId, userId);
     const book = await workBookService.getWorkBookWithBlocks(workBookId);
+    if (book?.title.trim() === "")
+      throw new PublicError("문제집 제목을 입력해주세요.");
+    if (book?.description?.trim() === "")
+      throw new PublicError("문제집 설명을 입력해주세요.");
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
     if (!book.blocks.length) throw new PublicError("최소 1개이상의 문제 필요.");
     const isPublishAble = book.blocks
@@ -476,7 +480,7 @@ export const workBookService = {
     submitId: string,
     workBookId: string,
     answers: Record<string, BlockAnswerSubmit>,
-  ): Promise<SubmitWorkBook | null> => {
+  ): Promise<ReviewWorkBook | null> => {
     // 세션 정보 조회
     const [session] = await pgDb
       .select({
@@ -607,9 +611,9 @@ export const workBookService = {
    * @param userId 사용자 ID
    * @returns 풀고있는 문제집 목록
    */
-  getWorkBookInProgress: async (
+  getSolveInProgress: async (
     userId: string,
-  ): Promise<WorkBookInProgress[]> => {
+  ): Promise<WorkBookSolveInProgress[]> => {
     const rows = await pgDb
       .select({
         ...WorkBookColumnsForList,
@@ -631,7 +635,7 @@ export const workBookService = {
     return rows.map((row) => ({
       ...row,
       startTime: row.startTime,
-    })) as WorkBookInProgress[];
+    })) as WorkBookSolveInProgress[];
   },
 
   /**
@@ -641,7 +645,7 @@ export const workBookService = {
    */
   getCompletedWorkBooks: async (
     userId: string,
-  ): Promise<WorkBookCompleted[]> => {
+  ): Promise<WorkBookSolveCompleted[]> => {
     // 각 문제집별 최신 제출 ID 조회
     // 1단계: 각 문제집별 최신 제출 ID 조회 (Drizzle selectDistinctOn 사용)
     const latestSubmits = await pgDb
@@ -720,7 +724,7 @@ export const workBookService = {
       endTime: row.endTime!,
       totalProblems: Number(row.totalProblems),
       correctAnswerCount: Number(row.correctAnswerCount),
-    })) as WorkBookCompleted[];
+    })) as WorkBookSolveCompleted[];
   },
 
   /**
@@ -731,7 +735,7 @@ export const workBookService = {
   async getLatestWorkBookWithAnswers(
     workbookId: string,
     userId: string,
-  ): Promise<SubmitWorkBook | null> {
+  ): Promise<ReviewWorkBook | null> {
     const [session] = await pgDb
       .select({
         id: workBookSubmitsTable.id,

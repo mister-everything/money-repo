@@ -165,6 +165,7 @@ export function WorkbookEdit({
   const stateRef = useToRef({
     isPending,
     blocks,
+    workbook,
   });
 
   const handleChangeWorkbookMode = useCallback(
@@ -219,10 +220,10 @@ export function WorkbookEdit({
   );
 
   const handleChangeTitle = useCallback((title: string) => {
-    setWorkbook({ ...workbook, title });
+    setWorkbook((prev) => ({ ...prev, title }));
   }, []);
   const handleChangeDescription = useCallback((description: string) => {
-    setWorkbook({ ...workbook, description });
+    setWorkbook((prev) => ({ ...prev, description }));
   }, []);
 
   const deleteFeedback = useCallback((id: string) => {
@@ -282,7 +283,7 @@ export function WorkbookEdit({
       return newBlocks;
     });
     setFocusBlockId(newBlock.id);
-    setEditingBlockId((prev) => [...prev, newBlock.id]);
+    setEditingBlockId([newBlock.id]);
   }, []);
 
   const handleFocusBlock = useCallback((node: HTMLDivElement) => {
@@ -435,15 +436,33 @@ export function WorkbookEdit({
     return true;
   }, []);
 
-  const handleOpenPublishPopup = useCallback(() => {
+  const validateWorkbook = useCallback((): true | string => {
     if (stateRef.current.blocks.length === 0) {
-      toast.warning("문제를 최소 1개 이상 추가해주세요.");
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
-      return;
+      return "문제를 최소 1개 이상 추가해주세요.";
+    }
+    if (!stateRef.current.workbook.title?.trim?.()) {
+      setIsEditBook(true);
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return "문제집 제목을 입력해주세요.";
+    }
+    if (!stateRef.current.workbook.description?.trim?.()) {
+      setIsEditBook(true);
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return "문제집 설명을 입력해주세요.";
     }
     const isValid = handleValidateBlocks(stateRef.current.blocks);
     if (!isValid) {
-      toast.warning("문제를 먼저 수정해주세요.");
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return "문제를 먼저 수정해주세요.";
+    }
+    return true;
+  }, []);
+
+  const handleOpenPublishPopup = useCallback(() => {
+    const result = validateWorkbook();
+    if (result !== true) {
+      toast.warning(result);
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -462,7 +481,7 @@ export function WorkbookEdit({
   return (
     <div className="h-full relative">
       <div ref={ref} className="h-full overflow-y-auto relative">
-        <div className="sticky top-0 z-10 py-2 bg-background flex items-center gap-2">
+        <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
           <GoBackButton>처음부터 다시 만들기</GoBackButton>
           <div className="flex-1" />
           <Button className="rounded-full">임시 소제</Button>
@@ -594,9 +613,9 @@ export function WorkbookEdit({
           if (control === "solve") {
             return handleChangeControl("edit");
           }
-          const isValid = handleValidateBlocks(blocks);
-          if (!isValid) {
-            toast.warning("문제를 먼저 수정해주세요.");
+          const result = validateWorkbook();
+          if (result !== true) {
+            toast.warning(result);
             ref.current?.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }

@@ -51,8 +51,8 @@ export function BlockSolution<T extends BlockType = BlockType>({
           <span className="w-16">여러 정답</span>
           {answer?.answer.length ? (
             <div className="flex gap-3">
-              {answer?.answer.map((a) => (
-                <span>{a}</span>
+              {answer?.answer.map((a, index) => (
+                <span key={index}>{a}</span>
               ))}
             </div>
           ) : (

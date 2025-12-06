@@ -104,7 +104,7 @@ export type WorkBookSubmitSession = {
 /**
  * 문제집 제출 결과 타입
  */
-export type SubmitWorkBookResponse = {
+export type ReviewWorkBookResponse = {
   correctAnswerIds: string[];
   totalProblems: number;
   blockResults: Array<{
@@ -113,17 +113,17 @@ export type SubmitWorkBookResponse = {
   }>;
 };
 
-export type WorkBookInProgress = WorkBookWithoutBlocks & {
+export type WorkBookSolveInProgress = WorkBookWithoutBlocks & {
   startTime: Date;
 };
 
-export type WorkBookCompleted = WorkBookWithoutBlocks & {
+export type WorkBookSolveCompleted = WorkBookWithoutBlocks & {
   startTime: Date;
   endTime: Date;
   totalProblems: number;
   correctAnswerCount: number;
 };
 
-export type SubmitWorkBook = WorkBookCompleted & {
+export type ReviewWorkBook = WorkBookSolveCompleted & {
   blocks: WorkBookBlockWithSubmit[];
 };

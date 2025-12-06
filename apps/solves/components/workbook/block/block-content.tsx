@@ -812,11 +812,6 @@ export function RankingBlockContent({
               <PlusIcon className="size-3 mr-1" /> 추가
             </Button>
           )}
-          {poolItems.length === 0 && mode !== "edit" && (
-            <span className="text-xs text-muted-foreground">
-              모든 항목이 배치되었습니다
-            </span>
-          )}
         </div>
       </div>
 

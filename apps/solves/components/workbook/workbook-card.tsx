@@ -1,6 +1,6 @@
 import {
-  WorkBookCompleted,
-  WorkBookInProgress,
+  WorkBookSolveCompleted,
+  WorkBookSolveInProgress,
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
 import { format } from "date-fns";
@@ -10,24 +10,24 @@ import { InDevelopment } from "@/components/ui/in-development";
 
 type WorkBookCardType =
   | WorkBookWithoutBlocks
-  | WorkBookInProgress
-  | WorkBookCompleted;
+  | WorkBookSolveInProgress
+  | WorkBookSolveCompleted;
 
 interface WorkbookCardProps {
   book: WorkBookCardType;
 }
 
 /** endTime이 있으면 풀이 완료 */
-function isWorkBookCompleted(
+function isWorkBookSolveCompleted(
   book: WorkBookCardType,
-): book is WorkBookCompleted {
+): book is WorkBookSolveCompleted {
   return "endTime" in book && book.endTime !== null;
 }
 
 /** startTime만 있고 endTime이 없으면 풀이 중 */
-function isWorkBookInProgress(
+function isWorkBookSolveInProgress(
   book: WorkBookCardType,
-): book is WorkBookInProgress {
+): book is WorkBookSolveInProgress {
   return "startTime" in book && !("endTime" in book && book.endTime !== null);
 }
 
@@ -48,14 +48,14 @@ export function WorkbookCard({ book }: WorkbookCardProps) {
         <InDevelopment className="w-full text-sm h-6">
           Description
         </InDevelopment>
-        {isWorkBookCompleted(book) ? (
+        {isWorkBookSolveCompleted(book) ? (
           <Badge
             variant="outline"
             className="w-fit bg-green-50 text-green-700 border-green-200"
           >
             풀이 완료 {book.correctAnswerCount}/{book.totalProblems}
           </Badge>
-        ) : isWorkBookInProgress(book) ? (
+        ) : isWorkBookSolveInProgress(book) ? (
           <Badge
             variant="outline"
             className="w-fit bg-blue-50 text-blue-500 border-none"

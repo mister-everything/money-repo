@@ -1,12 +1,12 @@
 "use client";
 
-import { SubmitWorkBook } from "@service/solves/shared";
+import { ReviewWorkBook } from "@service/solves/shared";
 import { Card, CardHeader } from "@/components/ui/card";
 
 import { Block } from "./block/block";
 
 interface WorkBookReviewProps {
-  workBook: SubmitWorkBook;
+  workBook: ReviewWorkBook;
 }
 
 export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ workBook }) => {
