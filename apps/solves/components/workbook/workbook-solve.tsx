@@ -66,7 +66,6 @@ export function WorkBookSolve({
         };
       },
       failMessage: "답안 저장에 실패했습니다.",
-      successMessage: "임시 저장",
     },
   );
 
@@ -141,7 +140,7 @@ export function WorkBookSolve({
       });
       debounce(() => {
         handleSaveAnswerProgress();
-      }, TIME.SECONDS(10));
+      }, TIME.SECONDS(20));
     },
     [handleSaveAnswerProgress],
   );

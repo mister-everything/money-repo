@@ -61,6 +61,10 @@ const WorkBookColumnsForList = {
   createdAt: workBooksTable.createdAt,
 };
 
+type GetWorkBookOptions = {
+  isPublished?: boolean;
+};
+
 export const workBookService = {
   isWorkBookOwner: async (
     workBookId: string,
@@ -124,20 +128,38 @@ export const workBookService = {
    * 공개된 문제집 목록 조회
    * @todo 검색옵션 추가 (pagination, 검색어, 태그, 퍼블릭 여부, owner,id )
    */
-  async searchWorkBooks(options = {}): Promise<WorkBookWithoutBlocks[]> {
+  async searchWorkBooks(options?: {
+    isPublished?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<WorkBookWithoutBlocks[]> {
+    const { isPublished, page = 1, limit = 100 } = options ?? {};
+    const offset = (page - 1) * limit;
+
+    const where = [eq(workBooksTable.isPublic, true)];
+    if (isPublished !== undefined) {
+      where.push(
+        isPublished
+          ? isNotNull(workBooksTable.publishedAt)
+          : isNull(workBooksTable.publishedAt),
+      );
+    }
+
     const rows = await pgDb
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
-      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id));
+      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
+      .where(and(...where))
+      .offset(offset)
+      .limit(limit)
+      .orderBy(desc(workBooksTable.updatedAt));
 
     return rows;
   },
 
   getWorkBook: async (
     id: string,
-    options?: {
-      isPublished?: boolean;
-    },
+    options?: GetWorkBookOptions,
   ): Promise<WorkBookWithoutBlocks | null> => {
     const where = [eq(workBooksTable.id, id)];
     if (options?.isPublished !== undefined) {
@@ -244,9 +266,7 @@ export const workBookService = {
 
   getWorkBookWithoutAnswer: async (
     id: string,
-    options?: {
-      isPublished?: boolean;
-    },
+    options?: GetWorkBookOptions,
   ): Promise<WorkBookWithoutAnswer | null> => {
     const book = await workBookService.getWorkBook(id, options);
     if (!book) return null;
@@ -261,8 +281,11 @@ export const workBookService = {
   },
 
   // 문제집 조회 수정용
-  getWorkBookWithBlocks: async (id: string): Promise<WorkBook | null> => {
-    const book = await workBookService.getWorkBook(id);
+  getWorkBookWithBlocks: async (
+    id: string,
+    options?: GetWorkBookOptions,
+  ): Promise<WorkBook | null> => {
+    const book = await workBookService.getWorkBook(id, options);
     if (!book) return null;
     const blocks = await workBookService.getBlocks(id);
     return {

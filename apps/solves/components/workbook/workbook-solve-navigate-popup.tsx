@@ -1,17 +1,35 @@
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 
-export function WorkbookSolveNavigatePopup() {
+type WorkbookSolveNavigatePopupProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onRestart: () => void;
+  onContinue: () => void;
+};
+
+export function WorkbookSolveNavigatePopup({
+  open,
+  onOpenChange,
+  onRestart,
+  onContinue,
+}: WorkbookSolveNavigatePopupProps) {
+  const [isOpen, setIsOpen] = useState(open ?? false);
+  const _open = useMemo(() => open ?? isOpen, [open, isOpen]);
+  const _onOpenChange = useMemo(
+    () => onOpenChange ?? setIsOpen,
+    [onOpenChange, setIsOpen],
+  );
   return (
-    <Dialog open={showContinueDialog} onOpenChange={setShowContinueDialog}>
+    <Dialog open={_open} onOpenChange={_onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>이전 풀이 이력이 있습니다</DialogTitle>
@@ -21,10 +39,10 @@ export function WorkbookSolveNavigatePopup() {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={handleRestart}>
+          <Button variant="outline" onClick={onRestart}>
             새로 풀기
           </Button>
-          <Button onClick={handleContinue}>이어서 풀기</Button>
+          <Button onClick={onContinue}>이어서 풀기</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

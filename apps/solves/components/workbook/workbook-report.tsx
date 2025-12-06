@@ -19,7 +19,7 @@ import { Block } from "./block/block";
 
 import { WorkbookHeader } from "./workbook-header";
 
-export function WorkbookPreview({
+export function WorkbookReport({
   book: { blocks, ...workbook },
 }: {
   book: WorkBook;
@@ -79,7 +79,6 @@ export function WorkbookPreview({
                   index={index}
                   className={cn(
                     "border-none",
-
                     mode == "review" &&
                       !correctAnswerIds[b.id] &&
                       "bg-muted-foreground/5",

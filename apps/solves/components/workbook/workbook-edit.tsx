@@ -142,7 +142,7 @@ export function WorkbookEdit({
     failMessage: "배포에 실패했습니다.",
     successMessage: "발행이 완료되었어요. 화면 이동중",
     onSuccess: () => {
-      router.push(`/workbooks/${workbook.id}/preview`);
+      router.push(`/workbooks/${workbook.id}/report`);
     },
   });
 

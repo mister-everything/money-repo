@@ -34,7 +34,7 @@ export default async function WorkbooksPage() {
         {publishedWorkbooks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {publishedWorkbooks.map((book) => (
-              <Link href={`/workbooks/${book.id}/preview`} key={book.id}>
+              <Link href={`/workbooks/${book.id}/report`} key={book.id}>
                 <WorkbookCard book={book} />
               </Link>
             ))}

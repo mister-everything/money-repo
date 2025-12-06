@@ -11,7 +11,7 @@ import { getSession } from "@/lib/auth/server";
 
 export default async function InProgressWorkbooksPage() {
   const session = await getSession();
-  const inProgressWorkbooks = await workBookService.getWorkBookSolveInProgress(
+  const inProgressWorkbooks = await workBookService.getSolveInProgress(
     session.user.id,
   );
   return (
