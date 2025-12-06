@@ -20,6 +20,7 @@ import { LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  restartWorkbookSessionAction,
   saveAnswerProgressAction,
   submitWorkbookSessionAction,
 } from "@/actions/workbook";
@@ -31,6 +32,7 @@ import { Block } from "./block/block";
 import { BlockSequential } from "./block/block-sequential";
 import { SolveModeSelector } from "./solve-mode-selector";
 import { WorkbookHeader } from "./workbook-header";
+import { WorkbookSolveNavigatePopup } from "./workbook-solve-navigate-popup";
 
 interface WorkBookSolveProps {
   workBook: WorkBookWithoutAnswer;
@@ -45,6 +47,9 @@ export function WorkBookSolve({
 }: WorkBookSolveProps) {
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
+  const [isNavigatePopupOpen, setIsNavigatePopupOpen] = useState(
+    initialSession.isInProgress,
+  );
   const [mode, setMode] = useState<"all" | "sequential">();
 
   const [submits, setSubmits] = useState<WorkBookSubmitSession["savedAnswers"]>(
@@ -79,6 +84,17 @@ export function WorkBookSolve({
     },
   );
 
+  const [, restartWorkbookSession, isRestarting] = useSafeAction(
+    restartWorkbookSessionAction,
+    {
+      onSuccess: () => {
+        setSubmits({});
+        setIsNavigatePopupOpen(false);
+        sumbmitSnapshot.current = {};
+      },
+    },
+  );
+
   const isPending = isSaving || isSubmitting;
 
   const stateRef = useToRef({
@@ -107,6 +123,7 @@ export function WorkBookSolve({
     saveAnswerProgress({
       submitId: initialSession.submitId,
       answers: diff,
+      deleteAnswers: [],
     });
   }, [initialSession.submitId]);
 
@@ -212,6 +229,17 @@ export function WorkBookSolve({
           />
         )}
       </div>
+      <WorkbookSolveNavigatePopup
+        open={isNavigatePopupOpen}
+        onOpenChange={setIsNavigatePopupOpen}
+        isRestarting={isRestarting}
+        onRestart={() => {
+          restartWorkbookSession({
+            submitId: initialSession.submitId,
+          });
+        }}
+        onContinue={() => setIsNavigatePopupOpen(false)}
+      />
     </div>
   );
 }

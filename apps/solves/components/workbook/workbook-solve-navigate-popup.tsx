@@ -1,3 +1,4 @@
+import { LoaderIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,7 @@ import {
 type WorkbookSolveNavigatePopupProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  isRestarting?: boolean;
   onRestart: () => void;
   onContinue: () => void;
 };
@@ -19,6 +21,7 @@ type WorkbookSolveNavigatePopupProps = {
 export function WorkbookSolveNavigatePopup({
   open,
   onOpenChange,
+  isRestarting,
   onRestart,
   onContinue,
 }: WorkbookSolveNavigatePopupProps) {
@@ -39,10 +42,13 @@ export function WorkbookSolveNavigatePopup({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onRestart}>
+          <Button variant="outline" onClick={onRestart} disabled={isRestarting}>
+            {isRestarting && <LoaderIcon className="size-4 animate-spin" />}
             새로 풀기
           </Button>
-          <Button onClick={onContinue}>이어서 풀기</Button>
+          <Button onClick={onContinue} disabled={isRestarting}>
+            이어서 풀기
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

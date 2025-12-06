@@ -83,19 +83,32 @@ export const publishWorkbookAction = safeAction(
 export const saveAnswerProgressAction = safeAction(
   z.object({
     submitId: z.string(),
-    answers: z.record(z.string(), z.any()),
+    answers: z.record(z.string(), z.any()).optional().default({}),
+    deleteAnswers: z.array(z.string()).optional().default([]),
   }),
-  async ({ submitId, answers }) => {
+  async ({ submitId, answers, deleteAnswers }) => {
     const session = await getSession();
-    await workBookService.saveAnswerProgress(
-      session.user.id,
-      submitId,
+    await workBookService.saveAnswerProgress(session.user.id, submitId, {
       answers,
-    );
+      deleteAnswers,
+    });
     return ok();
   },
 );
 
+export const restartWorkbookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.restartWorkBookSession({
+      userId: session.user.id,
+      submitId,
+    });
+    return ok();
+  },
+);
 export const submitWorkbookSessionAction = safeAction(
   z.object({
     submitId: z.string(),

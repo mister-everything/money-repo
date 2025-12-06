@@ -99,6 +99,7 @@ export type WorkBookSubmitSession = {
   submitId: string;
   startTime: Date;
   savedAnswers: Record<string, BlockAnswerSubmit>;
+  isInProgress: boolean;
 };
 
 /**

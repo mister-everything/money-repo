@@ -414,6 +414,7 @@ export const workBookService = {
       submitId: "",
       startTime: new Date(),
       savedAnswers: {},
+      isInProgress: false,
     };
 
     return pgDb.transaction(async (tx) => {
@@ -433,6 +434,7 @@ export const workBookService = {
         .orderBy(desc(workBookSubmitsTable.startTime))
         .limit(1);
       if (existingSession) {
+        session.isInProgress = true;
         session.submitId = existingSession.id;
         session.startTime = existingSession.startTime;
       } else {
@@ -474,6 +476,36 @@ export const workBookService = {
     });
   },
 
+  restartWorkBookSession: async ({
+    userId,
+    submitId,
+  }: {
+    userId: string;
+    submitId: string;
+  }): Promise<void> => {
+    return pgDb.transaction(async (tx) => {
+      const result = await tx
+        .update(workBookSubmitsTable)
+        .set({
+          startTime: new Date(),
+          endTime: null,
+          blockCount: null,
+        })
+        .where(
+          and(
+            eq(workBookSubmitsTable.id, submitId),
+            eq(workBookSubmitsTable.ownerId, userId),
+          ),
+        );
+      if (result.rowCount === 0) {
+        throw new PublicError("세션을 찾을 수 없습니다.");
+      }
+      await tx
+        .delete(workBookBlockAnswerSubmitsTable)
+        .where(and(eq(workBookBlockAnswerSubmitsTable.submitId, submitId)));
+    });
+  },
+
   /**
    * 답안 진행 상황 저장 (자동 저장)
    * @param submitId 세션 ID
@@ -482,14 +514,14 @@ export const workBookService = {
   saveAnswerProgress: async (
     userId: string,
     submitId: string,
-    answers: Record<string, BlockAnswerSubmit>,
+    {
+      answers,
+      deleteAnswers,
+    }: {
+      answers: Record<string, BlockAnswerSubmit>;
+      deleteAnswers: string[];
+    },
   ): Promise<void> => {
-    const answerEntries = Object.entries(answers);
-
-    if (answerEntries.length === 0) {
-      return;
-    }
-
     const [session] = await pgDb
       .select({
         id: workBookSubmitsTable.id,
@@ -505,25 +537,38 @@ export const workBookService = {
       throw new PublicError("세션을 찾을 수 없습니다.");
     }
 
-    await pgDb
-      .insert(workBookBlockAnswerSubmitsTable)
-      .values(
-        answerEntries.map(([blockId, answer]) => ({
-          blockId,
-          submitId,
-          answer,
-          isCorrect: false, // 자동 저장 시에는 아직 채점 안 함
-        })),
-      )
-      .onConflictDoUpdate({
-        target: [
-          workBookBlockAnswerSubmitsTable.blockId,
-          workBookBlockAnswerSubmitsTable.submitId,
-        ],
-        set: {
-          answer: sql`excluded.answer`,
-        },
-      });
+    return pgDb.transaction(async (tx) => {
+      if (deleteAnswers.length > 0) {
+        await tx
+          .delete(workBookBlockAnswerSubmitsTable)
+          .where(
+            inArray(workBookBlockAnswerSubmitsTable.blockId, deleteAnswers),
+          );
+      }
+      const answerEntries = Object.entries(answers);
+
+      if (answerEntries.length > 0) {
+        await tx
+          .insert(workBookBlockAnswerSubmitsTable)
+          .values(
+            answerEntries.map(([blockId, answer]) => ({
+              blockId,
+              submitId,
+              answer,
+              isCorrect: false, // 자동 저장 시에는 아직 채점 안 함
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [
+              workBookBlockAnswerSubmitsTable.blockId,
+              workBookBlockAnswerSubmitsTable.submitId,
+            ],
+            set: {
+              answer: sql`excluded.answer`,
+            },
+          });
+      }
+    });
   },
 
   /**
