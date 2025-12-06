@@ -1,6 +1,7 @@
 import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import { WorkBookSolve } from "@/components/workbook/workbook-solve";
+import { getSession } from "@/lib/auth/server";
 
 export default async function Page({
   params,
@@ -8,22 +9,21 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  // const session = await getSession();
+  const session = await getSession();
 
-  // const hasPermission = await workBookService.hasWorkBookPermission(
-  //   z.uuid().parse(id),
-  //   session.user.id,
-  // );
-
-  // if (!hasPermission) throw new Error("문제집에 접근할 수 없습니다.");
-
-  // @TODO published 인지 체크해야함
-  const book = await workBookService.getWorkBookWithoutAnswer(id);
+  const book = await workBookService.getWorkBookWithoutAnswer(id, {
+    isPublished: true,
+  });
   if (!book) notFound();
+
+  const workbookSession = await workBookService.startOrResumeWorkBookSession(
+    id,
+    session.user.id,
+  );
 
   return (
     <div className="flex w-full px-4">
-      <WorkBookSolve workBook={book} />
+      <WorkBookSolve workBook={book} initialSession={workbookSession} />
     </div>
   );
 }

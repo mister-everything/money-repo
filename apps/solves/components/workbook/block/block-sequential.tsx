@@ -1,6 +1,11 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, TriangleAlertIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  LoaderIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
 import { RefCallback, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Block, BlockProps } from "./block";
@@ -11,10 +16,12 @@ type BlockSequentialProps = {
   onSubmit?: () => void;
   totalCount: number;
   currentIndex: number;
+  isPending: boolean;
   blockProps?: BlockProps;
 };
 
 export function BlockSequential({
+  isPending,
   onNext,
   onPrevious,
   onSubmit,
@@ -84,8 +91,10 @@ export function BlockSequential({
           {currentIndex === totalCount - 1 ? (
             <Button
               onClick={onSubmit}
+              disabled={isPending}
               className="px-8 py-3 bg-primary font-bold text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground/90 hover:border-primary/90"
             >
+              {isPending && <LoaderIcon className="size-4 animate-spin" />}
               답안 제출
             </Button>
           ) : (

@@ -72,8 +72,11 @@ export const parseAnswerSubmit = (answerSubmit: BlockAnswerSubmit) => {
 
 export const checkAnswer = (
   correctAnswer: BlockAnswer,
-  submittedAnswer: BlockAnswerSubmit,
+  submittedAnswer?: BlockAnswerSubmit,
 ) => {
+  if (!submittedAnswer) {
+    return false;
+  }
   const correctAnswerType = correctAnswer.type;
 
   if (correctAnswerType !== submittedAnswer.type) {

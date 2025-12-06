@@ -4,10 +4,10 @@ import { isNull } from "@workspace/util";
 import { CheckIcon } from "lucide-react";
 import { ComponentProps, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import { Button } from "../ui/button";
-import { Label } from "../ui/label";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 type SolveModeSelectorProps = {
   onModeSelect?: (mode: "all" | "sequential") => void;

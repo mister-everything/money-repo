@@ -79,3 +79,30 @@ export const publishWorkbookAction = safeAction(
     return ok();
   },
 );
+
+export const saveAnswerProgressAction = safeAction(
+  z.object({
+    submitId: z.string(),
+    answers: z.record(z.string(), z.any()),
+  }),
+  async ({ submitId, answers }) => {
+    const session = await getSession();
+    await workBookService.saveAnswerProgress(
+      session.user.id,
+      submitId,
+      answers,
+    );
+    return ok();
+  },
+);
+
+export const submitWorkbookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.submitWorkBookSession(session.user.id, submitId);
+    return ok();
+  },
+);

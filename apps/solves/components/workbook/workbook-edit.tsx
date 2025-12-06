@@ -22,7 +22,7 @@ import {
   objectFlow,
   StateUpdate,
 } from "@workspace/util";
-import { GripVerticalIcon, PlusIcon } from "lucide-react";
+import { ArrowLeftIcon, GripVerticalIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ import {
   updateWorkbookAction,
 } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
+import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
   TooltipContent,
@@ -41,7 +42,6 @@ import { useToRef } from "@/hooks/use-to-ref";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
-import { GoBackButton } from "../layouts/go-back-button";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
@@ -167,6 +167,32 @@ export function WorkbookEdit({
     blocks,
     workbook,
   });
+
+  const blocksDiff = useMemo(() => {
+    return extractBlockDiff(snapshot.blocks, blocks);
+  }, [snapshot.blocks, blocks]);
+
+  const isWorkBookDiff = useMemo(() => {
+    return !equal(
+      {
+        title: workbook.title,
+        description: workbook.description,
+      },
+      {
+        title: snapshot.title,
+        description: snapshot.description,
+      },
+    );
+  }, [snapshot, workbook]);
+
+  const isBlocksDiff = useMemo(() => {
+    const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
+    return (
+      deletedBlocks.length > 0 ||
+      addedBlocks.length > 0 ||
+      updatedBlocks.length > 0
+    );
+  }, [blocksDiff]);
 
   const handleChangeWorkbookMode = useCallback(
     (mode: WorkBookComponentMode) => {
@@ -367,18 +393,7 @@ export function WorkbookEdit({
   );
 
   const handleSave = async () => {
-    const hasBookDiff = !equal(
-      {
-        title: workbook.title,
-        description: workbook.description,
-      },
-      {
-        title: snapshot.title,
-        description: snapshot.description,
-      },
-    );
-
-    if (hasBookDiff) {
+    if (isWorkBookDiff) {
       await updateWorkbook({
         id: workbook.id,
         title: workbook.title,
@@ -386,17 +401,8 @@ export function WorkbookEdit({
       });
     }
 
-    const { deletedBlocks, addedBlocks, updatedBlocks } = extractBlockDiff(
-      snapshot.blocks,
-      blocks,
-    );
-
-    const hasBlockDiff =
-      deletedBlocks.length > 0 ||
-      addedBlocks.length > 0 ||
-      updatedBlocks.length > 0;
-
-    if (hasBlockDiff) {
+    if (isBlocksDiff) {
+      const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
       await processUpdateBlocks({
         workbookId: workbook.id,
         deleteBlocks: deletedBlocks.map((b) => b.id),
@@ -405,6 +411,19 @@ export function WorkbookEdit({
       });
     }
   };
+
+  const handleGoBack = useCallback(async () => {
+    if (isWorkBookDiff || isBlocksDiff) {
+      const answer = await notify.confirm({
+        title: "저장되지 않은 변경사항이 있습니다.",
+        description: "저장하지 않고 이전 페이지로 이동하시겠습니까?",
+        okText: "뒤로가기",
+        cancelText: "취소",
+      });
+      if (!answer) return;
+    }
+    router.back();
+  }, [router, isWorkBookDiff, isBlocksDiff]);
 
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
@@ -482,7 +501,10 @@ export function WorkbookEdit({
     <div className="h-full relative">
       <div ref={ref} className="h-full overflow-y-auto relative">
         <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
-          <GoBackButton>처음부터 다시 만들기</GoBackButton>
+          <Button variant="ghost" onClick={handleGoBack} disabled={isPending}>
+            <ArrowLeftIcon className="size-4!" />
+            뒤로가기
+          </Button>
           <div className="flex-1" />
           <Button className="rounded-full">임시 소제</Button>
           <Button className="rounded-full">임시 소제 {">"} 소재</Button>

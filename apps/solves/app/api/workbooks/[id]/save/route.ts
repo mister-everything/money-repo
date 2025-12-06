@@ -1,8 +1,8 @@
 import { workBookService } from "@service/solves";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/server";
-import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 import { logger } from "@/lib/logger";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 /**
  * POST /api/workbooks/[id]/save
@@ -13,13 +13,17 @@ export async function POST(request: NextRequest) {
   try {
     const { submitId, answers } = await request.json();
 
-    await getSession(); // 인증 확인
+    const session = await getSession(); // 인증 확인
 
     if (!submitId) {
       return nextFail("세션 ID가 필요합니다.");
     }
 
-    await workBookService.saveAnswerProgress(submitId, answers);
+    await workBookService.saveAnswerProgress(
+      session.user.id,
+      submitId,
+      answers,
+    );
 
     return nextOk({ saved: true });
   } catch (error) {
