@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  ArrowLeft,
-  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   LoaderIcon,
   TriangleAlertIcon,
 } from "lucide-react";
@@ -37,7 +37,8 @@ export function BlockSequential({
   );
 
   const progress = useMemo(() => {
-    return (currentIndex / totalCount) * 100 || 100;
+    const value = ((currentIndex + 1) / totalCount) * 100;
+    return value ?? 100;
   }, [currentIndex, totalCount]);
 
   return (
@@ -82,9 +83,10 @@ export function BlockSequential({
             onClick={onPrevious}
             disabled={currentIndex === 0}
             variant="ghost"
+            size="lg"
             className="flex items-center gap-2"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
             이전
           </Button>
 
@@ -92,6 +94,7 @@ export function BlockSequential({
             <Button
               onClick={onSubmit}
               disabled={isPending}
+              size="lg"
               className="px-8 py-3 bg-primary font-bold text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground/90 hover:border-primary/90"
             >
               {isPending && <LoaderIcon className="size-4 animate-spin" />}
@@ -102,10 +105,11 @@ export function BlockSequential({
               onClick={onNext}
               disabled={currentIndex === totalCount - 1}
               variant="secondary"
+              size="lg"
               className="flex items-center gap-2"
             >
               다음
-              <ArrowRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           )}
         </div>

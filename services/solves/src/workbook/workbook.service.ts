@@ -840,7 +840,7 @@ export const workBookService = {
       })),
     };
   },
-  getSubmitStatus: async (
+  getLatestSubmitStatus: async (
     workBookId: string,
     userId: string,
   ): Promise<WorkBookSubmitStatus> => {
@@ -858,9 +858,7 @@ export const workBookService = {
           eq(workBookSubmitsTable.ownerId, userId),
         ),
       )
-      .orderBy(
-        sql`COALESCE(${workBookSubmitsTable.endTime}, ${workBookSubmitsTable.startTime}) DESC`,
-      )
+      .orderBy(desc(workBookSubmitsTable.startTime))
       .limit(1);
     if (!session) return { status: "not-started" };
     if (!session.endTime)

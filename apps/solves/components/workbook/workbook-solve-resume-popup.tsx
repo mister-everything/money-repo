@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type WorkbookSolveNavigatePopupProps = {
+type WorkbookSolveResumePopupProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   isRestarting?: boolean;
@@ -19,13 +19,13 @@ type WorkbookSolveNavigatePopupProps = {
   onContinue: () => void;
 };
 
-export function WorkbookSolveNavigatePopup({
+export function WorkbookSolveResumePopup({
   open,
   onOpenChange,
   isRestarting,
   onRestart,
   onContinue,
-}: WorkbookSolveNavigatePopupProps) {
+}: WorkbookSolveResumePopupProps) {
   const [isOpen, setIsOpen] = useState(open ?? false);
   const _open = useMemo(() => open ?? isOpen, [open, isOpen]);
   const _onOpenChange = useMemo(
@@ -43,7 +43,7 @@ export function WorkbookSolveNavigatePopup({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onRestart} disabled={isRestarting}>
+          <Button variant="ghost" onClick={onRestart} disabled={isRestarting}>
             {isRestarting && <LoaderIcon className="size-4 animate-spin" />}
             새로 풀기
           </Button>

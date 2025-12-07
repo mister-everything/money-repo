@@ -12,7 +12,10 @@ export async function GET(
     const { id } = await params;
     const session = await getSession();
 
-    const status = await workBookService.getSubmitStatus(id, session.user.id);
+    const status = await workBookService.getLatestSubmitStatus(
+      id,
+      session.user.id,
+    );
 
     return nextOk(status);
   } catch (error) {

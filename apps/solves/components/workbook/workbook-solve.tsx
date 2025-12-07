@@ -18,7 +18,14 @@ import {
 import confetti from "canvas-confetti";
 import { LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  RefCallback,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   saveAnswerProgressAction,
   submitWorkbookSessionAction,
@@ -45,6 +52,7 @@ export function WorkBookSolve({
 }: WorkBookSolveProps) {
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
+  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
 
   const [mode, setMode] = useState<"all" | "sequential">();
 
@@ -147,6 +155,25 @@ export function WorkBookSolve({
     [handleSaveAnswerProgress],
   );
 
+  const handleFocusBlock = useCallback<RefCallback<HTMLDivElement>>(
+    (node) => {
+      node?.scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    [focusBlockId],
+  );
+
+  useEffect(() => {
+    if (isNull(mode)) return;
+    const submitIds = Object.keys(submits);
+    if (submitIds.length == 0) return;
+    const focusBlockIndex = blocks.findIndex(
+      (block) => !submitIds.includes(block.id),
+    );
+    if (focusBlockIndex == -1) return;
+    if (mode == "sequential") setSequentialCursor(focusBlockIndex);
+    else setFocusBlockId(blocks[focusBlockIndex].id);
+  }, [mode]);
+
   return (
     <div ref={ref} className="w-full h-full pb-24">
       <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
@@ -156,13 +183,18 @@ export function WorkBookSolve({
       <div className="max-w-3xl mx-auto w-full flex flex-col  gap-6">
         <WorkbookHeader book={workBook} mode="solve" />
         {isNull(mode) ? (
-          <SolveModeSelector onModeSelect={setMode} />
+          <SolveModeSelector
+            totalCount={blocks.length}
+            currentCount={Object.keys(initialSession.savedAnswers ?? {}).length}
+            onModeSelect={setMode}
+          />
         ) : mode == "all" ? (
           <div className="flex flex-col gap-6">
             {blocks.map((block, index) => {
               return (
                 <Block
                   key={block.id}
+                  ref={focusBlockId === block.id ? handleFocusBlock : undefined}
                   content={block.content}
                   id={block.id}
                   index={index}
