@@ -1,9 +1,14 @@
 "use client";
 
-import { WorkBookWithoutAnswer } from "@service/solves/shared";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { Button } from "../ui/button";
+import {
+  BlockAnswerSubmit,
+  initialSubmitAnswer,
+  WorkBookWithoutAnswer,
+} from "@service/solves/shared";
+import { applyStateUpdate, StateUpdate } from "@workspace/util";
+import { useCallback, useState } from "react";
+import { WorkbookSolveNavigateButton } from "@/app/(main)/workbooks/[id]/preview/workbook-solve-navigate-button";
+
 import { Block } from "./block/block";
 import { WorkbookHeader } from "./workbook-header";
 
@@ -12,20 +17,30 @@ export function WorkbookPublicPreview({
 }: {
   book: WorkBookWithoutAnswer;
 }) {
+  const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
+
+  const updateSubmit = useCallback(
+    (id: string, answer: StateUpdate<BlockAnswerSubmit>) => {
+      setSubmits((prev) => {
+        const nextSubmits = { ...prev };
+        nextSubmits[id] = applyStateUpdate(
+          initialSubmitAnswer(
+            blocks.find((b) => b.id === id)?.type ?? "default",
+          ),
+          answer,
+        );
+        return nextSubmits;
+      });
+    },
+    [],
+  );
+
   return (
-    <div className="h-full relative">
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 mx-auto ">
-        <Link href={`/workbooks/${workbook.id}/solve`}>
-          <Button
-            size="lg"
-            variant={"outline"}
-            className="border-2 py-6 w-full lg:w-lg rounded-full bg-primary/5 text-primary border-primary backdrop-blur-sm font-bold text-lg hover:bg-primary hover:text-primary-foreground"
-          >
-            문제집 풀러가기
-          </Button>
-        </Link>
+    <div className="h-full relative ">
+      <div className="h-2/3 pointer-events-none absolute left-0 bottom-0 w-full bg-linear-to-b from-transparent via-background/60 to-background z-10 flex flex-col items-center justify-end gap-4">
+        <WorkbookSolveNavigateButton workBookId={workbook.id} />
       </div>
-      <div className="h-full overflow-y-auto relative">
+      <div className="h-full overflow-y-auto relative px-4">
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
             className="shadow-none"
@@ -33,24 +48,20 @@ export function WorkbookPublicPreview({
             book={workbook}
           />
 
-          {blocks.map((b, index) => {
+          {blocks.slice(0, 3).map((b, index) => {
             return (
-              <div
+              <Block
                 key={b.id}
-                className={cn(
-                  "relative transition-all duration-200 rounded-xl",
-                )}
-              >
-                <Block
-                  index={index}
-                  mode={"solve"}
-                  type={b.type}
-                  question={b.question ?? ""}
-                  id={b.id}
-                  order={b.order}
-                  content={b.content}
-                />
-              </div>
+                index={index}
+                mode={"solve"}
+                type={b.type}
+                question={b.question ?? ""}
+                submit={submits[b.id]}
+                onUpdateSubmitAnswer={updateSubmit.bind(null, b.id)}
+                id={b.id}
+                order={b.order}
+                content={b.content}
+              />
             );
           })}
         </div>

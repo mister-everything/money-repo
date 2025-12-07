@@ -77,7 +77,7 @@ export function WorkbookHeader({
               placeholder={placeholder}
               autoFocus
               className="text-xl!"
-              maxLength={30}
+              maxLength={20}
               value={book.title}
               onChange={handleChangeTitle}
             />
@@ -124,7 +124,7 @@ export function WorkbookHeader({
           <Textarea
             placeholder="문제집 한줄 설명을 작성하세요"
             className="resize-none max-h-[100px]"
-            maxLength={300}
+            maxLength={25}
             value={book.description || ""}
             onChange={handleChangeDescription}
           />

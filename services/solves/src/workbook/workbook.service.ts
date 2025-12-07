@@ -32,6 +32,7 @@ import {
   WorkBookSolveCompleted,
   WorkBookSolveInProgress,
   WorkBookSubmitSession,
+  WorkBookSubmitStatus,
   WorkBookWithoutAnswer,
   WorkBookWithoutBlocks,
 } from "./types";
@@ -191,14 +192,7 @@ export const workBookService = {
       .from(blocksTable)
       .where(eq(blocksTable.workBookId, workBookId))
       .orderBy(blocksTable.order);
-    return blocks.map((block) => ({
-      id: block.id,
-      content: block.content,
-      question: block.question,
-      order: block.order,
-      type: block.type,
-      answer: block.answer!,
-    }));
+    return blocks as WorkBookBlock[];
   },
   publishWorkbook: async ({
     workBookId,
@@ -414,7 +408,6 @@ export const workBookService = {
       submitId: "",
       startTime: new Date(),
       savedAnswers: {},
-      isInProgress: false,
     };
 
     return pgDb.transaction(async (tx) => {
@@ -434,7 +427,6 @@ export const workBookService = {
         .orderBy(desc(workBookSubmitsTable.startTime))
         .limit(1);
       if (existingSession) {
-        session.isInProgress = true;
         session.submitId = existingSession.id;
         session.startTime = existingSession.startTime;
       } else {
@@ -816,7 +808,6 @@ export const workBookService = {
         ),
       );
 
-    console.log(session);
     if (!session) {
       return null;
     }
@@ -837,17 +828,6 @@ export const workBookService = {
       .from(workBookBlockAnswerSubmitsTable)
       .where(eq(workBookBlockAnswerSubmitsTable.submitId, session.id));
 
-    console.log({
-      ...book,
-      correctAnswerCount: answers.filter((a) => a.isCorrect).length,
-      totalProblems: book.blocks.length,
-      startTime: session.startTime,
-      endTime: session.endTime!,
-      blocks: book?.blocks.map((block) => ({
-        ...block,
-        submit: answers.find((a) => a.blockId === block.id)?.answer,
-      })),
-    });
     return {
       ...book,
       correctAnswerCount: answers.filter((a) => a.isCorrect).length,
@@ -858,6 +838,52 @@ export const workBookService = {
         ...block,
         submit: answers.find((a) => a.blockId === block.id)?.answer,
       })),
+    };
+  },
+  getSubmitStatus: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<WorkBookSubmitStatus> => {
+    const [session] = await pgDb
+      .select({
+        startTime: workBookSubmitsTable.startTime,
+        submitId: workBookSubmitsTable.id,
+        endTime: workBookSubmitsTable.endTime,
+        blockCount: workBookSubmitsTable.blockCount,
+      })
+      .from(workBookSubmitsTable)
+      .where(
+        and(
+          eq(workBookSubmitsTable.workBookId, workBookId),
+          eq(workBookSubmitsTable.ownerId, userId),
+        ),
+      )
+      .orderBy(
+        sql`COALESCE(${workBookSubmitsTable.endTime}, ${workBookSubmitsTable.startTime}) DESC`,
+      )
+      .limit(1);
+    if (!session) return { status: "not-started" };
+    if (!session.endTime)
+      return { status: "in-progress", submitId: session.submitId };
+
+    const [correctBlocks] = await pgDb
+      .select({
+        count: count(),
+      })
+      .from(workBookBlockAnswerSubmitsTable)
+      .where(
+        and(
+          eq(workBookBlockAnswerSubmitsTable.submitId, session.submitId),
+          eq(workBookBlockAnswerSubmitsTable.isCorrect, true),
+        ),
+      );
+
+    return {
+      status: "submitted",
+      submitId: session.submitId,
+      endTime: session.endTime,
+      totalBlocks: session.blockCount ?? 0,
+      correctBlocks: correctBlocks.count ?? 0,
     };
   },
 };

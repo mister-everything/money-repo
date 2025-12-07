@@ -99,7 +99,6 @@ export type WorkBookSubmitSession = {
   submitId: string;
   startTime: Date;
   savedAnswers: Record<string, BlockAnswerSubmit>;
-  isInProgress: boolean;
 };
 
 /**
@@ -128,3 +127,19 @@ export type WorkBookSolveCompleted = WorkBookWithoutBlocks & {
 export type ReviewWorkBook = WorkBookSolveCompleted & {
   blocks: WorkBookBlockWithSubmit[];
 };
+
+export type WorkBookSubmitStatus =
+  | {
+      status: "not-started";
+    }
+  | {
+      status: "in-progress";
+      submitId: string;
+    }
+  | {
+      status: "submitted";
+      submitId: string;
+      endTime: Date;
+      totalBlocks: number;
+      correctBlocks: number;
+    };

@@ -56,7 +56,7 @@ export default async function WorkbookPreviewPage({ params }: PageProps) {
   if (!book) notFound();
 
   return (
-    <div className="flex w-full h-screen px-4 gap-4">
+    <div className="flex w-full h-screen">
       <div className="flex-1">
         <WorkbookPublicPreview book={book} />
       </div>

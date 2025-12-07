@@ -1,3 +1,4 @@
+"use client";
 import { LoaderIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
