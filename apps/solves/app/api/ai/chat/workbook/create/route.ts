@@ -36,17 +36,28 @@ export async function POST(req: Request) {
     model: getChatModel(model),
     messages: convertToModelMessages(messages),
     onFinish: async (ctx) => {
+      const userTextParts = userMessage.parts.filter(
+        (part) => part.type === "text",
+      );
+      const assistantTextParts = ctx.content.filter(
+        (part) => part.type === "text",
+      );
+
+      if (userTextParts.length === 0 || assistantTextParts.length === 0) {
+        return;
+      }
+
       await chatService.upsertMessage({
         id: userMessage.id,
         threadId,
         role: "user",
-        parts: userMessage.parts,
+        parts: userTextParts,
       });
       await chatService.upsertMessage({
         id: assistantMessageId,
         threadId,
         role: "assistant",
-        parts: [{ type: "text", text: ctx.text }],
+        parts: assistantTextParts,
       });
     },
     onError: (error) => {
