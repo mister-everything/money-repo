@@ -12,11 +12,11 @@ export default async function ReviewPage({
   const { id } = await params;
   const session = await getSession();
 
-  const workBook = await workBookService.getLatestWorkBookWithAnswers(
+  const reviewSession = await workBookService.getReviewSession(
     id,
     session.user.id,
   );
-  if (!workBook) notFound();
+  if (!reviewSession) notFound();
 
   return (
     <div className="bg-background flex h-full flex-col overflow-hidden">
@@ -26,7 +26,7 @@ export default async function ReviewPage({
 
       <div className="mx-auto flex w-full max-w-7xl flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <WorkBookReview workBook={workBook} />
+          <WorkBookReview session={reviewSession} />
         </div>
       </div>
     </div>

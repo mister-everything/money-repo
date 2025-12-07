@@ -1,6 +1,10 @@
 "use client";
 
-import { WorkBookReviewSession } from "@service/solves/shared";
+import {
+  BlockAnswerSubmit,
+  WorkBookReviewSession,
+} from "@service/solves/shared";
+import { useMemo } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Block } from "./block/block";
 
@@ -9,6 +13,19 @@ interface WorkBookReviewProps {
 }
 
 export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
+  const submitAnswerByBlockId = useMemo(() => {
+    return session.submitAnswers.reduce(
+      (acc, submitAnswer) => {
+        acc[submitAnswer.blockId] = {
+          isCorrect: submitAnswer.isCorrect,
+          submit: submitAnswer.submit,
+        };
+        return acc;
+      },
+      {} as Record<string, { isCorrect: boolean; submit: BlockAnswerSubmit }>,
+    );
+  }, [session.submitAnswers]);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* 결과 요약 섹션 */}
@@ -22,11 +39,12 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
               <p className="text-base text-muted-foreground">
                 총{" "}
                 <span className="font-bold text-primary">
-                  {session.session.totalBlocks}
+                  {session.session.totalBlocks ||
+                    session.workBook.blocks.length}
                 </span>{" "}
                 문제 중{" "}
                 <span className="font-bold text-primary">
-                  {session.session.correctBlocks}
+                  {session.session.correctBlocks || 0}
                 </span>{" "}
                 문제 정답입니다.
               </p>
@@ -34,7 +52,6 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
           </div>
         </CardHeader>
       </Card>
-
       {/* 문제들 */}
       <div className="space-y-6">
         {session.workBook.blocks.map((problem, index) => {
@@ -49,9 +66,9 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
               order={problem.order}
               type={problem.type}
               content={problem.content}
-              isCorrect={session.submitAnswers[problem.id]?.isCorrect}
+              isCorrect={submitAnswerByBlockId[problem.id]?.isCorrect}
               answer={problem.answer}
-              submit={session.submitAnswers[problem.id]?.submit}
+              submit={submitAnswerByBlockId[problem.id]?.submit}
               mode="review"
             />
           );

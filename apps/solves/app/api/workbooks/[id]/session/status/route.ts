@@ -12,7 +12,7 @@ export async function GET(
     const { id } = await params;
     const session = await getSession();
 
-    const status = await workBookService.getLatestSessionStatus(
+    const status = await workBookService.getSessionStatusByWorkBookId(
       id,
       session.user.id,
     );

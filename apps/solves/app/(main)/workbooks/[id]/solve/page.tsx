@@ -16,14 +16,20 @@ export default async function Page({
   });
   if (!book) notFound();
 
-  const workbookSession = await workBookService.startOrResumeWorkBookSession(
-    id,
-    session.user.id,
-  );
+  const { session: workbookSession, isNewSession } =
+    await workBookService.startOrResumeWorkBookSession(id, session.user.id);
+
+  const savedAnswers = isNewSession
+    ? {}
+    : await workBookService.getSubmitAnswers(workbookSession.submitId);
 
   return (
     <div className="flex w-full px-4">
-      <WorkBookSolve workBook={book} initialSession={workbookSession} />
+      <WorkBookSolve
+        workBook={book}
+        initialSession={workbookSession}
+        savedAnswers={savedAnswers}
+      />
     </div>
   );
 }

@@ -3,8 +3,8 @@
 import {
   BlockAnswerSubmit,
   initialSubmitAnswer,
+  SessionInProgress,
   WorkBookBlockWithoutAnswer,
-  WorkBookSubmitSession,
   WorkBookWithoutAnswer,
 } from "@service/solves/shared";
 import {
@@ -41,7 +41,8 @@ import { WorkbookHeader } from "./workbook-header";
 
 interface WorkBookSolveProps {
   workBook: WorkBookWithoutAnswer;
-  initialSession: WorkBookSubmitSession;
+  initialSession: SessionInProgress;
+  savedAnswers: Record<string, BlockAnswerSubmit>;
 }
 
 const debounce = createDebounce();
@@ -49,6 +50,7 @@ const debounce = createDebounce();
 export function WorkBookSolve({
   workBook: { blocks, ...workBook },
   initialSession,
+  savedAnswers,
 }: WorkBookSolveProps) {
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
@@ -56,14 +58,11 @@ export function WorkBookSolve({
 
   const [mode, setMode] = useState<"all" | "sequential">();
 
-  const [submits, setSubmits] = useState<WorkBookSubmitSession["savedAnswers"]>(
-    () => {
-      return initialSession?.savedAnswers || {};
-    },
-  );
+  const [submits, setSubmits] =
+    useState<Record<string, BlockAnswerSubmit>>(savedAnswers);
 
-  const sumbmitSnapshot = useRef<WorkBookSubmitSession["savedAnswers"]>({
-    ...initialSession.savedAnswers,
+  const sumbmitSnapshot = useRef<Record<string, BlockAnswerSubmit>>({
+    ...savedAnswers,
   });
 
   const [, saveAnswerProgress, isSaving] = useSafeAction(
@@ -83,7 +82,7 @@ export function WorkBookSolve({
     {
       onSuccess: () => {
         handleConfetti();
-        router.push(`/workbooks/${workBook.id}/review`);
+        router.push(`/workbooks/session/${initialSession.submitId}/review`);
       },
     },
   );
@@ -185,7 +184,7 @@ export function WorkBookSolve({
         {isNull(mode) ? (
           <SolveModeSelector
             totalCount={blocks.length}
-            currentCount={Object.keys(initialSession.savedAnswers ?? {}).length}
+            currentCount={Object.keys(savedAnswers).length}
             onModeSelect={setMode}
           />
         ) : mode == "all" ? (
@@ -251,8 +250,8 @@ export function WorkBookSolve({
 }
 
 function extractSubmitsDiff(
-  prev: WorkBookSubmitSession["savedAnswers"] = {},
-  next: WorkBookSubmitSession["savedAnswers"] = {},
+  prev: Record<string, BlockAnswerSubmit> = {},
+  next: Record<string, BlockAnswerSubmit> = {},
 ) {
   return Object.entries(next).reduce(
     (acc, [blockId, answer]) => {

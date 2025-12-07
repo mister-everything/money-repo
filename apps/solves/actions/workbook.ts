@@ -96,13 +96,13 @@ export const saveAnswerProgressAction = safeAction(
   },
 );
 
-export const restartWorkbookSessionAction = safeAction(
+export const resetWorkBookSessionAction = safeAction(
   z.object({
     submitId: z.string(),
   }),
   async ({ submitId }) => {
     const session = await getSession();
-    await workBookService.restartWorkBookSession({
+    await workBookService.resetWorkBookSession({
       userId: session.user.id,
       submitId,
     });

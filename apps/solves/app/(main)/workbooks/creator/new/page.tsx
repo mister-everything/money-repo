@@ -42,7 +42,7 @@ export default async function ProbCreatePage() {
                   href={`/workbooks/${book.id}/${isPublished(book) ? "preview" : "edit"}`}
                   key={book.id}
                 >
-                  <WorkbookCard key={book.id} book={book} />
+                  <WorkbookCard key={book.id} workBook={book} />
                 </Link>
               ))}
             </div>

@@ -32,7 +32,7 @@ export default async function Page() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ">
             {workBooks.map((book) => (
               <Link href={`/workbooks/${book.id}/preview`} key={book.id}>
-                <WorkbookCard book={book} />
+                <WorkbookCard workBook={book} />
               </Link>
             ))}
           </div>

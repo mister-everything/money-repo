@@ -23,7 +23,7 @@ export default async function WorkbooksPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {inProgressWorkbooks.map((book) => (
               <Link href={`/workbooks/${book.id}/edit`} key={book.id}>
-                <WorkbookCard book={book} />
+                <WorkbookCard workBook={book} />
               </Link>
             ))}
           </div>
@@ -35,7 +35,7 @@ export default async function WorkbooksPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {publishedWorkbooks.map((book) => (
               <Link href={`/workbooks/${book.id}/report`} key={book.id}>
-                <WorkbookCard book={book} />
+                <WorkbookCard workBook={book} />
               </Link>
             ))}
           </div>

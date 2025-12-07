@@ -7,12 +7,11 @@ import { LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
-import { restartWorkbookSessionAction } from "@/actions/workbook";
+import { resetWorkBookSessionAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { WorkbookSolveResumePopup } from "@/components/workbook/workbook-solve-resume-popup";
 import { authClient } from "@/lib/auth/client";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
-import { cn } from "@/lib/utils";
 
 export function WorkbookSolveNavigateButton({
   workBookId,
@@ -36,7 +35,7 @@ export function WorkbookSolveNavigateButton({
   }, [data, isRefetching]);
 
   const { data: status, isLoading } = useSWR<SessionStatus>(
-    isLoggedIn ? `/api/workbooks/${workBookId}/solve-status` : null,
+    isLoggedIn ? `/api/workbooks/${workBookId}/session/status` : null,
     {
       revalidateOnFocus: false,
     },
@@ -64,7 +63,7 @@ export function WorkbookSolveNavigateButton({
   }, [status]);
 
   const [, restartWorkbookSession, isRestarting] = useSafeAction(
-    restartWorkbookSessionAction,
+    resetWorkBookSessionAction,
     {
       onSuccess: () => {
         router.push(solveHref);

@@ -21,9 +21,12 @@ export default async function InProgressWorkbooksPage() {
       <div className="flex flex-col gap-4 bg-secondary/40 border-t p-6 lg:p-10 flex-1">
         {workBookSessions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ">
-            {workBookSessions.map((book) => (
-              <Link href={`/workbooks/${book.id}/preview`} key={book.id}>
-                <WorkbookCard book={book} />
+            {workBookSessions.map(({ workBook, session }) => (
+              <Link
+                href={`/workbooks/${workBook.id}/preview`}
+                key={workBook.id}
+              >
+                <WorkbookCard workBook={workBook} session={session} />
               </Link>
             ))}
           </div>

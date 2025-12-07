@@ -1,5 +1,10 @@
 import z from "zod";
-import { BlockAnswer, BlockContent, BlockType } from "./blocks";
+import {
+  BlockAnswer,
+  BlockAnswerSubmit,
+  BlockContent,
+  BlockType,
+} from "./blocks";
 /**
  * 태그 타입
  */
@@ -81,3 +86,18 @@ export type SessionStatus =
   | SessionNotStarted
   | SessionInProgress
   | SessionSubmitted;
+
+export type WorkBookSession = {
+  workBook: WorkBookWithoutAnswer;
+  session: SessionInProgress | SessionSubmitted;
+};
+
+export type WorkBookReviewSession = {
+  workBook: WorkBook;
+  session: SessionSubmitted;
+  submitAnswers: {
+    blockId: string;
+    isCorrect: boolean;
+    submit: BlockAnswerSubmit;
+  }[];
+};

@@ -69,6 +69,7 @@ export const workBookSubmitsTable = solvesSchema.table("work_book_submits", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   blockCount: integer("block_count").notNull().default(0), // 제출 완료했을때 기준 문제 개수
   correctBlocks: integer("correct_blocks").notNull().default(0), // 정답 문제 개수
+  active: boolean("active").notNull().default(true), // 활성 여부
 });
 
 /**

@@ -402,13 +402,16 @@ export const workBookService = {
   startOrResumeWorkBookSession: async (
     workBookId: string,
     userId: string,
-  ): Promise<SessionInProgress> => {
-    let isNewSession = false;
+  ): Promise<{
+    session: SessionInProgress;
+    isNewSession: boolean;
+  }> => {
     const session: SessionInProgress = {
+      status: "in-progress",
       submitId: "",
       startTime: new Date(),
-      savedAnswers: {},
     };
+    let isNewSession = false;
 
     return pgDb.transaction(async (tx) => {
       const [existingSession] = await tx
@@ -422,6 +425,7 @@ export const workBookService = {
             eq(workBookSubmitsTable.workBookId, workBookId),
             eq(workBookSubmitsTable.ownerId, userId),
             isNull(workBookSubmitsTable.endTime),
+            eq(workBookSubmitsTable.active, true),
           ),
         )
         .orderBy(desc(workBookSubmitsTable.startTime))
@@ -431,44 +435,50 @@ export const workBookService = {
         session.startTime = existingSession.startTime;
       } else {
         isNewSession = true;
+
+        await tx
+          .update(workBookSubmitsTable)
+          .set({ active: false })
+          .where(
+            and(
+              eq(workBookSubmitsTable.workBookId, workBookId),
+              eq(workBookSubmitsTable.ownerId, userId),
+            ),
+          );
+
+        const [row] = await tx
+          .select({
+            blockCount: count(blocksTable.id),
+          })
+          .from(blocksTable)
+          .where(eq(blocksTable.workBookId, workBookId));
+
         const [newSession] = await tx
           .insert(workBookSubmitsTable)
           .values({
             workBookId,
             ownerId: userId,
             startTime: new Date(),
+            active: true,
+            blockCount: row.blockCount,
+            correctBlocks: 0,
           })
           .returning({
             id: workBookSubmitsTable.id,
             startTime: workBookSubmitsTable.startTime,
           });
+
         session.submitId = newSession.id;
         session.startTime = newSession.startTime;
       }
-      if (!isNewSession) {
-        // 저장된 답안 조회
-        const savedAnswerRecords = await tx
-          .select({
-            blockId: workBookBlockAnswerSubmitsTable.blockId,
-            answer: workBookBlockAnswerSubmitsTable.answer,
-          })
-          .from(workBookBlockAnswerSubmitsTable)
-          .where(
-            eq(workBookBlockAnswerSubmitsTable.submitId, session.submitId),
-          );
-
-        const savedAnswers: Record<string, BlockAnswerSubmit> = {};
-        for (const record of savedAnswerRecords) {
-          savedAnswers[record.blockId] = record.answer;
-        }
-        session.savedAnswers = savedAnswers;
-      }
-
-      return session;
+      return {
+        session,
+        isNewSession,
+      };
     });
   },
 
-  restartWorkBookSession: async ({
+  resetWorkBookSession: async ({
     userId,
     submitId,
   }: {
@@ -481,12 +491,12 @@ export const workBookService = {
         .set({
           startTime: new Date(),
           endTime: null,
-          blockCount: null,
         })
         .where(
           and(
             eq(workBookSubmitsTable.id, submitId),
             eq(workBookSubmitsTable.ownerId, userId),
+            eq(workBookSubmitsTable.active, true),
           ),
         );
       if (result.rowCount === 0) {
@@ -523,6 +533,7 @@ export const workBookService = {
         and(
           eq(workBookSubmitsTable.id, submitId),
           eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
         ),
       );
     if (!session) {
@@ -638,6 +649,8 @@ export const workBookService = {
         .set({
           endTime: new Date(),
           blockCount: blocks.length,
+          correctBlocks: saveSubmits.filter((submit) => submit.isCorrect)
+            .length,
         })
         .where(eq(workBookSubmitsTable.id, submitId));
     });
@@ -653,10 +666,15 @@ export const workBookService = {
     options?: {
       page?: number;
       limit?: number;
+      active?: boolean;
     },
   ): Promise<WorkBookSession[]> => {
-    const { page = 1, limit = 100 } = options ?? {};
+    const { page = 1, limit = 100, active = true } = options ?? {};
     const offset = (page - 1) * limit;
+
+    const where = [eq(workBookSubmitsTable.ownerId, userId)];
+
+    where.push(eq(workBookSubmitsTable.active, Boolean(active)));
 
     const rows = await pgDb
       .select({
@@ -665,6 +683,7 @@ export const workBookService = {
         endTime: workBookSubmitsTable.endTime,
         blockCount: workBookSubmitsTable.blockCount,
         submitId: workBookSubmitsTable.id,
+        correctBlocks: workBookSubmitsTable.correctBlocks,
       })
       .from(workBookSubmitsTable)
       .innerJoin(
@@ -672,21 +691,31 @@ export const workBookService = {
         eq(workBookSubmitsTable.workBookId, workBooksTable.id),
       )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(eq(workBookSubmitsTable.ownerId, userId)))
+      .where(and(...where))
       .orderBy(desc(workBookSubmitsTable.startTime))
       .offset(offset)
       .limit(limit);
 
     return rows.map((row) => {
+      const {
+        startTime,
+        endTime,
+        blockCount,
+        submitId,
+        correctBlocks,
+        ...workBook
+      } = row;
+
       return {
+        workBook: workBook as WorkBookWithoutAnswer,
         session: {
-          status: row.endTime ? "submitted" : "in-progress",
-          startTime: row.startTime,
-          submitId: row.submitId,
-          endTime: row.endTime!,
-          totalBlocks: row.blockCount!,
-          correctBlocks: row.correctBlocks!,
-        },
+          status: endTime ? "submitted" : "in-progress",
+          startTime: startTime,
+          submitId: submitId,
+          endTime: endTime,
+          totalBlocks: blockCount,
+          correctBlocks: correctBlocks,
+        } as SessionInProgress | SessionSubmitted,
       };
     });
   },
@@ -700,13 +729,14 @@ export const workBookService = {
     submitId: string,
     userId: string,
   ): Promise<WorkBookReviewSession | null> {
-    const [session] = await pgDb
+    const [row] = await pgDb
       .select({
         id: workBookSubmitsTable.id,
         workBookId: workBookSubmitsTable.workBookId,
         startTime: workBookSubmitsTable.startTime,
         endTime: workBookSubmitsTable.endTime,
         totalBlocks: workBookSubmitsTable.blockCount,
+        correctBlocks: workBookSubmitsTable.correctBlocks,
       })
       .from(workBookSubmitsTable)
       .where(
@@ -717,52 +747,54 @@ export const workBookService = {
         ),
       );
 
-    if (!session) {
+    if (!row) {
       return null;
     }
 
     const workBook = await workBookService.getWorkBookWithBlocks(
-      session.workBookId,
+      row.workBookId,
     );
+    if (!workBook) {
+      return null;
+    }
 
-    if (!workBook) return null;
+    const session: SessionSubmitted = {
+      status: "submitted",
+      startTime: row.startTime,
+      submitId: row.id,
+      endTime: row.endTime!,
+      totalBlocks: row.totalBlocks,
+      correctBlocks: row.correctBlocks,
+    };
+    const submitAnswers = await workBookService.getSubmitAnswers(row.id);
+    return {
+      workBook,
+      session,
+      submitAnswers,
+    };
+  },
 
-    // 문제 목록 및 정답 여부 조회
-    const answers = await pgDb
+  getSubmitAnswers: async (
+    submitId: string,
+  ): Promise<
+    {
+      submit: BlockAnswerSubmit;
+      isCorrect: boolean;
+      blockId: string;
+    }[]
+  > => {
+    const rows = await pgDb
       .select({
         blockId: workBookBlockAnswerSubmitsTable.blockId,
         isCorrect: workBookBlockAnswerSubmitsTable.isCorrect,
-        answer: workBookBlockAnswerSubmitsTable.answer,
+        submit: workBookBlockAnswerSubmitsTable.answer,
       })
       .from(workBookBlockAnswerSubmitsTable)
-      .where(eq(workBookBlockAnswerSubmitsTable.submitId, session.id));
-
-    const submitAnswers = answers.reduce(
-      (acc, answer) => {
-        acc[answer.blockId] = {
-          submit: answer.answer,
-          isCorrect: answer.isCorrect,
-        };
-        return acc;
-      },
-      {} as Record<string, { submit: BlockAnswerSubmit; isCorrect: boolean }>,
-    );
-
-    return {
-      workBook,
-      submitAnswers,
-      session: {
-        status: "submitted",
-        startTime: session.startTime,
-        submitId: session.id,
-        endTime: session.endTime!,
-        totalBlocks: session.totalBlocks || workBook.blocks.length,
-        correctBlocks: Object.values(submitAnswers).filter((a) => a.isCorrect)
-          .length,
-      },
-    };
+      .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
+    return rows;
   },
-  getLatestSessionStatus: async (
+
+  getSessionStatusByWorkBookId: async (
     workBookId: string,
     userId: string,
   ): Promise<SessionStatus> => {
@@ -772,12 +804,14 @@ export const workBookService = {
         submitId: workBookSubmitsTable.id,
         endTime: workBookSubmitsTable.endTime,
         blockCount: workBookSubmitsTable.blockCount,
+        correctBlocks: workBookSubmitsTable.correctBlocks,
       })
       .from(workBookSubmitsTable)
       .where(
         and(
           eq(workBookSubmitsTable.workBookId, workBookId),
           eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
         ),
       )
       .orderBy(desc(workBookSubmitsTable.startTime))
@@ -790,25 +824,31 @@ export const workBookService = {
         submitId: session.submitId,
       };
 
-    const [correctBlocks] = await pgDb
-      .select({
-        count: count(),
-      })
-      .from(workBookBlockAnswerSubmitsTable)
-      .where(
-        and(
-          eq(workBookBlockAnswerSubmitsTable.submitId, session.submitId),
-          eq(workBookBlockAnswerSubmitsTable.isCorrect, true),
-        ),
-      );
-
     return {
       status: "submitted",
       startTime: session.startTime,
       submitId: session.submitId,
       endTime: session.endTime,
-      totalBlocks: session.blockCount ?? 0,
-      correctBlocks: correctBlocks.count ?? 0,
+      totalBlocks: session.blockCount,
+      correctBlocks: session.correctBlocks,
     };
+  },
+
+  unActiveSessionByWorkBookId: async (
+    userId: string,
+    workBookId: string,
+  ): Promise<void> => {
+    await pgDb
+      .update(workBookSubmitsTable)
+      .set({
+        active: false,
+      })
+      .where(
+        and(
+          eq(workBookSubmitsTable.workBookId, workBookId),
+          eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
+        ),
+      );
   },
 };

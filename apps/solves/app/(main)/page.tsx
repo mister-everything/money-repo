@@ -36,7 +36,7 @@ export default async function Page() {
                 href={`/workbooks/${workBook.id}/preview`}
                 key={workBook.id}
               >
-                <WorkbookCard book={workBook} />
+                <WorkbookCard workBook={workBook} />
               </Link>
             );
           })}
