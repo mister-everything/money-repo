@@ -22,14 +22,6 @@ export function WorkbookSolveNavigateButton({
 
   const router = useRouter();
 
-  const solveHref = useMemo(() => {
-    return `/workbooks/${workBookId}/solve`;
-  }, [workBookId]);
-
-  const reviewHref = useMemo(() => {
-    return `/workbooks/${workBookId}/review`;
-  }, [workBookId]);
-
   const isLoggedIn = useMemo(() => {
     return !isRefetching && data?.session;
   }, [data, isRefetching]);
@@ -40,6 +32,15 @@ export function WorkbookSolveNavigateButton({
       revalidateOnFocus: false,
     },
   );
+
+  const solveHref = useMemo(() => {
+    return `/workbooks/${workBookId}/solve`;
+  }, [workBookId]);
+
+  const reviewHref = useMemo(() => {
+    if (status?.status !== "submitted") return "/error";
+    return `/workbooks/session/${status.submitId}/review`;
+  }, [status]);
 
   const subText = useMemo(() => {
     if (status?.status == "in-progress")

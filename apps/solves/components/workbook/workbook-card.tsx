@@ -14,18 +14,18 @@ interface WorkbookCardProps {
 
 export function WorkbookCard({ workBook, session }: WorkbookCardProps) {
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow h-full flex flex-col">
+    <Card className="hover:bg-secondary cursor-pointer hover:shadow-sm transition-shadow shadow-none rounded-sm h-full flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <CardTitle className="line-clamp-2 text-xl font-bold truncate">
-            {workBook.title}
+            {workBook.title || "제목이 없습니다."}
           </CardTitle>
         </div>
-        {workBook.description && (
-          <p className="text-muted-foreground line-clamp-2 text-sm">
-            {workBook.description}
-          </p>
-        )}
+
+        <p className="text-muted-foreground line-clamp-2 text-sm">
+          {workBook.description || "설명이 없습니다."}
+        </p>
+
         {session?.status === "submitted" ? (
           <Badge
             variant="outline"
@@ -67,9 +67,11 @@ export function WorkbookCard({ workBook, session }: WorkbookCardProps) {
           )}
         </div>
         <div className="flex items-center gap-2 mt-auto">
-          <span className="text-xs text-muted-foreground shrink-0">
-            발행 일자: {format(new Date(workBook.publishedAt!), "yyyy.MM.dd")}
-          </span>
+          {workBook.publishedAt && (
+            <span className="text-xs text-muted-foreground shrink-0">
+              발행 일자: {format(new Date(workBook.publishedAt!), "yyyy.MM.dd")}
+            </span>
+          )}
           <div className="text-xs text-muted-foreground mt-auto ml-auto">
             @{workBook.ownerName}
           </div>

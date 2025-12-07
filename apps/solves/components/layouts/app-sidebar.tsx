@@ -43,8 +43,8 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarSolveMenuItem
-            rootHref="/workbooks/solver"
-            solveSessionsHref="/workbooks/solver/sessions"
+            rootHref="/workbooks"
+            solveSessionsHref="/workbooks/session"
           />
           <SidebarEditMenuItem
             rootHref="/workbooks/creator/new"
