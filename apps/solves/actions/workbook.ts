@@ -1,26 +1,18 @@
 "use server";
 
 import { workBookService } from "@service/solves";
-import { WorkBookBlock } from "@service/solves/shared";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale/ko";
+import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
+
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
 import { ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
-const generateDefaultTitle = () => {
-  return `${formatDistanceToNow(new Date(), {
-    addSuffix: true,
-    locale: ko,
-  })} 문제집`;
-};
-
 export const createWorkbookAction = safeAction(async (formData: FormData) => {
   const session = await getSession();
 
   const savedWorkBook = await workBookService.createWorkBook({
-    title: (formData.get("title") as string) || generateDefaultTitle(),
+    title: (formData.get("title") as string) || "",
     ownerId: session.user.id,
   });
 
@@ -46,19 +38,21 @@ export const processUpdateBlocksAction = safeAction(
   async ({
     workbookId,
     deleteBlocks,
-    saveBlocks,
+    insertBlocks,
+    updateBlocks,
   }: {
     workbookId: string;
     deleteBlocks: string[];
-    saveBlocks: WorkBookBlock[];
+    insertBlocks: WorkBookBlock[];
+    updateBlocks: UpdateBlock[];
   }) => {
     const session = await getSession();
     await workBookService.checkEditPermission(workbookId, session.user.id);
-    await workBookService.processUpdateBlocks(
-      workbookId,
+    await workBookService.processUpdateBlocks(workbookId, {
       deleteBlocks,
-      saveBlocks,
-    );
+      insertBlocks,
+      updateBlocks,
+    });
     return ok();
   },
 );
@@ -82,6 +76,46 @@ export const publishWorkbookAction = safeAction(
       userId: session.user.id,
       tags,
     });
+    return ok();
+  },
+);
+
+export const saveAnswerProgressAction = safeAction(
+  z.object({
+    submitId: z.string(),
+    answers: z.record(z.string(), z.any()).optional().default({}),
+    deleteAnswers: z.array(z.string()).optional().default([]),
+  }),
+  async ({ submitId, answers, deleteAnswers }) => {
+    const session = await getSession();
+    await workBookService.saveAnswerProgress(session.user.id, submitId, {
+      answers,
+      deleteAnswers,
+    });
+    return ok();
+  },
+);
+
+export const resetWorkBookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.resetWorkBookSession({
+      userId: session.user.id,
+      submitId,
+    });
+    return ok();
+  },
+);
+export const submitWorkbookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.submitWorkBookSession(session.user.id, submitId);
     return ok();
   },
 );

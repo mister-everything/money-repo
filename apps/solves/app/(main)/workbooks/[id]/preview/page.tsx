@@ -1,50 +1,64 @@
 import { workBookService } from "@service/solves";
-import { isPublished } from "@service/solves/shared";
-import { PublicError } from "@workspace/error";
-import { notFound, redirect } from "next/navigation";
-import { Streamdown } from "streamdown";
-import z from "zod";
-import { InDevelopment } from "@/components/ui/in-development";
-import { WorkbookPreview } from "@/components/workbook/workbook-preview";
-import { getSession } from "@/lib/auth/server";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { WorkbookPublicPreview } from "@/components/workbook/workbook-public-preview";
 
-const message = `
-## PREVIEW 화면입니다. 어떻게할지 고민중 🚧
+// 30분(1800초) 동안 캐싱 후 revalidate
+export const revalidate = 1800;
 
-> public 한 preview **OR** owner 용 preview 분리해야할 필요있어보임
-
-1. 로그인 없이 미리보기, SSO 
-2. 문제집 주인인경우 친구에게 링크 공유하기 등 
-3. 문제집 주인인경우 배포 이후 수정할수있는 부분 수정할수있는부분 수정
-4. 문제집 + 디테일 (랭킹이나, 푼사람들? 문제 정답확률등?)
-`.trim();
-
-export default async function WorkbookPreviewPage({
-  params,
-}: {
+type PageProps = {
   params: Promise<{ id: string }>;
-}) {
+};
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const book = await workBookService.getWorkBookWithoutAnswer(id, {
+    isPublished: true,
+  });
+
+  if (!book) {
+    return {
+      title: "문제집을 찾을 수 없습니다",
+    };
+  }
+
+  const title = `${book.title} - Solves 문제집`;
+  const description =
+    book.description || `${book.ownerName}님이 만든 문제집입니다.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      authors: [book.ownerName],
+      publishedTime: book.publishedAt?.toISOString(),
+      tags: book.tags.map((tag) => tag.name),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
+
+export default async function WorkbookPreviewPage({ params }: PageProps) {
   const { id } = await params;
 
-  const session = await getSession();
-
-  const isOwner = await workBookService.isWorkBookOwner(
-    z.uuid().parse(id),
-    session.user.id,
-  );
-  if (!isOwner) throw new PublicError("권한이 없습니다.");
-
-  const book = await workBookService.getWorkBookWithBlocks(id);
+  const book = await workBookService.getWorkBookWithoutAnswer(id, {
+    isPublished: true,
+  });
   if (!book) notFound();
-  if (!isPublished(book)) redirect(`/workbooks/${id}/edit`);
 
   return (
-    <div className="flex w-full h-screen px-4 gap-4">
+    <div className="flex w-full h-screen">
       <div className="flex-1">
-        <InDevelopment className="mx-4 my-8">
-          <Streamdown mode="static">{message}</Streamdown>
-        </InDevelopment>
-        <WorkbookPreview book={book} />
+        <WorkbookPublicPreview book={book} />
       </div>
     </div>
   );

@@ -14,13 +14,12 @@ import {
 
 export function SidebarSolveMenuItem({
   rootHref,
-  inProgressHref,
-  completedHref,
+  solveSessionsHref,
+
   ...sidebarMenuItemProps
 }: {
   rootHref: string;
-  inProgressHref: string;
-  completedHref: string;
+  solveSessionsHref: string;
 } & React.ComponentProps<typeof SidebarMenuItem>) {
   const { setOpenMobile, state } = useSidebar();
   const path = usePathname();
@@ -28,8 +27,8 @@ export function SidebarSolveMenuItem({
   const showSubMenu = useMemo(
     () =>
       state === "expanded" &&
-      [rootHref, inProgressHref, completedHref].some((href) => path === href),
-    [state, path, rootHref, inProgressHref, completedHref],
+      [rootHref, solveSessionsHref].some((href) => path === href),
+    [state, path, rootHref, solveSessionsHref],
   );
 
   return (
@@ -54,13 +53,8 @@ export function SidebarSolveMenuItem({
       >
         <SidebarMenuSub>
           <SidebarMenuSubItem>
-            <SidebarMenuSubButton asChild isActive={path === inProgressHref}>
-              <Link href={inProgressHref}>풀고 있는 문제집</Link>
-            </SidebarMenuSubButton>
-          </SidebarMenuSubItem>
-          <SidebarMenuSubItem>
-            <SidebarMenuSubButton asChild isActive={path === completedHref}>
-              <Link href={completedHref}>다 푼 문제집</Link>
+            <SidebarMenuSubButton asChild isActive={path === solveSessionsHref}>
+              <Link href={solveSessionsHref}>풀고 있는 문제집</Link>
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         </SidebarMenuSub>

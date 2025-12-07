@@ -283,6 +283,8 @@ export function McqMultipleBlockContent({
                   <div
                     className={cn(
                       "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      submit?.answer?.includes(option.id) &&
+                        "border-primary text-primary",
                       status == "unchecked" &&
                         "border-muted-foreground/50 text-muted-foreground/50",
                     )}
@@ -453,6 +455,9 @@ export function McqSingleBlockContent({
                   <div
                     className={cn(
                       "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      mode == "solve" &&
+                        submit?.answer == option.id &&
+                        "border-primary text-primary",
                       status == "unchecked" &&
                         "border-muted-foreground/50 text-muted-foreground/50",
                     )}
@@ -806,11 +811,6 @@ export function RankingBlockContent({
             >
               <PlusIcon className="size-3 mr-1" /> 추가
             </Button>
-          )}
-          {poolItems.length === 0 && mode !== "edit" && (
-            <span className="text-xs text-muted-foreground">
-              모든 항목이 배치되었습니다
-            </span>
           )}
         </div>
       </div>

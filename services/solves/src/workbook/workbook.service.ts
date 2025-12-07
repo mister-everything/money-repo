@@ -12,7 +12,8 @@ import {
 } from "drizzle-orm";
 import { pgDb } from "../db";
 import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
-import { All_BLOCKS, BlockAnswerSubmit } from "./blocks";
+import { blockValidate } from "./block-validate";
+import { BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
   tagsTable,
@@ -24,16 +25,18 @@ import {
 import {
   CreateWorkBook,
   createWorkBookSchema,
-  SubmitWorkBook,
+  SessionInProgress,
+  SessionStatus,
+  SessionSubmitted,
+  UpdateBlock,
   WorkBook,
   WorkBookBlock,
-  WorkBookCompleted,
-  WorkBookInProgress,
-  WorkBookSubmitSession,
+  WorkBookReviewSession,
+  WorkBookSession,
   WorkBookWithoutAnswer,
   WorkBookWithoutBlocks,
 } from "./types";
-import { isPublished, validateBlock } from "./utils";
+import { checkAnswer, initialSubmitAnswer, isPublished } from "./utils";
 
 const TagsSubQuery = pgDb
   .select({
@@ -57,6 +60,10 @@ const WorkBookColumnsForList = {
     { id: number; name: string }[]
   >`coalesce((${TagsSubQuery}), '[]'::json)`,
   createdAt: workBooksTable.createdAt,
+};
+
+type GetWorkBookOptions = {
+  isPublished?: boolean;
 };
 
 export const workBookService = {
@@ -122,21 +129,52 @@ export const workBookService = {
    * 공개된 문제집 목록 조회
    * @todo 검색옵션 추가 (pagination, 검색어, 태그, 퍼블릭 여부, owner,id )
    */
-  async searchWorkBooks(options = {}): Promise<WorkBookWithoutBlocks[]> {
+  async searchWorkBooks(options?: {
+    isPublished?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<WorkBookWithoutBlocks[]> {
+    const { isPublished, page = 1, limit = 100 } = options ?? {};
+    const offset = (page - 1) * limit;
+
+    const where = [eq(workBooksTable.isPublic, true)];
+    if (isPublished !== undefined) {
+      where.push(
+        isPublished
+          ? isNotNull(workBooksTable.publishedAt)
+          : isNull(workBooksTable.publishedAt),
+      );
+    }
+
     const rows = await pgDb
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
-      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id));
+      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
+      .where(and(...where))
+      .offset(offset)
+      .limit(limit)
+      .orderBy(desc(workBooksTable.updatedAt));
 
     return rows;
   },
 
-  getWorkBook: async (id: string): Promise<WorkBookWithoutBlocks | null> => {
+  getWorkBook: async (
+    id: string,
+    options?: GetWorkBookOptions,
+  ): Promise<WorkBookWithoutBlocks | null> => {
+    const where = [eq(workBooksTable.id, id)];
+    if (options?.isPublished !== undefined) {
+      where.push(
+        options.isPublished
+          ? isNotNull(workBooksTable.publishedAt)
+          : isNull(workBooksTable.publishedAt),
+      );
+    }
     const [book] = await pgDb
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(eq(workBooksTable.id, id));
+      .where(and(...where));
 
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
     return book;
@@ -154,14 +192,7 @@ export const workBookService = {
       .from(blocksTable)
       .where(eq(blocksTable.workBookId, workBookId))
       .orderBy(blocksTable.order);
-    return blocks.map((block) => ({
-      id: block.id,
-      content: block.content,
-      question: block.question,
-      order: block.order,
-      type: block.type,
-      answer: block.answer!,
-    }));
+    return blocks as WorkBookBlock[];
   },
   publishWorkbook: async ({
     workBookId,
@@ -174,10 +205,14 @@ export const workBookService = {
   }) => {
     await workBookService.checkEditPermission(workBookId, userId);
     const book = await workBookService.getWorkBookWithBlocks(workBookId);
+    if (book?.title.trim() === "")
+      throw new PublicError("문제집 제목을 입력해주세요.");
+    if (book?.description?.trim() === "")
+      throw new PublicError("문제집 설명을 입력해주세요.");
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
     if (!book.blocks.length) throw new PublicError("최소 1개이상의 문제 필요.");
     const isPublishAble = book.blocks
-      .map(validateBlock)
+      .map(blockValidate)
       .every((r) => r.success);
     if (!isPublishAble) throw new PublicError("문제를 확인해보세요.");
 
@@ -223,11 +258,11 @@ export const workBookService = {
     });
   },
 
-  // 풀이용 정답 제외 문제집
   getWorkBookWithoutAnswer: async (
     id: string,
+    options?: GetWorkBookOptions,
   ): Promise<WorkBookWithoutAnswer | null> => {
-    const book = await workBookService.getWorkBook(id);
+    const book = await workBookService.getWorkBook(id, options);
     if (!book) return null;
     const blocks = await workBookService.getBlocks(id);
     return {
@@ -240,8 +275,11 @@ export const workBookService = {
   },
 
   // 문제집 조회 수정용
-  getWorkBookWithBlocks: async (id: string): Promise<WorkBook | null> => {
-    const book = await workBookService.getWorkBook(id);
+  getWorkBookWithBlocks: async (
+    id: string,
+    options?: GetWorkBookOptions,
+  ): Promise<WorkBook | null> => {
+    const book = await workBookService.getWorkBook(id, options);
     if (!book) return null;
     const blocks = await workBookService.getBlocks(id);
     return {
@@ -308,27 +346,35 @@ export const workBookService = {
   },
   processUpdateBlocks: async (
     bookId: string,
-    deleteBlocks: string[],
-    saveBlocks: WorkBookBlock[],
+    {
+      deleteBlocks,
+      insertBlocks,
+      updateBlocks,
+    }: {
+      deleteBlocks: string[];
+      insertBlocks: WorkBookBlock[];
+      updateBlocks: UpdateBlock[];
+    },
   ): Promise<void> => {
     await pgDb.transaction(async (tx) => {
-      if (saveBlocks.length > 0) {
-        const saveResult = await tx
+      if (insertBlocks.length > 0) {
+        const insertResult = await tx
           .insert(blocksTable)
-          .values(saveBlocks.map((block) => ({ ...block, workBookId: bookId })))
-          .onConflictDoUpdate({
-            target: [blocksTable.id],
-            set: {
-              answer: sql.raw(`excluded.${blocksTable.answer.name}`),
-              content: sql.raw(`excluded.${blocksTable.content.name}`),
-              question: sql.raw(`excluded.${blocksTable.question.name}`),
-              order: sql.raw(`excluded.${blocksTable.order.name}`),
-              type: sql.raw(`excluded.${blocksTable.type.name}`),
-            },
-          });
-        if (saveResult.rowCount !== saveBlocks.length) {
-          throw new PublicError("Failed to save blocks");
+          .values(
+            insertBlocks.map((block) => ({ ...block, workBookId: bookId })),
+          );
+        if (insertResult.rowCount !== insertBlocks.length) {
+          throw new PublicError("Failed to insert blocks");
         }
+      }
+      if (updateBlocks.length > 0) {
+        const updateQueries = updateBlocks.map(async (block) => {
+          return await tx
+            .update(blocksTable)
+            .set(block)
+            .where(eq(blocksTable.id, block.id));
+        });
+        await Promise.all(updateQueries);
       }
       if (deleteBlocks.length > 0) {
         const deleteResult = await tx
@@ -356,66 +402,110 @@ export const workBookService = {
   startOrResumeWorkBookSession: async (
     workBookId: string,
     userId: string,
-  ): Promise<WorkBookSubmitSession> => {
-    // 진행 중인 세션 조회 (endTime이 null인 세션)
-    const [existingSession] = await pgDb
-      .select({
-        id: workBookSubmitsTable.id,
-        startTime: workBookSubmitsTable.startTime,
-      })
-      .from(workBookSubmitsTable)
-      .where(
-        and(
-          eq(workBookSubmitsTable.workBookId, workBookId),
-          eq(workBookSubmitsTable.ownerId, userId),
-          isNull(workBookSubmitsTable.endTime),
-        ),
-      )
-      .limit(1);
+  ): Promise<{
+    session: SessionInProgress;
+    isNewSession: boolean;
+  }> => {
+    const session: SessionInProgress = {
+      status: "in-progress",
+      submitId: "",
+      startTime: new Date(),
+    };
+    let isNewSession = false;
 
-    let submitId: string;
-    let startTime: Date;
-
-    if (existingSession) {
-      // 기존 세션 재개
-      submitId = existingSession.id;
-      startTime = existingSession.startTime;
-    } else {
-      // 새 세션 생성
-      const [newSession] = await pgDb
-        .insert(workBookSubmitsTable)
-        .values({
-          workBookId,
-          ownerId: userId,
-          startTime: new Date(),
-        })
-        .returning({
+    return pgDb.transaction(async (tx) => {
+      const [existingSession] = await tx
+        .select({
           id: workBookSubmitsTable.id,
           startTime: workBookSubmitsTable.startTime,
-        });
-      submitId = newSession.id;
-      startTime = newSession.startTime;
-    }
+        })
+        .from(workBookSubmitsTable)
+        .where(
+          and(
+            eq(workBookSubmitsTable.workBookId, workBookId),
+            eq(workBookSubmitsTable.ownerId, userId),
+            isNull(workBookSubmitsTable.endTime),
+            eq(workBookSubmitsTable.active, true),
+          ),
+        )
+        .orderBy(desc(workBookSubmitsTable.startTime))
+        .limit(1);
+      if (existingSession) {
+        session.submitId = existingSession.id;
+        session.startTime = existingSession.startTime;
+      } else {
+        isNewSession = true;
 
-    // 저장된 답안 조회
-    const savedAnswerRecords = await pgDb
-      .select({
-        blockId: workBookBlockAnswerSubmitsTable.blockId,
-        answer: workBookBlockAnswerSubmitsTable.answer,
-      })
-      .from(workBookBlockAnswerSubmitsTable)
-      .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
+        await tx
+          .update(workBookSubmitsTable)
+          .set({ active: false })
+          .where(
+            and(
+              eq(workBookSubmitsTable.workBookId, workBookId),
+              eq(workBookSubmitsTable.ownerId, userId),
+            ),
+          );
 
-    const savedAnswers: Record<string, BlockAnswerSubmit> = {};
-    for (const record of savedAnswerRecords) {
-      savedAnswers[record.blockId] = record.answer;
-    }
+        const [row] = await tx
+          .select({
+            blockCount: count(blocksTable.id),
+          })
+          .from(blocksTable)
+          .where(eq(blocksTable.workBookId, workBookId));
 
-    return {
-      submitId,
-      startTime,
-      savedAnswers,
-    } as WorkBookSubmitSession;
+        const [newSession] = await tx
+          .insert(workBookSubmitsTable)
+          .values({
+            workBookId,
+            ownerId: userId,
+            startTime: new Date(),
+            active: true,
+            blockCount: row.blockCount,
+            correctBlocks: 0,
+          })
+          .returning({
+            id: workBookSubmitsTable.id,
+            startTime: workBookSubmitsTable.startTime,
+          });
+
+        session.submitId = newSession.id;
+        session.startTime = newSession.startTime;
+      }
+      return {
+        session,
+        isNewSession,
+      };
+    });
+  },
+
+  resetWorkBookSession: async ({
+    userId,
+    submitId,
+  }: {
+    userId: string;
+    submitId: string;
+  }): Promise<void> => {
+    return pgDb.transaction(async (tx) => {
+      const result = await tx
+        .update(workBookSubmitsTable)
+        .set({
+          startTime: new Date(),
+          endTime: null,
+        })
+        .where(
+          and(
+            eq(workBookSubmitsTable.id, submitId),
+            eq(workBookSubmitsTable.ownerId, userId),
+            eq(workBookSubmitsTable.active, true),
+          ),
+        );
+      if (result.rowCount === 0) {
+        throw new PublicError("세션을 찾을 수 없습니다.");
+      }
+      await tx
+        .delete(workBookBlockAnswerSubmitsTable)
+        .where(and(eq(workBookBlockAnswerSubmitsTable.submitId, submitId)));
+    });
   },
 
   /**
@@ -424,35 +514,64 @@ export const workBookService = {
    * @param answers 답안 목록 (blockId -> answer)
    */
   saveAnswerProgress: async (
+    userId: string,
     submitId: string,
-    answers: Record<string, BlockAnswerSubmit>,
+    {
+      answers,
+      deleteAnswers,
+    }: {
+      answers: Record<string, BlockAnswerSubmit>;
+      deleteAnswers: string[];
+    },
   ): Promise<void> => {
-    const answerEntries = Object.entries(answers);
-
-    if (answerEntries.length === 0) {
-      return;
+    const [session] = await pgDb
+      .select({
+        id: workBookSubmitsTable.id,
+      })
+      .from(workBookSubmitsTable)
+      .where(
+        and(
+          eq(workBookSubmitsTable.id, submitId),
+          eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
+        ),
+      );
+    if (!session) {
+      throw new PublicError("세션을 찾을 수 없습니다.");
     }
 
-    // upsert: composite primary key (blockId, submitId)로 중복 시 업데이트
-    for (const [blockId, answer] of answerEntries) {
-      await pgDb
-        .insert(workBookBlockAnswerSubmitsTable)
-        .values({
-          blockId,
-          submitId,
-          answer,
-          isCorrect: false, // 자동 저장 시에는 아직 채점 안 함
-        })
-        .onConflictDoUpdate({
-          target: [
-            workBookBlockAnswerSubmitsTable.blockId,
-            workBookBlockAnswerSubmitsTable.submitId,
-          ],
-          set: {
-            answer,
-          },
-        });
-    }
+    return pgDb.transaction(async (tx) => {
+      if (deleteAnswers.length > 0) {
+        await tx
+          .delete(workBookBlockAnswerSubmitsTable)
+          .where(
+            inArray(workBookBlockAnswerSubmitsTable.blockId, deleteAnswers),
+          );
+      }
+      const answerEntries = Object.entries(answers);
+
+      if (answerEntries.length > 0) {
+        await tx
+          .insert(workBookBlockAnswerSubmitsTable)
+          .values(
+            answerEntries.map(([blockId, answer]) => ({
+              blockId,
+              submitId,
+              answer,
+              isCorrect: false, // 자동 저장 시에는 아직 채점 안 함
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [
+              workBookBlockAnswerSubmitsTable.blockId,
+              workBookBlockAnswerSubmitsTable.submitId,
+            ],
+            set: {
+              answer: sql`excluded.answer`,
+            },
+          });
+      }
+    });
   },
 
   /**
@@ -463,133 +582,78 @@ export const workBookService = {
    * @returns 제출 결과
    */
   submitWorkBookSession: async (
+    userId: string,
     submitId: string,
-    workBookId: string,
-    answers: Record<string, BlockAnswerSubmit>,
-  ): Promise<SubmitWorkBook | null> => {
-    // 세션 정보 조회
+  ): Promise<void> => {
     const [session] = await pgDb
       .select({
         id: workBookSubmitsTable.id,
+        workBookId: workBookSubmitsTable.workBookId,
         startTime: workBookSubmitsTable.startTime,
       })
       .from(workBookSubmitsTable)
-      .where(eq(workBookSubmitsTable.id, submitId));
-
-    if (!session) return null;
-
-    // 문제집 정보 조회
-    const book = await workBookService.getWorkBookWithBlocks(workBookId);
-    if (!book) return null;
-
-    let correctAnswerCount = 0;
-
-    // 채점 및 답안 업데이트
-    for (const block of book.blocks) {
-      // 제출된 답안
-      const submittedAnswer = answers[block.id];
-
-      if (!submittedAnswer) {
-        continue;
-      }
-
-      // 정답 여부 체크
-      const isCorrect = All_BLOCKS[block.type].checkAnswer(
-        block.answer,
-        submittedAnswer,
+      .where(
+        and(
+          isNull(workBookSubmitsTable.endTime),
+          eq(workBookSubmitsTable.id, submitId),
+          eq(workBookSubmitsTable.ownerId, userId),
+        ),
       );
 
-      // 정답 여부 체크 결과가 참이면 정답 카운트 증가
-      if (isCorrect) {
-        correctAnswerCount++;
-      }
+    if (!session) throw new PublicError("세션을 찾을 수 없습니다.");
 
-      // 답안 제출 기록 업데이트
-      await pgDb
-        .insert(workBookBlockAnswerSubmitsTable)
-        .values({
+    const blocks = await workBookService.getBlocks(session.workBookId);
+    const submits = await pgDb
+      .select({
+        blockId: workBookBlockAnswerSubmitsTable.blockId,
+        answer: workBookBlockAnswerSubmitsTable.answer,
+      })
+      .from(workBookBlockAnswerSubmitsTable)
+      .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
+
+    const submitByBlockId = submits.reduce(
+      (acc, submit) => {
+        acc[submit.blockId] = submit.answer;
+        return acc;
+      },
+      {} as Record<string, BlockAnswerSubmit>,
+    );
+
+    return pgDb.transaction(async (tx) => {
+      const saveSubmits = blocks.map((block) => {
+        const submittedAnswer = submitByBlockId[block.id];
+        const isCorrect = checkAnswer(block.answer, submittedAnswer);
+        return {
           blockId: block.id,
           submitId,
-          answer: submittedAnswer,
+          answer: submittedAnswer ?? initialSubmitAnswer(block.type),
           isCorrect,
-        })
+        };
+      });
+
+      await tx
+        .insert(workBookBlockAnswerSubmitsTable)
+        .values(saveSubmits)
         .onConflictDoUpdate({
           target: [
             workBookBlockAnswerSubmitsTable.blockId,
             workBookBlockAnswerSubmitsTable.submitId,
           ],
           set: {
-            answer: submittedAnswer,
-            isCorrect,
+            answer: sql`excluded.answer`,
+            isCorrect: sql`excluded.is_correct`,
           },
         });
-    }
-
-    // 세션 종료 (endTime 업데이트)
-    const endTime = new Date();
-    await pgDb
-      .update(workBookSubmitsTable)
-      .set({
-        endTime,
-      })
-      .where(eq(workBookSubmitsTable.id, submitId));
-
-    return {
-      ...book,
-      correctAnswerCount,
-      totalProblems: book.blocks.length,
-      startTime: session.startTime,
-      endTime,
-      blocks: book.blocks.map((block) => ({
-        ...block,
-        submit: answers[block.id],
-      })),
-    };
-  },
-
-  /**
-   * 문제집 세션 삭제
-   * @param submitId 세션 ID
-   */
-  deleteWorkBookSession: async (
-    workBookId: string,
-    userId: string,
-  ): Promise<void> => {
-    await pgDb
-      .delete(workBookSubmitsTable)
-      .where(
-        and(
-          eq(workBookSubmitsTable.workBookId, workBookId),
-          eq(workBookSubmitsTable.ownerId, userId),
-          isNull(workBookSubmitsTable.endTime),
-        ),
-      );
-  },
-
-  /**
-   * 문제집 세션 존재 여부 확인
-   * @param workBookId 문제집 ID
-   * @param userId 사용자 ID
-   * @returns 세션 존재 여부
-   */
-  hasWorkBookSession: async (
-    workBookId: string,
-    userId: string,
-  ): Promise<boolean> => {
-    const [session] = await pgDb
-      .select({
-        id: workBookSubmitsTable.id,
-      })
-      .from(workBookSubmitsTable)
-      .where(
-        and(
-          eq(workBookSubmitsTable.workBookId, workBookId),
-          eq(workBookSubmitsTable.ownerId, userId),
-          isNull(workBookSubmitsTable.endTime),
-        ),
-      )
-      .limit(1);
-    return session ? true : false;
+      await tx
+        .update(workBookSubmitsTable)
+        .set({
+          endTime: new Date(),
+          blockCount: blocks.length,
+          correctBlocks: saveSubmits.filter((submit) => submit.isCorrect)
+            .length,
+        })
+        .where(eq(workBookSubmitsTable.id, submitId));
+    });
   },
 
   /**
@@ -597,120 +661,63 @@ export const workBookService = {
    * @param userId 사용자 ID
    * @returns 풀고있는 문제집 목록
    */
-  getWorkBookInProgress: async (
+  searchWorkBookSessions: async (
     userId: string,
-  ): Promise<WorkBookInProgress[]> => {
+    options?: {
+      page?: number;
+      limit?: number;
+      active?: boolean;
+    },
+  ): Promise<WorkBookSession[]> => {
+    const { page = 1, limit = 100, active = true } = options ?? {};
+    const offset = (page - 1) * limit;
+
+    const where = [eq(workBookSubmitsTable.ownerId, userId)];
+
+    where.push(eq(workBookSubmitsTable.active, Boolean(active)));
+
     const rows = await pgDb
       .select({
         ...WorkBookColumnsForList,
         startTime: workBookSubmitsTable.startTime,
-      })
-      .from(workBookSubmitsTable)
-      .innerJoin(
-        workBooksTable,
-        eq(workBookSubmitsTable.workBookId, workBooksTable.id),
-      )
-      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(
-        and(
-          eq(workBookSubmitsTable.ownerId, userId),
-          isNull(workBookSubmitsTable.endTime),
-        ),
-      );
-
-    return rows.map((row) => ({
-      ...row,
-      startTime: row.startTime,
-    })) as WorkBookInProgress[];
-  },
-
-  /**
-   * 완료된 문제집 목록 조회
-   * @param userId 사용자 ID
-   * @returns 완료된 문제집 목록 (최신순, 문제집당 최신 기록 1개)
-   */
-  getCompletedWorkBooks: async (
-    userId: string,
-  ): Promise<WorkBookCompleted[]> => {
-    // 각 문제집별 최신 제출 ID 조회
-    // 1단계: 각 문제집별 최신 제출 ID 조회 (Drizzle selectDistinctOn 사용)
-    const latestSubmits = await pgDb
-      .selectDistinctOn([workBookSubmitsTable.workBookId], {
-        id: workBookSubmitsTable.id,
-      })
-      .from(workBookSubmitsTable)
-      .where(
-        and(
-          eq(workBookSubmitsTable.ownerId, userId),
-          isNotNull(workBookSubmitsTable.endTime),
-        ),
-      )
-      .orderBy(
-        workBookSubmitsTable.workBookId,
-        desc(workBookSubmitsTable.endTime),
-      );
-
-    if (latestSubmits.length === 0) return [];
-
-    const submitIds = latestSubmits.map((s) => s.id);
-
-    // 2단계: 상세 정보 조회 (정답 개수 포함)
-    const rows = await pgDb
-      .select({
-        id: workBooksTable.id,
-        title: workBooksTable.title,
-        description: workBooksTable.description,
-        isPublic: workBooksTable.isPublic,
-        publishedAt: workBooksTable.publishedAt,
-        startTime: workBookSubmitsTable.startTime,
         endTime: workBookSubmitsTable.endTime,
-        ownerName: userTable.name,
-        ownerProfile: userTable.image,
-        tags: sql<
-          { id: number; name: string }[]
-        >`coalesce(json_agg(distinct jsonb_build_object('id', ${tagsTable.id}, 'name', ${tagsTable.name})) filter (where ${tagsTable.name} is not null), '[]'::json)`,
-        createdAt: workBooksTable.createdAt,
-        totalProblems: sql<number>`count(distinct ${blocksTable.id})`,
-        correctAnswerCount: sql<number>`count(distinct ${workBookBlockAnswerSubmitsTable.blockId}) filter (where ${workBookBlockAnswerSubmitsTable.isCorrect} = true)`,
+        blockCount: workBookSubmitsTable.blockCount,
+        submitId: workBookSubmitsTable.id,
+        correctBlocks: workBookSubmitsTable.correctBlocks,
       })
       .from(workBookSubmitsTable)
       .innerJoin(
         workBooksTable,
         eq(workBookSubmitsTable.workBookId, workBooksTable.id),
       )
-      .innerJoin(blocksTable, eq(workBooksTable.id, blocksTable.workBookId))
-      .leftJoin(
-        workBookBlockAnswerSubmitsTable,
-        eq(workBookBlockAnswerSubmitsTable.submitId, workBookSubmitsTable.id),
-      )
-      .leftJoin(
-        workBookTagsTable,
-        eq(workBookTagsTable.workBookId, workBooksTable.id),
-      )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .leftJoin(tagsTable, eq(workBookTagsTable.tagId, tagsTable.id))
-      .where(inArray(workBookSubmitsTable.id, submitIds))
-      .groupBy(
-        workBooksTable.id,
-        workBooksTable.title,
-        workBooksTable.description,
-        workBooksTable.isPublic,
-        workBooksTable.createdAt,
-        workBooksTable.publishedAt,
-        workBookSubmitsTable.startTime,
-        workBookSubmitsTable.endTime,
-        userTable.name,
-        userTable.image,
-      )
-      .orderBy(desc(workBookSubmitsTable.endTime));
+      .where(and(...where))
+      .orderBy(desc(workBookSubmitsTable.startTime))
+      .offset(offset)
+      .limit(limit);
 
-    return rows.map((row) => ({
-      ...row,
-      startTime: row.startTime,
-      endTime: row.endTime!,
-      totalProblems: Number(row.totalProblems),
-      correctAnswerCount: Number(row.correctAnswerCount),
-    })) as WorkBookCompleted[];
+    return rows.map((row) => {
+      const {
+        startTime,
+        endTime,
+        blockCount,
+        submitId,
+        correctBlocks,
+        ...workBook
+      } = row;
+
+      return {
+        workBook: workBook as WorkBookWithoutAnswer,
+        session: {
+          status: endTime ? "submitted" : "in-progress",
+          startTime: startTime,
+          submitId: submitId,
+          endTime: endTime,
+          totalBlocks: blockCount,
+          correctBlocks: correctBlocks,
+        } as SessionInProgress | SessionSubmitted,
+      };
+    });
   },
 
   /**
@@ -718,68 +725,130 @@ export const workBookService = {
    * @param workBookId 문제집 ID
    * @param userId 사용자 ID
    */
-  async getLatestWorkBookWithAnswers(
-    workbookId: string,
+  async getReviewSession(
+    submitId: string,
     userId: string,
-  ): Promise<SubmitWorkBook | null> {
-    const [session] = await pgDb
+  ): Promise<WorkBookReviewSession | null> {
+    const [row] = await pgDb
       .select({
         id: workBookSubmitsTable.id,
         workBookId: workBookSubmitsTable.workBookId,
         startTime: workBookSubmitsTable.startTime,
         endTime: workBookSubmitsTable.endTime,
+        totalBlocks: workBookSubmitsTable.blockCount,
+        correctBlocks: workBookSubmitsTable.correctBlocks,
       })
       .from(workBookSubmitsTable)
       .where(
         and(
-          eq(workBookSubmitsTable.workBookId, workbookId),
+          eq(workBookSubmitsTable.id, submitId),
           eq(workBookSubmitsTable.ownerId, userId),
           isNotNull(workBookSubmitsTable.endTime),
         ),
       );
 
-    console.log(session);
-    if (!session) {
+    if (!row) {
       return null;
     }
 
-    const book = await workBookService.getWorkBookWithBlocks(
-      session.workBookId,
+    const workBook = await workBookService.getWorkBookWithBlocks(
+      row.workBookId,
     );
+    if (!workBook) {
+      return null;
+    }
 
-    if (!book) return null;
+    const session: SessionSubmitted = {
+      status: "submitted",
+      startTime: row.startTime,
+      submitId: row.id,
+      endTime: row.endTime!,
+      totalBlocks: row.totalBlocks,
+      correctBlocks: row.correctBlocks,
+    };
+    const submitAnswers = await workBookService.getSubmitAnswers(row.id);
+    return {
+      workBook,
+      session,
+      submitAnswers,
+    };
+  },
 
-    // 문제 목록 및 정답 여부 조회
-    const answers = await pgDb
+  getSubmitAnswers: async (
+    submitId: string,
+  ): Promise<
+    {
+      submit: BlockAnswerSubmit;
+      isCorrect: boolean;
+      blockId: string;
+    }[]
+  > => {
+    const rows = await pgDb
       .select({
         blockId: workBookBlockAnswerSubmitsTable.blockId,
         isCorrect: workBookBlockAnswerSubmitsTable.isCorrect,
-        answer: workBookBlockAnswerSubmitsTable.answer,
+        submit: workBookBlockAnswerSubmitsTable.answer,
       })
       .from(workBookBlockAnswerSubmitsTable)
-      .where(eq(workBookBlockAnswerSubmitsTable.submitId, session.id));
+      .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
+    return rows;
+  },
 
-    console.log({
-      ...book,
-      correctAnswerCount: answers.filter((a) => a.isCorrect).length,
-      totalProblems: book.blocks.length,
-      startTime: session.startTime,
-      endTime: session.endTime!,
-      blocks: book?.blocks.map((block) => ({
-        ...block,
-        submit: answers.find((a) => a.blockId === block.id)?.answer,
-      })),
-    });
+  getSessionStatusByWorkBookId: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<SessionStatus> => {
+    const [session] = await pgDb
+      .select({
+        startTime: workBookSubmitsTable.startTime,
+        submitId: workBookSubmitsTable.id,
+        endTime: workBookSubmitsTable.endTime,
+        blockCount: workBookSubmitsTable.blockCount,
+        correctBlocks: workBookSubmitsTable.correctBlocks,
+      })
+      .from(workBookSubmitsTable)
+      .where(
+        and(
+          eq(workBookSubmitsTable.workBookId, workBookId),
+          eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
+        ),
+      )
+      .orderBy(desc(workBookSubmitsTable.startTime))
+      .limit(1);
+    if (!session) return { status: "not-started" };
+    if (!session.endTime)
+      return {
+        status: "in-progress",
+        startTime: session.startTime,
+        submitId: session.submitId,
+      };
+
     return {
-      ...book,
-      correctAnswerCount: answers.filter((a) => a.isCorrect).length,
-      totalProblems: book.blocks.length,
+      status: "submitted",
       startTime: session.startTime,
-      endTime: session.endTime!,
-      blocks: book?.blocks.map((block) => ({
-        ...block,
-        submit: answers.find((a) => a.blockId === block.id)?.answer,
-      })),
+      submitId: session.submitId,
+      endTime: session.endTime,
+      totalBlocks: session.blockCount,
+      correctBlocks: session.correctBlocks,
     };
+  },
+
+  unActiveSessionByWorkBookId: async (
+    userId: string,
+    workBookId: string,
+  ): Promise<void> => {
+    await pgDb
+      .update(workBookSubmitsTable)
+      .set({
+        active: false,
+      })
+      .where(
+        and(
+          eq(workBookSubmitsTable.workBookId, workBookId),
+          eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
+        ),
+      );
   },
 };

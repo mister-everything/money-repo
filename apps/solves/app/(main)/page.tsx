@@ -1,91 +1,59 @@
 import { workBookService } from "@service/solves";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { InDevelopment } from "@/components/ui/in-development";
+import { WorkbookCard } from "@/components/workbook/workbook-card";
 
 export default async function Page() {
-  const workBooks = await workBookService.searchWorkBooks();
+  const workBooks = await workBookService.searchWorkBooks({
+    isPublished: true,
+    limit: 3,
+  });
 
   return (
-    <div className="min-h-screen bg-transparent">
-      {/* 헤더 */}
-      <div className="border-b bg-card">
-        <div className="max-w-6xl mx-auto p-6">
-          <h1 className="text-3xl font-bold text-foreground">
-            문제집 라이브러리
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            다양한 문제집을 선택해서 풀어보세요.
-          </p>
-        </div>
+    <div className="p-6 lg:p-10 w-full flex flex-col gap-8">
+      <div className="text-3xl font-bold text-foreground">
+        <h1 className="mb-2">다양한 상황에 따라</h1>
+        <h1>원하는 문제를 출제하고 활용해보세요</h1>
       </div>
 
-      {/* 문제집 목록 */}
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {workBooks.length > 0 ? (
-            workBooks.map((book) => (
-              <Link href={`/workbooks/${book.id}/solve`} key={book.id}>
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="line-clamp-2 text-lg">
-                        {book.title}
-                      </CardTitle>
-                    </div>
-                    {book.description && (
-                      <CardDescription className="line-clamp-3">
-                        {book.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-4">전체 베스트</h2>
 
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {book.tags?.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded"
-                        >
-                          #{tag.name}
-                        </span>
-                      ))}
-                      {book.tags && book.tags.length > 3 && (
-                        <span className="text-muted-foreground text-xs">
-                          +{book.tags.length - 3}개
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, index) => {
+            const workBook = workBooks[index];
+            if (!workBook)
+              return (
+                <InDevelopment className="w-full h-full" key={index}>
+                  아직 없네요 🤔
+                </InDevelopment>
+              );
+
+            return (
+              <Link
+                href={`/workbooks/${workBook.id}/preview`}
+                key={workBook.id}
+              >
+                <WorkbookCard workBook={workBook} />
               </Link>
-            ))
-          ) : (
-            <Card className="text-center py-12">
-              <CardContent>
-                <div className="text-muted-foreground text-6xl mb-4">📚</div>
-                <CardTitle className="mb-2">아직 문제집이 없습니다</CardTitle>
-                <CardDescription>
-                  첫 번째 문제집을 만들어보세요!
-                </CardDescription>
-              </CardContent>
-            </Card>
-          )}
+            );
+          })}
         </div>
       </div>
-
-      {/* 푸터 */}
-      <footer className="border-t bg-card mt-12">
-        <div className="max-w-6xl mx-auto p-6 text-center text-muted-foreground text-sm">
-          문제집 시스템 데모 - TypeScript + Next.js
+      <div className="flex flex-col gap-4">
+        <h2 className="text-xl font-bold text-foreground">
+          어떤 문제집을 만들고 싶나요?
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InDevelopment className="w-full h-52">개발 대기중.</InDevelopment>
+          <InDevelopment className="w-full h-52">개발 대기중.</InDevelopment>
         </div>
-      </footer>
+        <Button size={"lg"} className="w-full py-6">
+          빠르게 문제집 만들기
+        </Button>
+      </div>
     </div>
   );
 }

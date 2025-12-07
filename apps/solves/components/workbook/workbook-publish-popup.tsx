@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_TAG_COUNT } from "@service/solves/shared";
 import { XIcon } from "lucide-react";
 import {
   PropsWithChildren,
@@ -31,7 +32,6 @@ type WorkbookPublishPopupProps = {
   isPending?: boolean;
 };
 
-const MAX_TAG_COUNT = 5;
 const MAX_TAG_LENGTH = 20;
 
 export function WorkbookPublishPopup({
@@ -75,7 +75,11 @@ export function WorkbookPublishPopup({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
+      if (
+        e.key === "Enter" &&
+        e.currentTarget.value.trim() &&
+        !e.nativeEvent.isComposing
+      ) {
         e.preventDefault();
         handleAddTag();
       }
@@ -154,7 +158,7 @@ export function WorkbookPublishPopup({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2">
           <DialogClose asChild>
             <Button variant="outline" disabled={isPending}>
               취소

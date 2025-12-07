@@ -272,3 +272,16 @@ export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 export function deduplicate<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
+
+export function arrayToObject<T>(
+  arr: T[],
+  getter: (item: T) => string,
+): Record<string, T> {
+  return arr.reduce(
+    (acc, item) => {
+      acc[getter(item)] = item;
+      return acc;
+    },
+    {} as Record<string, T>,
+  );
+}

@@ -1,6 +1,5 @@
 import z from "zod";
 import {
-  All_BLOCKS,
   BlockAnswer,
   BlockAnswerSubmit,
   BlockContent,
@@ -27,10 +26,9 @@ export type WorkBookBlock<T extends BlockType = BlockType> = {
   order: number;
 };
 
-export type WorkBookBlockWithSubmit<T extends BlockType = BlockType> =
-  WorkBookBlock<T> & {
-    submit?: BlockAnswerSubmit<T>;
-  };
+export type UpdateBlock<T extends BlockType = BlockType> = {
+  id: string;
+} & Partial<Omit<WorkBookBlock<T>, "id" | "type">>;
 
 // 풀이 모드에서 사용하는 문제 블록
 export type WorkBookBlockWithoutAnswer = Omit<WorkBookBlock, "answer">;
@@ -60,66 +58,46 @@ export type WorkBookWithoutAnswer = WorkBookWithoutBlocks & {
   blocks: WorkBookBlockWithoutAnswer[];
 };
 
-export const allContentSchemas = z.union(
-  Object.values(All_BLOCKS).map((block) => block.contentSchema),
-) as z.ZodType<BlockContent>;
-
-export const allAnswerSchemas = z.union(
-  Object.values(All_BLOCKS).map((block) => block.answerSchema),
-) as z.ZodType<BlockAnswer>;
-export const allAnswerSubmitSchemas = z.union(
-  Object.values(All_BLOCKS).map((block) => block.answerSubmitSchema),
-) as z.ZodType<BlockAnswerSubmit>;
-
 export const createWorkBookSchema = z.object({
   ownerId: z.string(),
   title: z.string(),
 });
 export type CreateWorkBook = z.infer<typeof createWorkBookSchema>;
 
-/**
- * workBookBlockAnswerSubmitsTable에 대응하는 타입
- */
-export type WorkBookBlockAnswerSubmitRecord = {
-  blockId: string;
+export type SessionNotStarted = {
+  status: "not-started";
+};
+
+export type SessionInProgress = {
+  status: "in-progress";
+  startTime: Date;
   submitId: string;
-  answer: BlockAnswerSubmit;
-  isCorrect: boolean;
-  createdAt: Date;
 };
 
-/**
- * 세션 시작/재개 응답 타입
- */
-export type WorkBookSubmitSession = {
+export type SessionSubmitted = {
+  status: "submitted";
+  startTime: Date;
   submitId: string;
-  startTime: Date;
-  savedAnswers: Record<string, BlockAnswerSubmit>;
-};
-
-/**
- * 문제집 제출 결과 타입
- */
-export type SubmitWorkBookResponse = {
-  correctAnswerIds: string[];
-  totalProblems: number;
-  blockResults: Array<{
-    blockId: string;
-    answer: BlockAnswer;
-  }>;
-};
-
-export type WorkBookInProgress = WorkBookWithoutBlocks & {
-  startTime: Date;
-};
-
-export type WorkBookCompleted = WorkBookWithoutBlocks & {
-  startTime: Date;
   endTime: Date;
-  totalProblems: number;
-  correctAnswerCount: number;
+  totalBlocks: number;
+  correctBlocks: number;
+};
+export type SessionStatus =
+  | SessionNotStarted
+  | SessionInProgress
+  | SessionSubmitted;
+
+export type WorkBookSession = {
+  workBook: WorkBookWithoutAnswer;
+  session: SessionInProgress | SessionSubmitted;
 };
 
-export type SubmitWorkBook = WorkBookCompleted & {
-  blocks: WorkBookBlockWithSubmit[];
+export type WorkBookReviewSession = {
+  workBook: WorkBook;
+  session: SessionSubmitted;
+  submitAnswers: {
+    blockId: string;
+    isCorrect: boolean;
+    submit: BlockAnswerSubmit;
+  }[];
 };

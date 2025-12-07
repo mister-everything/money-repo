@@ -1,7 +1,7 @@
 "use client";
 
 import { WorkBookWithoutBlocks } from "@service/solves/shared";
-import { CheckIcon, PencilIcon } from "lucide-react";
+import { CheckIcon, HashIcon, PencilIcon } from "lucide-react";
 import { ComponentProps, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { WorkBookComponentMode } from "./types";
 
 type WorkbookHeaderProps = {
@@ -37,6 +38,7 @@ export function WorkbookHeader({
   onChangeTitle,
   onChangeDescription,
   onChangeTags,
+  className,
   ...cardProps
 }: WorkbookHeaderProps) {
   const placeholder = useMemo(() => {
@@ -58,8 +60,14 @@ export function WorkbookHeader({
     [],
   );
 
+  const feedback = useMemo(() => {
+    if (mode != "edit") return;
+    if (!book.title?.trim?.()) return "문제집 제목을 입력해주세요.";
+    if (!book.description?.trim?.()) return "문제집 설명을 입력해주세요.";
+  }, [mode, book.title, book.description]);
+
   return (
-    <Card {...cardProps}>
+    <Card {...cardProps} className={cn("shadow-none", className)}>
       <CardHeader>
         <CardTitle className="min-w-0 text-foreground gap-2 flex items-center">
           {mode != "edit" ? (
@@ -69,6 +77,7 @@ export function WorkbookHeader({
               placeholder={placeholder}
               autoFocus
               className="text-xl!"
+              maxLength={20}
               value={book.title}
               onChange={handleChangeTitle}
             />
@@ -88,20 +97,34 @@ export function WorkbookHeader({
               <TooltipContent>문제집 수정하기</TooltipContent>
             </Tooltip>
           ) : mode === "edit" && onModeChange ? (
-            <Button
-              onClick={() => onModeChange("preview")}
-              className="ml-auto"
-              variant="ghost"
-              size="icon"
-            >
-              <CheckIcon />
-            </Button>
+            <Tooltip open={feedback ? undefined : false}>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button
+                    onClick={() => onModeChange("preview")}
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "hover:bg-primary hover:text-primary-foreground",
+                      !feedback && "text-primary-foreground bg-primary",
+                    )}
+                    disabled={Boolean(feedback)}
+                  >
+                    <CheckIcon />
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="whitespace-pre-wrap">
+                {feedback}
+              </TooltipContent>
+            </Tooltip>
           ) : null}
         </CardTitle>
         {mode == "edit" ? (
           <Textarea
             placeholder="문제집 한줄 설명을 작성하세요"
             className="resize-none max-h-[100px]"
+            maxLength={25}
             value={book.description || ""}
             onChange={handleChangeDescription}
           />
@@ -112,11 +135,14 @@ export function WorkbookHeader({
         )}
       </CardHeader>
       <CardContent>
-        {book.tags.map((tag) => (
-          <Badge variant={"secondary"} key={tag.id}>
-            {tag.name}
-          </Badge>
-        ))}
+        <div className="flex gap-2 flex-wrap justify-end">
+          {book.tags.map((tag) => (
+            <Badge variant={"secondary"} key={tag.id} className="rounded-xs">
+              <HashIcon className="size-2.5" />
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

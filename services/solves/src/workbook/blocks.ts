@@ -95,7 +95,10 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
     z.object({
       options: z
         .array(z.union([textOption, sourceOption]))
-        .min(MCQ_BLOCK_MIN_OPTIONS, `최소 ${MCQ_BLOCK_MIN_OPTIONS}개의 선택지 필요`)
+        .min(
+          MCQ_BLOCK_MIN_OPTIONS,
+          `최소 ${MCQ_BLOCK_MIN_OPTIONS}개의 선택지 필요`,
+        )
         .max(
           MCQ_BLOCK_MAX_OPTIONS,
           `최대 ${MCQ_BLOCK_MAX_OPTIONS}개의 선택지까지 입력해주세요.`,
@@ -126,6 +129,17 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
     );
   })
   .build();
+export type McqMultipleBlockContent = z.infer<
+  typeof mcqMultipleBlock.contentSchema
+>;
+
+export type McqMultipleBlockAnswer = z.infer<
+  typeof mcqMultipleBlock.answerSchema
+>;
+
+export type McqMultipleBlockAnswerSubmit = z.infer<
+  typeof mcqMultipleBlock.answerSubmitSchema
+>;
 
 const mcqBlock = blockBuilder("mcq")
   .displayName("객관식")
@@ -133,7 +147,10 @@ const mcqBlock = blockBuilder("mcq")
     z.object({
       options: z
         .array(z.union([textOption, sourceOption]))
-        .min(MCQ_BLOCK_MIN_OPTIONS, `최소 ${MCQ_BLOCK_MIN_OPTIONS}개의 선택지 필요`)
+        .min(
+          MCQ_BLOCK_MIN_OPTIONS,
+          `최소 ${MCQ_BLOCK_MIN_OPTIONS}개의 선택지 필요`,
+        )
         .max(
           MCQ_BLOCK_MAX_OPTIONS,
           `최대 ${MCQ_BLOCK_MAX_OPTIONS}개의 선택지까지 입력해주세요.`,
@@ -142,7 +159,7 @@ const mcqBlock = blockBuilder("mcq")
   )
   .answer(
     z.object({
-      answer: z.string("필수 입력값입니다."),
+      answer: z.string("필수 입력값입니다.").min(1, "정답을 선택해주세요."),
     }),
   )
   .answerSubmit(
@@ -156,13 +173,11 @@ const mcqBlock = blockBuilder("mcq")
   })
   .build();
 
-export type McqBlockContent = z.infer<typeof mcqMultipleBlock.contentSchema>;
+export type McqBlockContent = z.infer<typeof mcqBlock.contentSchema>;
 
-export type McqBlockAnswer = z.infer<typeof mcqMultipleBlock.answerSchema>;
+export type McqBlockAnswer = z.infer<typeof mcqBlock.answerSchema>;
 
-export type McqBlockAnswerSubmit = z.infer<
-  typeof mcqMultipleBlock.answerSubmitSchema
->;
+export type McqBlockAnswerSubmit = z.infer<typeof mcqBlock.answerSubmitSchema>;
 
 /**
  * 순위 맞추기 문제
@@ -179,7 +194,10 @@ const rankingBlock = blockBuilder("ranking")
     z.object({
       items: z
         .array(z.union([textOption, sourceOption]))
-        .min(RANKING_BLOCK_MIN_ITEMS, `최소 ${RANKING_BLOCK_MIN_ITEMS}개의 순위 필요`)
+        .min(
+          RANKING_BLOCK_MIN_ITEMS,
+          `최소 ${RANKING_BLOCK_MIN_ITEMS}개의 순위 필요`,
+        )
         .max(
           RANKING_BLOCK_MAX_ITEMS,
           `최대 ${RANKING_BLOCK_MAX_ITEMS}개의 순위까지 입력해주세요.`,
@@ -190,7 +208,10 @@ const rankingBlock = blockBuilder("ranking")
     z.object({
       order: z
         .array(z.string())
-        .min(RANKING_BLOCK_MIN_ITEMS, `최소 ${RANKING_BLOCK_MIN_ITEMS}개의 순위 필요`)
+        .min(
+          RANKING_BLOCK_MIN_ITEMS,
+          `최소 ${RANKING_BLOCK_MIN_ITEMS}개의 순위 필요`,
+        )
         .max(
           RANKING_BLOCK_MAX_ITEMS,
           `최대 ${RANKING_BLOCK_MAX_ITEMS}개의 순위까지 입력해주세요.`,

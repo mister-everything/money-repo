@@ -1,47 +1,47 @@
 import { workBookService } from "@service/solves";
 import Link from "next/link";
-import { WorkbookCard } from "@/components/workbook/workbook-card";
-import { getSession } from "@/lib/auth/server";
 
-export default async function WorkbooksPage() {
-  const session = await getSession();
-  const inProgressWorkbooks = await workBookService.searchMyWorkBooks({
-    userId: session.user.id,
-    isPublished: false,
-    limit: 3,
-  });
-  const publishedWorkbooks = await workBookService.searchMyWorkBooks({
-    userId: session.user.id,
+import { InDevelopment } from "@/components/ui/in-development";
+import { Input } from "@/components/ui/input";
+import { WorkbookCard } from "@/components/workbook/workbook-card";
+
+export default async function Page() {
+  const workBooks = await workBookService.searchWorkBooks({
     isPublished: true,
   });
 
   return (
-    <div className="p-6 lg:p-8 w-full">
-      {inProgressWorkbooks.length > 0 && (
-        <div className="flex flex-col gap-3 mb-12">
-          <label className="text-sm font-bold text-foreground">진행중</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {inProgressWorkbooks.map((book) => (
-              <Link href={`/workbooks/${book.id}/edit`} key={book.id}>
-                <WorkbookCard book={book} />
-              </Link>
-            ))}
-          </div>
+    <div className="w-full flex flex-col min-h-screen ">
+      <div className="p-6 lg:p-10">
+        <div className="font-bold text-foreground flex items-center justify-between gap-4 mb-6">
+          <h1 className="text-xl shrink-0">어떤 문제를 풀고싶나요?</h1>
+          <Input placeholder="키워드 검색" className="w-full lg:w-md" />
         </div>
-      )}
-      <div className="flex flex-col gap-3 mb-6">
-        <label className="text-sm font-bold text-foreground">다만든거</label>
-        {publishedWorkbooks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {publishedWorkbooks.map((book) => (
+        <InDevelopment className="w-full h-32">
+          카테고리 검색 설정 대기중...
+        </InDevelopment>
+      </div>
+
+      <div className="flex flex-col gap-4 bg-secondary/40 border-t p-6 lg:p-10 flex-1">
+        <div>
+          <InDevelopment className="w-full h-16">
+            선택된 카테고리 목록 ...
+          </InDevelopment>
+        </div>
+        {workBooks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ">
+            {workBooks.map((book) => (
               <Link href={`/workbooks/${book.id}/preview`} key={book.id}>
-                <WorkbookCard book={book} />
+                <WorkbookCard workBook={book} />
               </Link>
             ))}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground py-18 w-full h-full flex items-center justify-center">
-            <p>아직 배포된 문제집이 없어요</p>
+          <div className="w-full flex flex-col items-center justify-center flex-1">
+            <h2 className="mb-2 text-2xl font-bold">아직 문제집이 없습니다</h2>
+            <p className="text-muted-foreground">
+              첫 번째 문제집을 만들어보세요!
+            </p>
           </div>
         )}
       </div>
