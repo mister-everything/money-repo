@@ -7,7 +7,7 @@ import {
 } from "@service/solves/shared";
 import { applyStateUpdate, StateUpdate } from "@workspace/util";
 import { useCallback, useState } from "react";
-import { WorkbookSolveNavigateButton } from "@/app/(main)/workbooks/[id]/preview/workbook-solve-navigate-button";
+import { WorkbookSolveNavigateButton } from "@/components/workbook/workbook-solve-navigate-button";
 
 import { Block } from "./block/block";
 import { WorkbookHeader } from "./workbook-header";
@@ -38,7 +38,10 @@ export function WorkbookPublicPreview({
   return (
     <div className="h-full relative ">
       <div className="h-2/3 pointer-events-none absolute left-0 bottom-0 w-full bg-linear-to-b from-transparent via-background/60 to-background z-10 flex flex-col items-center justify-end gap-4">
-        <WorkbookSolveNavigateButton workBookId={workbook.id} />
+        <div className="absolute inset-0 bg-linear-to-b from-transparent to-primary/10" />
+        <div className="pointer-events-auto">
+          <WorkbookSolveNavigateButton workBookId={workbook.id} />
+        </div>
       </div>
       <div className="h-full overflow-y-auto relative px-4">
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">

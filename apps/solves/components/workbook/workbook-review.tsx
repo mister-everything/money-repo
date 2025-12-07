@@ -1,15 +1,14 @@
 "use client";
 
-import { ReviewWorkBook } from "@service/solves/shared";
+import { WorkBookReviewSession } from "@service/solves/shared";
 import { Card, CardHeader } from "@/components/ui/card";
-
 import { Block } from "./block/block";
 
 interface WorkBookReviewProps {
-  workBook: ReviewWorkBook;
+  session: WorkBookReviewSession;
 }
 
-export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ workBook }) => {
+export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* 결과 요약 섹션 */}
@@ -23,11 +22,11 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ workBook }) => {
               <p className="text-base text-muted-foreground">
                 총{" "}
                 <span className="font-bold text-primary">
-                  {workBook.totalProblems}
+                  {session.session.totalBlocks}
                 </span>{" "}
                 문제 중{" "}
                 <span className="font-bold text-primary">
-                  {workBook.correctAnswerCount}
+                  {session.session.correctBlocks}
                 </span>{" "}
                 문제 정답입니다.
               </p>
@@ -38,7 +37,7 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ workBook }) => {
 
       {/* 문제들 */}
       <div className="space-y-6">
-        {workBook.blocks.map((problem, index) => {
+        {session.workBook.blocks.map((problem, index) => {
           // 해당 블록의 결과 찾기
 
           return (
@@ -50,8 +49,9 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ workBook }) => {
               order={problem.order}
               type={problem.type}
               content={problem.content}
+              isCorrect={session.submitAnswers[problem.id]?.isCorrect}
               answer={problem.answer}
-              submit={problem.submit}
+              submit={session.submitAnswers[problem.id]?.submit}
               mode="review"
             />
           );
