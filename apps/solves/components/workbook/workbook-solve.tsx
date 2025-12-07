@@ -149,7 +149,7 @@ export function WorkBookSolve({
       });
       debounce(() => {
         handleSaveAnswerProgress();
-      }, TIME.SECONDS(20));
+      }, TIME.SECONDS(10));
     },
     [handleSaveAnswerProgress],
   );

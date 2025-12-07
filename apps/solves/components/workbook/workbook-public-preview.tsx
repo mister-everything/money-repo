@@ -53,20 +53,29 @@ export function WorkbookPublicPreview({
 
           {blocks.slice(0, 3).map((b, index) => {
             return (
-              <Block
-                key={b.id}
-                index={index}
-                mode={"solve"}
-                type={b.type}
-                question={b.question ?? ""}
-                submit={submits[b.id]}
-                onUpdateSubmitAnswer={updateSubmit.bind(null, b.id)}
-                id={b.id}
-                order={b.order}
-                content={b.content}
-              />
+              <div key={b.id} className="relative">
+                {index === 2 && (
+                  <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-transparent via-background/60 to-background" />
+                )}
+                <Block
+                  index={index}
+                  mode={"solve"}
+                  type={b.type}
+                  question={b.question ?? ""}
+                  submit={submits[b.id]}
+                  onUpdateSubmitAnswer={updateSubmit.bind(null, b.id)}
+                  id={b.id}
+                  order={b.order}
+                  content={b.content}
+                />
+              </div>
             );
           })}
+          {blocks.length > 3 && (
+            <div className="flex justify-center mt-8 mb-44">
+              외 {blocks.length - 3}개 문제가 더 있습니다.
+            </div>
+          )}
         </div>
       </div>
     </div>

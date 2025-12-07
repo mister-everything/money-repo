@@ -1,4 +1,5 @@
 import { workBookService } from "@service/solves";
+import { BlockAnswerSubmit } from "@service/solves/shared";
 import { notFound } from "next/navigation";
 import { WorkBookSolve } from "@/components/workbook/workbook-solve";
 import { getSession } from "@/lib/auth/server";
@@ -21,7 +22,17 @@ export default async function Page({
 
   const savedAnswers = isNewSession
     ? {}
-    : await workBookService.getSubmitAnswers(workbookSession.submitId);
+    : await workBookService
+        .getSubmitAnswers(workbookSession.submitId)
+        .then((answers) => {
+          return answers.reduce(
+            (acc, answer) => {
+              acc[answer.blockId] = answer.submit;
+              return acc;
+            },
+            {} as Record<string, BlockAnswerSubmit>,
+          );
+        });
 
   return (
     <div className="flex w-full px-4">

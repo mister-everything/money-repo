@@ -40,14 +40,14 @@ export function WorkbookCard({ workBook, session }: WorkbookCardProps) {
           >
             풀이 중
           </Badge>
-        ) : (
+        ) : session ? (
           <Badge
             variant="outline"
             className="w-fit bg-gray-50 text-gray-700 border-gray-200"
           >
             풀지 않음
           </Badge>
-        )}
+        ) : null}
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col">

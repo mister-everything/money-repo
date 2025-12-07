@@ -35,6 +35,11 @@ export const seedWorkbook = async () => {
   logger.info(`✅ 문제집 생성 완료: ${workBook.id}`);
 
   const bookDetail = await workBookService.getWorkBook(workBook.id);
+  workBookService.publishWorkbook({
+    workBookId: workBook.id,
+    userId: testUser[0].id,
+    tags: ["Solves", "Test", "최성근위주정답률90%"],
+  });
   logger.info("\n📊 생성된 문제집 상세:");
   logger.info(bookDetail);
 
