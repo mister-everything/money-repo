@@ -1,5 +1,5 @@
 {
-  "id": "daf5476a-87ee-44d8-9c57-b897f1961226",
+  "id": "cff51a10-09e9-4114-99f8-efd61ddb2e31",
   "prevId": "bbb2a1d1-402c-45eb-b464-c913daba84dc",
   "version": "7",
   "dialect": "postgresql",
@@ -1845,7 +1845,22 @@
           "name": "block_count",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 0
+        },
+        "correct_blocks": {
+          "name": "correct_blocks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
