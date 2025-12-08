@@ -58,12 +58,6 @@ export type WorkBookWithoutAnswer = WorkBookWithoutBlocks & {
   blocks: WorkBookBlockWithoutAnswer[];
 };
 
-export const createWorkBookSchema = z.object({
-  ownerId: z.string(),
-  title: z.string(),
-});
-export type CreateWorkBook = z.infer<typeof createWorkBookSchema>;
-
 export type SessionNotStarted = {
   status: "not-started";
 };

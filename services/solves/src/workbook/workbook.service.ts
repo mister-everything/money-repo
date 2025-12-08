@@ -16,15 +16,15 @@ import { blockValidate } from "./block-validate";
 import { BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
+  categorySubTable,
   tagsTable,
   workBookBlockAnswerSubmitsTable,
+  workBookCategoryTable,
   workBookSubmitsTable,
   workBooksTable,
   workBookTagsTable,
 } from "./schema";
 import {
-  CreateWorkBook,
-  createWorkBookSchema,
   SessionInProgress,
   SessionStatus,
   SessionSubmitted,
@@ -306,9 +306,11 @@ export const workBookService = {
   /**
    * 문제집 생성
    */
-  createWorkBook: async (workBook: CreateWorkBook): Promise<{ id: string }> => {
-    const parsedWorkBook = createWorkBookSchema.parse(workBook);
-
+  createWorkBook: async (workBook: {
+    ownerId: string;
+    title: string;
+    subCategories: number[];
+  }): Promise<{ id: string }> => {
     const isMaxInprogressWorkbookCreateCount =
       await workBookService.isMaxInprogressWorkbookCreateCount(
         workBook.ownerId,
@@ -320,15 +322,33 @@ export const workBookService = {
       );
 
     const data: typeof workBooksTable.$inferInsert = {
-      ownerId: parsedWorkBook.ownerId,
-      title: parsedWorkBook.title,
+      ownerId: workBook.ownerId,
+      title: workBook.title,
     };
 
-    const [newWorkBook] = await pgDb
-      .insert(workBooksTable)
-      .values(data)
-      .returning({ id: workBooksTable.id });
-    return newWorkBook;
+    return pgDb.transaction(async (tx) => {
+      const [newWorkBook] = await tx
+        .insert(workBooksTable)
+        .values(data)
+        .returning({ id: workBooksTable.id });
+
+      const subCategories = await tx
+        .select({ id: categorySubTable.id, mainId: categorySubTable.mainId })
+        .from(categorySubTable)
+        .where(inArray(categorySubTable.id, workBook.subCategories));
+
+      if (subCategories.length > 0) {
+        await tx.insert(workBookCategoryTable).values(
+          subCategories.map((subCategory) => ({
+            workBookId: newWorkBook.id,
+            categoryMainId: subCategory.mainId,
+            categorySubId: subCategory.id,
+          })),
+        );
+      }
+
+      return newWorkBook;
+    });
   },
 
   updateWorkBook: async (workBook: {

@@ -1,7 +1,7 @@
 import { workBookService } from "@service/solves";
+import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
 import { InDevelopment } from "@/components/ui/in-development";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 
@@ -19,7 +19,17 @@ export default async function Page() {
       </div>
 
       <div>
-        <h2 className="text-xl font-bold text-foreground mb-4">전체 베스트</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-foreground mb-4">
+            전체 베스트
+          </h2>
+          <Link href="/workbooks">
+            <Button variant="ghost">
+              더 많은 문제집
+              <ChevronRightIcon />
+            </Button>
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, index) => {

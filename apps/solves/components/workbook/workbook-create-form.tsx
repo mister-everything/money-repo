@@ -1,27 +1,54 @@
 "use client";
 
 import {
+  BlockType,
   blockDisplayNames,
+  MAX_CATEGORY_COUNT,
   MAX_INPROGRESS_WORKBOOK_CREATE_COUNT,
 } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
 import { Loader, TriangleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
+import { useCategories } from "@/hooks/query/use-categories";
+import {
+  WorkBookAgeGroup,
+  WorkBookDifficulty,
+  WorkBookSituation,
+} from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
+import { WorkbookOptions } from "@/store/types";
 import { useWorkbookStore } from "@/store/workbook-create";
+import { Badge } from "../ui/badge";
+import { Skeleton } from "../ui/skeleton";
 
 export function WorkbookCreateForm({
   isMaxInprogressWorkbookCreateCount = false,
+  initialFormData = {
+    situation: "",
+    categories: [],
+    blockTypes: Object.keys(blockDisplayNames) as BlockType[],
+    ageGroup: "all",
+    difficulty: "",
+  },
 }: {
   isMaxInprogressWorkbookCreateCount?: boolean;
+  initialFormData?: WorkbookOptions;
 }) {
   const router = useRouter();
   const { setWorkbooks } = useWorkbookStore();
+
+  const [mainCategory, setMainCategory] = useState<number>();
+
+  const { data: categories = [], isLoading } = useCategories({
+    onSuccess: (data) => {
+      !mainCategory && setMainCategory(data[0].id);
+    },
+  });
 
   const [, formAction, isPending] = useSafeAction(createWorkbookAction, {
     onSuccess: (result) => {
@@ -32,13 +59,27 @@ export function WorkbookCreateForm({
     successMessage: "문제집 페이지로 이동합니다.",
   });
 
-  const [formData, setFormData] = useState({
-    topic: "전체",
-    ageGroup: "성인",
-    situation: "",
-    format: [] as string[],
-    difficulty: "",
-  });
+  const handleCategoryClick = (categoryId: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      categories: (prev.categories.includes(categoryId)
+        ? [...prev.categories.filter((id) => id !== categoryId)]
+        : [...prev.categories, categoryId]
+      ).slice(-MAX_CATEGORY_COUNT),
+    }));
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  const subCategories = useMemo(() => {
+    return (
+      categories.find((category) => category.id === mainCategory)?.subs ?? []
+    );
+  }, [mainCategory, categories]);
+
+  const valid = useMemo(() => {
+    return formData.categories.length > 0;
+  }, [formData]);
 
   return (
     <div className="w-full">
@@ -53,7 +94,7 @@ export function WorkbookCreateForm({
         )}
       </div>
 
-      <form action={formAction} className="space-y-6">
+      <form className="space-y-3 w-full">
         <div className="space-y-3">
           <div className="flex items-center gap-1">
             <label className="text-sm font-bold text-foreground">소재</label>
@@ -66,29 +107,106 @@ export function WorkbookCreateForm({
               </>
             )}
           </div>
+          {isLoading ? (
+            <Skeleton className="w-full h-16" />
+          ) : (
+            <ButtonSelect
+              disabled={isMaxInprogressWorkbookCreateCount}
+              value={mainCategory?.toString()}
+              onChange={(value) => setMainCategory(Number(value))}
+              options={categories.map((value) => {
+                const allSubCategories = categories.flatMap(
+                  (category) => category.subs,
+                );
+                const selectedSubCategories = formData.categories.map(
+                  (categoryId) =>
+                    allSubCategories.find(
+                      (category) => category.id === categoryId,
+                    ),
+                );
+                const selectedMainCategorySubCount =
+                  selectedSubCategories.filter(
+                    (s) => s?.mainId === value.id,
+                  ).length;
+                return {
+                  label: selectedMainCategorySubCount ? (
+                    <div className="flex items-center gap-1.5">
+                      {value.name}{" "}
+                      <div className="text-xs text-primary size-4 rounded-full bg-primary/5 flex items-center justify-center">
+                        {selectedMainCategorySubCount}
+                      </div>
+                    </div>
+                  ) : (
+                    value.name
+                  ),
+                  value: value.id.toString(),
+                };
+              })}
+            />
+          )}
+
+          {subCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {subCategories.map((subCategory) => (
+                <Badge
+                  key={subCategory.id}
+                  variant="secondary"
+                  onClick={() => handleCategoryClick(subCategory.id)}
+                  className={cn(
+                    "cursor-pointer rounded-full hover:bg-primary/5 hover:border-primary transition-all",
+                    formData.categories.includes(subCategory.id) &&
+                      "bg-primary/5 hover:bg-primary/10 border-primary",
+                  )}
+                >
+                  {subCategory.name}
+                </Badge>
+              ))}
+              {formData.categories.length >= MAX_CATEGORY_COUNT && (
+                <p className="w-full text-xs text-muted-foreground px-2">
+                  최대 {MAX_CATEGORY_COUNT}개까지 선택할 수 있어요.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="space-y-3">
+          <div className="flex flex-cols gap-1">
+            <label className="text-sm font-bold text-foreground">상황</label>
+          </div>
           <ButtonSelect
             disabled={isMaxInprogressWorkbookCreateCount}
-            value={formData.topic}
-            onChange={(value) =>
-              setFormData({ ...formData, topic: value as string })
-            }
-            name="topic"
-            options={[
-              { label: "전체", value: "전체" },
-              { label: "일반상식", value: "일반상식" },
-              { label: "학교 교과목", value: "학교 교과목" },
-              { label: "시사", value: "시사" },
-              { label: "역사/문화", value: "역사/문화" },
-              { label: "영화/음악", value: "영화/음악" },
-              { label: "업무/직무", value: "업무/직무" },
-              { label: "MBTI/성향", value: "MBTI/성향" },
-              { label: "밈/트렌드", value: "밈/트렌드" },
-              { label: "라이프스타일", value: "라이프스타일" },
-              { label: "과학/기술/IT", value: "과학/기술/IT" },
-            ]}
+            value={formData.situation}
+            onChange={(value) => {
+              setFormData({ ...formData, situation: value as string });
+            }}
+            name="situation"
+            options={WorkBookSituation.map((value) => ({
+              label: value.label,
+              value: value.value,
+            }))}
           />
         </div>
 
+        <div className="space-y-3">
+          <div className="flex flex-cols gap-1">
+            <label className="text-sm font-bold text-foreground">유형</label>
+          </div>
+          <ButtonSelect
+            disabled={isMaxInprogressWorkbookCreateCount}
+            value={formData.blockTypes}
+            multiple={true}
+            onChange={(value) => {
+              setFormData({ ...formData, blockTypes: value as BlockType[] });
+            }}
+            name="format"
+            options={Object.entries(blockDisplayNames).map(
+              ([value, label]) => ({
+                label,
+                value,
+              }),
+            )}
+          />
+        </div>
         <div className="space-y-3">
           <div className="flex flex-cols gap-1">
             <label className="text-sm font-bold text-foreground">연령대</label>
@@ -100,40 +218,44 @@ export function WorkbookCreateForm({
               setFormData({ ...formData, ageGroup: value as string });
             }}
             name="ageGroup"
-            options={[
-              { label: "전체", value: "전체" },
-              { label: "유아", value: "유아" },
-              { label: "아동", value: "아동" },
-              { label: "청소년", value: "청소년" },
-              { label: "성인", value: "성인" },
-              { label: "시니어", value: "시니어" },
-            ]}
-          />
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-cols gap-1">
-            <label className="text-sm font-bold text-foreground">유형</label>
-          </div>
-          <ButtonSelect
-            disabled={isMaxInprogressWorkbookCreateCount}
-            value={formData.format}
-            multiple={true}
-            onChange={(value) => {
-              setFormData({ ...formData, format: value as string[] });
-            }}
-            name="format"
-            options={Object.values(blockDisplayNames).map((value) => ({
-              label: value,
-              value: value,
+            options={WorkBookAgeGroup.map((value) => ({
+              label: value.label,
+              value: value.value,
             }))}
           />
         </div>
+        <div className="space-y-3">
+          <div className="flex flex-cols gap-1">
+            <label className="text-sm font-bold text-foreground">난이도</label>
+          </div>
+          <ButtonSelect
+            disabled={isMaxInprogressWorkbookCreateCount}
+            value={formData.difficulty}
+            onChange={(value) => {
+              setFormData({ ...formData, difficulty: value as string });
+            }}
+            name="difficulty"
+            options={WorkBookDifficulty.map((value) => ({
+              label: value.label,
+              value: value.value,
+            }))}
+          />
+        </div>
+        {!valid && !isMaxInprogressWorkbookCreateCount && (
+          <p className="w-full text-xs text-muted-foreground px-2 text-center">
+            소재는 최소 1개 이상 선택해주세요.
+          </p>
+        )}
 
         <Button
-          type="submit"
+          onClick={() => {
+            if (!valid) {
+              return;
+            }
+            formAction();
+          }}
           variant={isMaxInprogressWorkbookCreateCount ? "secondary" : "default"}
-          disabled={isPending || isMaxInprogressWorkbookCreateCount}
+          disabled={isPending || isMaxInprogressWorkbookCreateCount || !valid}
           className={cn(
             "w-full rounded-lg py-6 text-base",
             isMaxInprogressWorkbookCreateCount &&

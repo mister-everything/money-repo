@@ -8,16 +8,25 @@ import { getSession } from "@/lib/auth/server";
 import { ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
-export const createWorkbookAction = safeAction(async (formData: FormData) => {
-  const session = await getSession();
+export const createWorkbookAction = safeAction(
+  z.object({
+    title: z.string().optional().default(""),
+    categories: z
+      .array(z.number())
+      .min(1, "소재는 최소 1개 이상 선택해주세요."),
+  }),
+  async ({ title, categories }) => {
+    const session = await getSession();
 
-  const savedWorkBook = await workBookService.createWorkBook({
-    title: (formData.get("title") as string) || "",
-    ownerId: session.user.id,
-  });
+    const savedWorkBook = await workBookService.createWorkBook({
+      title,
+      ownerId: session.user.id,
+      subCategories: categories,
+    });
 
-  return savedWorkBook;
-});
+    return savedWorkBook;
+  },
+);
 
 export const updateWorkbookAction = safeAction(
   z.object({
