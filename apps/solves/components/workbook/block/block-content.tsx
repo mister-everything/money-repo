@@ -56,7 +56,7 @@ export function DefaultBlockContent({
   const handleChangeSubmitAnswer = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (mode == "solve")
-        onUpdateSubmitAnswer?.({ answer: e.currentTarget.value.trim() });
+        onUpdateSubmitAnswer?.({ answer: e.currentTarget.value });
     },
     [onUpdateSubmitAnswer, mode],
   );
