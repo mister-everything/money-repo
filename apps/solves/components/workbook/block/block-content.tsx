@@ -193,11 +193,17 @@ export function McqMultipleBlockContent({
   }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
-    (index: number) => {
+    (optionId: string) => {
       onUpdateContent?.((prev) => ({
         ...prev,
-        options: prev?.options?.filter((_, i) => i !== index) || [],
+        options:
+          prev?.options?.filter((option) => option.id !== optionId) || [],
       }));
+      onUpdateAnswer?.((prev) => {
+        return prev.answer?.includes(optionId)
+          ? { answer: prev.answer.filter((id) => id !== optionId) || [] }
+          : prev;
+      });
     },
     [onUpdateContent],
   );
@@ -302,7 +308,7 @@ export function McqMultipleBlockContent({
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeOption(index);
+                    removeOption(option.id);
                   }}
                   size="icon"
                   className="size-6! text-muted-foreground"
@@ -385,11 +391,15 @@ export function McqSingleBlockContent({
   }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
-    (index: number) => {
+    (optionId: string) => {
       onUpdateContent?.((prev) => ({
         ...prev,
-        options: prev?.options?.filter((_, i) => i !== index) || [],
+        options:
+          prev?.options?.filter((option) => option.id !== optionId) || [],
       }));
+      onUpdateAnswer?.((prev) => {
+        return prev.answer == optionId ? { answer: "" } : prev;
+      });
     },
     [onUpdateContent],
   );
@@ -475,7 +485,7 @@ export function McqSingleBlockContent({
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeOption(index);
+                    removeOption(option.id);
                   }}
                   size="icon"
                   className="size-6! text-muted-foreground"
@@ -594,7 +604,6 @@ export function RankingBlockContent({
   answer,
   submit,
   mode,
-  isCorrect,
   content,
   onUpdateAnswer,
   onUpdateContent,

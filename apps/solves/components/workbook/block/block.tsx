@@ -294,6 +294,5 @@ export const Block = memo(PureBlock, (prev, next) => {
     "onUpdateSolution",
     "onUpdateSubmitAnswer",
   ]);
-  if (!equal(prevProps, nextProps)) return false;
-  return true;
+  return equal(prevProps, nextProps);
 });

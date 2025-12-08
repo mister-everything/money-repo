@@ -3,13 +3,13 @@
 import {
   BlockType,
   blockDisplayNames,
+  CategoryWithSubs,
   MAX_CATEGORY_COUNT,
 } from "@service/solves/shared";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
-import { useCategories } from "@/hooks/query/use-categories";
 import {
   WorkBookAgeGroup,
   WorkBookDifficulty,
@@ -18,18 +18,15 @@ import {
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
 import { Badge } from "../ui/badge";
-import { Skeleton } from "../ui/skeleton";
 
-export function QuickWorkbookCreator() {
+export function QuickWorkbookCreator({
+  categories,
+}: {
+  categories: CategoryWithSubs[];
+}) {
   const router = useRouter();
 
   const [mainCategory, setMainCategory] = useState<number>();
-
-  const { data: categories = [], isLoading } = useCategories({
-    onSuccess: (data) => {
-      !mainCategory && setMainCategory(data[0].id);
-    },
-  });
 
   const [formData, setFormData] = useState<WorkbookOptions>({
     situation: "",
@@ -148,9 +145,7 @@ export function QuickWorkbookCreator() {
           {/* 소재 */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-foreground">소재</label>
-            {isLoading ? (
-              <Skeleton className="w-full h-16" />
-            ) : (
+            {
               <ButtonSelect
                 value={mainCategory?.toString()}
                 onChange={(value) => setMainCategory(Number(value))}
@@ -183,7 +178,7 @@ export function QuickWorkbookCreator() {
                   };
                 })}
               />
-            )}
+            }
 
             {subCategories.length > 0 && (
               <div className="flex flex-wrap gap-2">

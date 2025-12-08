@@ -1,4 +1,4 @@
-import { workBookService } from "@service/solves";
+import { categoryService, workBookService } from "@service/solves";
 import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ export default async function Page() {
     isPublished: true,
     limit: 3,
   });
+  const categories = await categoryService.getAllCategoriesWithSubs();
 
   return (
     <div className="p-6 lg:p-10 w-full flex flex-col gap-8">
@@ -53,7 +54,7 @@ export default async function Page() {
           })}
         </div>
       </div>
-      <QuickWorkbookCreator />
+      <QuickWorkbookCreator categories={categories} />
     </div>
   );
 }

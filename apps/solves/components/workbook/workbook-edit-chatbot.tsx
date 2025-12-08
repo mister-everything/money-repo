@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { ChatModel, ChatThread } from "@service/solves/shared";
+import { ChatThread } from "@service/solves/shared";
 import { deduplicateByKey, generateUUID } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
 import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
@@ -18,11 +18,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 import { useToRef } from "@/hooks/use-to-ref";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
+import { useAiStore } from "@/store/ai-store";
 import PromptInput from "../chat/prompt-input";
 import { Button } from "../ui/button";
 
@@ -66,15 +68,17 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     },
     dedupingInterval: 0,
   });
+  const { chatModel, setChatModel } = useAiStore();
+  useChatModelList({
+    onSuccess: (data) => {
+      const defaultModel = data.at(0);
+      if (!chatModel && defaultModel) setChatModel(defaultModel);
+    },
+  });
 
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
-  const [model, setModel] = useState<ChatModel>({
-    provider: "openai",
-    model: "gpt-4o-mini",
-  });
-
-  const latest = useToRef({ model, threadId, tempThreadList });
+  const latest = useToRef({ chatModel, threadId, tempThreadList });
 
   const [input, setInput] = useState<string>("");
 
@@ -114,7 +118,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         return {
           body: {
             messages,
-            model: latest.current.model,
+            model: latest.current.chatModel,
             workbookId,
             threadId: id,
           },
@@ -351,8 +355,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           onEnter={send}
           placeholder="무엇이든 물어보세요"
           disabledSendButton={!isChatPending && isPending}
-          chatModel={model}
-          onChatModelChange={setModel}
+          chatModel={chatModel}
+          onChatModelChange={setChatModel}
           onSendButtonClick={() => (isChatPending ? stop() : send())}
         />
       </div>

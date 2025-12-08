@@ -22,7 +22,7 @@ import {
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
-import { useWorkbookStore } from "@/store/workbook-create";
+import { useWorkbookStore } from "@/store/workbook-create-store";
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
 

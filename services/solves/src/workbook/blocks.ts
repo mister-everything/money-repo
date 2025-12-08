@@ -122,7 +122,8 @@ const mcqMultipleBlock = blockBuilder("mcq-multiple")
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
-    const submitted = submittedAnswer.answer;
+    const submitted = submittedAnswer.answer ?? [];
+
     return (
       correctAnswer.answer.length === submitted.length &&
       correctAnswer.answer.every((answer) => submitted.includes(answer))
@@ -168,7 +169,7 @@ const mcqBlock = blockBuilder("mcq")
     }),
   )
   .checker((correctAnswer, submittedAnswer) => {
-    const submitted = submittedAnswer.answer;
+    const submitted = submittedAnswer?.answer;
     return correctAnswer.answer === submitted;
   })
   .build();

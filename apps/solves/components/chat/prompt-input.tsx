@@ -57,8 +57,8 @@ export default function PromptInput({
       <div className="w-full">
         <MentionInput
           content={input}
-          onEnter={onEnter}
-          placeholder={placeholder}
+          onEnter={chatModel ? onEnter : undefined}
+          placeholder={chatModel ? placeholder : "AI를 먼저 선택해주세요"}
           suggestionChar="@"
           onChange={handleChange}
           editorRef={ref}
@@ -94,7 +94,7 @@ export default function PromptInput({
                 </span>
               </>
             ) : (
-              <span className="text-muted-foreground">model</span>
+              <span className="text-muted-foreground">모델 선택</span>
             )}
 
             <ChevronDown className="size-3 group-data-[state=open]:rotate-180 transition-transform duration-200" />
@@ -104,7 +104,7 @@ export default function PromptInput({
           size={"sm"}
           className="p-2!"
           onClick={onSendButtonClick}
-          disabled={disabledSendButton}
+          disabled={disabledSendButton || !chatModel}
         >
           {isSending ? (
             <SquareIcon className="fill-primary-foreground" />

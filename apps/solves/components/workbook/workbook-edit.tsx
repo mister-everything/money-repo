@@ -117,7 +117,8 @@ export function WorkbookEdit({
 
   const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
     if (control !== "review") return {};
-    return blocks.reduce(
+
+    const result = blocks.reduce(
       (acc, block) => {
         if (!submits[block.id]) return acc;
         acc[block.id] = checkAnswer(block.answer, submits[block.id]);
@@ -125,6 +126,8 @@ export function WorkbookEdit({
       },
       {} as Record<string, boolean>,
     );
+
+    return result;
   }, [control]);
 
   const [, updateWorkbook, isBookPending] = useSafeAction(
@@ -529,7 +532,7 @@ export function WorkbookEdit({
                   : "preview";
             return (
               <div
-                key={b.id}
+                key={`${b.id}-${mode}`}
                 className={cn(
                   "relative transition-all duration-200 rounded-xl border",
                   isReorderMode &&
