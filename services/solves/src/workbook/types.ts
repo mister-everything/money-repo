@@ -101,3 +101,24 @@ export type WorkBookReviewSession = {
     submit: BlockAnswerSubmit;
   }[];
 };
+
+export type CategoryMain = {
+  id: number;
+  name: string;
+  description: string | null;
+  aiPrompt: string | null;
+  createdAt: Date;
+};
+
+export type CategorySub = {
+  id: number;
+  name: string;
+  mainId: number;
+  description: string | null;
+  aiPrompt: string | null;
+  createdAt: Date;
+};
+
+export type CategoryWithSubs = CategoryMain & {
+  subs: CategorySub[];
+};

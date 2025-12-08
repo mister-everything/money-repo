@@ -5,5 +5,6 @@ export * from "./payment/credit.service";
 export * from "./payment/plan.service";
 export * from "./payment/schema";
 export * from "./payment/wallet.service";
+export * from "./workbook/category.service";
 export * from "./workbook/schema";
 export * from "./workbook/workbook.service";
