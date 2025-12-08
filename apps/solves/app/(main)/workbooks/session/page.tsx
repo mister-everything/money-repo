@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 import z from "zod";
-import { SearchCompletedWorkbooksRequest } from "@/app/api/workbooks/completed/types";
+import { SearchCompletedWorkbooksRequest } from "@/app/api/workbooks/types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,22 +18,29 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 
+const sortOptions = [
+  { label: "최신순", value: "latest" },
+  { label: "점수높은순", value: "highest" },
+  { label: "점수낮은순", value: "lowest" },
+] as const;
+
 export default function Page() {
   // @TODO 마무리 검색 구현
-  const [searchParams] = useState<
+  const [searchParams, setSearchParams] = useState<
     z.infer<typeof SearchCompletedWorkbooksRequest>
   >({
     page: 1,
     limit: 30,
-    // sort: "latest",
-    // search: "",
+    sort: "latest",
+    search: "",
   });
   const {
     data: workBookSessions,
     isLoading,
     isValidating,
   } = useSWR<WorkBookSession[]>(
-    `/api/workbooks/completed?${new URLSearchParams(JSON.stringify(searchParams)).toString()}`,
+    // `/api/workbooks/completed?${new URLSearchParams(JSON.stringify(searchParams)).toString()}`,
+    `/api/workbooks/completed`,
     {
       fallbackData: [],
       revalidateOnFocus: false,
@@ -45,6 +52,10 @@ export default function Page() {
       <div className="font-bold text-foreground flex items-center justify-between gap-4">
         <h1 className="text-xl shrink-0">문제집 검색</h1>
         <Input
+          value={searchParams.search}
+          onChange={(e) =>
+            setSearchParams({ ...searchParams, search: e.currentTarget.value })
+          }
           placeholder="키워드 검색"
           className="w-full lg:w-md shadow-none"
         />
@@ -61,13 +72,24 @@ export default function Page() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size={"sm"} variant="ghost">
-              최신순 <ChevronDownIcon className="size-4" />
+              {
+                sortOptions.find((option) => option.value === searchParams.sort)
+                  ?.label
+              }
+              <ChevronDownIcon className="size-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem>최신순</DropdownMenuItem>
-            <DropdownMenuItem>점수높은순</DropdownMenuItem>
-            <DropdownMenuItem>점수낮은순</DropdownMenuItem>
+            {sortOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() =>
+                  setSearchParams({ ...searchParams, sort: option.value })
+                }
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

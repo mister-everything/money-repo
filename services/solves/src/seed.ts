@@ -3,6 +3,7 @@ import inquirer from "inquirer";
 import { logger } from "./logger";
 import { seedPlans } from "./payment/seed-plans";
 import { seedPrices } from "./payment/seed-prices";
+import { seedCategory } from "./workbook/seed-category";
 import { seedWorkbook } from "./workbook/seed-workbook";
 
 logger.info("🚀 시드 데이터 생성 시작...\n");
@@ -24,6 +25,7 @@ const answer = await inquirer.prompt([
         value: "subscription",
         checked: true,
       },
+      { name: "🎯 Category (카테고리)", value: "category", checked: true },
     ],
   },
 ]);
@@ -47,6 +49,11 @@ try {
   // Subscription 모듈 시드
   if (answer.modules.includes("subscription")) {
     await seedPlans();
+  }
+
+  // Category 모듈 시드
+  if (answer.modules.includes("category")) {
+    await seedCategory();
   }
 
   logger.info("✅ 모든 시드 데이터 생성 완료! 🎉");
