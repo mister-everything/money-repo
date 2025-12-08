@@ -3,6 +3,7 @@
 import { CategorySub, CategoryWithSubs } from "@service/solves/shared";
 import { LightbulbIcon } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -11,20 +12,20 @@ import { Skeleton } from "../ui/skeleton";
 export interface CategorySelection {
   mainCategories?: CategoryWithSubs[];
   subCategories?: CategorySub[];
-  categories?: CategoryWithSubs[];
-  isLoading?: boolean;
 }
 
 interface CategorySelectorProps {
   value?: CategorySelection;
   categories?: CategoryWithSubs[];
   isLoading?: boolean;
+  maxCategoryCount?: number;
   onCategoryChange?: (selection: CategorySelection) => void;
 }
 
 export function CategorySelector({
   value = { mainCategories: [], subCategories: [] },
   categories = [],
+  maxCategoryCount = 5,
   isLoading = false,
   onCategoryChange,
 }: CategorySelectorProps) {
@@ -93,14 +94,22 @@ export function CategorySelector({
     const isAllSelected = visibleSubCategoryIds.every((id) =>
       nextSubCategories.some((v) => v.id === id),
     );
+    const mainCategories = isAllSelected
+      ? [...prevMainCategories, visibleCategory!]
+      : prevMainCategories;
+    const subCategories = isAllSelected
+      ? nextSubCategories.filter((v) => !visibleSubCategoryIds.includes(v.id))
+      : nextSubCategories;
+
+    if (mainCategories.length + subCategories.length > maxCategoryCount) {
+      return toast.warning(
+        `카테고리는 최대 ${maxCategoryCount}개까지 선택할 수 있습니다.`,
+      );
+    }
 
     onCategoryChange?.({
-      mainCategories: isAllSelected
-        ? [...prevMainCategories, visibleCategory!]
-        : prevMainCategories,
-      subCategories: isAllSelected
-        ? nextSubCategories.filter((v) => !visibleSubCategoryIds.includes(v.id))
-        : nextSubCategories,
+      mainCategories,
+      subCategories,
     });
   };
 
