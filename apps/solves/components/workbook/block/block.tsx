@@ -100,8 +100,8 @@ function PureBlock<T extends BlockType = BlockType>({
   }, [props.mode, props.answer, props.content, props.question, props.type]);
 
   return (
-    <Card className={cn("gap-2 shadow-none", className)} ref={ref}>
-      <CardHeader>
+    <Card className={cn("gap-2 shadow-none ", className)} ref={ref}>
+      <CardHeader className="px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Badge
             className={cn(
@@ -191,7 +191,7 @@ function PureBlock<T extends BlockType = BlockType>({
           onChangeQuestion={props.onUpdateQuestion}
         />
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 md:px-6">
         {blockPropsTypeGuard("default", props) ? (
           <DefaultBlockContent
             content={props.content}
@@ -253,7 +253,7 @@ function PureBlock<T extends BlockType = BlockType>({
           </InDevelopment>
         )}
       </CardContent>
-      <CardFooter className="flex flex-col mt-2">
+      <CardFooter className="flex flex-col mt-2 px-4 md:px-6">
         <BlockSolution
           content={props.content}
           solution={props.answer?.solution ?? ""}

@@ -93,7 +93,9 @@ export function WorkbookSolveNavigateButton({
   return (
     <div className="w-full py-16 flex flex-col gap-4 items-center justify-center relative">
       {!isLoading && (
-        <div className="text-muted-foreground font-medium">{subText}</div>
+        <div className="text-muted-foreground font-medium text-xs md:text-sm">
+          {subText}
+        </div>
       )}
       {status?.status == "submitted" ? (
         <div className="flex gap-4">
@@ -101,14 +103,14 @@ export function WorkbookSolveNavigateButton({
             size="lg"
             variant="secondary"
             onClick={() => router.push(reviewHref)}
-            className="rounded-full font-semibold text-lg px-10 py-6 hover:scale-105 transition-all"
+            className="rounded-full font-semibold md:text-lg px-10 py-6 hover:scale-105 transition-all"
           >
             결과 확인
           </Button>
           <Button
             size="lg"
             onClick={handleSolve}
-            className="rounded-full font-bold text-lg px-14 py-6 hover:scale-105 transition-all hover:bg-primary/90"
+            className="rounded-full font-bold md:text-lg px-14 py-6 hover:scale-105 transition-all hover:bg-primary/90"
           >
             다시 풀기
           </Button>
@@ -117,7 +119,7 @@ export function WorkbookSolveNavigateButton({
         <Button
           onClick={handleSolve}
           size="lg"
-          className="rounded-full font-bold text-lg px-10 py-6 hover:scale-105 transition-all hover:bg-primary/90"
+          className="rounded-full font-bold md:text-lg px-10 py-6 hover:scale-105 transition-all hover:bg-primary/90"
         >
           {status?.status == "in-progress" ? "이어서 풀기" : "문제집 풀러가기"}
           {isLoading && <LoaderIcon className="size-4 animate-spin" />}

@@ -15,7 +15,7 @@ interface WorkbookCardProps {
 
 export function WorkbookCard({ workBook, session }: WorkbookCardProps) {
   return (
-    <Card className="w-full min-h-72 hover:bg-secondary cursor-pointer hover:shadow-sm transition-shadow shadow-none rounded-sm h-full flex flex-col">
+    <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-sm h-full flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <CardTitle className="line-clamp-2 text-xl font-bold truncate">

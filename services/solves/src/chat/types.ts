@@ -22,4 +22,5 @@ export type ChatMessage = {
 export type ChatModel = {
   provider: string;
   model: string;
+  displayName?: string;
 };
