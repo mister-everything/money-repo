@@ -132,7 +132,7 @@ export function WorkbookList({
         />
       </div>
 
-      <div className="flex flex-col gap-4 bg-secondary/40 border-t p-6 lg:p-10 flex-1">
+      <div className="flex flex-col gap-2 bg-secondary/40 border-t p-6 pt-4! lg:p-10 flex-1">
         <div className="flex flex-wrap gap-2 items-center">
           {flatCategories.map((v) => (
             <Badge
