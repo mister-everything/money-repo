@@ -20,6 +20,23 @@ export default async function WorkBookCreatePage({
 
   const initialFormData = await searchParams;
 
+  if (
+    initialFormData?.categories &&
+    !Array.isArray(initialFormData.categories)
+  ) {
+    initialFormData.categories = [initialFormData.categories];
+  }
+  if (initialFormData?.categories?.length) {
+    initialFormData.categories = initialFormData.categories.map(Number);
+  }
+
+  if (
+    initialFormData?.blockTypes &&
+    !Array.isArray(initialFormData.blockTypes)
+  ) {
+    initialFormData.blockTypes = [initialFormData.blockTypes];
+  }
+
   const isMaxInprogressWorkbookCreateCount =
     await workBookService.isMaxInprogressWorkbookCreateCount(session.user.id);
 

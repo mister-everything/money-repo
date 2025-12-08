@@ -44,9 +44,18 @@ export function WorkbookCreateForm({
 
   const [mainCategory, setMainCategory] = useState<number>();
 
+  const [formData, setFormData] = useState(initialFormData);
   const { data: categories = [], isLoading } = useCategories({
     onSuccess: (data) => {
-      !mainCategory && setMainCategory(data[0].id);
+      if (!mainCategory) {
+        if (!formData.categories.length) setMainCategory(data[0].id);
+        else {
+          const sub = data
+            .flatMap((category) => category.subs)
+            .find((sub) => formData.categories.includes(sub.id));
+          setMainCategory(sub?.mainId ?? formData.categories[0]);
+        }
+      }
     },
   });
 
@@ -68,8 +77,6 @@ export function WorkbookCreateForm({
       ).slice(-MAX_CATEGORY_COUNT),
     }));
   };
-
-  const [formData, setFormData] = useState(initialFormData);
 
   const subCategories = useMemo(() => {
     return (
@@ -252,7 +259,10 @@ export function WorkbookCreateForm({
             if (!valid) {
               return;
             }
-            formAction();
+            formAction({
+              title: "",
+              categories: formData.categories,
+            });
           }}
           variant={isMaxInprogressWorkbookCreateCount ? "secondary" : "default"}
           disabled={isPending || isMaxInprogressWorkbookCreateCount || !valid}

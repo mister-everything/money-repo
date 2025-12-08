@@ -332,12 +332,12 @@ export const workBookService = {
         .values(data)
         .returning({ id: workBooksTable.id });
 
-      const subCategories = await tx
-        .select({ id: categorySubTable.id, mainId: categorySubTable.mainId })
-        .from(categorySubTable)
-        .where(inArray(categorySubTable.id, workBook.subCategories));
+      if (workBook.subCategories.length > 0) {
+        const subCategories = await tx
+          .select({ id: categorySubTable.id, mainId: categorySubTable.mainId })
+          .from(categorySubTable)
+          .where(inArray(categorySubTable.id, workBook.subCategories));
 
-      if (subCategories.length > 0) {
         await tx.insert(workBookCategoryTable).values(
           subCategories.map((subCategory) => ({
             workBookId: newWorkBook.id,

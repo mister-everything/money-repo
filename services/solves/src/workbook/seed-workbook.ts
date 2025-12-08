@@ -23,6 +23,7 @@ export const seedWorkbook = async () => {
   const workBook = await workBookService.createWorkBook({
     ownerId: testUser[0].id,
     title: "Solves 멤버용 문제집",
+    subCategories: [],
   });
 
   // 모든 블록 추가 (default, mcq-multiple, mcq, ranking, ox)
