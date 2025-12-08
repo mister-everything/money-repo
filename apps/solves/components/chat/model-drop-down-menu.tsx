@@ -23,7 +23,6 @@ export function ModelDropDownMenu({
 }: PropsWithChildren<ModelDropDownProps>) {
   const { data: modelList, isLoading } = useChatModelList();
 
-  console.log(modelList);
   const selectedModel = useMemo(() => {
     return modelList?.find((model) => model.model === defaultModel?.model);
   }, [modelList, defaultModel]);

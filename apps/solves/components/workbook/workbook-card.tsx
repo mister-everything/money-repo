@@ -6,6 +6,7 @@ import {
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 interface WorkbookCardProps {
   workBook: WorkBookWithoutBlocks;
@@ -14,7 +15,7 @@ interface WorkbookCardProps {
 
 export function WorkbookCard({ workBook, session }: WorkbookCardProps) {
   return (
-    <Card className="hover:bg-secondary cursor-pointer hover:shadow-sm transition-shadow shadow-none rounded-sm h-full flex flex-col">
+    <Card className="w-full min-h-72 hover:bg-secondary cursor-pointer hover:shadow-sm transition-shadow shadow-none rounded-sm h-full flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <CardTitle className="line-clamp-2 text-xl font-bold truncate">
@@ -72,8 +73,17 @@ export function WorkbookCard({ workBook, session }: WorkbookCardProps) {
               발행 일자: {format(new Date(workBook.publishedAt!), "yyyy.MM.dd")}
             </span>
           )}
-          <div className="text-xs text-muted-foreground mt-auto ml-auto">
-            @{workBook.ownerName}
+          <div className="text-xs text-muted-foreground mt-auto ml-auto flex items-center gap-1">
+            <Avatar className="size-3.5">
+              <AvatarImage
+                alt={workBook.ownerName}
+                src={workBook.ownerProfile ?? ""}
+              />
+              <AvatarFallback className="text-[8px]">
+                {workBook.ownerName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            {workBook.ownerName}
           </div>
         </div>
       </CardContent>

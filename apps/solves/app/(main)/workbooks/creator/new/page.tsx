@@ -1,13 +1,41 @@
 import { workBookService } from "@service/solves";
-import { isPublished } from "@service/solves/shared";
+import {
+  BlockType,
+  blockDisplayNames,
+  isPublished,
+} from "@service/solves/shared";
 import Link from "next/link";
 import { Label } from "@/components/ui/label";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { WorkbookCreateForm } from "@/components/workbook/workbook-create-form";
 import { getSession } from "@/lib/auth/server";
+import { WorkbookOptions } from "@/store/types";
 
-export default async function ProbCreatePage() {
+export default async function WorkBookCreatePage({
+  searchParams,
+}: {
+  searchParams: Promise<Partial<WorkbookOptions> | undefined>;
+}) {
   const session = await getSession();
+
+  const initialFormData = await searchParams;
+
+  if (
+    initialFormData?.categories &&
+    !Array.isArray(initialFormData.categories)
+  ) {
+    initialFormData.categories = [initialFormData.categories];
+  }
+  if (initialFormData?.categories?.length) {
+    initialFormData.categories = initialFormData.categories.map(Number);
+  }
+
+  if (
+    initialFormData?.blockTypes &&
+    !Array.isArray(initialFormData.blockTypes)
+  ) {
+    initialFormData.blockTypes = [initialFormData.blockTypes];
+  }
 
   const isMaxInprogressWorkbookCreateCount =
     await workBookService.isMaxInprogressWorkbookCreateCount(session.user.id);
@@ -21,11 +49,21 @@ export default async function ProbCreatePage() {
 
   return (
     <div className="flex flex-col p-6 lg:p-8">
-      <div className="w-max-3xl mx-auto flex flex-col">
+      <div className="w-max-3xl mx-auto flex flex-col w-full">
         <WorkbookCreateForm
           isMaxInprogressWorkbookCreateCount={
             isMaxInprogressWorkbookCreateCount
           }
+          initialFormData={{
+            ...{
+              situation: "",
+              categories: [],
+              blockTypes: Object.keys(blockDisplayNames) as BlockType[],
+              ageGroup: "all",
+              difficulty: "",
+            },
+            ...initialFormData,
+          }}
         />
 
         <div className="flex flex-col gap-1 mt-12">

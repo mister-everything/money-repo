@@ -54,7 +54,7 @@ export function SidebarSolveMenuItem({
         <SidebarMenuSub>
           <SidebarMenuSubItem>
             <SidebarMenuSubButton asChild isActive={path === solveSessionsHref}>
-              <Link href={solveSessionsHref}>풀고 있는 문제집</Link>
+              <Link href={solveSessionsHref}>내가 푼 문제집</Link>
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         </SidebarMenuSub>

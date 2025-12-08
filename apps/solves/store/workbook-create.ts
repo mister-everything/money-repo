@@ -1,17 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export interface WorkbookOptionsData {
-  topic: string;
-  ageGroup: string;
-  situation: string;
-  format: string[];
-  difficulty: string;
-}
+import { WorkbookOptions } from "./types";
 
 interface WorkbookStore {
-  Workbooks: Record<string, WorkbookOptionsData>;
-  setWorkbooks: (id: string, options: WorkbookOptionsData) => void;
+  Workbooks: Record<string, WorkbookOptions>;
+  setWorkbooks: (id: string, options: WorkbookOptions) => void;
   clearWorkbooks: () => void;
 }
 
@@ -24,7 +17,7 @@ export const useWorkbookStore = create<WorkbookStore>()(
       clearWorkbooks: () => set({ Workbooks: {} }),
     }),
     {
-      name: "workbook-create-storage",
+      name: "workbook-create",
     },
   ),
 );

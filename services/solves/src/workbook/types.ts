@@ -1,4 +1,3 @@
-import z from "zod";
 import {
   BlockAnswer,
   BlockAnswerSubmit,
@@ -58,12 +57,6 @@ export type WorkBookWithoutAnswer = WorkBookWithoutBlocks & {
   blocks: WorkBookBlockWithoutAnswer[];
 };
 
-export const createWorkBookSchema = z.object({
-  ownerId: z.string(),
-  title: z.string(),
-});
-export type CreateWorkBook = z.infer<typeof createWorkBookSchema>;
-
 export type SessionNotStarted = {
   status: "not-started";
 };
@@ -100,4 +93,25 @@ export type WorkBookReviewSession = {
     isCorrect: boolean;
     submit: BlockAnswerSubmit;
   }[];
+};
+
+export type CategoryMain = {
+  id: number;
+  name: string;
+  description: string | null;
+  aiPrompt: string | null;
+  createdAt: Date;
+};
+
+export type CategorySub = {
+  id: number;
+  name: string;
+  mainId: number;
+  description: string | null;
+  aiPrompt: string | null;
+  createdAt: Date;
+};
+
+export type CategoryWithSubs = CategoryMain & {
+  subs: CategorySub[];
 };

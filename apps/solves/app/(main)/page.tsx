@@ -1,8 +1,9 @@
 import { workBookService } from "@service/solves";
+import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
 import { InDevelopment } from "@/components/ui/in-development";
+import { QuickWorkbookCreator } from "@/components/workbook/quick-workbook-creator";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 
 export default async function Page() {
@@ -19,7 +20,17 @@ export default async function Page() {
       </div>
 
       <div>
-        <h2 className="text-xl font-bold text-foreground mb-4">전체 베스트</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-foreground mb-4">
+            전체 베스트
+          </h2>
+          <Link href="/workbooks">
+            <Button variant="ghost">
+              더 많은 문제집
+              <ChevronRightIcon />
+            </Button>
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, index) => {
@@ -42,18 +53,7 @@ export default async function Page() {
           })}
         </div>
       </div>
-      <div className="flex flex-col gap-4">
-        <h2 className="text-xl font-bold text-foreground">
-          어떤 문제집을 만들고 싶나요?
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InDevelopment className="w-full h-52">개발 대기중.</InDevelopment>
-          <InDevelopment className="w-full h-52">개발 대기중.</InDevelopment>
-        </div>
-        <Button size={"lg"} className="w-full py-6">
-          빠르게 문제집 만들기
-        </Button>
-      </div>
+      <QuickWorkbookCreator />
     </div>
   );
 }
