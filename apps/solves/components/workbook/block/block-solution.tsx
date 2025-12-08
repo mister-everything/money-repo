@@ -207,7 +207,7 @@ export function BlockSolution<T extends BlockType = BlockType>({
   }, [answer, content]);
 
   useEffect(() => {
-    setIsExpanded(false);
+    setIsExpanded(mode == "review");
   }, [mode]);
   if (mode == "solve") return null;
 
