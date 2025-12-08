@@ -1,14 +1,17 @@
 "use client";
 import { WorkBookWithoutBlocks } from "@service/solves/shared";
-import { isNull } from "@workspace/util";
-import { ChevronDownIcon, LightbulbIcon, Loader2Icon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  Loader2Icon,
+  XIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import z from "zod";
 import { SearchWorkbooksRequest } from "@/app/api/workbooks/types";
 import { useCategories } from "@/hooks/query/use-categories";
-import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
@@ -17,9 +20,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { InDevelopment } from "../ui/in-development";
 import { Input } from "../ui/input";
-import { Skeleton } from "../ui/skeleton";
+import { CategorySelection, CategorySelector } from "./category-selector";
 import { WorkbookCard } from "./workbook-card";
 
 const sortOptions = [
@@ -34,6 +36,16 @@ export function WorkbookList({
 }: {
   initialWorkBooks: WorkBookWithoutBlocks[];
 }) {
+  const { data: categories, isLoading: isCategoriesLoading } = useCategories({
+    fallbackData: [],
+  });
+
+  const [selectedCategories, setSelectedCategories] =
+    useState<CategorySelection>({
+      mainCategories: [],
+      subCategories: [],
+    });
+
   const [searchParams, setSearchParams] = useState<
     z.infer<typeof SearchWorkbooksRequest>
   >({
@@ -45,19 +57,6 @@ export function WorkbookList({
     categorySubIds: [],
   });
 
-  const { data: categories, isLoading: isCategoriesLoading } = useCategories();
-
-  const [currentCategory, setCurrentCategory] = useState<number>();
-
-  const subCategories = useMemo(() => {
-    if (isNull(currentCategory)) return null;
-    const category = categories?.find(
-      (category) => category.id === currentCategory,
-    );
-    if (isNull(category)) return null;
-    return category.subs;
-  }, [currentCategory]);
-
   const { data: workBooks, isValidating } = useSWR(
     // `/api/workbooks?${new URLSearchParams(JSON.stringify(searchParams)).toString()}`,
     `/api/workbooks`,
@@ -67,6 +66,46 @@ export function WorkbookList({
       revalidateOnMount: false,
     },
   );
+
+  const flatCategories = useMemo(() => {
+    const main = (selectedCategories.mainCategories ?? []).map((v) => ({
+      type: "main",
+      name: v.name,
+      id: v.id,
+    }));
+    const sub = (selectedCategories.subCategories ?? []).map((v) => {
+      const main = categories?.find((m) => m.id === v.mainId);
+      return {
+        type: "sub",
+        name: (
+          <>
+            {main?.name} <ChevronRightIcon className="size-3" /> {v.name}
+          </>
+        ),
+        id: v.id,
+      };
+    });
+
+    return [...main, ...sub];
+  }, [selectedCategories, categories]);
+
+  const handleRemoveCategory = (type: string, id: number) => {
+    if (type === "main") {
+      setSelectedCategories({
+        ...selectedCategories,
+        mainCategories: selectedCategories.mainCategories?.filter(
+          (v) => v.id !== id,
+        ),
+      });
+    } else {
+      setSelectedCategories({
+        ...selectedCategories,
+        subCategories: selectedCategories.subCategories?.filter(
+          (v) => v.id !== id,
+        ),
+      });
+    }
+  };
 
   return (
     <div className="w-full flex flex-col min-h-screen ">
@@ -85,58 +124,26 @@ export function WorkbookList({
             className="w-full lg:w-md"
           />
         </div>
-        <div className="flex overflow-x-auto gap-0.5 py-2">
-          {isCategoriesLoading ? (
-            <Skeleton className="w-full h-26" />
-          ) : categories?.length ? (
-            categories.map((category) => (
-              <div
-                key={category.id}
-                onClick={() => setCurrentCategory(category.id)}
-                className={cn(
-                  "flex flex-col items-center gap-2 py-3.5 justify-center min-w-28 cursor-pointer",
-                  "hover:bg-secondary/50 rounded-md",
-                  currentCategory === category.id && "bg-secondary",
-                )}
-              >
-                <Button className="size-12!">
-                  <LightbulbIcon />
-                </Button>
-                <span className="text-sm font-bold">{category.name}</span>
-              </div>
-            ))
-          ) : (
-            <div className="flex flex-col items-center gap-2 justify-center w-full h-26">
-              <span className="text-sm font-bold">카테고리가 없습니다</span>
-            </div>
-          )}
-        </div>
-        {currentCategory && (
-          <div className="flex flex-wrap items-center gap-2 w-full mb-4">
-            <Badge
-              variant="secondary"
-              className="rounded-full cursor-pointer py-1.5 hover:bg-primary/5 hover:border-primary transition-all"
-            >
-              전체
-            </Badge>
-            {subCategories?.map((subCategory) => (
-              <Badge
-                key={subCategory.id}
-                variant="secondary"
-                className="rounded-full cursor-pointer py-1.5 hover:bg-primary/5 hover:border-primary transition-all"
-              >
-                {subCategory.name}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <CategorySelector
+          value={selectedCategories}
+          categories={categories}
+          isLoading={isCategoriesLoading}
+          onCategoryChange={setSelectedCategories}
+        />
       </div>
 
       <div className="flex flex-col gap-4 bg-secondary/40 border-t p-6 lg:p-10 flex-1">
-        <div>
-          <InDevelopment className="w-full h-16">
-            선택된 카테고리 목록 ...
-          </InDevelopment>
+        <div className="flex flex-wrap gap-2 items-center">
+          {flatCategories.map((v) => (
+            <Badge
+              onClick={() => handleRemoveCategory(v.type, v.id)}
+              key={v.type + v.id}
+              className="rounded-full cursor-pointer group"
+            >
+              {v.name}
+              <XIcon className="size-3 hidden group-hover:block" />
+            </Badge>
+          ))}
         </div>
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm flex items-center gap-1">
