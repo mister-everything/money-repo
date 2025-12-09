@@ -1,3 +1,5 @@
+import { userTable } from "@service/auth";
+
 import {
   boolean,
   index,
@@ -71,7 +73,9 @@ export const contentReportsTable = reportSchema.table(
     reportedAt: timestamp("reported_at").notNull().defaultNow(),
 
     /** 신고자 auth.user.id */
-    reporterUserId: text("reporter_user_id").notNull(),
+    reporterUserId: text("reporter_user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }), // 사용자 삭제 시 신고 내역도 삭제할지, set null 할지는 정책 결정 필요함 (일단 삭제),
 
     /** 신고 대상 구분 */
     targetType: reportTargetTypeEnum("target_type").notNull(),
@@ -92,7 +96,7 @@ export const contentReportsTable = reportSchema.table(
     status: reportStatusEnum("status").notNull().default("RECEIVED"),
 
     /** 처리 담당자 auth.user.id (배정 전 null) */
-    processorUserId: text("processor_user_id"),
+    processorUserId: text("processor_user_id").references(() => userTable.id),
 
     /** 처리 완료/반려 시각 */
     processedAt: timestamp("processed_at"),
@@ -110,6 +114,7 @@ export const contentReportsTable = reportSchema.table(
     index("report_target_idx").on(table.targetType, table.targetId),
     index("report_status_idx").on(table.status),
     index("report_category_idx").on(table.categoryMain, table.categoryDetail),
+    index("report_date_idx").on(table.reportedAt), // 날짜별 조회/정렬용 인덱스 추가함
   ],
 );
 
@@ -121,7 +126,9 @@ export const notificationsTable = reportSchema.table("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   /** 수신자 auth.user.id */
-  recipientUserId: text("recipient_user_id").notNull(),
+  recipientUserId: text("recipient_user_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
 
   /** 생성된 시각 */
   sentAt: timestamp("sent_at").notNull().defaultNow(),

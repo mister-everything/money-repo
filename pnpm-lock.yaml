@@ -755,6 +755,9 @@ importers:
 
   services/report:
     dependencies:
+      '@service/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@workspace/util':
         specifier: workspace:*
         version: link:../../packages/util
