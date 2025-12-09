@@ -5,29 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1762826511701,
-      "tag": "0000_powerful_wendigo",
+      "when": 1764310585817,
+      "tag": "0000_abnormal_magik",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1763175235502,
-      "tag": "0001_chemical_plazm",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1763178833174,
-      "tag": "0002_wise_shocker",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1763282010790,
-      "tag": "0003_living_metal_master",
+      "when": 1765128607309,
+      "tag": "0001_organic_junta",
       "breakpoints": true
     }
   ]

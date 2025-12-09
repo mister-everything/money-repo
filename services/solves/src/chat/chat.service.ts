@@ -1,41 +1,61 @@
-import { and, eq } from "drizzle-orm";
+import { PublicError } from "@workspace/error";
+import { and, desc, eq } from "drizzle-orm";
 import { pgDb } from "../db";
-import { ChatMessageTable, ChatThreadTable } from "./schema";
-import { ChatMessage } from "./types";
+import {
+  ChatMessageTable,
+  ChatThreadTable,
+  WorkbookCreateChatThreadTable,
+} from "./schema";
+import { ChatMessage, ChatThread } from "./types";
 
 export const chatService = {
-  // upsert
-  async saveThread(thread: { id?: string; userId: string; title?: string }) {
-    const [result] = await pgDb
+  async createThreadIfNotExists(param: {
+    threadId: string;
+    userId: string;
+    title?: string;
+  }) {
+    const [thread] = await pgDb
+      .select({ id: ChatThreadTable.id, ownerId: ChatThreadTable.userId })
+      .from(ChatThreadTable)
+      .where(and(eq(ChatThreadTable.id, param.threadId)));
+
+    if (thread) {
+      if (thread.ownerId !== param.userId) {
+        throw new PublicError("Thread not found");
+      }
+      return {
+        ...thread,
+        isNew: false,
+      };
+    }
+
+    const newThread = await pgDb
       .insert(ChatThreadTable)
       .values({
-        title: "",
-        ...thread,
-      })
-      .onConflictDoUpdate({
-        target: [ChatThreadTable.id],
-        set: {
-          title: thread.title,
-        },
+        id: param.threadId,
+        userId: param.userId,
+        title: param.title ?? "",
       })
       .returning();
-    return result;
+
+    return {
+      ...newThread,
+      isNew: true,
+    };
   },
-  async isThreadOwner(param: { threadId: string; userId: string }) {
-    const [thread] = await pgDb
-      .select({ id: ChatThreadTable })
-      .from(ChatThreadTable)
-      .where(
-        and(
-          eq(ChatThreadTable.id, param.threadId),
-          eq(ChatThreadTable.userId, param.userId),
-        ),
-      );
-    return thread != null;
-  },
+
   async deleteThread(threadId: string) {
     await pgDb.delete(ChatThreadTable).where(eq(ChatThreadTable.id, threadId));
   },
+
+  async hasThreadPermission(threadId: string, userId: string) {
+    const [thread] = await pgDb
+      .select({ userId: ChatThreadTable.userId })
+      .from(ChatThreadTable)
+      .where(and(eq(ChatThreadTable.id, threadId)));
+    return thread?.userId === userId;
+  },
+
   async selectMessages(threadId: string) {
     const result = await pgDb
       .select()
@@ -55,5 +75,50 @@ export const chatService = {
           metadata: message.metadata,
         },
       });
+  },
+
+  /**
+   * workbookId로 연결된 thread 목록 조회
+   * @param param - workbookId와 userId
+   * @returns thread 목록 (최신순)
+   */
+  async selectThreadsByWorkbookId(param: {
+    workbookId: string;
+    userId: string;
+  }): Promise<ChatThread[]> {
+    const threads = await pgDb
+      .select({
+        id: ChatThreadTable.id,
+        title: ChatThreadTable.title,
+        createdAt: ChatThreadTable.createdAt,
+      })
+      .from(WorkbookCreateChatThreadTable)
+      .innerJoin(
+        ChatThreadTable,
+        eq(WorkbookCreateChatThreadTable.threadId, ChatThreadTable.id),
+      )
+      .where(
+        and(
+          eq(WorkbookCreateChatThreadTable.workbookId, param.workbookId),
+          eq(WorkbookCreateChatThreadTable.userId, param.userId),
+        ),
+      )
+      .orderBy(desc(ChatThreadTable.updatedAt));
+    return threads;
+  },
+  /**
+   * workbookId와 threadId를 연결
+   * @param param - workbookId, threadId, userId
+   */
+  async linkThreadToWorkbook(param: {
+    workbookId: string;
+    threadId: string;
+    userId: string;
+  }) {
+    await pgDb.insert(WorkbookCreateChatThreadTable).values({
+      workbookId: param.workbookId,
+      threadId: param.threadId,
+      userId: param.userId,
+    });
   },
 };

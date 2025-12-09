@@ -1,6 +1,7 @@
 import { errorToString } from "@workspace/util";
 import { IS_PROD } from "@workspace/util/const";
 import z, { ZodAny, ZodType } from "zod";
+import { createLogger } from "@/lib/logger";
 import {
   fail,
   isSafeFail,
@@ -103,8 +104,13 @@ export const createActionFactory = (ctx: MiddlewareConfig) => {
   return createAction;
 };
 
+const logger = createLogger("SERVER ACTION");
+
 const devLogger = (name: string) => (input: any) => {
-  console.log(`[SERVER ACTION] ${name}: ${JSON.stringify(input)}`);
+  if (isSafeFail(input)) {
+    logger.info(`❌ ${name}: ${input.message}`);
+    logger.error(input.error);
+  } else logger.info(`${name}\n${JSON.stringify(input, null, 2)}`);
   return input;
 };
 

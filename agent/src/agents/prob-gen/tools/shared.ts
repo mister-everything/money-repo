@@ -1,16 +1,16 @@
 // 순환 참조 회피를 위해 타입을 직접 정의
-export type ProbBookSaveInput = {
+export type WorkBookSaveInput = {
   id?: number;
   ownerId: string;
   title: string;
   description?: string;
-  blocks: ProbBlockSaveInput[];
+  blocks: WorkBookBlockSaveInput[];
   tags?: string[];
   isPublic?: boolean;
   thumbnail?: string;
 };
 
-export type ProbBlockSaveInput = {
+export type WorkBookBlockSaveInput = {
   id?: number;
   type: "default" | "mcq" | "ranking" | "ox" | "matching";
   question?: string;

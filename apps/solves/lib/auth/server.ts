@@ -12,6 +12,7 @@ import { nextCookies } from "better-auth/next-js";
 import { anonymous, customSession } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { logger } from "@/lib/logger";
 import { AUTH_COOKIE_PREFIX } from "../const";
 export const getSession = async () => {
   "use server";
@@ -20,11 +21,11 @@ export const getSession = async () => {
       headers: await headers(),
     })
     .catch((e) => {
-      console.error(e);
+      logger.error(e);
       return null;
     });
   if (!session) {
-    console.error("No session found");
+    logger.error("No session found");
     redirect("/sign-in");
   }
   return session!;
@@ -37,7 +38,7 @@ export const safeGetSession = async () => {
       headers: await headers(),
     })
     .catch((e) => {
-      console.error(e);
+      logger.error(e);
       return null;
     });
   return session;

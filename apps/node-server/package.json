@@ -15,6 +15,7 @@
     "test:e2e:run": "vitest run __test__/e2e --config vitest.e2e.config.ts"
   },
   "dependencies": {
+    "@workspace/error": "workspace:*",
     "@service/todo": "workspace:*",
     "@workspace/env": "workspace:*",
     "@workspace/util": "workspace:*",

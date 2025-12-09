@@ -2,11 +2,12 @@ import { aiPriceService } from "@service/solves";
 
 import { AIPriceTable } from "@/components/solves/ai-price-table";
 import { AIPricesClient } from "./ai-prices-client";
+import { logger } from "@/lib/logger";
 export const dynamic = "force-dynamic";
 
 export default async function AIPricesPage() {
   const prices = await aiPriceService.getAllPrices().catch((e) => {
-    console.error(e);
+    logger.error(e);
     return [];
   });
 

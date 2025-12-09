@@ -2,7 +2,7 @@ import { userTable } from "@service/auth";
 import { UIMessage } from "ai";
 import { json, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { solvesSchema } from "../db";
-import { probBooksTable } from "../prob/schema";
+import { workBooksTable } from "../workbook/schema";
 import { ChatMetadata } from "./types";
 
 export const ChatThreadTable = solvesSchema.table("chat_thread", {
@@ -38,7 +38,7 @@ export const WorkbookCreateChatThreadTable = solvesSchema.table(
       .references(() => userTable.id, { onDelete: "cascade" }),
     workbookId: uuid("workbook_id")
       .notNull()
-      .references(() => probBooksTable.id, { onDelete: "cascade" }),
+      .references(() => workBooksTable.id, { onDelete: "cascade" }),
     threadId: uuid("thread_id")
       .notNull()
       .references(() => ChatThreadTable.id, { onDelete: "cascade" }),

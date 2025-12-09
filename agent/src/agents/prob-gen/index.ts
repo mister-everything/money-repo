@@ -1,6 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import { createAgent } from "../create-agent";
-import { generateProbBookTool } from "./tools/generate-prob-book";
+import { generateWorkBookTool } from "./tools/generate-prob-book";
 
 /**
  * 문제집 생성 Agent
@@ -33,12 +33,12 @@ export const probGenAgent = createAgent({
 
 **너의 역할:**
 1. 사용자 요구사항 파악 (주제, 콘텐츠 유형, 문제 수, 난이도 등)
-2. generateProbBook 도구를 사용해서 문제집 생성
+2. generateWorkBook 도구를 사용해서 문제집 생성
 3. 생성된 JSON을 사용자에게 보기 좋게 설명
 
 **작업 순서:**
 1. 사용자 요구사항에서 주제, 문제 수, 난이도 등을 파악
-2. generateProbBook 도구 호출 (requirement, problemCount, includeAnswers, difficulty 전달)
+2. generateWorkBook 도구 호출 (requirement, problemCount, includeAnswers, difficulty 전달)
 3. 생성된 문제집 JSON을 코드 블록으로 출력
 4. 사용자에게 다음 단계 안내
 
@@ -57,7 +57,7 @@ export const probGenAgent = createAgent({
 반말로 친근하게 대답해.
   `.trim(),
   tools: {
-    generateProbBook: generateProbBookTool,
+    generateWorkBook: generateWorkBookTool,
   },
   assistFirst: false,
   maxSteps: 15,

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { PublicError } from "@workspace/error";
 import { and, count, desc, eq, gte, ilike, isNull, or, sql } from "drizzle-orm";
 import { pgDb } from "./db";
 import { invitationTable, sessionTable, userTable } from "./schema";
@@ -220,7 +221,7 @@ export const userService = {
   consumeInvitation: async (token: string, userId: string) => {
     // First validate the invitation
     const invitation = await userService.validateInvitation(token);
-    if (!invitation) throw new Error("Invalid or expired invitation");
+    if (!invitation) throw new PublicError("Invalid or expired invitation");
     // Mark invitation as used
     await pgDb
       .update(invitationTable)

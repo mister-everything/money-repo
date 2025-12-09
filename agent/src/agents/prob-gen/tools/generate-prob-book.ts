@@ -115,7 +115,7 @@ const matchingBlockAnswerSchema = z.object({
 });
 
 // 문제집 저장 스키마
-const probBookSaveSchema = z.object({
+const workBookSaveSchema = z.object({
   id: z.number().optional(),
   ownerId: z.string(),
   title: z.string().min(1),
@@ -154,7 +154,7 @@ const probBookSaveSchema = z.object({
  * 문제집/퀴즈 생성 도구
  * AI가 사용자의 요구사항을 받아서 다양한 콘텐츠 JSON을 생성합니다.
  */
-export const generateProbBookTool: Tool = tool({
+export const generateWorkBookTool: Tool = tool({
   description: `
 사용자의 요구사항에 따라 문제집/퀴즈 JSON을 생성합니다.
 
@@ -198,7 +198,7 @@ export const generateProbBookTool: Tool = tool({
       // AI를 사용해 실제 문제집 생성
       const result = await generateObject({
         model: openai("gpt-4o"),
-        schema: probBookSaveSchema,
+        schema: workBookSaveSchema,
         prompt: `
 당신은 다양한 퀴즈/문제집 콘텐츠 생성 전문가입니다. 다음 요구사항에 맞는 콘텐츠를 생성하세요:
 
@@ -238,13 +238,13 @@ export const generateProbBookTool: Tool = tool({
       });
 
       return {
-        probBook: result.object,
+        workBook: result.object,
         message: `✅ "${requirement}" 주제로 ${problemCount}개의 문제를 생성했습니다!\n\n📋 **생성된 문제집:**\n- 제목: ${result.object.title}\n- 문제 수: ${result.object.blocks.length}개\n- 태그: ${result.object.tags?.join(", ") || "없음"}\n\n💡 **다음 단계:**\n1. 프론트엔드에서 JSON을 확인하고 수정\n2. ownerId를 실제 사용자 ID로 교체\n3. POST /api/prob-books API로 전송`,
       };
     } catch (error) {
       console.error("문제집 생성 중 오류:", error);
       return {
-        probBook: {
+        workBook: {
           title: requirement,
           description: `${requirement} 관련 문제집`,
           ownerId: "USER_ID_PLACEHOLDER",

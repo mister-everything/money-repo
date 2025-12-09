@@ -5,7 +5,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarLink,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -13,6 +12,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { NavUser } from "./nav-user";
+import { SidebarEditMenuItem } from "./sidebar-edit-menu-item";
+import { SidebarSolveMenuItem } from "./sidebar-solve-menu-item";
 
 export function AppSidebar() {
   return (
@@ -21,11 +22,14 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="font-bold group-data-[state=collapsed]:hidden">
-              <Link className="w-full" href={"/"}>
-                Solves
-                <span className="text-lg text-primary">.</span>
-              </Link>
+            <SidebarMenuButton asChild>
+              <div className="w-full group-data-[state=collapsed]:hidden items-center gap-4">
+                <Link href={"/"} className="font-bold flex-1">
+                  Solves
+                  <span className="text-lg text-primary">.</span>
+                </Link>
+                <SidebarTrigger />
+              </div>
             </SidebarMenuButton>
             <SidebarMenuButton
               className="font-bold hidden group-data-[state=collapsed]:block"
@@ -38,10 +42,14 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
-            <SidebarLink href="/workbooks">문제 풀기</SidebarLink>
-            <SidebarLink href="/workbooks/new">문제 생성</SidebarLink>
-          </SidebarMenu>
+          <SidebarSolveMenuItem
+            rootHref="/workbooks"
+            solveSessionsHref="/workbooks/session"
+          />
+          <SidebarEditMenuItem
+            rootHref="/workbooks/creator/new"
+            myWorkbooksHref="/workbooks/creator"
+          />
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">

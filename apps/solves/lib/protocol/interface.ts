@@ -41,9 +41,12 @@ export const isSafeFail = (response: any): response is SafeFailResponse => {
   return isSafeResponse(response) && response.success === false;
 };
 
-export const safeOk = <T>(data: T): SafeSuccessResponse<T> => {
+export const safeOk = <T>(data?: T): SafeSuccessResponse<T> => {
+  if (isSafeResponse(data)) {
+    return data as SafeSuccessResponse<T>;
+  }
   return {
-    data,
+    data: data ?? (null as T),
     success: true,
     $tag: SOLVES_PROTOCOL_TAG,
   };

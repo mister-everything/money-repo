@@ -1,26 +1,130 @@
 "use server";
 
-import { probService } from "@service/solves";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale/ko";
+import { workBookService } from "@service/solves";
+import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
 
+import z from "zod";
 import { getSession } from "@/lib/auth/server";
+import { ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
-const generateDefaultTitle = () => {
-  return `${formatDistanceToNow(new Date(), {
-    addSuffix: true,
-    locale: ko,
-  })} 문제집`;
-};
+export const createWorkbookAction = safeAction(
+  z.object({
+    title: z.string().optional().default(""),
+    categories: z
+      .array(z.number())
+      .min(1, "소재는 최소 1개 이상 선택해주세요."),
+  }),
+  async ({ title, categories }) => {
+    const session = await getSession();
 
-export const createWorkbookAction = safeAction(async (formData: FormData) => {
-  const session = await getSession();
+    const savedWorkBook = await workBookService.createWorkBook({
+      title,
+      ownerId: session.user.id,
+      subCategories: categories,
+    });
 
-  const savedProbBook = await probService.createProbBook({
-    title: (formData.get("title") as string) || generateDefaultTitle(),
-    ownerId: session.user.id,
-  });
+    return savedWorkBook;
+  },
+);
 
-  return savedProbBook;
-});
+export const updateWorkbookAction = safeAction(
+  z.object({
+    id: z.string(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+  }),
+  async ({ id, title, description }) => {
+    const session = await getSession();
+    await workBookService.checkEditPermission(id, session.user.id);
+
+    await workBookService.updateWorkBook({ id, title, description });
+    return ok();
+  },
+);
+
+export const processUpdateBlocksAction = safeAction(
+  async ({
+    workbookId,
+    deleteBlocks,
+    insertBlocks,
+    updateBlocks,
+  }: {
+    workbookId: string;
+    deleteBlocks: string[];
+    insertBlocks: WorkBookBlock[];
+    updateBlocks: UpdateBlock[];
+  }) => {
+    const session = await getSession();
+    await workBookService.checkEditPermission(workbookId, session.user.id);
+    await workBookService.processUpdateBlocks(workbookId, {
+      deleteBlocks,
+      insertBlocks,
+      updateBlocks,
+    });
+    return ok();
+  },
+);
+
+export const publishWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    tags: z
+      .array(
+        z
+          .string()
+          .min(1, "최소 1글자 이상의 태그를 입력해주세요.")
+          .max(10, "최대 10글자 이하의 태그를 입력해주세요."),
+      )
+      .optional(),
+  }),
+  async ({ workBookId, tags }) => {
+    const session = await getSession();
+    await workBookService.publishWorkbook({
+      workBookId,
+      userId: session.user.id,
+      tags,
+    });
+    return ok();
+  },
+);
+
+export const saveAnswerProgressAction = safeAction(
+  z.object({
+    submitId: z.string(),
+    answers: z.record(z.string(), z.any()).optional().default({}),
+    deleteAnswers: z.array(z.string()).optional().default([]),
+  }),
+  async ({ submitId, answers, deleteAnswers }) => {
+    const session = await getSession();
+    await workBookService.saveAnswerProgress(session.user.id, submitId, {
+      answers,
+      deleteAnswers,
+    });
+    return ok();
+  },
+);
+
+export const resetWorkBookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.resetWorkBookSession({
+      userId: session.user.id,
+      submitId,
+    });
+    return ok();
+  },
+);
+export const submitWorkbookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.submitWorkBookSession(session.user.id, submitId);
+    return ok();
+  },
+);

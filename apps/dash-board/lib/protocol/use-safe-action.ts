@@ -8,16 +8,18 @@ import {
   SafeResponse,
 } from "./interface";
 
-export type SafeActionOptions<U> = {
+export type SafeActionOptions<T, U> = {
   onSuccess?: (response: U) => void;
   onError?: (error: SafeFailResponse) => void;
+  onFinish?: (result: SafeResponse<U>) => void;
+  onBefore?: (input: T) => Promise<T> | T;
   successMessage?: string | ((response: U) => string);
   failMessage?: string | ((error: SafeFailResponse) => string);
 };
 
 export function useSafeAction<T, U>(
   serverAction: SafeFunction<T, U>,
-  options?: SafeActionOptions<U>,
+  options?: SafeActionOptions<T, U>,
 ) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<SafeResponse<U> | null>(null);
@@ -29,13 +31,16 @@ export function useSafeAction<T, U>(
       startTransition(() => {
         void (async () => {
           try {
-            const result = await serverAction(input as T);
+            const onBefore = options?.onBefore ?? (() => input);
+            const _input = await onBefore(input as T);
+            const result = await serverAction(_input as T);
             if (isSafeFail(result)) throw result;
 
             const data = result.data;
             setResult(result);
 
             options?.onSuccess?.(data);
+            options?.onFinish?.(result);
 
             const successMessage = options?.successMessage;
             if (!isNull(successMessage)) {
@@ -48,6 +53,7 @@ export function useSafeAction<T, U>(
           } catch (error: any) {
             if (!isSafeFail(error)) throw error;
             options?.onError?.(error);
+            options?.onFinish?.(error);
             setResult(error);
             const failMessage = options?.failMessage;
             if (!isNull(failMessage)) {

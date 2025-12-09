@@ -1,12 +1,14 @@
+import { PublicError } from "@workspace/error";
 import { eq, sql } from "drizzle-orm";
+import { CacheKeys, CacheTTL } from "../cache-keys";
 import { pgDb } from "../db";
-import { CacheKeys, CacheTTL } from "./cache-keys";
+import { logger } from "../logger";
+import { sharedCache } from "../shared-cache";
 import {
   CreditLedgerTable,
   CreditWalletTable,
   UsageEventsTable,
 } from "./schema";
-import { sharedCache } from "./shared-cache";
 import { AIPrice, TxnKind } from "./types";
 import { calculateCost, toDecimal } from "./utils";
 
@@ -67,11 +69,11 @@ export const creditService = {
       `);
 
       const wallet = queryResult.rows[0];
-      if (!wallet) throw new Error("지갑을 찾을 수 없습니다");
+      if (!wallet) throw new PublicError("지갑을 찾을 수 없습니다");
 
       const currentBalance = Number(wallet.balance);
       if (currentBalance <= 0) {
-        throw new Error("크레딧이 부족합니다");
+        throw new PublicError("크레딧이 부족합니다");
       }
 
       const newBalance = Math.max(0, currentBalance - cost.totalMarketCost);
@@ -119,7 +121,7 @@ export const creditService = {
       usageId: result.usageId,
       newBalance: result.newBalance,
     };
-    console.log(
+    logger.info(
       `[consumeAICredit] ${price.displayName} cost: ${cost.totalMarketCost.toFixed(8)}, vendorCost: ${vendorCost}, marketCost: ${cost.totalMarketCost - (vendorCost || cost.totalCost)}, balance: ${result.newBalance}`,
     );
 

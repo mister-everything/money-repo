@@ -1,6 +1,12 @@
+import path from "path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./"),
+    },
+  },
   test: {
     environment: "node",
     globals: false, // Playwright와 충돌 방지를 위해 false로 변경

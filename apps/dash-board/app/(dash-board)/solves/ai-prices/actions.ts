@@ -4,8 +4,9 @@ import {
   createAIPriceSchema,
   updateAIPriceSchema,
 } from "@service/solves/shared";
-
+import { PublicError } from "@workspace/error";
 import { flattenError, z } from "zod";
+import { logger } from "@/lib/logger";
 
 type FormState = {
   success: boolean;
@@ -55,7 +56,7 @@ export async function createAIPriceAction(
         message: "입력값을 확인해주세요.",
       };
     }
-    console.error("AI 가격 생성 실패:", error);
+    logger.error("AI 가격 생성 실패:", error);
     return {
       success: false,
       message: "AI 가격 생성에 실패했습니다.",
@@ -106,7 +107,7 @@ export async function updateAIPriceAction(
         message: "입력값을 확인해주세요.",
       };
     }
-    console.error("AI 가격 수정 실패:", error);
+    logger.error("AI 가격 수정 실패:", error);
     return {
       success: false,
       message: "AI 가격 수정에 실패했습니다.",
@@ -124,7 +125,7 @@ export async function toggleAIPriceActiveAction(
   try {
     await aiPriceService.setPriceActive(priceId, isActive);
   } catch (error) {
-    console.error("AI 가격 상태 변경 실패:", error);
-    throw new Error("AI 가격 상태 변경에 실패했습니다.");
+    logger.error("AI 가격 상태 변경 실패:", error);
+    throw new PublicError("AI 가격 상태 변경에 실패했습니다.");
   }
 }

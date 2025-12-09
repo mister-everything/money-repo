@@ -1,5 +1,5 @@
 {
-  "id": "83184eb4-3c55-4be0-a225-d7d6d7bfb1bd",
+  "id": "bbb2a1d1-402c-45eb-b464-c913daba84dc",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -116,6 +116,94 @@
           "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.workbook_create_chat_thread": {
+      "name": "workbook_create_chat_thread",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "workbook_id": {
+          "name": "workbook_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "workbook_create_chat_thread_user_id_user_id_fk": {
+          "name": "workbook_create_chat_thread_user_id_user_id_fk",
+          "tableFrom": "workbook_create_chat_thread",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workbook_create_chat_thread_workbook_id_work_books_id_fk": {
+          "name": "workbook_create_chat_thread_workbook_id_work_books_id_fk",
+          "tableFrom": "workbook_create_chat_thread",
+          "tableTo": "work_books",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "workbook_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workbook_create_chat_thread_thread_id_chat_thread_id_fk": {
+          "name": "workbook_create_chat_thread_thread_id_chat_thread_id_fk",
+          "tableFrom": "workbook_create_chat_thread",
+          "tableTo": "chat_thread",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "thread_id"
           ],
           "columnsTo": [
             "id"
@@ -289,6 +377,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -366,7 +460,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "credit_ledger_idempotency_key_unique": {
+          "name": "credit_ledger_idempotency_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "idempotency_key"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1211,8 +1313,322 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "solves.prob_block_answer_submits": {
-      "name": "prob_block_answer_submits",
+    "solves.blocks": {
+      "name": "blocks",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "work_book_id": {
+          "name": "work_book_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "question": {
+          "name": "question",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "answer": {
+          "name": "answer",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "blocks_work_book_id_work_books_id_fk": {
+          "name": "blocks_work_book_id_work_books_id_fk",
+          "tableFrom": "blocks",
+          "tableTo": "work_books",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "work_book_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.category_main": {
+      "name": "category_main",
+      "schema": "solves",
+      "columns": {
+        "category_main_id": {
+          "name": "category_main_id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_prompt": {
+          "name": "ai_prompt",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_id": {
+          "name": "created_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "category_main_created_id_user_id_fk": {
+          "name": "category_main_created_id_user_id_fk",
+          "tableFrom": "category_main",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "category_main_name_unique": {
+          "name": "category_main_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.category_sub": {
+      "name": "category_sub",
+      "schema": "solves",
+      "columns": {
+        "category_sub_id": {
+          "name": "category_sub_id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_main_id": {
+          "name": "category_main_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ai_prompt": {
+          "name": "ai_prompt",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_id": {
+          "name": "created_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "category_sub_category_main_id_category_main_category_main_id_fk": {
+          "name": "category_sub_category_main_id_category_main_category_main_id_fk",
+          "tableFrom": "category_sub",
+          "tableTo": "category_main",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "category_main_id"
+          ],
+          "columnsTo": [
+            "category_main_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "category_sub_created_id_user_id_fk": {
+          "name": "category_sub_created_id_user_id_fk",
+          "tableFrom": "category_sub",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "category_sub_name_unique": {
+          "name": "category_sub_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.tags": {
+      "name": "tags",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_id": {
+          "name": "created_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tags_created_id_user_id_fk": {
+          "name": "tags_created_id_user_id_fk",
+          "tableFrom": "tags",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tags_name_unique": {
+          "name": "tags_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.block_submits": {
+      "name": "block_submits",
       "schema": "solves",
       "columns": {
         "block_id": {
@@ -1249,10 +1665,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "prob_block_answer_submits_block_id_prob_blocks_id_fk": {
-          "name": "prob_block_answer_submits_block_id_prob_blocks_id_fk",
-          "tableFrom": "prob_block_answer_submits",
-          "tableTo": "prob_blocks",
+        "block_submits_block_id_blocks_id_fk": {
+          "name": "block_submits_block_id_blocks_id_fk",
+          "tableFrom": "block_submits",
+          "tableTo": "blocks",
           "schemaTo": "solves",
           "columnsFrom": [
             "block_id"
@@ -1263,10 +1679,10 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "prob_block_answer_submits_submit_id_prob_book_submits_id_fk": {
-          "name": "prob_block_answer_submits_submit_id_prob_book_submits_id_fk",
-          "tableFrom": "prob_block_answer_submits",
-          "tableTo": "prob_book_submits",
+        "block_submits_submit_id_work_book_submits_id_fk": {
+          "name": "block_submits_submit_id_work_book_submits_id_fk",
+          "tableFrom": "block_submits",
+          "tableTo": "work_book_submits",
           "schemaTo": "solves",
           "columnsFrom": [
             "submit_id"
@@ -1279,8 +1695,8 @@
         }
       },
       "compositePrimaryKeys": {
-        "prob_block_answer_submits_block_id_submit_id_pk": {
-          "name": "prob_block_answer_submits_block_id_submit_id_pk",
+        "block_submits_block_id_submit_id_pk": {
+          "name": "block_submits_block_id_submit_id_pk",
           "columns": [
             "block_id",
             "submit_id"
@@ -1292,63 +1708,30 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "solves.prob_blocks": {
-      "name": "prob_blocks",
+    "solves.work_book_category": {
+      "name": "work_book_category",
       "schema": "solves",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "prob_book_id": {
-          "name": "prob_book_id",
+        "work_book_id": {
+          "name": "work_book_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "order": {
-          "name": "order",
+        "category_main_id": {
+          "name": "category_main_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
-        "question": {
-          "name": "question",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "content": {
-          "name": "content",
-          "type": "jsonb",
+        "category_sub_id": {
+          "name": "category_sub_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
-        },
-        "answer": {
-          "name": "answer",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -1357,29 +1740,66 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "prob_blocks_prob_book_id_prob_books_id_fk": {
-          "name": "prob_blocks_prob_book_id_prob_books_id_fk",
-          "tableFrom": "prob_blocks",
-          "tableTo": "prob_books",
+        "work_book_category_work_book_id_work_books_id_fk": {
+          "name": "work_book_category_work_book_id_work_books_id_fk",
+          "tableFrom": "work_book_category",
+          "tableTo": "work_books",
           "schemaTo": "solves",
           "columnsFrom": [
-            "prob_book_id"
+            "work_book_id"
           ],
           "columnsTo": [
             "id"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "work_book_category_category_main_id_category_main_category_main_id_fk": {
+          "name": "work_book_category_category_main_id_category_main_category_main_id_fk",
+          "tableFrom": "work_book_category",
+          "tableTo": "category_main",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "category_main_id"
+          ],
+          "columnsTo": [
+            "category_main_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "work_book_category_category_sub_id_category_sub_category_sub_id_fk": {
+          "name": "work_book_category_category_sub_id_category_sub_category_sub_id_fk",
+          "tableFrom": "work_book_category",
+          "tableTo": "category_sub",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "category_sub_id"
+          ],
+          "columnsTo": [
+            "category_sub_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "work_book_category_work_book_id_category_main_id_category_sub_id_pk": {
+          "name": "work_book_category_work_book_id_category_main_id_category_sub_id_pk",
+          "columns": [
+            "work_book_id",
+            "category_main_id",
+            "category_sub_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "solves.prob_book_submits": {
-      "name": "prob_book_submits",
+    "solves.work_book_submits": {
+      "name": "work_book_submits",
       "schema": "solves",
       "columns": {
         "id": {
@@ -1389,8 +1809,8 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "prob_book_id": {
-          "name": "prob_book_id",
+        "work_book_id": {
+          "name": "work_book_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -1405,20 +1825,14 @@
           "name": "start_time",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         },
         "end_time": {
           "name": "end_time",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
-        },
-        "score": {
-          "name": "score",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -1430,13 +1844,13 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "prob_book_submits_prob_book_id_prob_books_id_fk": {
-          "name": "prob_book_submits_prob_book_id_prob_books_id_fk",
-          "tableFrom": "prob_book_submits",
-          "tableTo": "prob_books",
+        "work_book_submits_work_book_id_work_books_id_fk": {
+          "name": "work_book_submits_work_book_id_work_books_id_fk",
+          "tableFrom": "work_book_submits",
+          "tableTo": "work_books",
           "schemaTo": "solves",
           "columnsFrom": [
-            "prob_book_id"
+            "work_book_id"
           ],
           "columnsTo": [
             "id"
@@ -1444,9 +1858,9 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "prob_book_submits_owner_id_user_id_fk": {
-          "name": "prob_book_submits_owner_id_user_id_fk",
-          "tableFrom": "prob_book_submits",
+        "work_book_submits_owner_id_user_id_fk": {
+          "name": "work_book_submits_owner_id_user_id_fk",
+          "tableFrom": "work_book_submits",
           "tableTo": "user",
           "schemaTo": "auth",
           "columnsFrom": [
@@ -1465,12 +1879,12 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "solves.prob_book_tags": {
-      "name": "prob_book_tags",
+    "solves.work_book_tags": {
+      "name": "work_book_tags",
       "schema": "solves",
       "columns": {
-        "prob_book_id": {
-          "name": "prob_book_id",
+        "work_book_id": {
+          "name": "work_book_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -1484,13 +1898,13 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "prob_book_tags_prob_book_id_prob_books_id_fk": {
-          "name": "prob_book_tags_prob_book_id_prob_books_id_fk",
-          "tableFrom": "prob_book_tags",
-          "tableTo": "prob_books",
+        "work_book_tags_work_book_id_work_books_id_fk": {
+          "name": "work_book_tags_work_book_id_work_books_id_fk",
+          "tableFrom": "work_book_tags",
+          "tableTo": "work_books",
           "schemaTo": "solves",
           "columnsFrom": [
-            "prob_book_id"
+            "work_book_id"
           ],
           "columnsTo": [
             "id"
@@ -1498,9 +1912,9 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "prob_book_tags_tag_id_tags_id_fk": {
-          "name": "prob_book_tags_tag_id_tags_id_fk",
-          "tableFrom": "prob_book_tags",
+        "work_book_tags_tag_id_tags_id_fk": {
+          "name": "work_book_tags_tag_id_tags_id_fk",
+          "tableFrom": "work_book_tags",
           "tableTo": "tags",
           "schemaTo": "solves",
           "columnsFrom": [
@@ -1514,10 +1928,10 @@
         }
       },
       "compositePrimaryKeys": {
-        "prob_book_tags_prob_book_id_tag_id_pk": {
-          "name": "prob_book_tags_prob_book_id_tag_id_pk",
+        "work_book_tags_work_book_id_tag_id_pk": {
+          "name": "work_book_tags_work_book_id_tag_id_pk",
           "columns": [
-            "prob_book_id",
+            "work_book_id",
             "tag_id"
           ]
         }
@@ -1527,8 +1941,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "solves.prob_books": {
-      "name": "prob_books",
+    "solves.work_books": {
+      "name": "work_books",
       "schema": "solves",
       "columns": {
         "id": {
@@ -1561,13 +1975,7 @@
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "default": false
-        },
-        "thumbnail": {
-          "name": "thumbnail",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
+          "default": true
         },
         "created_at": {
           "name": "created_at",
@@ -1582,13 +1990,19 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "prob_books_owner_id_user_id_fk": {
-          "name": "prob_books_owner_id_user_id_fk",
-          "tableFrom": "prob_books",
+        "work_books_owner_id_user_id_fk": {
+          "name": "work_books_owner_id_user_id_fk",
+          "tableFrom": "work_books",
           "tableTo": "user",
           "schemaTo": "auth",
           "columnsFrom": [
@@ -1603,46 +2017,6 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "solves.tags": {
-      "name": "tags",
-      "schema": "solves",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "tags_name_unique": {
-          "name": "tags_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

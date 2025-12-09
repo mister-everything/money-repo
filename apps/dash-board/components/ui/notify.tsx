@@ -12,11 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 type Alert = {
   title?: ReactNode;
-  description: ReactNode;
+  description?: ReactNode;
 };
 
 const createContainer = () => {
@@ -28,10 +29,10 @@ const createContainer = () => {
 
 export const notify = {
   component({
-    children,
+    renderer,
     className,
   }: {
-    children: ReactNode;
+    renderer: ({ close }: { close: () => void }) => ReactNode;
     className?: string;
   }) {
     return new Promise<void>((resolve) => {
@@ -49,13 +50,13 @@ export const notify = {
               <DialogTitle></DialogTitle>
               <DialogDescription></DialogDescription>
             </DialogHeader>
-            {children}
+            {renderer({ close })}
           </DialogContent>
         </Dialog>,
       );
     });
   },
-  alert(alert: Alert & { okText?: string }) {
+  alert(alert: Alert & { okText?: ReactNode }) {
     return new Promise<void>((resolve) => {
       const container = createContainer();
       const root = createRoot(container);
@@ -73,7 +74,7 @@ export const notify = {
             </DialogHeader>
             <DialogFooter>
               <Button variant={"ghost"} onClick={close}>
-                {alert.okText || "Confirm"}
+                {alert.okText || "확인"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -81,7 +82,9 @@ export const notify = {
       );
     });
   },
-  confirm: (confirm: Alert & { okText?: string; cancelText?: string }) => {
+  confirm: (
+    confirm: Alert & { okText?: ReactNode; cancelText?: ReactNode },
+  ) => {
     return new Promise<boolean>((resolve) => {
       const container = createContainer();
       const root = createRoot(container);
@@ -104,16 +107,14 @@ export const notify = {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{confirm.title}</DialogTitle>
-                <DialogDescription className="whitespace-pre-wrap">
-                  {confirm.description}
-                </DialogDescription>
+                <DialogDescription>{confirm.description}</DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button variant={"ghost"} onClick={cancel}>
-                  {confirm.cancelText || "Cancel"}
+                  {confirm.cancelText || "취소"}
                 </Button>
                 <Button variant={"secondary"} onClick={ok}>
-                  {confirm.okText || "Confirm"}
+                  {confirm.okText || "확인"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -124,7 +125,15 @@ export const notify = {
       root.render(<Component />);
     });
   },
-  prompt: (prompt: Alert) => {
+  prompt: (
+    prompt: Alert & {
+      multiline?: boolean;
+      placeholder?: string;
+      okText?: ReactNode;
+      cancelText?: ReactNode;
+      maxLength?: number;
+    },
+  ) => {
     return new Promise<string>((resolve) => {
       const container = createContainer();
       const root = createRoot(container);
@@ -136,30 +145,52 @@ export const notify = {
       };
       const Component = () => {
         const [text, setText] = useState("");
+        const handleKeyDown = (
+          e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+        ) => {
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            close(text);
+          }
+        };
+
         return (
           <Dialog open onOpenChange={() => close()}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{prompt.title}</DialogTitle>
-                <DialogDescription asChild>
-                  {prompt.description}
-                </DialogDescription>
-                <Textarea
-                  className="resize-none"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                />
+                <DialogDescription>{prompt.description}</DialogDescription>
+                {prompt.multiline ? (
+                  <Textarea
+                    className="resize-none max-h-[200px]"
+                    placeholder={prompt.placeholder}
+                    autoFocus
+                    value={text}
+                    maxLength={prompt.maxLength}
+                    onKeyDown={handleKeyDown}
+                    onChange={(e) => setText(e.target.value)}
+                  />
+                ) : (
+                  <Input
+                    placeholder={prompt.placeholder}
+                    autoFocus
+                    value={text}
+                    maxLength={prompt.maxLength}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                  />
+                )}
               </DialogHeader>
               <DialogFooter>
                 <Button variant={"ghost"} onClick={() => close()}>
-                  Cancel
+                  {prompt.cancelText || "취소"}
                 </Button>
                 <Button
                   disabled={!text.trim()}
                   variant={"secondary"}
                   onClick={() => close(text)}
                 >
-                  Confirm
+                  {prompt.okText || "확인"}
                 </Button>
               </DialogFooter>
             </DialogContent>
