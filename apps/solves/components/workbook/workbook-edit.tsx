@@ -136,8 +136,6 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, ...workbook }));
       },
-      successMessage: "저장이 완료되었습니다.",
-      failMessage: "저장에 실패했습니다.",
     },
   );
 
@@ -155,8 +153,6 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, blocks: blocks }));
       },
-      successMessage: "저장이 완료되었습니다.",
-      failMessage: "저장에 실패했습니다.",
     },
   );
 

@@ -6,6 +6,7 @@ import {
   BlockType,
   McqBlockAnswerSubmit,
   McqBlockContent,
+  OxBlockAnswerSubmit,
   RankingBlockContent,
 } from "@service/solves/shared";
 import { toAny } from "@workspace/util";
@@ -169,17 +170,39 @@ export function BlockSolution<T extends BlockType = BlockType>({
     }
     if (answer?.type == "ox") {
       return (
-        <div className="flex gap-2 text-primary font-semibold items-center">
-          <span className="w-16">정답 </span>
+        <>
+          {mode == "review" && !isCorrect && (
+            <div className="flex gap-2 text-destructive font-semibold items-center">
+              <span className="w-16">내가 고른 답</span>
+              <div className="flex gap-3">
+                {(submit as OxBlockAnswerSubmit)?.answer == undefined ? (
+                  <span className="text-muted-foreground">
+                    정답을 제출하지 않았습니다.
+                  </span>
+                ) : (
+                  <div className="flex gap-3 flex-wrap">
+                    {(submit as OxBlockAnswerSubmit)?.answer ? (
+                      <CircleIcon className="size-2.5 stroke-3" />
+                    ) : (
+                      <XIcon className="size-2.5 stroke-3" />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2 text-primary font-semibold items-center">
+            <span className="w-16">정답 </span>
 
-          <div className="flex gap-3">
-            {answer?.answer ? (
-              <CircleIcon className="size-2.5 stroke-3" />
-            ) : (
-              <XIcon className="size-2.5 stroke-3" />
-            )}
+            <div className="flex gap-3">
+              {answer?.answer ? (
+                <CircleIcon className="size-2.5 stroke-3" />
+              ) : (
+                <XIcon className="size-2.5 stroke-3" />
+              )}
+            </div>
           </div>
-        </div>
+        </>
       );
     }
     if (answer?.type == "ranking") {
