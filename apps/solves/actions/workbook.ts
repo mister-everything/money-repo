@@ -2,10 +2,8 @@
 
 import { workBookService } from "@service/solves";
 import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
-
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
-import { ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
 export const createWorkbookAction = safeAction(
@@ -39,7 +37,6 @@ export const updateWorkbookAction = safeAction(
     await workBookService.checkEditPermission(id, session.user.id);
 
     await workBookService.updateWorkBook({ id, title, description });
-    return ok();
   },
 );
 
@@ -62,7 +59,6 @@ export const processUpdateBlocksAction = safeAction(
       insertBlocks,
       updateBlocks,
     });
-    return ok();
   },
 );
 
@@ -85,7 +81,6 @@ export const publishWorkbookAction = safeAction(
       userId: session.user.id,
       tags,
     });
-    return ok();
   },
 );
 
@@ -101,7 +96,6 @@ export const saveAnswerProgressAction = safeAction(
       answers,
       deleteAnswers,
     });
-    return ok();
   },
 );
 
@@ -115,7 +109,6 @@ export const resetWorkBookSessionAction = safeAction(
       userId: session.user.id,
       submitId,
     });
-    return ok();
   },
 );
 export const submitWorkbookSessionAction = safeAction(
@@ -125,6 +118,34 @@ export const submitWorkbookSessionAction = safeAction(
   async ({ submitId }) => {
     const session = await getSession();
     await workBookService.submitWorkBookSession(session.user.id, submitId);
-    return ok();
+  },
+);
+
+export const deleteWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+  }),
+  async ({ workBookId }) => {
+    const session = await getSession();
+    await workBookService.checkEditPermission(workBookId, session.user.id);
+    await workBookService.deleteWorkBook(workBookId);
+    return { deletedWorkBookId: workBookId };
+  },
+);
+
+export const toggleWorkBookPublicAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    isPublic: z.boolean(),
+  }),
+  async ({ workBookId, isPublic }) => {
+    const session = await getSession();
+
+    await workBookService.toggleWorkBookPublic({
+      workBookId,
+      userId: session.user.id,
+      isPublic,
+    });
+    return { isPublic, workBookId };
   },
 );

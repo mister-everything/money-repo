@@ -1,29 +1,123 @@
+"use client";
+
 import {
   SessionInProgress,
   SessionSubmitted,
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
 import { format } from "date-fns";
+import { LoaderIcon, MoreVerticalIcon } from "lucide-react";
+import { useMemo } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 interface WorkbookCardProps {
   workBook: WorkBookWithoutBlocks;
   session?: SessionInProgress | SessionSubmitted;
+  onDelete?: () => void;
+  onTogglePublic?: () => void;
+  isPendingDelete?: boolean;
+  isPendingTogglePublic?: boolean;
 }
 
-export function WorkbookCard({ workBook, session }: WorkbookCardProps) {
+export function WorkbookCard({
+  workBook,
+  session,
+  onDelete,
+  onTogglePublic,
+  isPendingDelete,
+  isPendingTogglePublic,
+}: WorkbookCardProps) {
+  const isPending = useMemo(
+    () => isPendingTogglePublic || isPendingDelete,
+    [isPendingDelete, isPendingTogglePublic],
+  );
+
   return (
     <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-sm h-full flex flex-col">
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <CardTitle className="line-clamp-2 text-xl font-bold truncate">
+        <div className="flex items-center justify-between min-w-0 ">
+          <CardTitle className="text-xl font-bold truncate">
             {workBook.title || "제목이 없습니다."}
           </CardTitle>
+          {Boolean(onDelete || onTogglePublic) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size={"sm"}
+                  className="p-2! data-[state=open]:bg-accent"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVerticalIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                side="bottom"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                {onDelete && (
+                  <DropdownMenuItem disabled={isPending} onClick={onDelete}>
+                    {isPendingDelete ? (
+                      <>
+                        삭제중...
+                        <LoaderIcon className="size-3 animate-spin" />
+                      </>
+                    ) : (
+                      "삭제하기"
+                    )}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  disabled={workBook.isPublic || isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onTogglePublic?.();
+                  }}
+                >
+                  {isPendingTogglePublic && !workBook.isPublic ? (
+                    <>
+                      공개로 전환중...
+                      <LoaderIcon className="size-3 animate-spin" />
+                    </>
+                  ) : (
+                    "공개하기"
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={!workBook.isPublic || isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onTogglePublic?.();
+                  }}
+                >
+                  {isPendingTogglePublic && workBook.isPublic ? (
+                    <>
+                      비공개로 전환중...
+                      <LoaderIcon className="size-3 animate-spin" />
+                    </>
+                  ) : (
+                    "비공개로 전환"
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
-        <p className="text-muted-foreground line-clamp-2 text-sm">
+        <p className="text-muted-foreground line-clamp-2 text-sm text-ellipsis ">
           {workBook.description || "설명이 없습니다."}
         </p>
 

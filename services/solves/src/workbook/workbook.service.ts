@@ -95,6 +95,10 @@ export const workBookService = {
       throw new PublicError("이미 배포된 문제집 입니다.");
   },
 
+  deleteWorkBook: async (workBookId: string): Promise<void> => {
+    await pgDb.delete(workBooksTable).where(eq(workBooksTable.id, workBookId));
+  },
+
   searchMyWorkBooks: async (options: {
     userId: string;
     page?: number;
@@ -349,6 +353,31 @@ export const workBookService = {
 
       return newWorkBook;
     });
+  },
+
+  toggleWorkBookPublic: async ({
+    workBookId,
+    userId,
+    isPublic,
+  }: {
+    workBookId: string;
+    userId: string;
+    isPublic: boolean;
+  }): Promise<void> => {
+    const result = await pgDb
+      .update(workBooksTable)
+      .set({
+        isPublic,
+      })
+      .where(
+        and(
+          eq(workBooksTable.id, workBookId),
+          eq(workBooksTable.ownerId, userId),
+        ),
+      );
+    if (result.rowCount === 0) {
+      throw new PublicError("문제집을 찾을 수 없습니다.");
+    }
   },
 
   updateWorkBook: async (workBook: {

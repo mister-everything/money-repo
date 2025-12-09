@@ -11,18 +11,21 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import z from "zod";
 import { SearchWorkbooksRequest } from "@/app/api/workbooks/types";
-import { useCategories } from "@/hooks/query/use-categories";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Input } from "../ui/input";
-import { CategorySelection, CategorySelector } from "./category-selector";
-import { WorkbookCard } from "./workbook-card";
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  CategorySelection,
+  CategorySelector,
+} from "@/components/workbook/category-selector";
+import { WorkbookCard } from "@/components/workbook/workbook-card";
+import { useCategories } from "@/hooks/query/use-categories";
 
 const sortOptions = [
   { label: "인기순", value: "popular" },
@@ -31,7 +34,7 @@ const sortOptions = [
   { label: "평균 점수 낮은순", value: "lowest" },
 ] as const;
 
-export function WorkbookList({
+export function WorkbooksClient({
   initialWorkBooks = [],
 }: {
   initialWorkBooks: WorkBookWithoutBlocks[];

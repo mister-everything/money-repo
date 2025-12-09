@@ -1,10 +1,10 @@
 import { workBookService } from "@service/solves";
-import { WorkbookList } from "@/components/workbook/workbook-list";
+import { WorkbooksClient } from "@/app/(main)/workbooks/client";
 
 export default async function Page() {
   const workBooks = await workBookService.searchWorkBooks({
     isPublished: true,
   });
 
-  return <WorkbookList initialWorkBooks={workBooks} />;
+  return <WorkbooksClient initialWorkBooks={workBooks} />;
 }

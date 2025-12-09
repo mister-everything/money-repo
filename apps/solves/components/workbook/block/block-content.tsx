@@ -241,8 +241,8 @@ export function McqMultipleBlockContent({
       if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
       if (mode == "edit" && answer?.answer.includes(optionId)) return okClass;
       if (mode == "review") {
-        if (answer?.answer.includes(optionId)) return okClass;
-        if (submit?.answer?.includes(optionId)) return failClass;
+        if (submit?.answer?.includes(optionId))
+          return answer?.answer.includes(optionId) ? okClass : failClass;
         return "bg-card text-muted-foreground/50";
       }
 
@@ -256,13 +256,13 @@ export function McqMultipleBlockContent({
       {content.options.map((option, index) => {
         if (option.type == "text") {
           const status =
-            mode == "review" && answer?.answer.includes(option.id)
-              ? "correct"
-              : mode == "review" && submit?.answer?.includes(option.id)
-                ? "incorrect"
-                : mode == "review"
-                  ? "unchecked"
-                  : undefined;
+            mode == "review" && submit?.answer.includes(option.id)
+              ? answer?.answer?.includes(option.id)
+                ? "correct"
+                : "incorrect"
+              : mode == "review"
+                ? "unchecked"
+                : undefined;
 
           return (
             <div
@@ -359,6 +359,7 @@ export function McqSingleBlockContent({
   answer,
   submit,
   mode,
+  isCorrect,
   content,
   onUpdateAnswer,
   onUpdateContent,
@@ -417,14 +418,14 @@ export function McqSingleBlockContent({
       if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
       if (mode == "edit" && answer?.answer.includes(optionId)) return okClass;
       if (mode == "review") {
-        if (answer?.answer.includes(optionId)) return okClass;
-        if (submit?.answer?.includes(optionId)) return failClass;
+        if (submit?.answer?.includes(optionId))
+          return isCorrect ? okClass : failClass;
         return "bg-card text-muted-foreground/50";
       }
 
       return "hover:bg-muted-foreground/5 hover:border-muted-foreground";
     },
-    [mode, answer, submit],
+    [mode, answer, submit, isCorrect],
   );
 
   return (
@@ -432,13 +433,13 @@ export function McqSingleBlockContent({
       {content.options.map((option, index) => {
         if (option.type == "text") {
           const status =
-            mode == "review" && answer?.answer == option.id
-              ? "correct"
-              : mode == "review" && submit?.answer == option.id
-                ? "incorrect"
-                : mode == "review"
-                  ? "unchecked"
-                  : undefined;
+            mode == "review" && submit?.answer == option.id
+              ? isCorrect
+                ? "correct"
+                : "incorrect"
+              : mode == "review"
+                ? "unchecked"
+                : undefined;
 
           return (
             <div
@@ -566,12 +567,11 @@ export function OXBlockContent({
       if (mode == "edit") {
         return answer?.answer === value ? okClass : "";
       }
-      if (mode == "review") {
-        if (answer?.answer === value) return okClass;
-        if (submit?.answer === value) return failClass;
+      if (mode == "review" && submit?.answer === value) {
+        return isCorrect ? okClass : failClass;
       }
     },
-    [mode, answer, submit],
+    [mode, answer, submit, isCorrect],
   );
 
   return (
