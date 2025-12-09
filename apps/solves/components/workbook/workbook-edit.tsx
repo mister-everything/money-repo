@@ -5,22 +5,24 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
+  blockValidate,
   checkAnswer,
   initializeBlock,
   initialSubmitAnswer,
-  validateBlock,
+  UpdateBlock,
   WorkBook,
   WorkBookBlock,
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
 import {
   applyStateUpdate,
+  arrayToObject,
   deduplicate,
   equal,
   objectFlow,
   StateUpdate,
 } from "@workspace/util";
-import { GripVerticalIcon, PlusIcon } from "lucide-react";
+import { ArrowLeftIcon, GripVerticalIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,6 +32,7 @@ import {
   updateWorkbookAction,
 } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
+import { notify } from "@/components/ui/notify";
 import {
   Tooltip,
   TooltipContent,
@@ -39,7 +42,6 @@ import { useToRef } from "@/hooks/use-to-ref";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
-import { GoBackButton } from "../layouts/go-back-button";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
@@ -48,13 +50,31 @@ import { WorkbookHeader } from "./workbook-header";
 import { WorkbookPublishPopup } from "./workbook-publish-popup";
 
 const extractBlockDiff = (prev: WorkBookBlock[], next: WorkBookBlock[]) => {
-  const deletedBlocks = prev.filter((b) => !next.includes(b));
-  const addedBlocks = next.filter((b) => !prev.includes(b));
+  const prevBlockById = arrayToObject(prev, (v) => v.id);
+  const nextBlockById = arrayToObject(next, (v) => v.id);
+  const deletedBlocks = prev.filter((b) => !nextBlockById[b.id]);
+  const addedBlocks = next.filter((b) => !prevBlockById[b.id]);
 
-  const updatedBlocks = next.filter((b) => {
-    const prevBlock = prev.find((pb) => pb.id === b.id);
-    return prevBlock && !equal(b, prevBlock);
-  });
+  const updatedBlocks = next
+    .filter((b) => {
+      const prevBlock = prevBlockById[b.id];
+      return prevBlock && !equal(b, prevBlock);
+    })
+    .map((b) => {
+      const updatePayload: UpdateBlock = {
+        id: b.id,
+      };
+      const diffCheckKeys = ["question", "content", "answer", "order"];
+      diffCheckKeys.forEach((key) => {
+        const oldValue = prevBlockById[b.id][key];
+        const newValue = b[key];
+        if (oldValue !== newValue) {
+          updatePayload[key] = newValue;
+        }
+      });
+      return updatePayload;
+    });
+
   return { deletedBlocks, addedBlocks, updatedBlocks };
 };
 
@@ -97,7 +117,8 @@ export function WorkbookEdit({
 
   const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
     if (control !== "review") return {};
-    return blocks.reduce(
+
+    const result = blocks.reduce(
       (acc, block) => {
         if (!submits[block.id]) return acc;
         acc[block.id] = checkAnswer(block.answer, submits[block.id]);
@@ -105,6 +126,8 @@ export function WorkbookEdit({
       },
       {} as Record<string, boolean>,
     );
+
+    return result;
   }, [control]);
 
   const [, updateWorkbook, isBookPending] = useSafeAction(
@@ -113,8 +136,6 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, ...workbook }));
       },
-      successMessage: "저장이 완료되었습니다.",
-      failMessage: "저장에 실패했습니다.",
     },
   );
 
@@ -122,7 +143,7 @@ export function WorkbookEdit({
     failMessage: "배포에 실패했습니다.",
     successMessage: "발행이 완료되었어요. 화면 이동중",
     onSuccess: () => {
-      router.push(`/workbooks/${workbook.id}/preview`);
+      router.push(`/workbooks/${workbook.id}/report`);
     },
   });
 
@@ -132,8 +153,6 @@ export function WorkbookEdit({
       onSuccess: () => {
         setSnapshot((prev) => ({ ...prev, blocks: blocks }));
       },
-      successMessage: "저장이 완료되었습니다.",
-      failMessage: "저장에 실패했습니다.",
     },
   );
 
@@ -145,7 +164,34 @@ export function WorkbookEdit({
   const stateRef = useToRef({
     isPending,
     blocks,
+    workbook,
   });
+
+  const blocksDiff = useMemo(() => {
+    return extractBlockDiff(snapshot.blocks, blocks);
+  }, [snapshot.blocks, blocks]);
+
+  const isWorkBookDiff = useMemo(() => {
+    return !equal(
+      {
+        title: workbook.title,
+        description: workbook.description,
+      },
+      {
+        title: snapshot.title,
+        description: snapshot.description,
+      },
+    );
+  }, [snapshot, workbook]);
+
+  const isBlocksDiff = useMemo(() => {
+    const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
+    return (
+      deletedBlocks.length > 0 ||
+      addedBlocks.length > 0 ||
+      updatedBlocks.length > 0
+    );
+  }, [blocksDiff]);
 
   const handleChangeWorkbookMode = useCallback(
     (mode: WorkBookComponentMode) => {
@@ -199,10 +245,10 @@ export function WorkbookEdit({
   );
 
   const handleChangeTitle = useCallback((title: string) => {
-    setWorkbook({ ...workbook, title });
+    setWorkbook((prev) => ({ ...prev, title }));
   }, []);
   const handleChangeDescription = useCallback((description: string) => {
-    setWorkbook({ ...workbook, description });
+    setWorkbook((prev) => ({ ...prev, description }));
   }, []);
 
   const deleteFeedback = useCallback((id: string) => {
@@ -229,7 +275,17 @@ export function WorkbookEdit({
   const handleDeleteBlock = useCallback((id: string) => {
     if (stateRef.current.isPending) return;
     deleteFeedback(id);
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+    setBlocks((prev) =>
+      prev
+        .filter((b) => b.id !== id)
+        .map((b, i) => {
+          if ((b.order = i)) return b;
+          return {
+            ...b,
+            order: i,
+          };
+        }),
+    );
     setEditingBlockId((prev) => prev.filter((id) => id !== id));
   }, []);
 
@@ -252,7 +308,7 @@ export function WorkbookEdit({
       return newBlocks;
     });
     setFocusBlockId(newBlock.id);
-    setEditingBlockId((prev) => [...prev, newBlock.id]);
+    setEditingBlockId([newBlock.id]);
   }, []);
 
   const handleFocusBlock = useCallback((node: HTMLDivElement) => {
@@ -336,18 +392,7 @@ export function WorkbookEdit({
   );
 
   const handleSave = async () => {
-    const hasBookDiff = !equal(
-      {
-        title: workbook.title,
-        description: workbook.description,
-      },
-      {
-        title: snapshot.title,
-        description: snapshot.description,
-      },
-    );
-
-    if (hasBookDiff) {
+    if (isWorkBookDiff) {
       await updateWorkbook({
         id: workbook.id,
         title: workbook.title,
@@ -355,24 +400,29 @@ export function WorkbookEdit({
       });
     }
 
-    const { deletedBlocks, addedBlocks, updatedBlocks } = extractBlockDiff(
-      snapshot.blocks,
-      blocks,
-    );
-
-    const hasBlockDiff =
-      deletedBlocks.length > 0 ||
-      addedBlocks.length > 0 ||
-      updatedBlocks.length > 0;
-
-    if (hasBlockDiff) {
+    if (isBlocksDiff) {
+      const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
       await processUpdateBlocks({
         workbookId: workbook.id,
         deleteBlocks: deletedBlocks.map((b) => b.id),
-        saveBlocks: [...addedBlocks, ...updatedBlocks],
+        insertBlocks: addedBlocks,
+        updateBlocks: updatedBlocks,
       });
     }
   };
+
+  const handleGoBack = useCallback(async () => {
+    if (isWorkBookDiff || isBlocksDiff) {
+      const answer = await notify.confirm({
+        title: "저장되지 않은 변경사항이 있습니다.",
+        description: "저장하지 않고 이전 페이지로 이동하시겠습니까?",
+        okText: "뒤로가기",
+        cancelText: "취소",
+      });
+      if (!answer) return;
+    }
+    router.back();
+  }, [router, isWorkBookDiff, isBlocksDiff]);
 
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
@@ -388,7 +438,7 @@ export function WorkbookEdit({
   const handleValidateBlocks = useCallback((blocks: WorkBookBlock[]) => {
     const nextFeedbacks = blocks.reduce(
       (acc, b) => {
-        const result = validateBlock(b);
+        const result = blockValidate(b);
         if (!result.success) {
           const errors = Object.values(result.errors ?? {}).flat();
           acc[b.id] = deduplicate(errors).join("\n");
@@ -404,15 +454,33 @@ export function WorkbookEdit({
     return true;
   }, []);
 
-  const handleOpenPublishPopup = useCallback(() => {
+  const validateWorkbook = useCallback((): true | string => {
     if (stateRef.current.blocks.length === 0) {
-      toast.warning("문제를 최소 1개 이상 추가해주세요.");
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
-      return;
+      return "문제를 최소 1개 이상 추가해주세요.";
+    }
+    if (!stateRef.current.workbook.title?.trim?.()) {
+      setIsEditBook(true);
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return "문제집 제목을 입력해주세요.";
+    }
+    if (!stateRef.current.workbook.description?.trim?.()) {
+      setIsEditBook(true);
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return "문제집 설명을 입력해주세요.";
     }
     const isValid = handleValidateBlocks(stateRef.current.blocks);
     if (!isValid) {
-      toast.warning("문제를 먼저 수정해주세요.");
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return "문제를 먼저 수정해주세요.";
+    }
+    return true;
+  }, []);
+
+  const handleOpenPublishPopup = useCallback(() => {
+    const result = validateWorkbook();
+    if (result !== true) {
+      toast.warning(result);
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -431,8 +499,11 @@ export function WorkbookEdit({
   return (
     <div className="h-full relative">
       <div ref={ref} className="h-full overflow-y-auto relative">
-        <div className="sticky top-0 z-10 py-2 bg-background flex items-center gap-2">
-          <GoBackButton>처음부터 다시 만들기</GoBackButton>
+        <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
+          <Button variant="ghost" onClick={handleGoBack} disabled={isPending}>
+            <ArrowLeftIcon className="size-4!" />
+            뒤로가기
+          </Button>
           <div className="flex-1" />
           <Button className="rounded-full">임시 소제</Button>
           <Button className="rounded-full">임시 소제 {">"} 소재</Button>
@@ -457,7 +528,7 @@ export function WorkbookEdit({
                   : "preview";
             return (
               <div
-                key={b.id}
+                key={`${b.id}-${mode}`}
                 className={cn(
                   "relative transition-all duration-200 rounded-xl border",
                   isReorderMode &&
@@ -563,9 +634,9 @@ export function WorkbookEdit({
           if (control === "solve") {
             return handleChangeControl("edit");
           }
-          const isValid = handleValidateBlocks(blocks);
-          if (!isValid) {
-            toast.warning("문제를 먼저 수정해주세요.");
+          const result = validateWorkbook();
+          if (result !== true) {
+            toast.warning(result);
             ref.current?.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }

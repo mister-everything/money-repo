@@ -56,7 +56,7 @@ export function DefaultBlockContent({
   const handleChangeSubmitAnswer = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (mode == "solve")
-        onUpdateSubmitAnswer?.({ answer: e.currentTarget.value.trim() });
+        onUpdateSubmitAnswer?.({ answer: e.currentTarget.value });
     },
     [onUpdateSubmitAnswer, mode],
   );
@@ -193,11 +193,17 @@ export function McqMultipleBlockContent({
   }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
-    (index: number) => {
+    (optionId: string) => {
       onUpdateContent?.((prev) => ({
         ...prev,
-        options: prev?.options?.filter((_, i) => i !== index) || [],
+        options:
+          prev?.options?.filter((option) => option.id !== optionId) || [],
       }));
+      onUpdateAnswer?.((prev) => {
+        return prev.answer?.includes(optionId)
+          ? { answer: prev.answer.filter((id) => id !== optionId) || [] }
+          : prev;
+      });
     },
     [onUpdateContent],
   );
@@ -235,8 +241,8 @@ export function McqMultipleBlockContent({
       if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
       if (mode == "edit" && answer?.answer.includes(optionId)) return okClass;
       if (mode == "review") {
-        if (answer?.answer.includes(optionId)) return okClass;
-        if (submit?.answer?.includes(optionId)) return failClass;
+        if (submit?.answer?.includes(optionId))
+          return answer?.answer.includes(optionId) ? okClass : failClass;
         return "bg-card text-muted-foreground/50";
       }
 
@@ -250,13 +256,13 @@ export function McqMultipleBlockContent({
       {content.options.map((option, index) => {
         if (option.type == "text") {
           const status =
-            mode == "review" && answer?.answer.includes(option.id)
-              ? "correct"
-              : mode == "review" && submit?.answer?.includes(option.id)
-                ? "incorrect"
-                : mode == "review"
-                  ? "unchecked"
-                  : undefined;
+            mode == "review" && submit?.answer.includes(option.id)
+              ? answer?.answer?.includes(option.id)
+                ? "correct"
+                : "incorrect"
+              : mode == "review"
+                ? "unchecked"
+                : undefined;
 
           return (
             <div
@@ -283,6 +289,8 @@ export function McqMultipleBlockContent({
                   <div
                     className={cn(
                       "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      submit?.answer?.includes(option.id) &&
+                        "border-primary text-primary",
                       status == "unchecked" &&
                         "border-muted-foreground/50 text-muted-foreground/50",
                     )}
@@ -300,7 +308,7 @@ export function McqMultipleBlockContent({
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeOption(index);
+                    removeOption(option.id);
                   }}
                   size="icon"
                   className="size-6! text-muted-foreground"
@@ -351,6 +359,7 @@ export function McqSingleBlockContent({
   answer,
   submit,
   mode,
+  isCorrect,
   content,
   onUpdateAnswer,
   onUpdateContent,
@@ -383,11 +392,15 @@ export function McqSingleBlockContent({
   }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
-    (index: number) => {
+    (optionId: string) => {
       onUpdateContent?.((prev) => ({
         ...prev,
-        options: prev?.options?.filter((_, i) => i !== index) || [],
+        options:
+          prev?.options?.filter((option) => option.id !== optionId) || [],
       }));
+      onUpdateAnswer?.((prev) => {
+        return prev.answer == optionId ? { answer: "" } : prev;
+      });
     },
     [onUpdateContent],
   );
@@ -405,14 +418,14 @@ export function McqSingleBlockContent({
       if (mode == "solve" && submit?.answer?.includes(optionId)) return okClass;
       if (mode == "edit" && answer?.answer.includes(optionId)) return okClass;
       if (mode == "review") {
-        if (answer?.answer.includes(optionId)) return okClass;
-        if (submit?.answer?.includes(optionId)) return failClass;
+        if (submit?.answer?.includes(optionId))
+          return isCorrect ? okClass : failClass;
         return "bg-card text-muted-foreground/50";
       }
 
       return "hover:bg-muted-foreground/5 hover:border-muted-foreground";
     },
-    [mode, answer, submit],
+    [mode, answer, submit, isCorrect],
   );
 
   return (
@@ -420,13 +433,13 @@ export function McqSingleBlockContent({
       {content.options.map((option, index) => {
         if (option.type == "text") {
           const status =
-            mode == "review" && answer?.answer == option.id
-              ? "correct"
-              : mode == "review" && submit?.answer == option.id
-                ? "incorrect"
-                : mode == "review"
-                  ? "unchecked"
-                  : undefined;
+            mode == "review" && submit?.answer == option.id
+              ? isCorrect
+                ? "correct"
+                : "incorrect"
+              : mode == "review"
+                ? "unchecked"
+                : undefined;
 
           return (
             <div
@@ -453,6 +466,9 @@ export function McqSingleBlockContent({
                   <div
                     className={cn(
                       "size-5 mr-2 rounded-full border border-foreground text-foreground flex items-center justify-center text-sm",
+                      mode == "solve" &&
+                        submit?.answer == option.id &&
+                        "border-primary text-primary",
                       status == "unchecked" &&
                         "border-muted-foreground/50 text-muted-foreground/50",
                     )}
@@ -470,7 +486,7 @@ export function McqSingleBlockContent({
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeOption(index);
+                    removeOption(option.id);
                   }}
                   size="icon"
                   className="size-6! text-muted-foreground"
@@ -551,12 +567,11 @@ export function OXBlockContent({
       if (mode == "edit") {
         return answer?.answer === value ? okClass : "";
       }
-      if (mode == "review") {
-        if (answer?.answer === value) return okClass;
-        if (submit?.answer === value) return failClass;
+      if (mode == "review" && submit?.answer === value) {
+        return isCorrect ? okClass : failClass;
       }
     },
-    [mode, answer, submit],
+    [mode, answer, submit, isCorrect],
   );
 
   return (
@@ -589,7 +604,6 @@ export function RankingBlockContent({
   answer,
   submit,
   mode,
-  isCorrect,
   content,
   onUpdateAnswer,
   onUpdateContent,
@@ -806,11 +820,6 @@ export function RankingBlockContent({
             >
               <PlusIcon className="size-3 mr-1" /> 추가
             </Button>
-          )}
-          {poolItems.length === 0 && mode !== "edit" && (
-            <span className="text-xs text-muted-foreground">
-              모든 항목이 배치되었습니다
-            </span>
           )}
         </div>
       </div>

@@ -12,45 +12,35 @@ export const seedWorkbook = async () => {
   const randomEmail = `test${Math.random().toString(36).substring(2, 10)}@test.com`;
   const testUser = await userService.createUser({
     email: randomEmail,
-    name: "test",
+    name: "최성근",
     role: Role.USER,
     id: generateUUID(),
   });
 
   logger.info(`✅ 랜덤 유저 생성 완료: ${testUser[0].email}`);
 
-  // 첫 번째 문제집 생성
+  // Solves 멤버용 문제집 생성
   const workBook = await workBookService.createWorkBook({
     ownerId: testUser[0].id,
-    title: "상식 테스트 문제 입니다",
+    title: "Solves 멤버용 문제집",
+    subCategories: [],
   });
 
-  await workBookService.processUpdateBlocks(
-    workBook.id,
-    [],
-    mockData.slice(0, 2),
-  );
-
-  logger.info(`✅ 문제집 1 생성 완료: ${workBook.id}`);
-
-  // 두 번째 문제집 생성
-  const workBook2 = await workBookService.createWorkBook({
-    ownerId: testUser[0].id,
-    title: "상식 테스트 문제 입니다 2",
-    // description: "상식퀴즈 OX, 순서맞추기 문제 입니다.",
-    // isPublic: true,
-    // tags: ["test", "OX", "순서맞추기"],
+  // 모든 블록 추가 (default, mcq-multiple, mcq, ranking, ox)
+  await workBookService.processUpdateBlocks(workBook.id, {
+    deleteBlocks: [],
+    insertBlocks: mockData,
+    updateBlocks: [],
   });
 
-  await workBookService.processUpdateBlocks(
-    workBook2.id,
-    [],
-    mockData.slice(2, 4),
-  );
-
-  logger.info(`✅ 문제집 2 생성 완료: ${workBook2.id}`);
+  logger.info(`✅ 문제집 생성 완료: ${workBook.id}`);
 
   const bookDetail = await workBookService.getWorkBook(workBook.id);
+  await workBookService.publishWorkbook({
+    workBookId: workBook.id,
+    userId: testUser[0].id,
+    tags: ["Solves", "Test", "최성근위주정답률90%"],
+  });
   logger.info("\n📊 생성된 문제집 상세:");
   logger.info(bookDetail);
 

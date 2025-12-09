@@ -13,11 +13,15 @@ import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 
 type ModelDropDownProps = {
   defaultModel?: ChatModel;
+  align?: "start" | "end" | "center";
+  side?: "bottom" | "top" | "left" | "right";
   onModelChange?: (model: ChatModel) => void;
 };
 
 export function ModelDropDownMenu({
   defaultModel,
+  align,
+  side,
   children,
   onModelChange,
 }: PropsWithChildren<ModelDropDownProps>) {
@@ -30,7 +34,7 @@ export function ModelDropDownMenu({
   const trigger = useMemo(() => {
     if (children) return children;
     return (
-      <Button variant="outline">
+      <Button variant="ghost">
         {selectedModel ? (
           <ModelProviderIcon
             provider={selectedModel.provider}
@@ -46,7 +50,7 @@ export function ModelDropDownMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent className="max-h-96">
+      <DropdownMenuContent className="max-h-96" align={align} side={side}>
         {isLoading ? (
           <LoaderIcon className="size-4 animate-spin" />
         ) : (
@@ -55,6 +59,7 @@ export function ModelDropDownMenu({
               key={`${model.provider}-${model.model}`}
               onClick={() => onModelChange?.(model)}
             >
+              <ModelProviderIcon provider={model.provider} className="size-4" />
               {model.displayName}
             </DropdownMenuItem>
           ))

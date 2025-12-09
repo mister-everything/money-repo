@@ -4,8 +4,8 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
+  blockValidate,
   getBlockDisplayName,
-  validateBlock,
 } from "@service/solves/shared";
 import { equal, exclude, StateUpdate } from "@workspace/util";
 import {
@@ -84,7 +84,7 @@ function PureBlock<T extends BlockType = BlockType>({
 }: BlockProps<T>) {
   const blockErrorMessage = useMemo(() => {
     if (props.mode != "edit") return;
-    const result = validateBlock({
+    const result = blockValidate({
       question: props.question,
       content: props.content,
       answer: props.answer ?? ({} as BlockAnswer<T>),
@@ -100,8 +100,8 @@ function PureBlock<T extends BlockType = BlockType>({
   }, [props.mode, props.answer, props.content, props.question, props.type]);
 
   return (
-    <Card className={cn("gap-2 shadow-none", className)} ref={ref}>
-      <CardHeader>
+    <Card className={cn("gap-2 shadow-none ", className)} ref={ref}>
+      <CardHeader className="px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Badge
             className={cn(
@@ -191,7 +191,7 @@ function PureBlock<T extends BlockType = BlockType>({
           onChangeQuestion={props.onUpdateQuestion}
         />
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 md:px-6">
         {blockPropsTypeGuard("default", props) ? (
           <DefaultBlockContent
             content={props.content}
@@ -253,13 +253,15 @@ function PureBlock<T extends BlockType = BlockType>({
           </InDevelopment>
         )}
       </CardContent>
-      <CardFooter className="flex flex-col mt-2">
+      <CardFooter className="flex flex-col mt-2 px-4 md:px-6">
         <BlockSolution
           content={props.content}
           solution={props.answer?.solution ?? ""}
           mode={props.mode}
+          isCorrect={props.isCorrect}
           onChangeSolution={props.onUpdateSolution}
           answer={props.answer}
+          submit={props.submit}
         />
         {props.errorFeedback && (
           <p className="text-destructive text-xs whitespace-pre-wrap mt-4">
@@ -292,6 +294,5 @@ export const Block = memo(PureBlock, (prev, next) => {
     "onUpdateSolution",
     "onUpdateSubmitAnswer",
   ]);
-  if (!equal(prevProps, nextProps)) return false;
-  return true;
+  return equal(prevProps, nextProps);
 });

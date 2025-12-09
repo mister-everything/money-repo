@@ -1,31 +1,30 @@
 "use server";
 
 import { workBookService } from "@service/solves";
-import { WorkBookBlock } from "@service/solves/shared";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale/ko";
+import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
-import { ok } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
-const generateDefaultTitle = () => {
-  return `${formatDistanceToNow(new Date(), {
-    addSuffix: true,
-    locale: ko,
-  })} 문제집`;
-};
+export const createWorkbookAction = safeAction(
+  z.object({
+    title: z.string().optional().default(""),
+    categories: z
+      .array(z.number())
+      .min(1, "소재는 최소 1개 이상 선택해주세요."),
+  }),
+  async ({ title, categories }) => {
+    const session = await getSession();
 
-export const createWorkbookAction = safeAction(async (formData: FormData) => {
-  const session = await getSession();
+    const savedWorkBook = await workBookService.createWorkBook({
+      title,
+      ownerId: session.user.id,
+      subCategories: categories,
+    });
 
-  const savedWorkBook = await workBookService.createWorkBook({
-    title: (formData.get("title") as string) || generateDefaultTitle(),
-    ownerId: session.user.id,
-  });
-
-  return savedWorkBook;
-});
+    return savedWorkBook;
+  },
+);
 
 export const updateWorkbookAction = safeAction(
   z.object({
@@ -38,7 +37,6 @@ export const updateWorkbookAction = safeAction(
     await workBookService.checkEditPermission(id, session.user.id);
 
     await workBookService.updateWorkBook({ id, title, description });
-    return ok();
   },
 );
 
@@ -46,20 +44,21 @@ export const processUpdateBlocksAction = safeAction(
   async ({
     workbookId,
     deleteBlocks,
-    saveBlocks,
+    insertBlocks,
+    updateBlocks,
   }: {
     workbookId: string;
     deleteBlocks: string[];
-    saveBlocks: WorkBookBlock[];
+    insertBlocks: WorkBookBlock[];
+    updateBlocks: UpdateBlock[];
   }) => {
     const session = await getSession();
     await workBookService.checkEditPermission(workbookId, session.user.id);
-    await workBookService.processUpdateBlocks(
-      workbookId,
+    await workBookService.processUpdateBlocks(workbookId, {
       deleteBlocks,
-      saveBlocks,
-    );
-    return ok();
+      insertBlocks,
+      updateBlocks,
+    });
   },
 );
 
@@ -82,6 +81,71 @@ export const publishWorkbookAction = safeAction(
       userId: session.user.id,
       tags,
     });
-    return ok();
+  },
+);
+
+export const saveAnswerProgressAction = safeAction(
+  z.object({
+    submitId: z.string(),
+    answers: z.record(z.string(), z.any()).optional().default({}),
+    deleteAnswers: z.array(z.string()).optional().default([]),
+  }),
+  async ({ submitId, answers, deleteAnswers }) => {
+    const session = await getSession();
+    await workBookService.saveAnswerProgress(session.user.id, submitId, {
+      answers,
+      deleteAnswers,
+    });
+  },
+);
+
+export const resetWorkBookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.resetWorkBookSession({
+      userId: session.user.id,
+      submitId,
+    });
+  },
+);
+export const submitWorkbookSessionAction = safeAction(
+  z.object({
+    submitId: z.string(),
+  }),
+  async ({ submitId }) => {
+    const session = await getSession();
+    await workBookService.submitWorkBookSession(session.user.id, submitId);
+  },
+);
+
+export const deleteWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+  }),
+  async ({ workBookId }) => {
+    const session = await getSession();
+    await workBookService.checkEditPermission(workBookId, session.user.id);
+    await workBookService.deleteWorkBook(workBookId);
+    return { deletedWorkBookId: workBookId };
+  },
+);
+
+export const toggleWorkBookPublicAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    isPublic: z.boolean(),
+  }),
+  async ({ workBookId, isPublic }) => {
+    const session = await getSession();
+
+    await workBookService.toggleWorkBookPublic({
+      workBookId,
+      userId: session.user.id,
+      isPublic,
+    });
+    return { isPublic, workBookId };
   },
 );

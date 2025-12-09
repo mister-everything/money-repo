@@ -16,9 +16,15 @@ export type SafeFailResponse = {
 
 export type SafeResponse<T> = SafeSuccessResponse<T> | SafeFailResponse;
 
+export type UnwrapSafeSuccessResponse<T> = T extends SafeSuccessResponse<
+  infer U
+>
+  ? U
+  : T;
+
 export type SafeFunction<T, U> = (
   data: T,
-) => Promise<SafeResponse<U>> | SafeResponse<U>;
+) => Promise<SafeResponse<U>> | SafeResponse<UnwrapSafeSuccessResponse<U>>;
 
 export const isSafeResponse = <T = any>(
   response: any,
