@@ -2,15 +2,10 @@
 
 import type { SubscriptionPlanWithCount } from "@service/solves/shared";
 import { AlertTriangle, Loader, Plus, Trash2 } from "lucide-react";
-import {
-  useActionState,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { flattenError } from "zod";
+import type { PlanFormData } from "@/app/(dash-board)/solves/plan/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,48 +13,103 @@ import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/notify";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { SafeFunction } from "@/lib/protocol/interface";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
 
 type PlanContentBlock = {
   type: "text";
   text: string;
 };
 
-interface PlanFormProps {
-  mode: "create" | "edit";
+type CreatePlanFormData = PlanFormData;
+type UpdatePlanFormData = PlanFormData & { id: string };
+
+interface PlanFormBaseProps {
   initialData?: SubscriptionPlanWithCount;
-  action: (
-    prevState: any,
-    formData: FormData,
-  ) => Promise<{
-    success: boolean;
-    errors?: ReturnType<typeof flattenError>;
-    message?: string;
-  }>;
-  onDelete?: () => Promise<void>;
+  onToggleActive?: (isActive: boolean) => Promise<void>;
 }
+
+type PlanFormProps = PlanFormBaseProps &
+  (
+    | { mode: "create"; action: SafeFunction<CreatePlanFormData, any> }
+    | { mode: "edit"; action: SafeFunction<UpdatePlanFormData, any> }
+  );
 
 export function PlanForm({
   mode,
   initialData,
   action,
-  onDelete,
+  onToggleActive,
 }: PlanFormProps) {
-  const [state, formAction, isPending] = useActionState(action, null);
+  const router = useRouter();
+  const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
+
+  // Form states
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [displayName, setDisplayName] = useState(
+    initialData?.displayName ?? "",
+  );
+  const [description, setDescription] = useState(
+    initialData?.description ?? "",
+  );
+  const [price, setPrice] = useState(initialData?.price ?? "0.00");
+  const [monthlyQuota, setMonthlyQuota] = useState(
+    initialData?.monthlyQuota ?? "0.00",
+  );
+  const [refillAmount, setRefillAmount] = useState(
+    initialData?.refillAmount ?? "0.00",
+  );
+  const [refillIntervalHours, setRefillIntervalHours] = useState(
+    initialData?.refillIntervalHours ?? 6,
+  );
+  const [maxRefillCount, setMaxRefillCount] = useState(
+    initialData?.maxRefillCount ?? 0,
+  );
   const [plans, setPlans] = useState<PlanContentBlock[]>(
     initialData?.plans ?? [],
   );
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
 
-  // 에러 또는 성공 메시지 토스트
-  useEffect(() => {
-    if (state?.message) {
-      if (state.success) {
-        toast.success(state.message);
-      } else {
-        toast.error(state.message);
+  const [, executeAction, isPending] = useSafeAction(action, {
+    onSuccess: () => {
+      toast.success(
+        mode === "create" ? "플랜이 생성되었습니다." : "플랜이 수정되었습니다.",
+      );
+      setErrors(null);
+      router.push("/solves/plan");
+    },
+    onError: (error) => {
+      toast.error(error.message || "저장에 실패했습니다.");
+      if (error.fields) {
+        const filteredFields: Record<string, string[]> = {};
+        for (const [key, value] of Object.entries(error.fields)) {
+          if (value) filteredFields[key] = value;
+        }
+        setErrors(filteredFields);
       }
+    },
+  });
+
+  const handleSubmit = () => {
+    const baseData = {
+      name,
+      displayName,
+      description: description || undefined,
+      plans: plans.length > 0 ? plans : undefined,
+      price,
+      monthlyQuota,
+      refillAmount,
+      refillIntervalHours,
+      maxRefillCount,
+      isActive,
+    };
+
+    if (mode === "edit" && initialData?.id) {
+      executeAction({ ...baseData, id: initialData.id } as any);
+    } else {
+      executeAction(baseData as any);
     }
-  }, [state]);
+  };
 
   const handleAddPlan = () => {
     setPlans([...plans, { type: "text", text: "" }]);
@@ -85,15 +135,14 @@ export function PlanForm({
       cancelText: "취소",
     });
 
-    if (confirmed && onDelete) {
+    if (confirmed && onToggleActive) {
       try {
         setIsActive(checked);
-        await onDelete();
+        await onToggleActive(checked);
         toast.success(
           checked ? "플랜이 활성화되었습니다." : "플랜이 비활성화되었습니다.",
         );
       } catch (error) {
-        // 에러 발생 시 원래 상태로 되돌림
         setIsActive(!checked);
         toast.error(
           error instanceof Error ? error.message : "작업에 실패했습니다.",
@@ -101,33 +150,30 @@ export function PlanForm({
       }
     }
   };
+
   const hasFieldError = useMemo(() => {
-    return Object.keys(state?.errors?.fieldErrors ?? {}).length > 0;
-  }, [state?.errors?.fieldErrors]);
+    return Object.keys(errors ?? {}).length > 0;
+  }, [errors]);
 
   const getFieldError = useCallback(
     (fieldName: string) => {
-      return state?.errors?.fieldErrors?.[fieldName]?.[0];
+      return errors?.[fieldName]?.[0];
     },
-    [state?.errors?.fieldErrors],
+    [errors],
   );
 
   return (
-    <form action={formAction} className="space-y-8">
-      {/* plans 배열을 hidden input으로 전송 */}
-      <input type="hidden" name="plans" value={JSON.stringify(plans)} />
-
+    <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 플랜 식별자 */}
         <div className="grid gap-2">
           <Label htmlFor="name">플랜 식별자</Label>
           <Input
             id="name"
-            name="name"
             placeholder="free, pro, business"
-            defaultValue={initialData?.name}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             disabled={mode === "edit"}
-            required
           />
           {hasFieldError && (
             <p className="text-sm text-destructive">{getFieldError("name")}</p>
@@ -142,10 +188,9 @@ export function PlanForm({
           <Label htmlFor="displayName">플랜 표시명</Label>
           <Input
             id="displayName"
-            name="displayName"
             placeholder="Free Plan"
-            defaultValue={initialData?.displayName}
-            required
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
           />
           {hasFieldError && (
             <p className="text-sm text-destructive">
@@ -163,9 +208,9 @@ export function PlanForm({
         <Label htmlFor="description">플랜 설명</Label>
         <Textarea
           id="description"
-          name="description"
           placeholder="간단한 플랜 소개를 입력하세요"
-          defaultValue={initialData?.description ?? ""}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           rows={3}
           className="resize-none"
         />
@@ -182,12 +227,11 @@ export function PlanForm({
           <Label htmlFor="price">월 구독료 (원)</Label>
           <Input
             id="price"
-            name="price"
             type="number"
             step="0.01"
             placeholder="0.00"
-            defaultValue={initialData?.price ?? "0.00"}
-            required
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
           />
           {hasFieldError && (
             <p className="text-sm text-destructive">{getFieldError("price")}</p>
@@ -201,12 +245,11 @@ export function PlanForm({
           <Label htmlFor="monthlyQuota">월간 크레딧 할당량</Label>
           <Input
             id="monthlyQuota"
-            name="monthlyQuota"
             type="number"
             step="0.01"
             placeholder="1000.00"
-            defaultValue={initialData?.monthlyQuota ?? "0.00"}
-            required
+            value={monthlyQuota}
+            onChange={(e) => setMonthlyQuota(e.target.value)}
           />
           {hasFieldError && (
             <p className="text-sm text-destructive">
@@ -225,12 +268,11 @@ export function PlanForm({
           <Label htmlFor="refillAmount">자동 충전량</Label>
           <Input
             id="refillAmount"
-            name="refillAmount"
             type="number"
             step="0.01"
             placeholder="50.00"
-            defaultValue={initialData?.refillAmount ?? "0.00"}
-            required
+            value={refillAmount}
+            onChange={(e) => setRefillAmount(e.target.value)}
           />
           {hasFieldError && (
             <p className="text-sm text-destructive">
@@ -246,11 +288,10 @@ export function PlanForm({
           <Label htmlFor="refillIntervalHours">충전 간격 (시간)</Label>
           <Input
             id="refillIntervalHours"
-            name="refillIntervalHours"
             type="number"
             placeholder="6"
-            defaultValue={initialData?.refillIntervalHours ?? 6}
-            required
+            value={refillIntervalHours}
+            onChange={(e) => setRefillIntervalHours(Number(e.target.value))}
           />
           {hasFieldError && (
             <p className="text-sm text-destructive">
@@ -266,11 +307,10 @@ export function PlanForm({
           <Label htmlFor="maxRefillCount">월간 최대 충전 횟수</Label>
           <Input
             id="maxRefillCount"
-            name="maxRefillCount"
             type="number"
             placeholder="10"
-            defaultValue={initialData?.maxRefillCount ?? 0}
-            required
+            value={maxRefillCount}
+            onChange={(e) => setMaxRefillCount(Number(e.target.value))}
           />
           {hasFieldError && (
             <p className="text-sm text-destructive">
@@ -333,7 +373,6 @@ export function PlanForm({
               비활성 플랜은 신규 구독이 불가능합니다.
             </p>
           </div>
-          <input type="hidden" name="isActive" value={String(isActive)} />
           <Switch
             id="isActive"
             checked={isActive}
@@ -342,7 +381,7 @@ export function PlanForm({
         </div>
       )}
 
-      {mode === "edit" && onDelete && (
+      {mode === "edit" && onToggleActive && (
         <Alert className="bg-primary/5 border-primary text-primary">
           <AlertTriangle />
           <AlertTitle className="text-primary font-bold">
@@ -369,7 +408,7 @@ export function PlanForm({
 
       {/* 액션 버튼 */}
       <div className="flex items-center justify-end pt-6 border-t">
-        <Button type="submit" disabled={isPending}>
+        <Button type="button" onClick={handleSubmit} disabled={isPending}>
           {isPending ? (
             <Loader className="size-4 animate-spin" />
           ) : mode === "create" ? (
@@ -379,6 +418,6 @@ export function PlanForm({
           )}
         </Button>
       </div>
-    </form>
+    </div>
   );
 }

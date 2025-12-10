@@ -15,6 +15,7 @@ export interface AIPrice {
   cachedTokenPrice: string; // USD per token (캐싱 할인가)
   markupRate: string;
   isActive: boolean;
+  isDefaultModel: boolean; // modelType별 기본 모델 여부
 }
 
 /**

@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   deleteWorkbookAction,
+  softDeleteWorkbookAction,
   toggleWorkBookPublicAction,
 } from "@/actions/workbook";
+import { notify } from "@/components/ui/notify";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 
@@ -32,8 +34,16 @@ export function WorkbooksCreatorClient({
         setInProgressWorkbooks((prev) =>
           prev.filter((book) => book.id !== result.deletedWorkBookId),
         );
+      },
+    },
+  );
+
+  const [, softDeleteWorkbook, isPendingSoftDeleteWorkbook] = useSafeAction(
+    softDeleteWorkbookAction,
+    {
+      onSuccess: (result) => {
         setPublishedWorkbooks((prev) =>
-          prev.filter((book) => book.id !== result.deletedWorkBookId),
+          prev.filter((book) => book.id !== result.softDeletedWorkBookId),
         );
       },
     },
@@ -57,6 +67,31 @@ export function WorkbooksCreatorClient({
     },
   );
 
+  const handleDeleteWorkbook = async (workBookId: string) => {
+    const confirm = await notify.confirm({
+      title: "문제집을 정말 삭제할까요?",
+      description: "삭제한 문제집은 다시 복구할 수 없어요",
+      okText: "삭제하기",
+      cancelText: "취소",
+    });
+    if (!confirm) {
+      return;
+    }
+    await deleteWorkbook({ workBookId });
+  };
+  const handleSoftDeleteWorkbook = async (workBookId: string) => {
+    const confirm = await notify.confirm({
+      title: "문제집을 정말 삭제할까요?",
+      description: "이미 푼 사용자들에게는 영향을 주지 않습니다.",
+      okText: "삭제하기",
+      cancelText: "취소",
+    });
+    if (!confirm) {
+      return;
+    }
+    await softDeleteWorkbook({ workBookId, reason: "owner_request" });
+  };
+
   useEffect(() => {
     setInProgressWorkbooks(initialInProgressWorkbooks);
     setPublishedWorkbooks(initialPublishedWorkbooks);
@@ -74,15 +109,8 @@ export function WorkbooksCreatorClient({
               <Link href={`/workbooks/${book.id}/edit`} key={book.id}>
                 <WorkbookCard
                   workBook={book}
-                  onDelete={() => deleteWorkbook({ workBookId: book.id })}
-                  onTogglePublic={() =>
-                    toggleWorkBookPublic({
-                      workBookId: book.id,
-                      isPublic: !book.isPublic,
-                    })
-                  }
+                  onDelete={() => handleDeleteWorkbook(book.id)}
                   isPendingDelete={isPendingDeleteWorkbook}
-                  isPendingTogglePublic={isPendingToggleWorkBookPublic}
                 />
               </Link>
             ))}
@@ -99,6 +127,8 @@ export function WorkbooksCreatorClient({
               <Link href={`/workbooks/${book.id}/report`} key={book.id}>
                 <WorkbookCard
                   workBook={book}
+                  onDelete={() => handleSoftDeleteWorkbook(book.id)}
+                  isPendingDelete={isPendingSoftDeleteWorkbook}
                   onTogglePublic={() =>
                     toggleWorkBookPublic({
                       workBookId: book.id,

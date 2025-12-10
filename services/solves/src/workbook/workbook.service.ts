@@ -87,7 +87,12 @@ export const workBookService = {
         publishedAt: workBooksTable.publishedAt,
       })
       .from(workBooksTable)
-      .where(eq(workBooksTable.id, workBookId));
+      .where(
+        and(
+          eq(workBooksTable.id, workBookId),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
     if (!workBook) throw new PublicError("문제집을 찾을수 없습니다.");
     if (workBook?.ownerId !== userId)
       throw new PublicError("문제집에 권한이 없습니다.");
@@ -97,6 +102,18 @@ export const workBookService = {
 
   deleteWorkBook: async (workBookId: string): Promise<void> => {
     await pgDb.delete(workBooksTable).where(eq(workBooksTable.id, workBookId));
+  },
+  softDeleteWorkBook: async (
+    workBookId: string,
+    reason?: string,
+  ): Promise<void> => {
+    await pgDb
+      .update(workBooksTable)
+      .set({
+        deletedAt: new Date(),
+        deletedReason: reason,
+      })
+      .where(eq(workBooksTable.id, workBookId));
   },
 
   searchMyWorkBooks: async (options: {
@@ -121,7 +138,7 @@ export const workBookService = {
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(...where))
+      .where(and(...where, isNull(workBooksTable.deletedAt)))
       .offset(offset)
       .limit(limit)
       .orderBy(desc(workBooksTable.updatedAt));
@@ -154,7 +171,7 @@ export const workBookService = {
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(...where))
+      .where(and(...where, isNull(workBooksTable.deletedAt)))
       .offset(offset)
       .limit(limit)
       .orderBy(desc(workBooksTable.updatedAt));
@@ -178,7 +195,7 @@ export const workBookService = {
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(...where));
+      .where(and(...where, isNull(workBooksTable.deletedAt)));
 
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
     return book;
@@ -373,6 +390,7 @@ export const workBookService = {
         and(
           eq(workBooksTable.id, workBookId),
           eq(workBooksTable.ownerId, userId),
+          isNull(workBooksTable.deletedAt),
         ),
       );
     if (result.rowCount === 0) {
@@ -391,7 +409,12 @@ export const workBookService = {
         title: workBook.title,
         description: workBook.description,
       })
-      .where(eq(workBooksTable.id, workBook.id));
+      .where(
+        and(
+          eq(workBooksTable.id, workBook.id),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
   },
   processUpdateBlocks: async (
     bookId: string,
@@ -469,6 +492,10 @@ export const workBookService = {
           startTime: workBookSubmitsTable.startTime,
         })
         .from(workBookSubmitsTable)
+        .innerJoin(
+          workBooksTable,
+          eq(workBookSubmitsTable.workBookId, workBooksTable.id),
+        )
         .where(
           and(
             eq(workBookSubmitsTable.workBookId, workBookId),

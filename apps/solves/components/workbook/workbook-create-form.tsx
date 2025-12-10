@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
 import { useWorkbookStore } from "@/store/workbook-create-store";
 import { Badge } from "../ui/badge";
+import { notify } from "../ui/notify";
 import { Skeleton } from "../ui/skeleton";
 
 export function WorkbookCreateForm({
@@ -59,7 +60,7 @@ export function WorkbookCreateForm({
     },
   });
 
-  const [, formAction, isPending] = useSafeAction(createWorkbookAction, {
+  const [, createWorkbook, isPending] = useSafeAction(createWorkbookAction, {
     onSuccess: (result) => {
       setWorkbooks(result.id, formData);
       router.push(`/workbooks/${result.id}/edit`);
@@ -76,6 +77,26 @@ export function WorkbookCreateForm({
         : [...prev.categories, categoryId]
       ).slice(-MAX_CATEGORY_COUNT),
     }));
+  };
+
+  const handleCreateWorkbook = async () => {
+    if (!valid) {
+      return;
+    }
+    const confirm = await notify.confirm({
+      title: "문제집을 생성해볼까요?",
+      description:
+        "소재는 문제집 생성 후 변경할 수 없으니 신중하게 선택해주세요.",
+      okText: "이대로 진행하기",
+      cancelText: "다시 선택하기",
+    });
+    if (!confirm) {
+      return;
+    }
+    createWorkbook({
+      title: "",
+      categories: formData.categories,
+    });
   };
 
   const subCategories = useMemo(() => {
@@ -101,7 +122,7 @@ export function WorkbookCreateForm({
         )}
       </div>
 
-      <form className="space-y-3 w-full">
+      <div className="space-y-3 w-full">
         <div className="space-y-3">
           <div className="flex items-center gap-1">
             <label className="text-sm font-bold text-foreground">소재</label>
@@ -255,15 +276,7 @@ export function WorkbookCreateForm({
         )}
 
         <Button
-          onClick={() => {
-            if (!valid) {
-              return;
-            }
-            formAction({
-              title: "",
-              categories: formData.categories,
-            });
-          }}
+          onClick={handleCreateWorkbook}
           variant={isMaxInprogressWorkbookCreateCount ? "secondary" : "default"}
           disabled={isPending || isMaxInprogressWorkbookCreateCount || !valid}
           className={cn(
@@ -290,7 +303,7 @@ export function WorkbookCreateForm({
             "문제 만들기"
           )}
         </Button>
-      </form>
+      </div>
     </div>
   );
 }

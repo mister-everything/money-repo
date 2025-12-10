@@ -1,15 +1,12 @@
 import { workBookService } from "@service/solves";
-import {
-  BlockType,
-  blockDisplayNames,
-  isPublished,
-} from "@service/solves/shared";
-import Link from "next/link";
+import { BlockType, blockDisplayNames } from "@service/solves/shared";
+
 import { Label } from "@/components/ui/label";
-import { WorkbookCard } from "@/components/workbook/workbook-card";
+
 import { WorkbookCreateForm } from "@/components/workbook/workbook-create-form";
 import { getSession } from "@/lib/auth/server";
 import { WorkbookOptions } from "@/store/types";
+import { LatestWorkbooks } from "./latest-workbooks";
 
 export default async function WorkBookCreatePage({
   searchParams,
@@ -74,16 +71,7 @@ export default async function WorkBookCreatePage({
           </Label>
 
           {latest3Workbooks.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {latest3Workbooks.map((book) => (
-                <Link
-                  href={`/workbooks/${book.id}/${isPublished(book) ? "preview" : "edit"}`}
-                  key={book.id}
-                >
-                  <WorkbookCard key={book.id} workBook={book} />
-                </Link>
-              ))}
-            </div>
+            <LatestWorkbooks initialWorkBooks={latest3Workbooks} />
           ) : (
             <div className="text-center text-muted-foreground py-18 w-full h-full flex items-center justify-center">
               <p>새로운 문제집을 만들어보세요</p>
