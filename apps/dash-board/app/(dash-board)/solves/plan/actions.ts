@@ -1,10 +1,7 @@
 "use server";
 
 import { planService } from "@service/solves";
-import {
-  createSubscriptionPlanSchema,
-  PlanContentBlock,
-} from "@service/solves/shared";
+import { createSubscriptionPlanSchema } from "@service/solves/shared";
 import { z } from "zod";
 import { safeAction } from "@/lib/protocol/server-action";
 
