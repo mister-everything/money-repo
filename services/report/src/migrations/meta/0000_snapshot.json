@@ -1,5 +1,5 @@
 {
-  "id": "8ba73c5f-a7dc-4ebf-a574-f48c7cce7b5b",
+  "id": "d9585cfd-ba1a-4ce7-acad-60cad656bc8d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -26,12 +26,11 @@
           "name": "reporter_user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "target_type": {
           "name": "target_type",
-          "type": "report_target_type",
-          "typeSchema": "report",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true
         },
@@ -43,15 +42,13 @@
         },
         "category_main": {
           "name": "category_main",
-          "type": "report_category_main",
-          "typeSchema": "report",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true
         },
         "category_detail": {
           "name": "category_detail",
-          "type": "report_category_detail",
-          "typeSchema": "report",
+          "type": "varchar(25)",
           "primaryKey": false,
           "notNull": true
         },
@@ -63,8 +60,7 @@
         },
         "status": {
           "name": "status",
-          "type": "report_status",
-          "typeSchema": "report",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true,
           "default": "'RECEIVED'"
@@ -121,66 +117,38 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "report_target_idx": {
-          "name": "report_target_idx",
-          "columns": [
-            {
-              "expression": "target_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "target_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "report_status_idx": {
-          "name": "report_status_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "report_category_idx": {
-          "name": "report_category_idx",
-          "columns": [
-            {
-              "expression": "category_main",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "category_detail",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "content_reports_reporter_user_id_user_id_fk": {
+          "name": "content_reports_reporter_user_id_user_id_fk",
+          "tableFrom": "content_reports",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "reporter_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "content_reports_processor_user_id_user_id_fk": {
+          "name": "content_reports_processor_user_id_user_id_fk",
+          "tableFrom": "content_reports",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "processor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -213,8 +181,7 @@
         },
         "notif_type": {
           "name": "notif_type",
-          "type": "notif_type",
-          "typeSchema": "report",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true
         },
@@ -239,7 +206,22 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "notifications_recipient_user_id_user_id_fk": {
+          "name": "notifications_recipient_user_id_user_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "recipient_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -247,59 +229,7 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {
-    "report.notif_type": {
-      "name": "notif_type",
-      "schema": "report",
-      "values": [
-        "REPORT_COMPLETE",
-        "CONTENT_WARN",
-        "CONTENT_DELETE",
-        "SYSTEM_NOTICE"
-      ]
-    },
-    "report.report_category_detail": {
-      "name": "report_category_detail",
-      "schema": "report",
-      "values": [
-        "ERROR_ANSWER",
-        "ERROR_TYPO",
-        "ERROR_EXPLANATION",
-        "VIOL_GUIDELINE",
-        "VIOL_COPYRIGHT",
-        "OTHER_SYSTEM",
-        "OTHER_FREE"
-      ]
-    },
-    "report.report_category_main": {
-      "name": "report_category_main",
-      "schema": "report",
-      "values": [
-        "ERROR",
-        "VIOLATION",
-        "OTHER"
-      ]
-    },
-    "report.report_status": {
-      "name": "report_status",
-      "schema": "report",
-      "values": [
-        "RECEIVED",
-        "IN_REVIEW",
-        "RESOLVED",
-        "REJECTED"
-      ]
-    },
-    "report.report_target_type": {
-      "name": "report_target_type",
-      "schema": "report",
-      "values": [
-        "QUIZBOOK",
-        "QUIZ_BLOCK",
-        "OTHER"
-      ]
-    }
-  },
+  "enums": {},
   "schemas": {
     "report": "report"
   },
