@@ -1,9 +1,15 @@
 import { chatService } from "@service/solves";
 import { generateUUID } from "@workspace/util";
-import { convertToModelMessages, streamText } from "ai";
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  smoothStream,
+  stepCountIs,
+  streamText,
+} from "ai";
 import { getChatModel } from "@/lib/ai/model";
 import { getSession } from "@/lib/auth/server";
-import { logger } from "@/lib/logger";
 import { WorkbookCreateChatRequest } from "../../../types";
 
 export const maxDuration = 300;
@@ -31,28 +37,49 @@ export async function POST(req: Request) {
   const userMessage = messages.at(-1);
 
   const assistantMessageId = generateUUID();
+  /***********************/
+  const stream = createUIMessageStream({
+    execute: async ({ writer: dataStream }) => {
+      const result = streamText({
+        model: getChatModel(model),
+        messages: convertToModelMessages(messages),
+        experimental_transform: smoothStream({ chunking: "word" }),
+        maxRetries: 1,
+        stopWhen: stepCountIs(5),
 
-  const result = streamText({
-    model: getChatModel(model),
-    messages: convertToModelMessages(messages),
-    onFinish: async (ctx) => {
+        abortSignal: req.signal,
+      });
+      result.consumeStream();
+      dataStream.merge(
+        result.toUIMessageStream({
+          messageMetadata: ({ part }) => {},
+        }),
+      );
+    },
+
+    generateId: generateUUID,
+
+    onFinish: async ({ responseMessage }) => {
       await chatService.upsertMessage({
         id: userMessage.id,
         threadId,
-        role: "user",
+        role: userMessage.role,
         parts: userMessage.parts,
+        metadata: userMessage.metadata,
       });
+      ``;
       await chatService.upsertMessage({
         id: assistantMessageId,
         threadId,
-        role: "assistant",
-        parts: [{ type: "text", text: ctx.text }],
+        role: responseMessage.role,
+        parts: responseMessage.parts,
+        metadata: responseMessage.metadata,
       });
     },
-    onError: (error) => {
-      logger.error("Chat error", error);
-    },
+    originalMessages: messages,
   });
 
-  return result.toUIMessageStreamResponse();
+  return createUIMessageStreamResponse({
+    stream,
+  });
 }

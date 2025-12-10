@@ -445,6 +445,9 @@ importers:
       "@ai-sdk/gateway":
         specifier: ^2.0.18
         version: 2.0.18(zod@4.1.13)
+      "@ai-sdk/openai":
+        specifier: ^2.0.28
+        version: 2.0.77(zod@4.1.13)
       "@ai-sdk/provider":
         specifier: ^2.0.0
         version: 2.0.0
