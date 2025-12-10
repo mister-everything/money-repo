@@ -98,7 +98,7 @@ export function BlockSequential({
               className="px-8 py-3 bg-primary font-bold text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground/90 hover:border-primary/90"
             >
               {isPending && <LoaderIcon className="size-4 animate-spin" />}
-              답안 제출
+              제출하고 결과 보기
             </Button>
           ) : (
             <Button

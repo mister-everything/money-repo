@@ -212,7 +212,7 @@ export function WorkBookSolve({
             <div className="w-full">
               <Button onClick={handleSubmit} size="lg" className="w-full">
                 {isPending && <LoaderIcon className="size-4 animate-spin" />}
-                답안 제출
+                제출하고 결과 보기
               </Button>
             </div>
           </div>
