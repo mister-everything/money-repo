@@ -83,7 +83,7 @@ export function WorkbookCreateForm({
     if (!valid) {
       return;
     }
-    const confirm = notify.confirm({
+    const confirm = await notify.confirm({
       title: "문제집을 생성해볼까요?",
       description:
         "소재는 문제집 생성 후 변경할 수 없으니 신중하게 선택해주세요.",

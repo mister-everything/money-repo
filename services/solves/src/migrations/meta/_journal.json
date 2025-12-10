@@ -15,6 +15,13 @@
       "when": 1765128607309,
       "tag": "0001_organic_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765368117346,
+      "tag": "0002_known_shiver_man",
+      "breakpoints": true
     }
   ]
 }

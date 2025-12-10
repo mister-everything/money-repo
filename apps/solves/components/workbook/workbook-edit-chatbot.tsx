@@ -71,7 +71,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const { chatModel, setChatModel } = useAiStore();
   useChatModelList({
     onSuccess: (data) => {
-      const defaultModel = data.at(0);
+      const defaultModel = data.find((m) => m.isDefaultModel) || data.at(0);
       if (!chatModel && defaultModel) setChatModel(defaultModel);
     },
   });
