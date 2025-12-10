@@ -80,38 +80,42 @@ export function WorkbookCard({
                     )}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem
-                  disabled={workBook.isPublic || isPending}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onTogglePublic?.();
-                  }}
-                >
-                  {isPendingTogglePublic && !workBook.isPublic ? (
-                    <>
-                      공개로 전환중...
-                      <LoaderIcon className="size-3 animate-spin" />
-                    </>
-                  ) : (
-                    "공개하기"
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={!workBook.isPublic || isPending}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onTogglePublic?.();
-                  }}
-                >
-                  {isPendingTogglePublic && workBook.isPublic ? (
-                    <>
-                      비공개로 전환중...
-                      <LoaderIcon className="size-3 animate-spin" />
-                    </>
-                  ) : (
-                    "비공개로 전환"
-                  )}
-                </DropdownMenuItem>
+                {onTogglePublic && (
+                  <>
+                    <DropdownMenuItem
+                      disabled={workBook.isPublic || isPending}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onTogglePublic?.();
+                      }}
+                    >
+                      {isPendingTogglePublic && !workBook.isPublic ? (
+                        <>
+                          공개로 전환중...
+                          <LoaderIcon className="size-3 animate-spin" />
+                        </>
+                      ) : (
+                        "공개하기"
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={!workBook.isPublic || isPending}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onTogglePublic?.();
+                      }}
+                    >
+                      {isPendingTogglePublic && workBook.isPublic ? (
+                        <>
+                          비공개로 전환중...
+                          <LoaderIcon className="size-3 animate-spin" />
+                        </>
+                      ) : (
+                        "비공개로 전환"
+                      )}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

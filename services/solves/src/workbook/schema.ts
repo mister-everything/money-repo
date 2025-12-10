@@ -33,6 +33,8 @@ export const workBooksTable = solvesSchema.table("work_books", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   publishedAt: timestamp("published_at"),
+  deletedAt: timestamp("deleted_at"),
+  deletedReason: text("deleted_reason"),
 });
 
 /**

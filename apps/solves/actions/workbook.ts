@@ -4,6 +4,7 @@ import { workBookService } from "@service/solves";
 import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
+import { fail } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
 export const createWorkbookAction = safeAction(
@@ -130,6 +131,25 @@ export const deleteWorkbookAction = safeAction(
     await workBookService.checkEditPermission(workBookId, session.user.id);
     await workBookService.deleteWorkBook(workBookId);
     return { deletedWorkBookId: workBookId };
+  },
+);
+
+export const softDeleteWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    reason: z.string().optional(),
+  }),
+  async ({ workBookId, reason }) => {
+    const session = await getSession();
+    const isOwner = await workBookService.isWorkBookOwner(
+      workBookId,
+      session.user.id,
+    );
+    if (!isOwner) {
+      return fail("권한이 없습니다.");
+    }
+    await workBookService.softDeleteWorkBook(workBookId, reason);
+    return { softDeletedWorkBookId: workBookId };
   },
 );
 
