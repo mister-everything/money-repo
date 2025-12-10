@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,18 +44,24 @@ const oauthProviders: {
   },
 ];
 
-export default function SignUpPage() {
-  const handleSocialSignIn = useCallback((provider: string) => {
-    authClient.signIn
-      .social({ provider })
-      .catch((e: any) => {
-        logger.info(`authClient.signIn.social error ${provider}`, e);
-        toast.warning(`${provider} 로그인에 실패했습니다.`);
-      })
-      .finally(() => {
-        logger.info(`end sign in with ${provider}`);
-      });
-  }, []);
+function SignInContent() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+
+  const handleSocialSignIn = useCallback(
+    (provider: string) => {
+      authClient.signIn
+        .social({ provider, callbackURL: callbackUrl })
+        .catch((e: any) => {
+          logger.info(`authClient.signIn.social error ${provider}`, e);
+          toast.warning(`${provider} 로그인에 실패했습니다.`);
+        })
+        .finally(() => {
+          logger.info(`end sign in with ${provider}`);
+        });
+    },
+    [callbackUrl],
+  );
 
   return (
     <Card className="shadow-none flex flex-col gap-4 justify-center w-full max-w-sm  h-full mx-auto bg-transparent border-none">
@@ -90,5 +97,13 @@ export default function SignUpPage() {
         </Link>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInContent />
+    </Suspense>
   );
 }

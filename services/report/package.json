@@ -13,11 +13,13 @@
     "db:migrate": "tsx src/migrate.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./shared": "./src/shared.ts"
   },
   "dependencies": {
     "consola": "^3.4.2",
     "@workspace/util": "workspace:*",
+    "@service/auth": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "@workspace/error": "workspace:*",
     "pg": "^8.16.3",

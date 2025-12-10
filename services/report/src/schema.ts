@@ -1,70 +1,124 @@
-import { pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { userTable } from "@service/auth";
+
+import {
+  boolean,
+  pgSchema,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 
 import { SCHEMA_NAME } from "./const";
+import {
+  NotificationType,
+  ReportCategoryDetail,
+  ReportCategoryMain,
+  ReportStatus,
+  ReportTargetType,
+} from "./types";
 
+/**
+ * reportSchema: 신고 도메인에서 사용할 전용 PostgreSQL 스키마 네임스페이스.
+ */
 export const reportSchema = pgSchema(SCHEMA_NAME);
 
 /**
- * 신고의 대상 유형을 고정시키는 ENUM. solves/src/payment/schema.ts 참고함
- *  - QUIZBOOK: 문제집 전체에 대한 신고
- *  - QUIZ_BLOCK: 개별 문제에 대한 신고
- *  - OTHER: 일반 피드백/기타 문의
+ * content_reports — 사용자 신고/피드백의 전 과정을 기록하는 핵심 테이블.
  */
-export const reportTargetTypeEnum = reportSchema.enum("report_target_type", [
-  "QUIZBOOK",
-  "QUIZ_BLOCK",
-  "OTHER",
-]);
+export const contentReportsTable = reportSchema.table(
+  "content_reports",
+  {
+    /** 신고 고유 ID (UUID) */
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    /** 신고 접수 시각 */
+    reportedAt: timestamp("reported_at").notNull().defaultNow(),
+
+    /** 신고자 auth.user.id */
+    reporterUserId: text("reporter_user_id").references(() => userTable.id, {
+      onDelete: "set null",
+    }),
+
+    /** 신고 대상 구분 */
+    targetType: varchar("target_type", { length: 10 })
+      .$type<ReportTargetType>()
+      .notNull(),
+
+    /** 신고된 리소스 ID (문제집/문제 UUID 또는 기타 문자열) */
+    targetId: text("target_id").notNull(),
+
+    /** 대분류: ERROR/VIOLATION/OTHER */
+    categoryMain: varchar("category_main", { length: 10 })
+      .$type<ReportCategoryMain>()
+      .notNull(),
+
+    /** 세부 유형: ERROR_ANSWER 등 */
+    categoryDetail: varchar("category_detail", { length: 25 })
+      .$type<ReportCategoryDetail>()
+      .notNull(),
+
+    /** 신고 상세 내용 */
+    detailText: text("detail_text"),
+
+    /** 처리 상태 */
+    status: varchar("status", { length: 10 })
+      .$type<ReportStatus>()
+      .notNull()
+      .default(ReportStatus.RECEIVED),
+
+    /** 처리 담당자 auth.user.id (배정 전 null) */
+    processorUserId: text("processor_user_id").references(() => userTable.id, {
+      onDelete: "set null",
+    }),
+
+    /** 처리 완료/반려 시각 */
+    processedAt: timestamp("processed_at"),
+
+    /** 운영 메모 및 조치 기록 */
+    processingNote: text("processing_note"),
+  },
+  (table) => [
+    uniqueIndex("report_unique_user_target_detail").on(
+      table.reporterUserId,
+      table.targetType,
+      table.targetId,
+      table.categoryDetail,
+    ),
+    // index("report_target_idx").on(table.targetType, table.targetId),
+    // index("report_status_idx").on(table.status),
+    // index("report_category_idx").on(table.categoryMain, table.categoryDetail),
+    // index("report_date_idx").on(table.reportedAt), // 날짜별 조회/정렬용 인덱스 추가함
+  ],
+);
 
 /**
- * content_reports: 모든 신고/피드백을 기록하는 테이블
- * 현재 단계에서는 가장 필요한 컬럼만 정의해 둔다 추후 바뀔 수 있음
+ * notifications — 신고 결과/조치 안내 알림을 저장.
  */
-export const contentReportsTable = reportSchema.table("content_reports", {
-  /**
-   * id: 신고 레코드 고유 ID
-   *  - UUID를 기본 키로 사용하여 다른 서비스/알림에서 참조하기 쉬움
-   */
+export const notificationsTable = reportSchema.table("notifications", {
+  /** 알림 고유 ID */
   id: uuid("id").primaryKey().defaultRandom(),
 
-  /**
-   * reported_at: 사용자가 신고 폼을 제출한 정확한 시각
-   *  - 정렬, 필터링 등에 활용
-   */
-  reportedAt: timestamp("reported_at").notNull().defaultNow(),
+  /** 수신자 auth.user.id */
+  recipientUserId: text("recipient_user_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
 
-  /**
-   * reporter_user_id: 신고를 생성한 사용자 ID
-   *  - auth.user.id 값을 문자열로 저장
-   *  - 추후 distinct 신고자 수 계산 시 사용
-   */
-  reporterUserId: text("reporter_user_id").notNull(),
+  /** 생성된 시각 */
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
 
-  /**
-   * target_type: 신고 대상 구분
-   *  - QUIZBOOK(퀴즈 전체 신고) / QUIZ_BLOCK(퀴즈 개별 문제) / OTHER(기타 피드백) 중 하나
-   *  - target_id 해석 방법을 정의
-   */
-  targetType: reportTargetTypeEnum("target_type").notNull(),
+  /** 알림 유형 */
+  notifType: varchar("notif_type", { length: 20 })
+    .$type<NotificationType>()
+    .notNull(),
 
-  /**
-   * target_id: 실제로 신고된 리소스의 식별자
-   *  - 문제집/문제는 UUID를 문자열로 저장
-   *  - 기타 피드백은 자유 텍스트(예: "화면 개선좀 해줘요 또는 질문 있습니다")
-   */
-  targetId: text("target_id").notNull(),
+  /** 관련 콘텐츠 ID (문제집, 신고 등) */
+  relatedContentId: text("related_content_id"),
 
-  /**
-   * category: 신고 유형을 간단히 표현하는 문자열
-   *  - 예: "ERROR_ANSWER", "VIOLATION"(위반), "OTHER" 등
-   *  - 추후 ENUM 세분화 전에 임시로 사용
-   */
-  category: text("category").notNull(),
+  /** 사용자에게 노출되는 메시지 */
+  messageBody: text("message_body").notNull(),
 
-  /**
-   * detail_text: 신고자 상세 내용
-   *  - null 허용(필수 입력이 아닐 수 있기 때문)
-   *  - 운영자가 이 내용을 바탕으로 검토
-   */
-  detailText: text("detail_text"),
+  /** 읽음 여부 */
+  isRead: boolean("is_read").notNull().default(false),
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftIcon } from "lucide-react";
+import { ChevronLeftIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,7 @@ export function GoBackButton({
       onClick={() => router.back()}
       className={className}
     >
-      <ArrowLeftIcon className="size-4!" />
+      <ChevronLeftIcon className="size-4!" />
       {children}
     </Button>
   );

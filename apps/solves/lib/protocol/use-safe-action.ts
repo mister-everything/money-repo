@@ -6,6 +6,8 @@ import {
   SafeFailResponse,
   SafeFunction,
   SafeResponse,
+  SafeSuccessResponse,
+  UnwrapSafeSuccessResponse,
 } from "./interface";
 
 export type SafeActionOptions<T, U> = {
@@ -19,7 +21,7 @@ export type SafeActionOptions<T, U> = {
 
 export function useSafeAction<T, U>(
   serverAction: SafeFunction<T, U>,
-  options?: SafeActionOptions<T, U>,
+  options?: SafeActionOptions<T, UnwrapSafeSuccessResponse<U>>,
 ) {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<SafeResponse<U> | null>(null);
@@ -37,15 +39,21 @@ export function useSafeAction<T, U>(
             if (isSafeFail(result)) throw result;
 
             const data = result.data;
-            setResult(result);
+            setResult(result as SafeSuccessResponse<U>);
 
-            options?.onSuccess?.(data);
-            options?.onFinish?.(result);
+            options?.onSuccess?.(data as UnwrapSafeSuccessResponse<U>);
+            options?.onFinish?.(
+              result as SafeResponse<UnwrapSafeSuccessResponse<U>>,
+            );
 
             const successMessage = options?.successMessage;
             if (!isNull(successMessage)) {
               if (isFunction(successMessage)) {
-                toast.success(successMessage(data));
+                toast.success(
+                  successMessage(
+                    data as unknown as UnwrapSafeSuccessResponse<U>,
+                  ),
+                );
               } else {
                 toast.success(successMessage);
               }

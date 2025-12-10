@@ -16,9 +16,15 @@ export type SafeFailResponse = {
 
 export type SafeResponse<T> = SafeSuccessResponse<T> | SafeFailResponse;
 
+export type UnwrapSafeSuccessResponse<T> = T extends SafeSuccessResponse<
+  infer U
+>
+  ? U
+  : T;
+
 export type SafeFunction<T, U> = (
   data: T,
-) => Promise<SafeResponse<U>> | SafeResponse<U>;
+) => Promise<SafeResponse<U>> | SafeResponse<UnwrapSafeSuccessResponse<U>>;
 
 export const isSafeResponse = <T = any>(
   response: any,
@@ -41,9 +47,12 @@ export const isSafeFail = (response: any): response is SafeFailResponse => {
   return isSafeResponse(response) && response.success === false;
 };
 
-export const safeOk = <T>(data: T): SafeSuccessResponse<T> => {
+export const safeOk = <T>(data?: T): SafeSuccessResponse<T> => {
+  if (isSafeResponse(data)) {
+    return data as SafeSuccessResponse<T>;
+  }
   return {
-    data,
+    data: data ?? (null as T),
     success: true,
     $tag: SOLVES_PROTOCOL_TAG,
   };

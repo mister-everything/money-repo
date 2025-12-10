@@ -1,24 +1,16 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { ChatModel, ChatThread } from "@service/solves/shared";
+import { ChatThread } from "@service/solves/shared";
 import { deduplicateByKey, generateUUID } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
-import {
-  LoaderIcon,
-  PlusIcon,
-  SendIcon,
-  SquareIcon,
-  XIcon,
-} from "lucide-react";
+import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { deleteThreadAction } from "@/actions/chat";
 import { Message } from "@/components/chat/message";
-import { ModelDropDownMenu } from "@/components/chat/model-drop-down-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { notify } from "@/components/ui/notify";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -26,11 +18,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 import { useToRef } from "@/hooks/use-to-ref";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
+import { useAiStore } from "@/store/ai-store";
+import PromptInput from "../chat/prompt-input";
+import { Button } from "../ui/button";
 
 interface WorkbooksCreateChatProps {
   workbookId: string;
@@ -72,15 +68,17 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     },
     dedupingInterval: 0,
   });
+  const { chatModel, setChatModel } = useAiStore();
+  useChatModelList({
+    onSuccess: (data) => {
+      const defaultModel = data.at(0);
+      if (!chatModel && defaultModel) setChatModel(defaultModel);
+    },
+  });
 
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
-  const [model, setModel] = useState<ChatModel>({
-    provider: "openai",
-    model: "gpt-4o-mini",
-  });
-
-  const latest = useToRef({ model, threadId, tempThreadList });
+  const latest = useToRef({ chatModel, threadId, tempThreadList });
 
   const [input, setInput] = useState<string>("");
 
@@ -120,7 +118,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         return {
           body: {
             messages,
-            model: latest.current.model,
+            model: latest.current.chatModel,
             workbookId,
             threadId: id,
           },
@@ -160,24 +158,6 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     },
     [input, status],
   );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (
-        e.key === "Enter" &&
-        !e.shiftKey &&
-        !e.nativeEvent.isComposing &&
-        !isPending
-      ) {
-        send();
-      }
-    },
-    [send, isPending],
-  );
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.currentTarget.value);
-  }, []);
 
   const addNewThread = useCallback(() => {
     const id = generateUUID();
@@ -276,7 +256,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   }, [isMessagesLoading]);
 
   return (
-    <div className="flex flex-col h-full border rounded-2xl bg-sidebar">
+    <div className="flex flex-col h-full border rounded-2xl bg-sidebar relative">
       <div className="flex items-center p-2">
         <div className="flex-1 overflow-x-auto flex gap-1">
           {isThreadLoading ? (
@@ -336,7 +316,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       <div
         ref={messagesContainerRef}
         className={cn(
-          "flex-1 overflow-y-auto px-4 py-4",
+          "flex-1 overflow-y-auto px-4 py-4 pb-40",
           isMessagesLoading && "bg-background/20",
         )}
       >
@@ -363,30 +343,22 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           </>
         )}
       </div>
-      <div className={cn("p-4 flex flex-col gap-2", !threadId && "hidden")}>
-        <div className="w-full flex justify-end">
-          <ModelDropDownMenu defaultModel={model} onModelChange={setModel} />
-        </div>
-        <div className="flex gap-2 items-center">
-          <Input
-            value={input}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            placeholder="무엇이든 물어보세요"
-            className="bg-background"
-          />
-          <Button
-            size={"icon"}
-            onClick={() => (isChatPending ? stop() : send())}
-            disabled={!isChatPending && isPending}
-          >
-            {isChatPending ? (
-              <SquareIcon className="fill-primary-foreground" />
-            ) : (
-              <SendIcon />
-            )}
-          </Button>
-        </div>
+      <div
+        className={cn(
+          "p-2 absolute bottom-0 left-0 right-0",
+          !threadId && "hidden",
+        )}
+      >
+        <PromptInput
+          input={input}
+          onChange={setInput}
+          onEnter={send}
+          placeholder="무엇이든 물어보세요"
+          disabledSendButton={!isChatPending && isPending}
+          chatModel={chatModel}
+          onChatModelChange={setChatModel}
+          onSendButtonClick={() => (isChatPending ? stop() : send())}
+        />
       </div>
     </div>
   );

@@ -43,13 +43,12 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarSolveMenuItem
-            rootHref="/workbooks/solve"
-            inProgressHref="/workbooks/in-progress"
-            completedHref="/workbooks/completed"
+            rootHref="/workbooks"
+            solveSessionsHref="/workbooks/session"
           />
           <SidebarEditMenuItem
-            rootHref="/workbooks/new"
-            myWorkbooksHref="/workbooks"
+            rootHref="/workbooks/creator/new"
+            myWorkbooksHref="/workbooks/creator"
           />
         </SidebarGroup>
       </SidebarContent>

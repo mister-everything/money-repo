@@ -38,3 +38,7 @@ export const RANKING_BLOCK_ITEM_MAX_LENGTH = 30;
 export const BLOCK_OPTION_TEXT_MAX_LENGTH = 100;
 
 export const MAX_INPROGRESS_WORKBOOK_CREATE_COUNT = 3;
+
+export const MAX_TAG_COUNT = 10;
+
+export const MAX_CATEGORY_COUNT = 3;
