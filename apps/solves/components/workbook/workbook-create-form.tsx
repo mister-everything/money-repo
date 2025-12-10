@@ -60,7 +60,7 @@ export function WorkbookCreateForm({
     },
   });
 
-  const [, formAction, isPending] = useSafeAction(createWorkbookAction, {
+  const [, createWorkbook, isPending] = useSafeAction(createWorkbookAction, {
     onSuccess: (result) => {
       setWorkbooks(result.id, formData);
       router.push(`/workbooks/${result.id}/edit`);
@@ -93,7 +93,7 @@ export function WorkbookCreateForm({
     if (!confirm) {
       return;
     }
-    formAction({
+    createWorkbook({
       title: "",
       categories: formData.categories,
     });
@@ -122,7 +122,7 @@ export function WorkbookCreateForm({
         )}
       </div>
 
-      <form className="space-y-3 w-full">
+      <div className="space-y-3 w-full">
         <div className="space-y-3">
           <div className="flex items-center gap-1">
             <label className="text-sm font-bold text-foreground">소재</label>
@@ -303,7 +303,7 @@ export function WorkbookCreateForm({
             "문제 만들기"
           )}
         </Button>
-      </form>
+      </div>
     </div>
   );
 }
