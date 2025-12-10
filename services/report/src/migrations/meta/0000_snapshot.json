@@ -1,5 +1,5 @@
 {
-  "id": "1332c7a3-17bf-4588-9a5f-ac16830f67c9",
+  "id": "d9585cfd-ba1a-4ce7-acad-60cad656bc8d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -26,12 +26,11 @@
           "name": "reporter_user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "target_type": {
           "name": "target_type",
-          "type": "report_target_type",
-          "typeSchema": "report",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true
         },
@@ -41,9 +40,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "category": {
-          "name": "category",
-          "type": "text",
+        "category_main": {
+          "name": "category_main",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_detail": {
+          "name": "category_detail",
+          "type": "varchar(25)",
           "primaryKey": false,
           "notNull": true
         },
@@ -52,10 +57,171 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'RECEIVED'"
+        },
+        "processor_user_id": {
+          "name": "processor_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "processing_note": {
+          "name": "processing_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "report_unique_user_target_detail": {
+          "name": "report_unique_user_target_detail",
+          "columns": [
+            {
+              "expression": "reporter_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "category_detail",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "content_reports_reporter_user_id_user_id_fk": {
+          "name": "content_reports_reporter_user_id_user_id_fk",
+          "tableFrom": "content_reports",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "reporter_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "content_reports_processor_user_id_user_id_fk": {
+          "name": "content_reports_processor_user_id_user_id_fk",
+          "tableFrom": "content_reports",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "processor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "report.notifications": {
+      "name": "notifications",
+      "schema": "report",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "recipient_user_id": {
+          "name": "recipient_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "notif_type": {
+          "name": "notif_type",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "related_content_id": {
+          "name": "related_content_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message_body": {
+          "name": "message_body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_read": {
+          "name": "is_read",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "notifications_recipient_user_id_user_id_fk": {
+          "name": "notifications_recipient_user_id_user_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "recipient_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -63,17 +229,7 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {
-    "report.report_target_type": {
-      "name": "report_target_type",
-      "schema": "report",
-      "values": [
-        "QUIZBOOK",
-        "QUIZ_BLOCK",
-        "OTHER"
-      ]
-    }
-  },
+  "enums": {},
   "schemas": {
     "report": "report"
   },
