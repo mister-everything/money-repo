@@ -16,11 +16,10 @@ export type SafeFailResponse = {
 
 export type SafeResponse<T> = SafeSuccessResponse<T> | SafeFailResponse;
 
-export type UnwrapSafeSuccessResponse<T> = T extends SafeSuccessResponse<
-  infer U
->
-  ? U
-  : T;
+export type UnwrapSafeSuccessResponse<T> = Exclude<
+  T extends SafeSuccessResponse<infer U> ? U : T,
+  SafeFailResponse
+>;
 
 export type SafeFunction<T, U> = (
   data: T,

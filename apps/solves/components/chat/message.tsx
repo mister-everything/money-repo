@@ -1,11 +1,12 @@
 "use client";
 
-import { equal } from "@workspace/util";
+import { equal, errorToString } from "@workspace/util";
 import { ChatStatus, isToolUIPart, type UIMessage } from "ai";
-
+import { AlertTriangleIcon, RefreshCcwIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 import { Think } from "@/components/ui/think";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 import { AssistantTextPart, ReasoningPart, UserMessagePart } from "./part";
 
 function isStreamingMessage(
@@ -127,3 +128,28 @@ export const Message = memo(
     return true;
   },
 );
+
+export function ChatErrorMessage({
+  error,
+  clearError,
+}: {
+  error: Error;
+  clearError: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-center  flex-col gap-4 bg-point/5 text-point rounded-lg p-6 text-sm ">
+      <AlertTriangleIcon className="size-8" />
+      <p>{errorToString(error)}</p>
+
+      <Button
+        className="w-full shadow-none bg-point/10 text-point border-point hover:bg-point hover:text-background"
+        variant="outline"
+        size="lg"
+        onClick={clearError}
+      >
+        <RefreshCcwIcon />
+        채팅 새로 고침
+      </Button>
+    </div>
+  );
+}

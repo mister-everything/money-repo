@@ -103,6 +103,12 @@ export const AiProviderPricesTable = solvesSchema.table(
      *  eg: true, false
      */
     isActive: boolean("is_active").notNull().default(true),
+
+    /** 기본 모델 여부
+     *  사용자에게 기본으로 선택되는 모델인지 표시
+     *  eg: true, false
+     */
+    isDefaultModel: boolean("is_default_model").notNull().default(false),
     ...timestamps,
   },
   (t) => [

@@ -4,128 +4,55 @@ import {
   createAIPriceSchema,
   updateAIPriceSchema,
 } from "@service/solves/shared";
-import { PublicError } from "@workspace/error";
-import { flattenError, z } from "zod";
-import { logger } from "@/lib/logger";
-
-type FormState = {
-  success: boolean;
-  errors?: ReturnType<typeof flattenError>;
-  message?: string;
-};
+import { z } from "zod";
+import { safeAction } from "@/lib/protocol/server-action";
 
 /**
  * AI 가격 생성 액션
  */
-export async function createAIPriceAction(
-  _prevState: FormState | null,
-  formData: FormData,
-): Promise<FormState> {
-  try {
-    const data = {
-      provider: formData.get("provider") as string,
-      model: formData.get("model") as string,
-      displayName: formData.get("displayName") as string,
-      modelType: formData.get("modelType") as
-        | "text"
-        | "image"
-        | "audio"
-        | "video"
-        | "embedding",
-      inputTokenPrice: formData.get("inputTokenPrice") as string,
-      outputTokenPrice: formData.get("outputTokenPrice") as string,
-      cachedTokenPrice: formData.get("cachedTokenPrice") as string,
-      markupRate: formData.get("markupRate") as string,
-      isActive: formData.get("isActive") === "true",
-    };
-
-    // Validation
-    const validated = createAIPriceSchema.parse(data);
-
-    await aiPriceService.createPrice(validated);
-
-    return {
-      success: true,
-      message: "AI 가격이 생성되었습니다.",
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        errors: flattenError(error),
-        message: "입력값을 확인해주세요.",
-      };
-    }
-    logger.error("AI 가격 생성 실패:", error);
-    return {
-      success: false,
-      message: "AI 가격 생성에 실패했습니다.",
-    };
-  }
-}
+export const createAIPriceAction = safeAction(
+  createAIPriceSchema,
+  async (data) => {
+    const created = await aiPriceService.createPrice(data);
+    return created;
+  },
+);
 
 /**
  * AI 가격 수정 액션
  */
-export async function updateAIPriceAction(
-  priceId: string,
-  _prevState: FormState | null,
-  formData: FormData,
-): Promise<FormState> {
-  try {
-    const data = {
-      provider: formData.get("provider") as string,
-      model: formData.get("model") as string,
-      displayName: formData.get("displayName") as string,
-      modelType: formData.get("modelType") as
-        | "text"
-        | "image"
-        | "audio"
-        | "video"
-        | "embedding",
-      inputTokenPrice: formData.get("inputTokenPrice") as string,
-      outputTokenPrice: formData.get("outputTokenPrice") as string,
-      cachedTokenPrice: formData.get("cachedTokenPrice") as string,
-      markupRate: formData.get("markupRate") as string,
-      isActive: formData.get("isActive") === "true",
-    };
-
-    // Validation
-    const validated = updateAIPriceSchema.parse(data);
-
-    await aiPriceService.updatePrice(priceId, validated);
-
-    return {
-      success: true,
-      message: "AI 가격이 수정되었습니다.",
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        errors: flattenError(error),
-        message: "입력값을 확인해주세요.",
-      };
-    }
-    logger.error("AI 가격 수정 실패:", error);
-    return {
-      success: false,
-      message: "AI 가격 수정에 실패했습니다.",
-    };
-  }
-}
+export const updateAIPriceAction = safeAction(
+  updateAIPriceSchema.extend({ id: z.string() }),
+  async ({ id, ...data }) => {
+    await aiPriceService.updatePrice(id, data);
+    return { id };
+  },
+);
 
 /**
  * AI 가격 활성화/비활성화 토글 액션
  */
-export async function toggleAIPriceActiveAction(
-  priceId: string,
-  isActive: boolean,
-) {
-  try {
+export const toggleAIPriceActiveAction = safeAction(
+  z.object({
+    priceId: z.string(),
+    isActive: z.boolean(),
+  }),
+  async ({ priceId, isActive }) => {
     await aiPriceService.setPriceActive(priceId, isActive);
-  } catch (error) {
-    logger.error("AI 가격 상태 변경 실패:", error);
-    throw new PublicError("AI 가격 상태 변경에 실패했습니다.");
-  }
-}
+    return { priceId, isActive };
+  },
+);
+
+/**
+ * modelType별 기본 모델 설정 액션
+ */
+export const setDefaultModelAction = safeAction(
+  z.object({
+    priceId: z.string(),
+    modelType: z.string(),
+  }),
+  async ({ priceId, modelType }) => {
+    await aiPriceService.setDefaultModel(priceId, modelType);
+    return { priceId, modelType };
+  },
+);
