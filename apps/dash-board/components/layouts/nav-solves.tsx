@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  FolderTreeIcon,
-  SquareChartGanttIcon,
-  TrendingUpDownIcon,
-} from "lucide-react";
+import { SquareChartGanttIcon, TrendingUpDownIcon } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -24,11 +20,6 @@ const menuItems = [
     title: "AI Model 관리",
     url: "/solves/ai-prices",
     icon: TrendingUpDownIcon,
-  },
-  {
-    title: "카테고리 관리",
-    url: "/solves/categories",
-    icon: FolderTreeIcon,
   },
 ];
 
