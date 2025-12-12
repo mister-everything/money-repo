@@ -28,7 +28,7 @@ export default async function WorkbookEditPage({
       <div className="flex-1 h-full overflow-hidden">
         <WorkbookEdit key={id} book={workBook} blocks={blocks} />
       </div>
-      <div className="hidden lg:block w-sm lg:w-md xl:w-lg 2xl:w-2xl h-full overflow-hidden p-2">
+      <div className="hidden lg:block w-sm lg:w-lg xl:w-2xl 2xl:w-3xl h-full overflow-hidden p-2">
         <WorkbooksCreateChat workbookId={id} key={id} />
       </div>
     </div>

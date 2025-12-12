@@ -39,7 +39,7 @@ export const useWorkbookEditStore = create<
           };
           const entries = Object.entries(updated);
           if (entries.length <= MAX_WORKBOOKS) {
-            return { workbooks: updated };
+            return { workbookOptions: updated };
           }
           const sorted = entries.sort(
             ([, a], [, b]) =>
@@ -65,6 +65,7 @@ export const useWorkbookEditStore = create<
       name: "workbook-create",
       partialize: (state) => {
         return {
+          ...initialState,
           ...state,
           workBook: undefined,
           blocks: [],
