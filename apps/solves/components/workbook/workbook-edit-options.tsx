@@ -57,7 +57,11 @@ export function WorkbookEditOptions({
               value={options?.situation}
               onChange={setSituation}
             >
-              <Button size={"sm"} variant={"outline"}>
+              <Button
+                size={"sm"}
+                variant={"outline"}
+                className="data-[state=open]:bg-input!"
+              >
                 {WorkBookSituation.find(
                   (value) => value.value === options?.situation,
                 )?.label || "상황"}
@@ -74,7 +78,11 @@ export function WorkbookEditOptions({
               value={options?.blockTypes}
               onChange={setBlockTypes}
             >
-              <Button size={"sm"} variant={"outline"}>
+              <Button
+                size={"sm"}
+                variant={"outline"}
+                className="data-[state=open]:bg-input!"
+              >
                 {options?.blockTypes.length ==
                 Object.keys(blockDisplayNames).length
                   ? "모든 유형"
@@ -94,7 +102,11 @@ export function WorkbookEditOptions({
               value={options?.ageGroup}
               onChange={setAgeGroup}
             >
-              <Button size={"sm"} variant={"outline"}>
+              <Button
+                size={"sm"}
+                variant={"outline"}
+                className="data-[state=open]:bg-input!"
+              >
                 {WorkBookAgeGroup.find(
                   (value) => value.value === options?.ageGroup,
                 )?.label || "연령대"}
@@ -112,7 +124,11 @@ export function WorkbookEditOptions({
               value={options?.difficulty}
               onChange={setDifficulty}
             >
-              <Button size={"sm"} variant={"outline"}>
+              <Button
+                size={"sm"}
+                variant={"outline"}
+                className="data-[state=open]:bg-input!"
+              >
                 {WorkBookDifficulty.find(
                   (value) => value.value === options?.difficulty,
                 )?.label || "난이도"}
