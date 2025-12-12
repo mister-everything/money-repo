@@ -21,14 +21,15 @@ export default async function WorkbookEditPage({
 
   const book = await workBookService.getWorkBookWithBlocks(id);
   if (!book) notFound();
+  const { blocks, ...workBook } = book;
 
   return (
     <div className="flex w-full h-screen px-4 gap-4">
       <div className="flex-1 h-full overflow-hidden">
-        <WorkbookEdit book={book} />
+        <WorkbookEdit key={id} book={workBook} blocks={blocks} />
       </div>
-      <div className="hidden lg:block w-sm lg:w-md xl:w-lg 2xl:w-2xl h-full overflow-hidden p-2">
-        <WorkbooksCreateChat workbookId={id} />
+      <div className="hidden lg:block w-sm lg:w-lg xl:w-2xl 2xl:w-3xl h-full overflow-hidden p-2">
+        <WorkbooksCreateChat workbookId={id} key={id} />
       </div>
     </div>
   );
