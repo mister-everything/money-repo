@@ -38,6 +38,7 @@ export type WorkBookBlockWithoutAnswer = Omit<WorkBookBlock, "answer">;
 export type WorkBook = {
   id: string;
   title: string;
+  likeCount: number;
   description?: string | null;
   blocks: WorkBookBlock[];
   tags: { id: number; name: string }[];

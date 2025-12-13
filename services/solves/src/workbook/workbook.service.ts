@@ -18,6 +18,7 @@ import {
   blocksTable,
   categorySubTable,
   tagsTable,
+  WorkBookLikes,
   workBookBlockAnswerSubmitsTable,
   workBookCategoryTable,
   workBookSubmitsTable,
@@ -52,6 +53,7 @@ const WorkBookColumnsForList = {
   id: workBooksTable.id,
   title: workBooksTable.title,
   description: workBooksTable.description,
+  likeCount: workBooksTable.likeCount,
   isPublic: workBooksTable.isPublic,
   ownerName: userTable.name,
   ownerProfile: userTable.image,
@@ -926,5 +928,50 @@ export const workBookService = {
           eq(workBookSubmitsTable.active, true),
         ),
       );
+  },
+  toggleLikeWorkBook: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<void> => {
+    return pgDb.transaction(async (tx) => {
+      const [likeRow] = await tx
+        .select({
+          workBookId: WorkBookLikes.workBookId,
+        })
+        .from(WorkBookLikes)
+        .where(
+          and(
+            eq(WorkBookLikes.workBookId, workBookId),
+            eq(WorkBookLikes.userId, userId),
+          ),
+        );
+      if (likeRow) {
+        await tx
+          .delete(WorkBookLikes)
+          .where(
+            and(
+              eq(WorkBookLikes.workBookId, workBookId),
+              eq(WorkBookLikes.userId, userId),
+            ),
+          );
+        await tx
+          .update(workBooksTable)
+          .set({
+            likeCount: sql`${workBooksTable.likeCount} - 1`,
+          })
+          .where(eq(workBooksTable.id, workBookId));
+      } else {
+        await tx.insert(WorkBookLikes).values({
+          workBookId,
+          userId,
+        });
+        await tx
+          .update(workBooksTable)
+          .set({
+            likeCount: sql`${workBooksTable.likeCount} + 1`,
+          })
+          .where(eq(workBooksTable.id, workBookId));
+      }
+    });
   },
 };

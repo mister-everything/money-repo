@@ -3,6 +3,7 @@ import {
   boolean,
   integer,
   jsonb,
+  pgTable,
   primaryKey,
   serial,
   text,
@@ -32,6 +33,7 @@ export const workBooksTable = solvesSchema.table("work_books", {
   isPublic: boolean("is_public").default(true).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  likeCount: integer("like_count").default(0).notNull(),
   publishedAt: timestamp("published_at"),
   deletedAt: timestamp("deleted_at"),
   deletedReason: text("deleted_reason"),
@@ -181,4 +183,18 @@ export const workBookCategoryTable = solvesSchema.table(
       columns: [table.workBookId, table.categoryMainId, table.categorySubId],
     }),
   ],
+);
+
+export const WorkBookLikes = pgTable(
+  "work_book_likes",
+  {
+    workBookId: uuid("work_book_id")
+      .references(() => workBooksTable.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.workBookId, t.userId] })],
 );
