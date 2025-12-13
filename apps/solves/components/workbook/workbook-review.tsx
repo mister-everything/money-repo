@@ -7,7 +7,6 @@ import { CheckIcon, Share2Icon } from "lucide-react";
 import { useCallback } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
-import { GoBackButton } from "../layouts/go-back-button";
 import { Button } from "../ui/button";
 import { Block } from "./block/block";
 import { WorkBookLikeButton } from "./workbook-like-button";
@@ -38,7 +37,6 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
   return (
     <div className="w-full px-4">
       <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
-        <GoBackButton>뒤로가기</GoBackButton>
         <div className="ml-auto lg:hidden">
           <WorkBookLikeButton
             workBookId={session.workBook.id}
