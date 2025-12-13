@@ -377,6 +377,113 @@ export const workBookService = {
     });
   },
 
+  copyWorkBook: async ({
+    workBookId,
+    userId,
+  }: {
+    workBookId: string;
+    userId: string;
+  }): Promise<{ id: string }> => {
+    const [origin] = await pgDb
+      .select({
+        id: workBooksTable.id,
+        ownerId: workBooksTable.ownerId,
+        title: workBooksTable.title,
+        description: workBooksTable.description,
+        isPublic: workBooksTable.isPublic,
+      })
+      .from(workBooksTable)
+      .where(
+        and(
+          eq(workBooksTable.id, workBookId),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
+
+    if (!origin) throw new PublicError("문제집을 찾을 수 없습니다.");
+    if (origin.ownerId !== userId)
+      throw new PublicError("문제집 복사 권한이 없습니다.");
+
+    return pgDb.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(workBooksTable)
+        .values({
+          ownerId: userId,
+          title: `복사본 - ${origin.title ?? ""}`.trim().slice(0, 20),
+          description: origin.description,
+          isPublic: origin.isPublic,
+          publishedAt: null,
+          likeCount: 0,
+          firstScoreSum: 0,
+          firstSolverCount: 0,
+        })
+        .returning({ id: workBooksTable.id });
+
+      const newWorkBookId = created.id;
+
+      const blocks = await tx
+        .select({
+          order: blocksTable.order,
+          type: blocksTable.type,
+          question: blocksTable.question,
+          content: blocksTable.content,
+          answer: blocksTable.answer,
+        })
+        .from(blocksTable)
+        .where(eq(blocksTable.workBookId, workBookId))
+        .orderBy(blocksTable.order);
+
+      if (blocks.length > 0) {
+        await tx.insert(blocksTable).values(
+          blocks.map((b) => ({
+            workBookId: newWorkBookId,
+            order: b.order,
+            type: b.type,
+            question: b.question,
+            content: b.content,
+            answer: b.answer,
+          })),
+        );
+      }
+
+      const tags = await tx
+        .select({
+          tagId: workBookTagsTable.tagId,
+        })
+        .from(workBookTagsTable)
+        .where(eq(workBookTagsTable.workBookId, workBookId));
+
+      if (tags.length > 0) {
+        await tx.insert(workBookTagsTable).values(
+          tags.map((t) => ({
+            workBookId: newWorkBookId,
+            tagId: t.tagId,
+          })),
+        );
+      }
+
+      const categories = await tx
+        .select({
+          categoryMainId: workBookCategoryTable.categoryMainId,
+          categorySubId: workBookCategoryTable.categorySubId,
+        })
+        .from(workBookCategoryTable)
+        .where(eq(workBookCategoryTable.workBookId, workBookId));
+
+      if (categories.length > 0) {
+        await tx.insert(workBookCategoryTable).values(
+          categories.map((c) => ({
+            workBookId: newWorkBookId,
+            categoryMainId: c.categoryMainId,
+            categorySubId: c.categorySubId,
+          })),
+        );
+      }
+
+      return { id: newWorkBookId };
+    });
+  },
+
   toggleWorkBookPublic: async ({
     workBookId,
     userId,
