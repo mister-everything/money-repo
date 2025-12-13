@@ -13,16 +13,18 @@ import {
 import { pgDb } from "../db";
 import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
 import { blockValidate } from "./block-validate";
-import { BlockAnswerSubmit } from "./blocks";
+import { BlockAnswer, BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
   categorySubTable,
   tagsTable,
+  WorkBookLikes,
   workBookBlockAnswerSubmitsTable,
   workBookCategoryTable,
   workBookSubmitsTable,
   workBooksTable,
   workBookTagsTable,
+  workBookUserFirstScoresTable,
 } from "./schema";
 import {
   SessionInProgress,
@@ -60,6 +62,9 @@ const WorkBookColumnsForList = {
     { id: number; name: string }[]
   >`coalesce((${TagsSubQuery}), '[]'::json)`,
   createdAt: workBooksTable.createdAt,
+  likeCount: workBooksTable.likeCount,
+  firstSolverCount: workBooksTable.firstSolverCount,
+  firstScoreSum: workBooksTable.firstScoreSum,
 };
 
 type GetWorkBookOptions = {
@@ -661,44 +666,55 @@ export const workBookService = {
     userId: string,
     submitId: string,
   ): Promise<void> => {
-    const [session] = await pgDb
-      .select({
-        id: workBookSubmitsTable.id,
-        workBookId: workBookSubmitsTable.workBookId,
-        startTime: workBookSubmitsTable.startTime,
-      })
-      .from(workBookSubmitsTable)
-      .where(
-        and(
-          isNull(workBookSubmitsTable.endTime),
-          eq(workBookSubmitsTable.id, submitId),
-          eq(workBookSubmitsTable.ownerId, userId),
-        ),
+    return pgDb.transaction(async (tx) => {
+      const locked = await tx.execute<{
+        workBookId: string;
+        endTime: Date | null;
+      }>(sql`
+        SELECT
+          ${workBookSubmitsTable.workBookId} as "workBookId",
+          ${workBookSubmitsTable.endTime} as "endTime"
+        FROM ${workBookSubmitsTable}
+        WHERE ${workBookSubmitsTable.id} = ${submitId}
+          AND ${workBookSubmitsTable.ownerId} = ${userId}
+        FOR UPDATE
+      `);
+
+      const session = locked.rows[0];
+      if (!session) throw new PublicError("세션을 찾을 수 없습니다.");
+      if (session.endTime) throw new PublicError("이미 제출된 세션 입니다.");
+
+      const blocks = await tx
+        .select({
+          id: blocksTable.id,
+          content: blocksTable.content,
+          answer: blocksTable.answer,
+          type: blocksTable.type,
+        })
+        .from(blocksTable)
+        .where(eq(blocksTable.workBookId, session.workBookId));
+
+      const submits = await tx
+        .select({
+          blockId: workBookBlockAnswerSubmitsTable.blockId,
+          answer: workBookBlockAnswerSubmitsTable.answer,
+        })
+        .from(workBookBlockAnswerSubmitsTable)
+        .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
+
+      const submitByBlockId = submits.reduce(
+        (acc, submit) => {
+          acc[submit.blockId] = submit.answer;
+          return acc;
+        },
+        {} as Record<string, BlockAnswerSubmit>,
       );
 
-    if (!session) throw new PublicError("세션을 찾을 수 없습니다.");
-
-    const blocks = await workBookService.getBlocks(session.workBookId);
-    const submits = await pgDb
-      .select({
-        blockId: workBookBlockAnswerSubmitsTable.blockId,
-        answer: workBookBlockAnswerSubmitsTable.answer,
-      })
-      .from(workBookBlockAnswerSubmitsTable)
-      .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
-
-    const submitByBlockId = submits.reduce(
-      (acc, submit) => {
-        acc[submit.blockId] = submit.answer;
-        return acc;
-      },
-      {} as Record<string, BlockAnswerSubmit>,
-    );
-
-    return pgDb.transaction(async (tx) => {
       const saveSubmits = blocks.map((block) => {
         const submittedAnswer = submitByBlockId[block.id];
-        const isCorrect = checkAnswer(block.answer, submittedAnswer);
+        const isCorrect = block.answer
+          ? checkAnswer(block.answer as unknown as BlockAnswer, submittedAnswer)
+          : false;
         return {
           blockId: block.id,
           submitId,
@@ -720,15 +736,56 @@ export const workBookService = {
             isCorrect: sql`excluded.is_correct`,
           },
         });
+
+      const correctBlocksCount = saveSubmits.filter(
+        (submit) => submit.isCorrect,
+      ).length;
+      const totalBlocks = blocks.length;
+      const score =
+        totalBlocks > 0
+          ? Math.round((correctBlocksCount * 100) / totalBlocks)
+          : 0;
+
+      const now = new Date();
+
       await tx
         .update(workBookSubmitsTable)
         .set({
-          endTime: new Date(),
-          blockCount: blocks.length,
-          correctBlocks: saveSubmits.filter((submit) => submit.isCorrect)
-            .length,
+          endTime: now,
+          blockCount: totalBlocks,
+          correctBlocks: correctBlocksCount,
         })
         .where(eq(workBookSubmitsTable.id, submitId));
+
+      const inserted = await tx
+        .insert(workBookUserFirstScoresTable)
+        .values({
+          workBookId: session.workBookId,
+          ownerId: userId,
+          score,
+          submitId: submitId,
+          firstSubmittedAt: now,
+          createdAt: now,
+        })
+        .onConflictDoNothing({
+          target: [
+            workBookUserFirstScoresTable.workBookId,
+            workBookUserFirstScoresTable.ownerId,
+          ],
+        })
+        .returning({
+          workBookId: workBookUserFirstScoresTable.workBookId,
+        });
+
+      if (inserted.length > 0) {
+        await tx
+          .update(workBooksTable)
+          .set({
+            firstScoreSum: sql`${workBooksTable.firstScoreSum} + ${score}`,
+            firstSolverCount: sql`${workBooksTable.firstSolverCount} + 1`,
+          })
+          .where(eq(workBooksTable.id, session.workBookId));
+      }
     });
   },
 
@@ -834,6 +891,11 @@ export const workBookService = {
       return null;
     }
 
+    const isLiked = await workBookService.isLikedWorkBook(
+      row.workBookId,
+      userId,
+    );
+
     const session: SessionSubmitted = {
       status: "submitted",
       startTime: row.startTime,
@@ -844,7 +906,8 @@ export const workBookService = {
     };
     const submitAnswers = await workBookService.getSubmitAnswers(row.id);
     return {
-      workBook,
+      workBook: { ...workBook },
+      isLiked,
       session,
       submitAnswers,
     };
@@ -926,5 +989,81 @@ export const workBookService = {
           eq(workBookSubmitsTable.active, true),
         ),
       );
+  },
+  toggleLikeWorkBook: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<{ count: number; isLiked: boolean }> => {
+    return pgDb.transaction(async (tx) => {
+      const [likeRow] = await tx
+        .select({
+          workBookId: WorkBookLikes.workBookId,
+        })
+        .from(WorkBookLikes)
+        .where(
+          and(
+            eq(WorkBookLikes.workBookId, workBookId),
+            eq(WorkBookLikes.userId, userId),
+          ),
+        );
+      if (likeRow) {
+        await tx
+          .delete(WorkBookLikes)
+          .where(
+            and(
+              eq(WorkBookLikes.workBookId, workBookId),
+              eq(WorkBookLikes.userId, userId),
+            ),
+          );
+        const [updated] = await tx
+          .update(workBooksTable)
+          .set({
+            likeCount: sql`${workBooksTable.likeCount} - 1`,
+          })
+          .where(eq(workBooksTable.id, workBookId))
+          .returning({
+            likeCount: workBooksTable.likeCount,
+          });
+        return {
+          count: updated?.likeCount,
+          isLiked: false,
+        };
+      } else {
+        await tx.insert(WorkBookLikes).values({
+          workBookId,
+          userId,
+        });
+        const [updated] = await tx
+          .update(workBooksTable)
+          .set({
+            likeCount: sql`${workBooksTable.likeCount} + 1`,
+          })
+          .where(eq(workBooksTable.id, workBookId))
+          .returning({
+            likeCount: workBooksTable.likeCount,
+          });
+        return {
+          count: updated?.likeCount,
+          isLiked: true,
+        };
+      }
+    });
+  },
+  isLikedWorkBook: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<boolean> => {
+    const [row] = await pgDb
+      .select({
+        workBookId: WorkBookLikes.workBookId,
+      })
+      .from(WorkBookLikes)
+      .where(
+        and(
+          eq(WorkBookLikes.workBookId, workBookId),
+          eq(WorkBookLikes.userId, userId),
+        ),
+      );
+    return Boolean(row);
   },
 };

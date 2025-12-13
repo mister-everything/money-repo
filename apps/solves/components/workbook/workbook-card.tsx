@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  isPublished,
   SessionInProgress,
   SessionSubmitted,
   WorkBookWithoutBlocks,
@@ -19,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { WorkbookDifficulty } from "./workbook-difficulty";
 
 interface WorkbookCardProps {
   workBook: WorkBookWithoutBlocks;
@@ -41,6 +43,10 @@ export function WorkbookCard({
     () => isPendingTogglePublic || isPendingDelete,
     [isPendingDelete, isPendingTogglePublic],
   );
+
+  const published = useMemo(() => {
+    return isPublished(workBook);
+  }, [workBook.publishedAt]);
 
   return (
     <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-md h-full flex flex-col">
@@ -150,6 +156,13 @@ export function WorkbookCard({
             </Badge>
           ) : session ? (
             <Badge variant="secondary">풀지 않음</Badge>
+          ) : !published ? (
+            <Badge
+              variant="secondary"
+              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+            >
+              제작중
+            </Badge>
           ) : null}
         </div>
       </CardHeader>
@@ -170,6 +183,12 @@ export function WorkbookCard({
             </span>
           )}
         </div>
+        {published && (
+          <WorkbookDifficulty
+            count={workBook.firstSolverCount ?? 0}
+            sum={workBook.firstScoreSum ?? 0}
+          />
+        )}
         <div className="flex items-center gap-2 mt-auto">
           {workBook.publishedAt && (
             <span className="text-xs text-muted-foreground shrink-0">
@@ -182,7 +201,7 @@ export function WorkbookCard({
                 alt={workBook.ownerName}
                 src={workBook.ownerProfile ?? ""}
               />
-              <AvatarFallback className="text-[8px]">
+              <AvatarFallback className="text-3xs">
                 {workBook.ownerName.charAt(0)}
               </AvatarFallback>
             </Avatar>

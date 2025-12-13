@@ -142,7 +142,6 @@ export function WorkBookSolve({
         if (!block) return prev;
         nextSubmits[id] = applyStateUpdate(
           { ...initialSubmitAnswer(block.type), ...nextSubmits[id] },
-
           answer,
         );
         return nextSubmits;

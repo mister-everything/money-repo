@@ -88,7 +88,7 @@ export function WorkbookEditOptions({
                   ? "모든 유형"
                   : options?.blockTypes
                       .map((value) => blockDisplayNames[value])
-                      .join(", ")}
+                      .join(", ") || "문제 유형"}
               </Button>
             </WorkbookOptionBlockTypes>
           </div>
