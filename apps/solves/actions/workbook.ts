@@ -184,3 +184,17 @@ export const toggleWorkBookLikeAction = safeAction(
     return { count, isLiked };
   },
 );
+
+export const copyWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+  }),
+  async ({ workBookId }) => {
+    const session = await getSession();
+    const newWorkBook = await workBookService.copyWorkBook({
+      workBookId,
+      userId: session.user.id,
+    });
+    return { copiedWorkBookId: newWorkBook.id };
+  },
+);

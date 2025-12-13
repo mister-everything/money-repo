@@ -27,8 +27,10 @@ interface WorkbookCardProps {
   session?: SessionInProgress | SessionSubmitted;
   onDelete?: () => void;
   onTogglePublic?: () => void;
+  onCopy?: () => void;
   isPendingDelete?: boolean;
   isPendingTogglePublic?: boolean;
+  isPendingCopy?: boolean;
 }
 
 export function WorkbookCard({
@@ -36,6 +38,8 @@ export function WorkbookCard({
   session,
   onDelete,
   onTogglePublic,
+  onCopy,
+  isPendingCopy,
   isPendingDelete,
   isPendingTogglePublic,
 }: WorkbookCardProps) {
@@ -43,6 +47,10 @@ export function WorkbookCard({
     () => isPendingTogglePublic || isPendingDelete,
     [isPendingDelete, isPendingTogglePublic],
   );
+
+  const hasAction = useMemo(() => {
+    return Boolean(onDelete || onTogglePublic || onCopy);
+  }, [onDelete, onTogglePublic, onCopy]);
 
   const published = useMemo(() => {
     return isPublished(workBook);
@@ -55,7 +63,7 @@ export function WorkbookCard({
           <CardTitle className="text-xl font-bold truncate">
             {workBook.title || "제목이 없습니다."}
           </CardTitle>
-          {Boolean(onDelete || onTogglePublic) && (
+          {hasAction && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -83,6 +91,18 @@ export function WorkbookCard({
                       </>
                     ) : (
                       "삭제하기"
+                    )}
+                  </DropdownMenuItem>
+                )}
+                {onCopy && (
+                  <DropdownMenuItem disabled={isPendingCopy} onClick={onCopy}>
+                    {isPendingCopy ? (
+                      <>
+                        복사중...
+                        <LoaderIcon className="size-3 animate-spin" />
+                      </>
+                    ) : (
+                      "복사하여 새로 생성"
                     )}
                   </DropdownMenuItem>
                 )}
