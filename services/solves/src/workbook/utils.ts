@@ -6,7 +6,7 @@ import {
   type BlockContent,
   type BlockType,
 } from "./blocks";
-import { WorkBookBlock } from "./types";
+import { WorkBookBlock, WorkBookDifficultyLevel } from "./types";
 
 type ContentGuardMap = {
   [K in BlockType]: (value: unknown) => value is BlockContent<K>;
@@ -228,4 +228,61 @@ export const isPublished = (book: {
   publishedAt?: Date | null;
 }): book is { publishedAt: Date } => {
   return book.publishedAt !== null;
+};
+
+export const getWorkBookDifficulty = (workBook: {
+  firstScoreSum?: number;
+  firstSolverCount?: number;
+}) => {
+  const { firstScoreSum = 0, firstSolverCount = 0 } = workBook;
+
+  const avgScore = firstScoreSum / firstSolverCount ?? 0;
+
+  if (firstSolverCount < 10) {
+    return {
+      score: 0,
+      difficulty: WorkBookDifficultyLevel.VERY_EASY,
+      label: "새로운 문제집",
+      detail: "10명 이상이 풀면 평균 점수가 표시돼요",
+    };
+  }
+
+  if (avgScore >= 90) {
+    return {
+      score: avgScore,
+      difficulty: WorkBookDifficultyLevel.VERY_EASY,
+      label: "매우 쉬움",
+      detail: `평균 점수 ${avgScore}점`,
+    };
+  }
+  if (avgScore >= 72) {
+    return {
+      score: avgScore,
+      difficulty: WorkBookDifficultyLevel.EASY,
+      label: "쉬움",
+      detail: `평균 점수 ${avgScore}점`,
+    };
+  }
+  if (avgScore >= 58) {
+    return {
+      score: avgScore,
+      difficulty: WorkBookDifficultyLevel.NORMAL,
+      label: "보통",
+      detail: `평균 점수 ${avgScore}점`,
+    };
+  }
+  if (avgScore >= 36) {
+    return {
+      score: avgScore,
+      difficulty: WorkBookDifficultyLevel.HARD,
+      label: "어려움",
+      detail: `평균 점수 ${avgScore}점`,
+    };
+  }
+  return {
+    score: avgScore,
+    difficulty: WorkBookDifficultyLevel.VERY_HARD,
+    label: "매우 어려움",
+    detail: `평균 점수 ${avgScore}점`,
+  };
 };

@@ -29,6 +29,13 @@
       "when": 1765375732436,
       "tag": "0003_wealthy_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1765608416523,
+      "tag": "0004_bizarre_tinkerer",
+      "breakpoints": true
     }
   ]
 }

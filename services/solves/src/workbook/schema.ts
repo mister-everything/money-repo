@@ -1,9 +1,9 @@
 import { userTable } from "@service/auth";
 import {
+  bigint,
   boolean,
   integer,
   jsonb,
-  pgTable,
   primaryKey,
   serial,
   text,
@@ -37,6 +37,20 @@ export const workBooksTable = solvesSchema.table("work_books", {
   publishedAt: timestamp("published_at"),
   deletedAt: timestamp("deleted_at"),
   deletedReason: text("deleted_reason"),
+  /**
+   * 문제집 난이도(평균 점수) 집계용 누적 합계
+   * - 점수는 각 유저의 "첫 제출 완료" 1개만 반영한다.
+   * - 평균 점수는 (firstScoreSum / firstSolverCount)로 계산한다.
+   */
+  firstScoreSum: bigint("first_score_sum", { mode: "number" })
+    .notNull()
+    .default(0),
+  /**
+   * 문제집 난이도(평균 점수) 집계에 포함된 유저 수
+   */
+  firstSolverCount: bigint("first_solver_count", { mode: "number" })
+    .notNull()
+    .default(0),
 });
 
 /**
@@ -75,6 +89,27 @@ export const workBookSubmitsTable = solvesSchema.table("work_book_submits", {
   correctBlocks: integer("correct_blocks").notNull().default(0), // 정답 문제 개수
   active: boolean("active").notNull().default(false), // 활성 여부
 });
+
+export const workBookUserFirstScoresTable = solvesSchema.table(
+  "work_book_user_first_scores",
+  {
+    workBookId: uuid("work_book_id")
+      .notNull()
+      .references(() => workBooksTable.id, { onDelete: "cascade" }),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    /** 0~100 정수 점수 (정답률 %; round(correctBlocks * 100 / blockCount)) */
+    score: integer("score").notNull().default(0),
+    /** 어떤 제출이 '첫 제출'로 채택되었는지 추적 (디버깅/분쟁 대응용) */
+    submitId: uuid("submit_id")
+      .notNull()
+      .references(() => workBookSubmitsTable.id, { onDelete: "cascade" }),
+    firstSubmittedAt: timestamp("first_submitted_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.workBookId, t.ownerId] })],
+);
 
 /**
  * 문제 답안 제출 테이블
@@ -185,7 +220,7 @@ export const workBookCategoryTable = solvesSchema.table(
   ],
 );
 
-export const WorkBookLikes = pgTable(
+export const WorkBookLikes = solvesSchema.table(
   "work_book_likes",
   {
     workBookId: uuid("work_book_id")
