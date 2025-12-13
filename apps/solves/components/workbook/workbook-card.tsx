@@ -156,6 +156,13 @@ export function WorkbookCard({
             </Badge>
           ) : session ? (
             <Badge variant="secondary">풀지 않음</Badge>
+          ) : !published ? (
+            <Badge
+              variant="secondary"
+              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+            >
+              제작중
+            </Badge>
           ) : null}
         </div>
       </CardHeader>
