@@ -23,10 +23,10 @@ export function WorkbookPublicPreview({
     (id: string, answer: StateUpdate<BlockAnswerSubmit>) => {
       setSubmits((prev) => {
         const nextSubmits = { ...prev };
+        const block = blocks.find((b) => b.id === id);
+        if (!block) return prev;
         nextSubmits[id] = applyStateUpdate(
-          initialSubmitAnswer(
-            blocks.find((b) => b.id === id)?.type ?? "default",
-          ),
+          { ...initialSubmitAnswer(block.type), ...nextSubmits[id] },
           answer,
         );
         return nextSubmits;

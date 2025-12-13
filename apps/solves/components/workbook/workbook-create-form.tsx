@@ -22,7 +22,7 @@ import {
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
-import { useWorkbookStore } from "@/store/workbook-create-store";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { Badge } from "../ui/badge";
 import { notify } from "../ui/notify";
 import { Skeleton } from "../ui/skeleton";
@@ -41,7 +41,7 @@ export function WorkbookCreateForm({
   initialFormData?: WorkbookOptions;
 }) {
   const router = useRouter();
-  const { setWorkbooks } = useWorkbookStore();
+  const { setWorkbookOption } = useWorkbookEditStore();
 
   const [mainCategory, setMainCategory] = useState<number>();
 
@@ -62,7 +62,7 @@ export function WorkbookCreateForm({
 
   const [, createWorkbook, isPending] = useSafeAction(createWorkbookAction, {
     onSuccess: (result) => {
-      setWorkbooks(result.id, formData);
+      setWorkbookOption(result.id, formData);
       router.push(`/workbooks/${result.id}/edit`);
     },
     failMessage: errorToString,

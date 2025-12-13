@@ -38,6 +38,7 @@ export type WorkBookBlockWithoutAnswer = Omit<WorkBookBlock, "answer">;
 export type WorkBook = {
   id: string;
   title: string;
+  likeCount: number;
   description?: string | null;
   blocks: WorkBookBlock[];
   tags: { id: number; name: string }[];
@@ -46,6 +47,13 @@ export type WorkBook = {
   ownerProfile?: string | null;
   createdAt: Date;
   publishedAt?: Date | null;
+  /**
+   * 난이도(평균 점수) 표시에 필요한 통계값
+   * - solverCount < 10 이면 UI에서 "새로운 문제집"으로 표시
+   * - avgScore는 (sum/count)에서 round한 정수(0~100)
+   */
+  firstSolverCount?: number;
+  firstScoreSum?: number;
 };
 
 /**
@@ -87,6 +95,7 @@ export type WorkBookSession = {
 
 export type WorkBookReviewSession = {
   workBook: WorkBook;
+  isLiked: boolean;
   session: SessionSubmitted;
   submitAnswers: {
     blockId: string;
@@ -115,3 +124,11 @@ export type CategorySub = {
 export type CategoryWithSubs = CategoryMain & {
   subs: CategorySub[];
 };
+
+export enum WorkBookDifficultyLevel {
+  VERY_EASY = "very_easy", // 90점 이상
+  EASY = "easy", // 72점 이상
+  NORMAL = "normal", // 58점 이상
+  HARD = "hard", // 36점 이상
+  VERY_HARD = "very_hard", // 36점 미만
+}

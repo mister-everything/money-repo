@@ -8,9 +8,10 @@ import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { useShallow } from "zustand/shallow";
 import { deleteThreadAction } from "@/actions/chat";
 import { ChatErrorMessage, Message } from "@/components/chat/message";
-
+import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -25,9 +26,10 @@ import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useAiStore } from "@/store/ai-store";
-
+import { WorkbookOptions } from "@/store/types";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import PromptInput from "../chat/prompt-input";
-import { Button } from "../ui/button";
+import { WorkbookEditOptions } from "./workbook-edit-options";
 
 interface WorkbooksCreateChatProps {
   workbookId: string;
@@ -37,6 +39,19 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const [threadId, setThreadId] = useState<string>();
 
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
+
+  const [workbookOption, _setWorkbookOption] = useWorkbookEditStore(
+    useShallow((state) => [
+      state.workbookOptions[workbookId],
+      state.setWorkbookOption,
+    ]),
+  );
+  const setWorkbookOption = useCallback(
+    (options: WorkbookOptions) => {
+      _setWorkbookOption(workbookId, options);
+    },
+    [workbookId, _setWorkbookOption],
+  );
 
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -319,6 +334,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             ))
           )}
         </div>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -333,6 +349,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           <TooltipContent>새로운 채팅</TooltipContent>
         </Tooltip>
       </div>
+
       <div
         ref={messagesContainerRef}
         className={cn(
@@ -369,6 +386,10 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         )}
       </div>
       <div className={cn("p-2 absolute bottom-0 left-0 right-0")}>
+        <WorkbookEditOptions
+          options={workbookOption}
+          setOptions={setWorkbookOption}
+        />
         <PromptInput
           input={input}
           onChange={setInput}
