@@ -217,7 +217,7 @@ export const initialSubmitAnswer = (blockType: BlockType) => {
     case "ox":
       return {
         type: blockType,
-        answer: true,
+        answer: undefined,
       };
     default:
       throw new Error(`찾을 수 없는 블럭 유형: ${blockType}`);
@@ -236,7 +236,8 @@ export const getWorkBookDifficulty = (workBook: {
 }) => {
   const { firstScoreSum = 0, firstSolverCount = 0 } = workBook;
 
-  const avgScore = firstScoreSum / firstSolverCount ?? 0;
+  const avgScore =
+    firstSolverCount > 0 ? Math.round(firstScoreSum / firstSolverCount) : 0;
 
   if (firstSolverCount < 10) {
     return {

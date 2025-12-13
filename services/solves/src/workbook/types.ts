@@ -95,6 +95,7 @@ export type WorkBookSession = {
 
 export type WorkBookReviewSession = {
   workBook: WorkBook;
+  isLiked: boolean;
   session: SessionSubmitted;
   submitAnswers: {
     blockId: string;

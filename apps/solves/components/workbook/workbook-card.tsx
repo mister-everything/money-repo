@@ -194,7 +194,7 @@ export function WorkbookCard({
                 alt={workBook.ownerName}
                 src={workBook.ownerProfile ?? ""}
               />
-              <AvatarFallback className="text-[8px]">
+              <AvatarFallback className="text-3xs">
                 {workBook.ownerName.charAt(0)}
               </AvatarFallback>
             </Avatar>

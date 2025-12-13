@@ -169,3 +169,18 @@ export const toggleWorkBookPublicAction = safeAction(
     return { isPublic, workBookId };
   },
 );
+
+export const toggleWorkBookLikeAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+  }),
+  async ({ workBookId }) => {
+    const session = await getSession();
+
+    const { count, isLiked } = await workBookService.toggleLikeWorkBook(
+      workBookId,
+      session.user.id,
+    );
+    return { count, isLiked };
+  },
+);

@@ -891,6 +891,11 @@ export const workBookService = {
       return null;
     }
 
+    const isLiked = await workBookService.isLikedWorkBook(
+      row.workBookId,
+      userId,
+    );
+
     const session: SessionSubmitted = {
       status: "submitted",
       startTime: row.startTime,
@@ -901,7 +906,8 @@ export const workBookService = {
     };
     const submitAnswers = await workBookService.getSubmitAnswers(row.id);
     return {
-      workBook,
+      workBook: { ...workBook },
+      isLiked,
       session,
       submitAnswers,
     };
@@ -987,7 +993,7 @@ export const workBookService = {
   toggleLikeWorkBook: async (
     workBookId: string,
     userId: string,
-  ): Promise<void> => {
+  ): Promise<{ count: number; isLiked: boolean }> => {
     return pgDb.transaction(async (tx) => {
       const [likeRow] = await tx
         .select({
@@ -1009,24 +1015,55 @@ export const workBookService = {
               eq(WorkBookLikes.userId, userId),
             ),
           );
-        await tx
+        const [updated] = await tx
           .update(workBooksTable)
           .set({
             likeCount: sql`${workBooksTable.likeCount} - 1`,
           })
-          .where(eq(workBooksTable.id, workBookId));
+          .where(eq(workBooksTable.id, workBookId))
+          .returning({
+            likeCount: workBooksTable.likeCount,
+          });
+        return {
+          count: updated?.likeCount,
+          isLiked: false,
+        };
       } else {
         await tx.insert(WorkBookLikes).values({
           workBookId,
           userId,
         });
-        await tx
+        const [updated] = await tx
           .update(workBooksTable)
           .set({
             likeCount: sql`${workBooksTable.likeCount} + 1`,
           })
-          .where(eq(workBooksTable.id, workBookId));
+          .where(eq(workBooksTable.id, workBookId))
+          .returning({
+            likeCount: workBooksTable.likeCount,
+          });
+        return {
+          count: updated?.likeCount,
+          isLiked: true,
+        };
       }
     });
+  },
+  isLikedWorkBook: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<boolean> => {
+    const [row] = await pgDb
+      .select({
+        workBookId: WorkBookLikes.workBookId,
+      })
+      .from(WorkBookLikes)
+      .where(
+        and(
+          eq(WorkBookLikes.workBookId, workBookId),
+          eq(WorkBookLikes.userId, userId),
+        ),
+      );
+    return Boolean(row);
   },
 };
