@@ -1,5 +1,6 @@
-import { truncateString } from "@workspace/util";
-import { ReasoningUIPart, TextUIPart } from "ai";
+import { WorkBookBlock } from "@service/solves/shared";
+import { generateUUID, truncateString } from "@workspace/util";
+import { getToolName, ReasoningUIPart, TextUIPart, ToolUIPart } from "ai";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckIcon,
@@ -7,7 +8,8 @@ import {
   ChevronUpIcon,
   CopyIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
 import { TextShimmer } from "@/components/ui/text-shimmer";
@@ -18,11 +20,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { cn } from "@/lib/utils";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 
 interface UserMessagePartProps {
   part: TextUIPart;
   streaming?: boolean;
 }
+
 const MAX_TEXT_LENGTH = 600;
 export function UserMessagePart({ part }: UserMessagePartProps) {
   const [copied, copy] = useCopy();
@@ -193,6 +197,154 @@ export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
           )}
         </AnimatePresence>
       </div>
+    </div>
+  );
+}
+
+export function ToolPart({ part }: { part: ToolUIPart }) {
+  const toolName = getToolName(part);
+
+  const { setBlocks } = useWorkbookEditStore();
+
+  const appendBlock = useCallback(
+    (block: WorkBookBlock) => {
+      setBlocks((prev) => {
+        const nextOrder =
+          prev.length === 0
+            ? 0
+            : Math.max(...prev.map((b) => b.order ?? 0)) + 1;
+        return [...prev, { ...block, order: nextOrder }];
+      });
+      toast.success("문제집에 추가했어요.");
+    },
+    [setBlocks],
+  );
+
+  const extractPayload = (): any => part?.output ?? null;
+
+  if (toolName === "generateMcqTool") {
+    const payload = extractPayload();
+    if (
+      payload?.type === "mcq" &&
+      typeof payload.question === "string" &&
+      payload.content?.type === "mcq" &&
+      Array.isArray(payload.content.options) &&
+      payload.answer?.type === "mcq"
+    ) {
+      const answerId = payload.answer.answer;
+      const handleApply = () => {
+        appendBlock({
+          id: generateUUID(),
+          question: payload.question,
+          type: "mcq",
+          content: {
+            type: "mcq",
+            options: payload.content.options,
+          },
+          answer: {
+            type: "mcq",
+            answer: answerId,
+            solution: payload.answer.solution,
+          },
+          order: 0,
+        });
+      };
+      return (
+        <div className="rounded-lg border bg-background p-4 shadow-sm space-y-3">
+          <div className="text-sm font-semibold text-foreground">객관식</div>
+          <div className="text-base text-foreground">{payload.question}</div>
+          <div className="space-y-2">
+            {payload.content.options.map((opt: any) => (
+              <label
+                key={opt.id}
+                className={cn(
+                  "flex items-center gap-2 rounded-md border px-3 py-2 text-sm",
+                  opt.id === answerId
+                    ? "border-primary/60 bg-primary/5 text-primary"
+                    : "border-muted bg-muted/40",
+                )}
+              >
+                <input
+                  type="radio"
+                  readOnly
+                  checked={opt.id === answerId}
+                  className="h-4 w-4 accent-primary"
+                />
+                <span>{opt.text}</span>
+                {opt.id === answerId && (
+                  <span className="ml-auto text-xs text-primary">(정답)</span>
+                )}
+              </label>
+            ))}
+          </div>
+          {payload.answer.solution && (
+            <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+              {payload.answer.solution}
+            </div>
+          )}
+          <Button className="w-full" size="sm" onClick={handleApply}>
+            문제집에 적용하기
+          </Button>
+        </div>
+      );
+    }
+  }
+
+  if (toolName === "generateSubjectiveTool") {
+    const payload = extractPayload();
+    if (
+      payload?.type === "default" &&
+      typeof payload.question === "string" &&
+      payload.content?.type === "default" &&
+      Array.isArray(payload.answer?.answer)
+    ) {
+      const handleApply = () => {
+        appendBlock({
+          id: generateUUID(),
+          question: payload.question,
+          type: "default",
+          content: {
+            type: "default",
+          },
+          answer: {
+            type: "default",
+            answer: payload.answer.answer,
+            solution: payload.answer.solution,
+          },
+          order: 0,
+        });
+      };
+      return (
+        <div className="rounded-lg border bg-background p-4 shadow-sm space-y-3">
+          <div className="text-sm font-semibold text-foreground">주관식</div>
+          <div className="text-base text-foreground">{payload.question}</div>
+          <div className="flex flex-wrap gap-2">
+            {payload.answer.answer.map((ans: string, idx: number) => (
+              <span
+                key={`${ans}-${idx}`}
+                className="rounded-full border bg-muted px-3 py-1 text-xs text-foreground"
+              >
+                {ans}
+              </span>
+            ))}
+          </div>
+          {payload.answer.solution && (
+            <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+              {payload.answer.solution}
+            </div>
+          )}
+          <Button className="w-full" size="sm" onClick={handleApply}>
+            문제집에 적용하기
+          </Button>
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div className="flex flex-col">
+      <span>Tool Part</span>
+      <span>{JSON.stringify(part)}</span>
     </div>
   );
 }

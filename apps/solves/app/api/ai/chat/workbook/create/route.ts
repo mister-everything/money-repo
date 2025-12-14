@@ -9,6 +9,7 @@ import {
   streamText,
 } from "ai";
 import { getChatModel } from "@/lib/ai/model";
+import { generateMcqTool, generateSubjectiveTool } from "@/lib/ai/tools";
 import { getSession } from "@/lib/auth/server";
 import { WorkbookCreateChatRequest } from "../../../types";
 
@@ -48,6 +49,10 @@ export async function POST(req: Request) {
         stopWhen: stepCountIs(5),
 
         abortSignal: req.signal,
+        tools: {
+          generateMcqTool,
+          generateSubjectiveTool,
+        },
       });
       result.consumeStream();
       dataStream.merge(
