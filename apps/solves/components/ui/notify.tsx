@@ -73,7 +73,7 @@ export const notify = {
               <DialogDescription>{alert.description}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant={"ghost"} onClick={close}>
+              <Button variant={"ghost"} onClick={close} autoFocus>
                 {alert.okText || "확인"}
               </Button>
             </DialogFooter>
@@ -113,7 +113,7 @@ export const notify = {
                 <Button variant={"ghost"} onClick={cancel}>
                   {confirm.cancelText || "취소"}
                 </Button>
-                <Button variant={"secondary"} onClick={ok}>
+                <Button variant={"secondary"} onClick={ok} autoFocus>
                   {confirm.okText || "확인"}
                 </Button>
               </DialogFooter>
