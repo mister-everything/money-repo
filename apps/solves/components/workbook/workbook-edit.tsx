@@ -100,6 +100,8 @@ export function WorkbookEdit({
   const {
     blocks = initialBlocks,
     workBook = initialWorkbook,
+    focusBlockId,
+    appendBlock,
     setBlocks,
     setWorkBook,
   } = useWorkbookEditStore();
@@ -117,8 +119,6 @@ export function WorkbookEdit({
   const [control, setControl] = useState<"edit" | "solve" | "review">("edit");
 
   const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
-
-  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
 
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
 
@@ -308,18 +308,7 @@ export function WorkbookEdit({
       return;
     }
     const newBlock = initializeBlock(blockType);
-    setBlocks((prev) => {
-      const maxOrder = Math.max(...prev.map((b) => b.order), 0);
-      const newBlocks = [
-        ...prev,
-        {
-          ...newBlock,
-          order: maxOrder + 1,
-        },
-      ];
-      return newBlocks;
-    });
-    setFocusBlockId(newBlock.id);
+    appendBlock(newBlock);
     setEditingBlockId([newBlock.id]);
   }, []);
 

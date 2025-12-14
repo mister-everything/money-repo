@@ -9,7 +9,17 @@ import {
   streamText,
 } from "ai";
 import { getChatModel } from "@/lib/ai/model";
-import { generateMcqTool, generateSubjectiveTool } from "@/lib/ai/tools";
+import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
+import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
+import {
+  generateMcqTool,
+  generateSubjectiveTool,
+} from "@/lib/ai/tools/workbook/generate-block-tools";
+import {
+  GEN_MCQ_TOOL_NAME,
+  GEN_SUBJECTIVE_TOOL_NAME,
+} from "@/lib/ai/tools/workbook/types";
 import { getSession } from "@/lib/auth/server";
 import { WorkbookCreateChatRequest } from "../../../types";
 
@@ -37,33 +47,34 @@ export async function POST(req: Request) {
 
   const userMessage = messages.at(-1);
 
-  const assistantMessageId = generateUUID();
-  /***********************/
+  const systemPrompt = WorkBookCreatePrompt({
+    categories: [],
+    blockTypes: [],
+    ageGroup: "",
+    difficulty: "",
+    situation: "",
+  });
+
   const stream = createUIMessageStream({
     execute: async ({ writer: dataStream }) => {
       const result = streamText({
         model: getChatModel(model),
         messages: convertToModelMessages(messages),
+        system: systemPrompt,
         experimental_transform: smoothStream({ chunking: "word" }),
         maxRetries: 1,
         stopWhen: stepCountIs(5),
-
         abortSignal: req.signal,
         tools: {
-          generateMcqTool,
-          generateSubjectiveTool,
+          [GEN_MCQ_TOOL_NAME]: generateMcqTool,
+          [GEN_SUBJECTIVE_TOOL_NAME]: generateSubjectiveTool,
+          [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         },
       });
       result.consumeStream();
-      dataStream.merge(
-        result.toUIMessageStream({
-          messageMetadata: ({ part }) => {},
-        }),
-      );
+      dataStream.merge(result.toUIMessageStream());
     },
-
     generateId: generateUUID,
-
     onFinish: async ({ responseMessage }) => {
       await chatService.upsertMessage({
         id: userMessage.id,
@@ -74,7 +85,6 @@ export async function POST(req: Request) {
       });
       ``;
       await chatService.upsertMessage({
-        id: assistantMessageId,
         threadId,
         role: responseMessage.role,
         parts: responseMessage.parts,

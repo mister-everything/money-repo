@@ -1,4 +1,5 @@
 import { PublicError } from "@workspace/error";
+import { generateUUID } from "@workspace/util";
 import { and, desc, eq } from "drizzle-orm";
 import { pgDb } from "../db";
 import {
@@ -64,10 +65,18 @@ export const chatService = {
       .orderBy(ChatMessageTable.createdAt);
     return result as ChatMessage[];
   },
-  async upsertMessage(message: Omit<ChatMessage, "createdAt">) {
+  async upsertMessage(
+    message: Omit<ChatMessage, "createdAt" | "id"> & { id?: string },
+  ) {
     await pgDb
       .insert(ChatMessageTable)
-      .values(message)
+      .values({
+        id: message.id ?? generateUUID(),
+        threadId: message.threadId,
+        role: message.role,
+        parts: message.parts,
+        metadata: message.metadata,
+      })
       .onConflictDoUpdate({
         target: [ChatMessageTable.id],
         set: {

@@ -48,7 +48,10 @@ const PurePreviewMessage = ({
 
   return (
     <div
-      className={cn("w-full mx-auto max-w-3xl px-2 group/message", className)}
+      className={cn(
+        "w-full mx-auto max-w-3xl px-2 group/message fade-300",
+        className,
+      )}
     >
       <div className="flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl">
         <div className="flex flex-col gap-4 w-full">
@@ -82,7 +85,12 @@ const PurePreviewMessage = ({
 
             if (part.type === "reasoning") {
               return (
-                <ReasoningPart part={part} key={key} streaming={isStreaming} />
+                <ReasoningPart
+                  part={part}
+                  key={key}
+                  streaming={isStreaming}
+                  defaultExpanded={isLastMessage}
+                />
               );
             }
 

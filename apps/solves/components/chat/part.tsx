@@ -1,5 +1,4 @@
-import { WorkBookBlock } from "@service/solves/shared";
-import { generateUUID, truncateString } from "@workspace/util";
+import { truncateString } from "@workspace/util";
 import { getToolName, ReasoningUIPart, TextUIPart, ToolUIPart } from "ai";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -8,8 +7,7 @@ import {
   ChevronUpIcon,
   CopyIcon,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
 import { TextShimmer } from "@/components/ui/text-shimmer";
@@ -19,8 +17,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
+import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import {
+  GEN_MCQ_TOOL_NAME,
+  GEN_SUBJECTIVE_TOOL_NAME,
+} from "@/lib/ai/tools/workbook/types";
 import { cn } from "@/lib/utils";
-import { useWorkbookEditStore } from "@/store/workbook-edit-store";
+import JsonView from "../ui/json-view";
+import {
+  GenerateMcqToolPart,
+  GenerateSubjectiveToolPart,
+} from "./tool-part/generate-block-tool-part";
+import { WebSearchToolPart } from "./tool-part/web-search-part";
 
 interface UserMessagePartProps {
   part: TextUIPart;
@@ -104,7 +112,7 @@ export function AssistantTextPart({
 }: AssistantMessagePartProps) {
   const [copied, copy] = useCopy();
   return (
-    <div className="flex flex-col gap-2 group/message">
+    <div className="flex flex-col gap-2 group/message text-sm">
       <div data-testid="message-content" className="flex flex-col gap-4 px-2">
         <Streamdown>{part.text}</Streamdown>
       </div>
@@ -148,23 +156,28 @@ const variants = {
 interface ReasoningPartProps {
   part: ReasoningUIPart;
   streaming?: boolean;
+  defaultExpanded?: boolean;
 }
 
-export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function ReasoningPart({
+  part,
+  streaming,
+  defaultExpanded = false,
+}: ReasoningPartProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
     <div
-      className="flex flex-col cursor-pointer"
+      className="flex flex-col cursor-pointer text-sm"
       onClick={() => {
         setIsExpanded(!isExpanded);
       }}
     >
       <div className="flex flex-row gap-2 items-center text-muted-foreground hover:text-accent-foreground transition-colors">
         {streaming ? (
-          <TextShimmer>Reasoned for a few seconds</TextShimmer>
+          <TextShimmer>생각중...</TextShimmer>
         ) : (
-          <div className="font-medium">Reasoned for a few seconds</div>
+          <div className="font-medium">생각하는 과정</div>
         )}
 
         <button
@@ -190,9 +203,7 @@ export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
               style={{ overflow: "hidden" }}
               className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
             >
-              <Streamdown>
-                {part.text || (streaming ? "" : "생각중...🤔")}
-              </Streamdown>
+              <Streamdown>{part.text || (streaming ? "" : "...🤔")}</Streamdown>
             </motion.div>
           )}
         </AnimatePresence>
@@ -202,149 +213,84 @@ export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
 }
 
 export function ToolPart({ part }: { part: ToolUIPart }) {
-  const toolName = getToolName(part);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const { setBlocks } = useWorkbookEditStore();
+  const toolName = useMemo(() => getToolName(part), [part.type]);
 
-  const appendBlock = useCallback(
-    (block: WorkBookBlock) => {
-      setBlocks((prev) => {
-        const nextOrder =
-          prev.length === 0
-            ? 0
-            : Math.max(...prev.map((b) => b.order ?? 0)) + 1;
-        return [...prev, { ...block, order: nextOrder }];
-      });
-      toast.success("문제집에 추가했어요.");
-    },
-    [setBlocks],
-  );
+  const isPending = useMemo(() => {
+    return !part.state.startsWith(`output-`);
+  }, [part.state]);
 
-  const extractPayload = (): any => part?.output ?? null;
-
-  if (toolName === "generateMcqTool") {
-    const payload = extractPayload();
-    if (
-      payload?.type === "mcq" &&
-      typeof payload.question === "string" &&
-      payload.content?.type === "mcq" &&
-      Array.isArray(payload.content.options) &&
-      payload.answer?.type === "mcq"
-    ) {
-      const answerId = payload.answer.answer;
-      const handleApply = () => {
-        appendBlock({
-          id: generateUUID(),
-          question: payload.question,
-          type: "mcq",
-          content: {
-            type: "mcq",
-            options: payload.content.options,
-          },
-          answer: {
-            type: "mcq",
-            answer: answerId,
-            solution: payload.answer.solution,
-          },
-          order: 0,
-        });
-      };
-      return (
-        <div className="rounded-lg border bg-background p-4 shadow-sm space-y-3">
-          <div className="text-sm font-semibold text-foreground">객관식</div>
-          <div className="text-base text-foreground">{payload.question}</div>
-          <div className="space-y-2">
-            {payload.content.options.map((opt: any) => (
-              <label
-                key={opt.id}
-                className={cn(
-                  "flex items-center gap-2 rounded-md border px-3 py-2 text-sm",
-                  opt.id === answerId
-                    ? "border-primary/60 bg-primary/5 text-primary"
-                    : "border-muted bg-muted/40",
-                )}
-              >
-                <input
-                  type="radio"
-                  readOnly
-                  checked={opt.id === answerId}
-                  className="h-4 w-4 accent-primary"
-                />
-                <span>{opt.text}</span>
-                {opt.id === answerId && (
-                  <span className="ml-auto text-xs text-primary">(정답)</span>
-                )}
-              </label>
-            ))}
-          </div>
-          {payload.answer.solution && (
-            <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-              {payload.answer.solution}
-            </div>
-          )}
-          <Button className="w-full" size="sm" onClick={handleApply}>
-            문제집에 적용하기
-          </Button>
-        </div>
-      );
-    }
+  if (toolName === GEN_MCQ_TOOL_NAME) {
+    return (
+      <div className="p-4">
+        <GenerateMcqToolPart part={part} />
+      </div>
+    );
   }
 
-  if (toolName === "generateSubjectiveTool") {
-    const payload = extractPayload();
-    if (
-      payload?.type === "default" &&
-      typeof payload.question === "string" &&
-      payload.content?.type === "default" &&
-      Array.isArray(payload.answer?.answer)
-    ) {
-      const handleApply = () => {
-        appendBlock({
-          id: generateUUID(),
-          question: payload.question,
-          type: "default",
-          content: {
-            type: "default",
-          },
-          answer: {
-            type: "default",
-            answer: payload.answer.answer,
-            solution: payload.answer.solution,
-          },
-          order: 0,
-        });
-      };
-      return (
-        <div className="rounded-lg border bg-background p-4 shadow-sm space-y-3">
-          <div className="text-sm font-semibold text-foreground">주관식</div>
-          <div className="text-base text-foreground">{payload.question}</div>
-          <div className="flex flex-wrap gap-2">
-            {payload.answer.answer.map((ans: string, idx: number) => (
-              <span
-                key={`${ans}-${idx}`}
-                className="rounded-full border bg-muted px-3 py-1 text-xs text-foreground"
-              >
-                {ans}
-              </span>
-            ))}
-          </div>
-          {payload.answer.solution && (
-            <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-              {payload.answer.solution}
-            </div>
-          )}
-          <Button className="w-full" size="sm" onClick={handleApply}>
-            문제집에 적용하기
-          </Button>
-        </div>
-      );
-    }
+  if (toolName === GEN_SUBJECTIVE_TOOL_NAME) {
+    return (
+      <div className="p-4">
+        <GenerateSubjectiveToolPart part={part} />
+      </div>
+    );
+  }
+  if (toolName === EXA_SEARCH_TOOL_NAME) {
+    return (
+      <div className="p-2 ">
+        <WebSearchToolPart part={part} />
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col">
-      <span>Tool Part</span>
-      <span>{JSON.stringify(part)}</span>
+    <div
+      className="flex flex-col cursor-pointer text-sm"
+      onClick={() => {
+        setIsExpanded(!isExpanded);
+      }}
+    >
+      <div className="flex flex-row gap-2 items-center text-muted-foreground hover:text-accent-foreground transition-colors">
+        {isPending ? (
+          <TextShimmer>도구 실행중...</TextShimmer>
+        ) : (
+          <div className="font-medium">도구 실행 결과</div>
+        )}
+
+        <button
+          data-testid="message-reasoning-toggle"
+          type="button"
+          className="cursor-pointer"
+        >
+          <ChevronDownIcon size={16} />
+        </button>
+      </div>
+
+      <div className="pl-4" onClick={(e) => e.stopPropagation()}>
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              data-testid="message-reasoning"
+              key="content"
+              initial="collapsed"
+              animate="expanded"
+              exit="collapsed"
+              variants={variants}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              style={{ overflow: "hidden" }}
+              className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
+            >
+              <JsonView
+                data={{
+                  input: part.input,
+                  output: part.output,
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
