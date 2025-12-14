@@ -38,6 +38,7 @@ export const seedPrices = async () => {
       cachedTokenPrice: "0.00000003",
       markupRate: "1.60",
       isActive: true,
+      isDefaultModel: true,
     },
     {
       provider: "openai",

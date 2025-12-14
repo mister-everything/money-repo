@@ -1,5 +1,5 @@
 import { truncateString } from "@workspace/util";
-import { ReasoningUIPart, TextUIPart } from "ai";
+import { getToolName, ReasoningUIPart, TextUIPart, ToolUIPart } from "ai";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckIcon,
@@ -17,12 +17,24 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
+import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import {
+  GEN_MCQ_TOOL_NAME,
+  GEN_SUBJECTIVE_TOOL_NAME,
+} from "@/lib/ai/tools/workbook/types";
 import { cn } from "@/lib/utils";
+import JsonView from "../ui/json-view";
+import {
+  GenerateMcqToolPart,
+  GenerateSubjectiveToolPart,
+} from "./tool-part/generate-block-tool-part";
+import { WebSearchToolPart } from "./tool-part/web-search-part";
 
 interface UserMessagePartProps {
   part: TextUIPart;
   streaming?: boolean;
 }
+
 const MAX_TEXT_LENGTH = 600;
 export function UserMessagePart({ part }: UserMessagePartProps) {
   const [copied, copy] = useCopy();
@@ -100,7 +112,7 @@ export function AssistantTextPart({
 }: AssistantMessagePartProps) {
   const [copied, copy] = useCopy();
   return (
-    <div className="flex flex-col gap-2 group/message">
+    <div className="flex flex-col gap-2 group/message text-sm">
       <div data-testid="message-content" className="flex flex-col gap-4 px-2">
         <Streamdown>{part.text}</Streamdown>
       </div>
@@ -144,23 +156,28 @@ const variants = {
 interface ReasoningPartProps {
   part: ReasoningUIPart;
   streaming?: boolean;
+  defaultExpanded?: boolean;
 }
 
-export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function ReasoningPart({
+  part,
+  streaming,
+  defaultExpanded = false,
+}: ReasoningPartProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
     <div
-      className="flex flex-col cursor-pointer"
+      className="flex flex-col cursor-pointer text-sm"
       onClick={() => {
         setIsExpanded(!isExpanded);
       }}
     >
       <div className="flex flex-row gap-2 items-center text-muted-foreground hover:text-accent-foreground transition-colors">
         {streaming ? (
-          <TextShimmer>Reasoned for a few seconds</TextShimmer>
+          <TextShimmer>생각중...</TextShimmer>
         ) : (
-          <div className="font-medium">Reasoned for a few seconds</div>
+          <div className="font-medium">생각하는 과정</div>
         )}
 
         <button
@@ -186,9 +203,90 @@ export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
               style={{ overflow: "hidden" }}
               className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
             >
-              <Streamdown>
-                {part.text || (streaming ? "" : "생각중...🤔")}
-              </Streamdown>
+              <Streamdown>{part.text || (streaming ? "" : "...🤔")}</Streamdown>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+export function ToolPart({ part }: { part: ToolUIPart }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const toolName = useMemo(() => getToolName(part), [part.type]);
+
+  const isPending = useMemo(() => {
+    return !part.state.startsWith(`output-`);
+  }, [part.state]);
+
+  if (toolName === GEN_MCQ_TOOL_NAME) {
+    return (
+      <div className="p-4">
+        <GenerateMcqToolPart part={part} />
+      </div>
+    );
+  }
+
+  if (toolName === GEN_SUBJECTIVE_TOOL_NAME) {
+    return (
+      <div className="p-4">
+        <GenerateSubjectiveToolPart part={part} />
+      </div>
+    );
+  }
+  if (toolName === EXA_SEARCH_TOOL_NAME) {
+    return (
+      <div className="p-2 ">
+        <WebSearchToolPart part={part} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex flex-col cursor-pointer text-sm"
+      onClick={() => {
+        setIsExpanded(!isExpanded);
+      }}
+    >
+      <div className="flex flex-row gap-2 items-center text-muted-foreground hover:text-accent-foreground transition-colors">
+        {isPending ? (
+          <TextShimmer>도구 실행중...</TextShimmer>
+        ) : (
+          <div className="font-medium">도구 실행 결과</div>
+        )}
+
+        <button
+          data-testid="message-reasoning-toggle"
+          type="button"
+          className="cursor-pointer"
+        >
+          <ChevronDownIcon size={16} />
+        </button>
+      </div>
+
+      <div className="pl-4" onClick={(e) => e.stopPropagation()}>
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              data-testid="message-reasoning"
+              key="content"
+              initial="collapsed"
+              animate="expanded"
+              exit="collapsed"
+              variants={variants}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              style={{ overflow: "hidden" }}
+              className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
+            >
+              <JsonView
+                data={{
+                  input: part.input,
+                  output: part.output,
+                }}
+              />
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  isPublished,
   SessionInProgress,
   SessionSubmitted,
   WorkBookWithoutBlocks,
@@ -19,14 +20,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { WorkbookDifficulty } from "./workbook-difficulty";
 
 interface WorkbookCardProps {
   workBook: WorkBookWithoutBlocks;
   session?: SessionInProgress | SessionSubmitted;
   onDelete?: () => void;
   onTogglePublic?: () => void;
+  onCopy?: () => void;
   isPendingDelete?: boolean;
   isPendingTogglePublic?: boolean;
+  isPendingCopy?: boolean;
 }
 
 export function WorkbookCard({
@@ -34,6 +38,8 @@ export function WorkbookCard({
   session,
   onDelete,
   onTogglePublic,
+  onCopy,
+  isPendingCopy,
   isPendingDelete,
   isPendingTogglePublic,
 }: WorkbookCardProps) {
@@ -42,14 +48,22 @@ export function WorkbookCard({
     [isPendingDelete, isPendingTogglePublic],
   );
 
+  const hasAction = useMemo(() => {
+    return Boolean(onDelete || onTogglePublic || onCopy);
+  }, [onDelete, onTogglePublic, onCopy]);
+
+  const published = useMemo(() => {
+    return isPublished(workBook);
+  }, [workBook.publishedAt]);
+
   return (
-    <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-sm h-full flex flex-col">
+    <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-md h-full flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between min-w-0 ">
           <CardTitle className="text-xl font-bold truncate">
             {workBook.title || "제목이 없습니다."}
           </CardTitle>
-          {Boolean(onDelete || onTogglePublic) && (
+          {hasAction && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -80,38 +94,54 @@ export function WorkbookCard({
                     )}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem
-                  disabled={workBook.isPublic || isPending}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onTogglePublic?.();
-                  }}
-                >
-                  {isPendingTogglePublic && !workBook.isPublic ? (
-                    <>
-                      공개로 전환중...
-                      <LoaderIcon className="size-3 animate-spin" />
-                    </>
-                  ) : (
-                    "공개하기"
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={!workBook.isPublic || isPending}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onTogglePublic?.();
-                  }}
-                >
-                  {isPendingTogglePublic && workBook.isPublic ? (
-                    <>
-                      비공개로 전환중...
-                      <LoaderIcon className="size-3 animate-spin" />
-                    </>
-                  ) : (
-                    "비공개로 전환"
-                  )}
-                </DropdownMenuItem>
+                {onCopy && (
+                  <DropdownMenuItem disabled={isPendingCopy} onClick={onCopy}>
+                    {isPendingCopy ? (
+                      <>
+                        복사중...
+                        <LoaderIcon className="size-3 animate-spin" />
+                      </>
+                    ) : (
+                      "복사하여 새로 생성"
+                    )}
+                  </DropdownMenuItem>
+                )}
+                {onTogglePublic && (
+                  <>
+                    <DropdownMenuItem
+                      disabled={workBook.isPublic || isPending}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onTogglePublic?.();
+                      }}
+                    >
+                      {isPendingTogglePublic && !workBook.isPublic ? (
+                        <>
+                          공개로 전환중...
+                          <LoaderIcon className="size-3 animate-spin" />
+                        </>
+                      ) : (
+                        "공개하기"
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={!workBook.isPublic || isPending}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onTogglePublic?.();
+                      }}
+                    >
+                      {isPendingTogglePublic && workBook.isPublic ? (
+                        <>
+                          비공개로 전환중...
+                          <LoaderIcon className="size-3 animate-spin" />
+                        </>
+                      ) : (
+                        "비공개로 전환"
+                      )}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -121,28 +151,40 @@ export function WorkbookCard({
           {workBook.description || "설명이 없습니다."}
         </p>
 
-        {session?.status === "submitted" ? (
-          <Badge
-            variant="outline"
-            className="w-fit bg-green-50 text-green-700 border-green-200"
-          >
-            풀이 완료 {session.correctBlocks}/{session.totalBlocks}
-          </Badge>
-        ) : session?.status === "in-progress" ? (
-          <Badge
-            variant="outline"
-            className="w-fit bg-blue-50 text-blue-500 border-none"
-          >
-            풀이 중
-          </Badge>
-        ) : session ? (
-          <Badge
-            variant="outline"
-            className="w-fit bg-gray-50 text-gray-700 border-gray-200"
-          >
-            풀지 않음
-          </Badge>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {session?.status === "submitted" ? (
+            <>
+              <Badge
+                variant="secondary"
+                className="w-fit text-primary rounded-full bg-primary/10 py-1"
+              >
+                완료
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="w-fit text-primary rounded-full bg-primary/10 py-1"
+              >
+                정답 {session.correctBlocks}/{session.totalBlocks}
+              </Badge>
+            </>
+          ) : session?.status === "in-progress" ? (
+            <Badge
+              variant="secondary"
+              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+            >
+              풀이 중
+            </Badge>
+          ) : session ? (
+            <Badge variant="secondary">풀지 않음</Badge>
+          ) : !published ? (
+            <Badge
+              variant="secondary"
+              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+            >
+              제작중
+            </Badge>
+          ) : null}
+        </div>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col">
@@ -161,6 +203,12 @@ export function WorkbookCard({
             </span>
           )}
         </div>
+        {published && (
+          <WorkbookDifficulty
+            count={workBook.firstSolverCount ?? 0}
+            sum={workBook.firstScoreSum ?? 0}
+          />
+        )}
         <div className="flex items-center gap-2 mt-auto">
           {workBook.publishedAt && (
             <span className="text-xs text-muted-foreground shrink-0">
@@ -173,7 +221,7 @@ export function WorkbookCard({
                 alt={workBook.ownerName}
                 src={workBook.ownerProfile ?? ""}
               />
-              <AvatarFallback className="text-[8px]">
+              <AvatarFallback className="text-3xs">
                 {workBook.ownerName.charAt(0)}
               </AvatarFallback>
             </Avatar>

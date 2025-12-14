@@ -121,7 +121,7 @@ export function WorkbookSolveNavigateButton({
           size="lg"
           className="rounded-full font-bold md:text-lg px-10 py-6 hover:scale-105 transition-all hover:bg-primary/90"
         >
-          {status?.status == "in-progress" ? "이어서 풀기" : "문제집 풀러가기"}
+          {status?.status == "in-progress" ? "이어서 풀기" : "시작하기"}
           {isLoading && <LoaderIcon className="size-4 animate-spin" />}
         </Button>
       )}

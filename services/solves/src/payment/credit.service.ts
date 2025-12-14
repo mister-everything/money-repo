@@ -122,7 +122,9 @@ export const creditService = {
       newBalance: result.newBalance,
     };
     logger.info(
-      `[consumeAICredit] ${price.displayName} cost: ${cost.totalMarketCost.toFixed(8)}, vendorCost: ${vendorCost}, marketCost: ${cost.totalMarketCost - (vendorCost || cost.totalCost)}, balance: ${result.newBalance}`,
+      `[consumeAICredit] ${price.displayName} cost: ${cost.totalMarketCost.toFixed(8)}, vendorCost: ${vendorCost}, marketCost: ${cost.totalMarketCost - (vendorCost || cost.totalCost)}, balance: ${result.newBalance}
+      inputTokens: ${inputTokens}, outputTokens: ${outputTokens}
+      `,
     );
 
     await sharedCache.setex(

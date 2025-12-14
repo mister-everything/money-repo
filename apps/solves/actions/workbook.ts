@@ -4,6 +4,7 @@ import { workBookService } from "@service/solves";
 import { UpdateBlock, WorkBookBlock } from "@service/solves/shared";
 import z from "zod";
 import { getSession } from "@/lib/auth/server";
+import { fail } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
 export const createWorkbookAction = safeAction(
@@ -133,6 +134,25 @@ export const deleteWorkbookAction = safeAction(
   },
 );
 
+export const softDeleteWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    reason: z.string().optional(),
+  }),
+  async ({ workBookId, reason }) => {
+    const session = await getSession();
+    const isOwner = await workBookService.isWorkBookOwner(
+      workBookId,
+      session.user.id,
+    );
+    if (!isOwner) {
+      return fail("권한이 없습니다.");
+    }
+    await workBookService.softDeleteWorkBook(workBookId, reason);
+    return { softDeletedWorkBookId: workBookId };
+  },
+);
+
 export const toggleWorkBookPublicAction = safeAction(
   z.object({
     workBookId: z.string(),
@@ -147,5 +167,34 @@ export const toggleWorkBookPublicAction = safeAction(
       isPublic,
     });
     return { isPublic, workBookId };
+  },
+);
+
+export const toggleWorkBookLikeAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+  }),
+  async ({ workBookId }) => {
+    const session = await getSession();
+
+    const { count, isLiked } = await workBookService.toggleLikeWorkBook(
+      workBookId,
+      session.user.id,
+    );
+    return { count, isLiked };
+  },
+);
+
+export const copyWorkbookAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+  }),
+  async ({ workBookId }) => {
+    const session = await getSession();
+    const newWorkBook = await workBookService.copyWorkBook({
+      workBookId,
+      userId: session.user.id,
+    });
+    return { copiedWorkBookId: newWorkBook.id };
   },
 );

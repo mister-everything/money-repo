@@ -1,0 +1,1 @@
+ALTER TABLE "solves"."ai_provider_prices" ADD COLUMN IF NOT EXISTS "is_default_model" boolean DEFAULT false NOT NULL;

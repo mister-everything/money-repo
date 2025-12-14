@@ -24,7 +24,13 @@ import {
 } from "@workspace/util";
 import { ArrowLeftIcon, GripVerticalIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import {
   processUpdateBlocksAction,
@@ -42,6 +48,7 @@ import { useToRef } from "@/hooks/use-to-ref";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
@@ -79,22 +86,29 @@ const extractBlockDiff = (prev: WorkBookBlock[], next: WorkBookBlock[]) => {
 };
 
 export function WorkbookEdit({
-  book: { blocks: initialBlocks, ...initialWorkbook },
+  book: initialWorkbook,
+  blocks: initialBlocks,
 }: {
-  book: WorkBook;
+  book: WorkBookWithoutBlocks;
+  blocks: WorkBookBlock[];
 }) {
   const [snapshot, setSnapshot] = useState<WorkBook>({
     ...initialWorkbook,
     blocks: initialBlocks,
   });
-  const [workbook, setWorkbook] =
-    useState<WorkBookWithoutBlocks>(initialWorkbook);
+
+  const {
+    blocks = initialBlocks,
+    workBook = initialWorkbook,
+    focusBlockId,
+    appendBlock,
+    setBlocks,
+    setWorkBook,
+  } = useWorkbookEditStore();
 
   const ref = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
-
-  const [blocks, setBlocks] = useState<WorkBookBlock[]>(initialBlocks);
 
   const [isEditBook, setIsEditBook] = useState(false);
 
@@ -105,8 +119,6 @@ export function WorkbookEdit({
   const [control, setControl] = useState<"edit" | "solve" | "review">("edit");
 
   const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
-
-  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
 
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
 
@@ -134,7 +146,7 @@ export function WorkbookEdit({
     updateWorkbookAction,
     {
       onSuccess: () => {
-        setSnapshot((prev) => ({ ...prev, ...workbook }));
+        setSnapshot((prev) => ({ ...prev, ...workBook }));
       },
     },
   );
@@ -143,7 +155,7 @@ export function WorkbookEdit({
     failMessage: "배포에 실패했습니다.",
     successMessage: "발행이 완료되었어요. 화면 이동중",
     onSuccess: () => {
-      router.push(`/workbooks/${workbook.id}/report`);
+      router.push(`/workbooks/${workBook.id}/report`);
     },
   });
 
@@ -164,7 +176,7 @@ export function WorkbookEdit({
   const stateRef = useToRef({
     isPending,
     blocks,
-    workbook,
+    workBook,
   });
 
   const blocksDiff = useMemo(() => {
@@ -174,15 +186,15 @@ export function WorkbookEdit({
   const isWorkBookDiff = useMemo(() => {
     return !equal(
       {
-        title: workbook.title,
-        description: workbook.description,
+        title: workBook.title,
+        description: workBook.description,
       },
       {
         title: snapshot.title,
         description: snapshot.description,
       },
     );
-  }, [snapshot, workbook]);
+  }, [snapshot, workBook]);
 
   const isBlocksDiff = useMemo(() => {
     const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
@@ -245,10 +257,10 @@ export function WorkbookEdit({
   );
 
   const handleChangeTitle = useCallback((title: string) => {
-    setWorkbook((prev) => ({ ...prev, title }));
+    setWorkBook((prev) => ({ ...prev, title }));
   }, []);
   const handleChangeDescription = useCallback((description: string) => {
-    setWorkbook((prev) => ({ ...prev, description }));
+    setWorkBook((prev) => ({ ...prev, description }));
   }, []);
 
   const deleteFeedback = useCallback((id: string) => {
@@ -296,18 +308,7 @@ export function WorkbookEdit({
       return;
     }
     const newBlock = initializeBlock(blockType);
-    setBlocks((prev) => {
-      const maxOrder = Math.max(...prev.map((b) => b.order), 0);
-      const newBlocks = [
-        ...prev,
-        {
-          ...newBlock,
-          order: maxOrder + 1,
-        },
-      ];
-      return newBlocks;
-    });
-    setFocusBlockId(newBlock.id);
+    appendBlock(newBlock);
     setEditingBlockId([newBlock.id]);
   }, []);
 
@@ -394,16 +395,16 @@ export function WorkbookEdit({
   const handleSave = async () => {
     if (isWorkBookDiff) {
       await updateWorkbook({
-        id: workbook.id,
-        title: workbook.title,
-        description: workbook.description || "",
+        id: workBook.id,
+        title: workBook.title,
+        description: workBook.description || "",
       });
     }
 
     if (isBlocksDiff) {
       const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
       await processUpdateBlocks({
-        workbookId: workbook.id,
+        workbookId: workBook.id,
         deleteBlocks: deletedBlocks.map((b) => b.id),
         insertBlocks: addedBlocks,
         updateBlocks: updatedBlocks,
@@ -459,12 +460,12 @@ export function WorkbookEdit({
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return "문제를 최소 1개 이상 추가해주세요.";
     }
-    if (!stateRef.current.workbook.title?.trim?.()) {
+    if (!stateRef.current.workBook.title?.trim?.()) {
       setIsEditBook(true);
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return "문제집 제목을 입력해주세요.";
     }
-    if (!stateRef.current.workbook.description?.trim?.()) {
+    if (!stateRef.current.workBook.description?.trim?.()) {
       setIsEditBook(true);
       ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return "문제집 설명을 입력해주세요.";
@@ -490,11 +491,18 @@ export function WorkbookEdit({
   const handlePublish = useCallback(
     async (tags: string[]) => {
       await handleSave();
-      publish({ workBookId: workbook.id, tags });
+      publish({ workBookId: workBook.id, tags });
       setIsPublishPopupOpen(false);
     },
-    [publish, workbook.id],
+    [publish, workBook.id],
   );
+
+  useEffect(() => {
+    setWorkBook(initialWorkbook);
+  }, [initialWorkbook]);
+  useEffect(() => {
+    setBlocks(initialBlocks);
+  }, [initialBlocks]);
 
   return (
     <div className="h-full relative">
@@ -515,7 +523,7 @@ export function WorkbookEdit({
             onModeChange={handleChangeWorkbookMode}
             onChangeTitle={handleChangeTitle}
             onChangeDescription={handleChangeDescription}
-            book={workbook}
+            book={workBook}
           />
 
           {blocks.map((b, index) => {

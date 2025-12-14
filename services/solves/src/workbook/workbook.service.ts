@@ -13,16 +13,18 @@ import {
 import { pgDb } from "../db";
 import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
 import { blockValidate } from "./block-validate";
-import { BlockAnswerSubmit } from "./blocks";
+import { BlockAnswer, BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
   categorySubTable,
   tagsTable,
+  WorkBookLikes,
   workBookBlockAnswerSubmitsTable,
   workBookCategoryTable,
   workBookSubmitsTable,
   workBooksTable,
   workBookTagsTable,
+  workBookUserFirstScoresTable,
 } from "./schema";
 import {
   SessionInProgress,
@@ -60,6 +62,9 @@ const WorkBookColumnsForList = {
     { id: number; name: string }[]
   >`coalesce((${TagsSubQuery}), '[]'::json)`,
   createdAt: workBooksTable.createdAt,
+  likeCount: workBooksTable.likeCount,
+  firstSolverCount: workBooksTable.firstSolverCount,
+  firstScoreSum: workBooksTable.firstScoreSum,
 };
 
 type GetWorkBookOptions = {
@@ -87,7 +92,12 @@ export const workBookService = {
         publishedAt: workBooksTable.publishedAt,
       })
       .from(workBooksTable)
-      .where(eq(workBooksTable.id, workBookId));
+      .where(
+        and(
+          eq(workBooksTable.id, workBookId),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
     if (!workBook) throw new PublicError("문제집을 찾을수 없습니다.");
     if (workBook?.ownerId !== userId)
       throw new PublicError("문제집에 권한이 없습니다.");
@@ -97,6 +107,18 @@ export const workBookService = {
 
   deleteWorkBook: async (workBookId: string): Promise<void> => {
     await pgDb.delete(workBooksTable).where(eq(workBooksTable.id, workBookId));
+  },
+  softDeleteWorkBook: async (
+    workBookId: string,
+    reason?: string,
+  ): Promise<void> => {
+    await pgDb
+      .update(workBooksTable)
+      .set({
+        deletedAt: new Date(),
+        deletedReason: reason,
+      })
+      .where(eq(workBooksTable.id, workBookId));
   },
 
   searchMyWorkBooks: async (options: {
@@ -121,7 +143,7 @@ export const workBookService = {
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(...where))
+      .where(and(...where, isNull(workBooksTable.deletedAt)))
       .offset(offset)
       .limit(limit)
       .orderBy(desc(workBooksTable.updatedAt));
@@ -154,7 +176,7 @@ export const workBookService = {
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(...where))
+      .where(and(...where, isNull(workBooksTable.deletedAt)))
       .offset(offset)
       .limit(limit)
       .orderBy(desc(workBooksTable.updatedAt));
@@ -178,7 +200,7 @@ export const workBookService = {
       .select(WorkBookColumnsForList)
       .from(workBooksTable)
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(...where));
+      .where(and(...where, isNull(workBooksTable.deletedAt)));
 
     if (!book) throw new PublicError("문제집을 찾을 수 없습니다.");
     return book;
@@ -355,6 +377,113 @@ export const workBookService = {
     });
   },
 
+  copyWorkBook: async ({
+    workBookId,
+    userId,
+  }: {
+    workBookId: string;
+    userId: string;
+  }): Promise<{ id: string }> => {
+    const [origin] = await pgDb
+      .select({
+        id: workBooksTable.id,
+        ownerId: workBooksTable.ownerId,
+        title: workBooksTable.title,
+        description: workBooksTable.description,
+        isPublic: workBooksTable.isPublic,
+      })
+      .from(workBooksTable)
+      .where(
+        and(
+          eq(workBooksTable.id, workBookId),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
+
+    if (!origin) throw new PublicError("문제집을 찾을 수 없습니다.");
+    if (origin.ownerId !== userId)
+      throw new PublicError("문제집 복사 권한이 없습니다.");
+
+    return pgDb.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(workBooksTable)
+        .values({
+          ownerId: userId,
+          title: `복사본 - ${origin.title ?? ""}`.trim().slice(0, 20),
+          description: origin.description,
+          isPublic: origin.isPublic,
+          publishedAt: null,
+          likeCount: 0,
+          firstScoreSum: 0,
+          firstSolverCount: 0,
+        })
+        .returning({ id: workBooksTable.id });
+
+      const newWorkBookId = created.id;
+
+      const blocks = await tx
+        .select({
+          order: blocksTable.order,
+          type: blocksTable.type,
+          question: blocksTable.question,
+          content: blocksTable.content,
+          answer: blocksTable.answer,
+        })
+        .from(blocksTable)
+        .where(eq(blocksTable.workBookId, workBookId))
+        .orderBy(blocksTable.order);
+
+      if (blocks.length > 0) {
+        await tx.insert(blocksTable).values(
+          blocks.map((b) => ({
+            workBookId: newWorkBookId,
+            order: b.order,
+            type: b.type,
+            question: b.question,
+            content: b.content,
+            answer: b.answer,
+          })),
+        );
+      }
+
+      const tags = await tx
+        .select({
+          tagId: workBookTagsTable.tagId,
+        })
+        .from(workBookTagsTable)
+        .where(eq(workBookTagsTable.workBookId, workBookId));
+
+      if (tags.length > 0) {
+        await tx.insert(workBookTagsTable).values(
+          tags.map((t) => ({
+            workBookId: newWorkBookId,
+            tagId: t.tagId,
+          })),
+        );
+      }
+
+      const categories = await tx
+        .select({
+          categoryMainId: workBookCategoryTable.categoryMainId,
+          categorySubId: workBookCategoryTable.categorySubId,
+        })
+        .from(workBookCategoryTable)
+        .where(eq(workBookCategoryTable.workBookId, workBookId));
+
+      if (categories.length > 0) {
+        await tx.insert(workBookCategoryTable).values(
+          categories.map((c) => ({
+            workBookId: newWorkBookId,
+            categoryMainId: c.categoryMainId,
+            categorySubId: c.categorySubId,
+          })),
+        );
+      }
+
+      return { id: newWorkBookId };
+    });
+  },
+
   toggleWorkBookPublic: async ({
     workBookId,
     userId,
@@ -373,6 +502,7 @@ export const workBookService = {
         and(
           eq(workBooksTable.id, workBookId),
           eq(workBooksTable.ownerId, userId),
+          isNull(workBooksTable.deletedAt),
         ),
       );
     if (result.rowCount === 0) {
@@ -391,7 +521,12 @@ export const workBookService = {
         title: workBook.title,
         description: workBook.description,
       })
-      .where(eq(workBooksTable.id, workBook.id));
+      .where(
+        and(
+          eq(workBooksTable.id, workBook.id),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
   },
   processUpdateBlocks: async (
     bookId: string,
@@ -469,6 +604,10 @@ export const workBookService = {
           startTime: workBookSubmitsTable.startTime,
         })
         .from(workBookSubmitsTable)
+        .innerJoin(
+          workBooksTable,
+          eq(workBookSubmitsTable.workBookId, workBooksTable.id),
+        )
         .where(
           and(
             eq(workBookSubmitsTable.workBookId, workBookId),
@@ -634,44 +773,55 @@ export const workBookService = {
     userId: string,
     submitId: string,
   ): Promise<void> => {
-    const [session] = await pgDb
-      .select({
-        id: workBookSubmitsTable.id,
-        workBookId: workBookSubmitsTable.workBookId,
-        startTime: workBookSubmitsTable.startTime,
-      })
-      .from(workBookSubmitsTable)
-      .where(
-        and(
-          isNull(workBookSubmitsTable.endTime),
-          eq(workBookSubmitsTable.id, submitId),
-          eq(workBookSubmitsTable.ownerId, userId),
-        ),
+    return pgDb.transaction(async (tx) => {
+      const locked = await tx.execute<{
+        workBookId: string;
+        endTime: Date | null;
+      }>(sql`
+        SELECT
+          ${workBookSubmitsTable.workBookId} as "workBookId",
+          ${workBookSubmitsTable.endTime} as "endTime"
+        FROM ${workBookSubmitsTable}
+        WHERE ${workBookSubmitsTable.id} = ${submitId}
+          AND ${workBookSubmitsTable.ownerId} = ${userId}
+        FOR UPDATE
+      `);
+
+      const session = locked.rows[0];
+      if (!session) throw new PublicError("세션을 찾을 수 없습니다.");
+      if (session.endTime) throw new PublicError("이미 제출된 세션 입니다.");
+
+      const blocks = await tx
+        .select({
+          id: blocksTable.id,
+          content: blocksTable.content,
+          answer: blocksTable.answer,
+          type: blocksTable.type,
+        })
+        .from(blocksTable)
+        .where(eq(blocksTable.workBookId, session.workBookId));
+
+      const submits = await tx
+        .select({
+          blockId: workBookBlockAnswerSubmitsTable.blockId,
+          answer: workBookBlockAnswerSubmitsTable.answer,
+        })
+        .from(workBookBlockAnswerSubmitsTable)
+        .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
+
+      const submitByBlockId = submits.reduce(
+        (acc, submit) => {
+          acc[submit.blockId] = submit.answer;
+          return acc;
+        },
+        {} as Record<string, BlockAnswerSubmit>,
       );
 
-    if (!session) throw new PublicError("세션을 찾을 수 없습니다.");
-
-    const blocks = await workBookService.getBlocks(session.workBookId);
-    const submits = await pgDb
-      .select({
-        blockId: workBookBlockAnswerSubmitsTable.blockId,
-        answer: workBookBlockAnswerSubmitsTable.answer,
-      })
-      .from(workBookBlockAnswerSubmitsTable)
-      .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
-
-    const submitByBlockId = submits.reduce(
-      (acc, submit) => {
-        acc[submit.blockId] = submit.answer;
-        return acc;
-      },
-      {} as Record<string, BlockAnswerSubmit>,
-    );
-
-    return pgDb.transaction(async (tx) => {
       const saveSubmits = blocks.map((block) => {
         const submittedAnswer = submitByBlockId[block.id];
-        const isCorrect = checkAnswer(block.answer, submittedAnswer);
+        const isCorrect = block.answer
+          ? checkAnswer(block.answer as unknown as BlockAnswer, submittedAnswer)
+          : false;
         return {
           blockId: block.id,
           submitId,
@@ -693,15 +843,56 @@ export const workBookService = {
             isCorrect: sql`excluded.is_correct`,
           },
         });
+
+      const correctBlocksCount = saveSubmits.filter(
+        (submit) => submit.isCorrect,
+      ).length;
+      const totalBlocks = blocks.length;
+      const score =
+        totalBlocks > 0
+          ? Math.round((correctBlocksCount * 100) / totalBlocks)
+          : 0;
+
+      const now = new Date();
+
       await tx
         .update(workBookSubmitsTable)
         .set({
-          endTime: new Date(),
-          blockCount: blocks.length,
-          correctBlocks: saveSubmits.filter((submit) => submit.isCorrect)
-            .length,
+          endTime: now,
+          blockCount: totalBlocks,
+          correctBlocks: correctBlocksCount,
         })
         .where(eq(workBookSubmitsTable.id, submitId));
+
+      const inserted = await tx
+        .insert(workBookUserFirstScoresTable)
+        .values({
+          workBookId: session.workBookId,
+          ownerId: userId,
+          score,
+          submitId: submitId,
+          firstSubmittedAt: now,
+          createdAt: now,
+        })
+        .onConflictDoNothing({
+          target: [
+            workBookUserFirstScoresTable.workBookId,
+            workBookUserFirstScoresTable.ownerId,
+          ],
+        })
+        .returning({
+          workBookId: workBookUserFirstScoresTable.workBookId,
+        });
+
+      if (inserted.length > 0) {
+        await tx
+          .update(workBooksTable)
+          .set({
+            firstScoreSum: sql`${workBooksTable.firstScoreSum} + ${score}`,
+            firstSolverCount: sql`${workBooksTable.firstSolverCount} + 1`,
+          })
+          .where(eq(workBooksTable.id, session.workBookId));
+      }
     });
   },
 
@@ -807,6 +998,11 @@ export const workBookService = {
       return null;
     }
 
+    const isLiked = await workBookService.isLikedWorkBook(
+      row.workBookId,
+      userId,
+    );
+
     const session: SessionSubmitted = {
       status: "submitted",
       startTime: row.startTime,
@@ -817,7 +1013,8 @@ export const workBookService = {
     };
     const submitAnswers = await workBookService.getSubmitAnswers(row.id);
     return {
-      workBook,
+      workBook: { ...workBook },
+      isLiked,
       session,
       submitAnswers,
     };
@@ -899,5 +1096,81 @@ export const workBookService = {
           eq(workBookSubmitsTable.active, true),
         ),
       );
+  },
+  toggleLikeWorkBook: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<{ count: number; isLiked: boolean }> => {
+    return pgDb.transaction(async (tx) => {
+      const [likeRow] = await tx
+        .select({
+          workBookId: WorkBookLikes.workBookId,
+        })
+        .from(WorkBookLikes)
+        .where(
+          and(
+            eq(WorkBookLikes.workBookId, workBookId),
+            eq(WorkBookLikes.userId, userId),
+          ),
+        );
+      if (likeRow) {
+        await tx
+          .delete(WorkBookLikes)
+          .where(
+            and(
+              eq(WorkBookLikes.workBookId, workBookId),
+              eq(WorkBookLikes.userId, userId),
+            ),
+          );
+        const [updated] = await tx
+          .update(workBooksTable)
+          .set({
+            likeCount: sql`${workBooksTable.likeCount} - 1`,
+          })
+          .where(eq(workBooksTable.id, workBookId))
+          .returning({
+            likeCount: workBooksTable.likeCount,
+          });
+        return {
+          count: updated?.likeCount,
+          isLiked: false,
+        };
+      } else {
+        await tx.insert(WorkBookLikes).values({
+          workBookId,
+          userId,
+        });
+        const [updated] = await tx
+          .update(workBooksTable)
+          .set({
+            likeCount: sql`${workBooksTable.likeCount} + 1`,
+          })
+          .where(eq(workBooksTable.id, workBookId))
+          .returning({
+            likeCount: workBooksTable.likeCount,
+          });
+        return {
+          count: updated?.likeCount,
+          isLiked: true,
+        };
+      }
+    });
+  },
+  isLikedWorkBook: async (
+    workBookId: string,
+    userId: string,
+  ): Promise<boolean> => {
+    const [row] = await pgDb
+      .select({
+        workBookId: WorkBookLikes.workBookId,
+      })
+      .from(WorkBookLikes)
+      .where(
+        and(
+          eq(WorkBookLikes.workBookId, workBookId),
+          eq(WorkBookLikes.userId, userId),
+        ),
+      );
+    return Boolean(row);
   },
 };
