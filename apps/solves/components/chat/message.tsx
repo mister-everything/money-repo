@@ -7,7 +7,12 @@ import { memo, useMemo } from "react";
 import { Think } from "@/components/ui/think";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { AssistantTextPart, ReasoningPart, UserMessagePart } from "./part";
+import {
+  AssistantTextPart,
+  ReasoningPart,
+  ToolPart,
+  UserMessagePart,
+} from "./part";
 
 function isStreamingMessage(
   props: Pick<MessageProps, "status" | "isLastMessage">,
@@ -82,12 +87,7 @@ const PurePreviewMessage = ({
             }
 
             if (isToolUIPart(part)) {
-              return (
-                <div className="flex flex-col" key={key}>
-                  <span>Tool Part</span>
-                  <span>{JSON.stringify(part)}</span>
-                </div>
-              );
+              return <ToolPart key={key} part={part} />;
             }
             if (part.type === "step-start") {
               return null;
