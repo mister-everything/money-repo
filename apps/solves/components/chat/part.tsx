@@ -1,4 +1,5 @@
-import { truncateString } from "@workspace/util";
+import { WorkBookBlock } from "@service/solves/shared";
+import { generateUUID, truncateString } from "@workspace/util";
 import { getToolName, ReasoningUIPart, TextUIPart, ToolUIPart } from "ai";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -7,7 +8,8 @@ import {
   ChevronUpIcon,
   CopyIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
 import { TextShimmer } from "@/components/ui/text-shimmer";
@@ -18,6 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { cn } from "@/lib/utils";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 
 interface UserMessagePartProps {
   part: TextUIPart;
@@ -201,6 +204,22 @@ export function ReasoningPart({ part, streaming }: ReasoningPartProps) {
 export function ToolPart({ part }: { part: ToolUIPart }) {
   const toolName = getToolName(part);
 
+  const { setBlocks } = useWorkbookEditStore();
+
+  const appendBlock = useCallback(
+    (block: WorkBookBlock) => {
+      setBlocks((prev) => {
+        const nextOrder =
+          prev.length === 0
+            ? 0
+            : Math.max(...prev.map((b) => b.order ?? 0)) + 1;
+        return [...prev, { ...block, order: nextOrder }];
+      });
+      toast.success("문제집에 추가했어요.");
+    },
+    [setBlocks],
+  );
+
   const extractPayload = (): any => part?.output ?? null;
 
   if (toolName === "generateMcqTool") {
@@ -213,6 +232,23 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
       payload.answer?.type === "mcq"
     ) {
       const answerId = payload.answer.answer;
+      const handleApply = () => {
+        appendBlock({
+          id: generateUUID(),
+          question: payload.question,
+          type: "mcq",
+          content: {
+            type: "mcq",
+            options: payload.content.options,
+          },
+          answer: {
+            type: "mcq",
+            answer: answerId,
+            solution: payload.answer.solution,
+          },
+          order: 0,
+        });
+      };
       return (
         <div className="rounded-lg border bg-background p-4 shadow-sm space-y-3">
           <div className="text-sm font-semibold text-foreground">객관식</div>
@@ -246,6 +282,9 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
               {payload.answer.solution}
             </div>
           )}
+          <Button className="w-full" size="sm" onClick={handleApply}>
+            문제집에 적용하기
+          </Button>
         </div>
       );
     }
@@ -259,6 +298,22 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
       payload.content?.type === "default" &&
       Array.isArray(payload.answer?.answer)
     ) {
+      const handleApply = () => {
+        appendBlock({
+          id: generateUUID(),
+          question: payload.question,
+          type: "default",
+          content: {
+            type: "default",
+          },
+          answer: {
+            type: "default",
+            answer: payload.answer.answer,
+            solution: payload.answer.solution,
+          },
+          order: 0,
+        });
+      };
       return (
         <div className="rounded-lg border bg-background p-4 shadow-sm space-y-3">
           <div className="text-sm font-semibold text-foreground">주관식</div>
@@ -278,6 +333,9 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
               {payload.answer.solution}
             </div>
           )}
+          <Button className="w-full" size="sm" onClick={handleApply}>
+            문제집에 적용하기
+          </Button>
         </div>
       );
     }
