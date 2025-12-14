@@ -12,7 +12,7 @@ import { TextShimmer } from "@/components/ui/text-shimmer";
 import {
   GenerateMcqInput,
   GenerateSubjectiveInput,
-} from "@/lib/ai/tools/types";
+} from "@/lib/ai/tools/workbook/types";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";

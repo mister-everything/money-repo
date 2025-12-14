@@ -145,4 +145,20 @@
   .fade-300 {
     @apply fade-in animate-in duration-300;
   }
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-8deg);
+    }
+    75% {
+      transform: rotate(8deg);
+    }
+  }
+
+  .wiggle {
+    animation: wiggle 2.5s ease-in-out infinite;
+  }
 }

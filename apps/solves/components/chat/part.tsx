@@ -17,16 +17,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
+import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import {
   GEN_MCQ_TOOL_NAME,
   GEN_SUBJECTIVE_TOOL_NAME,
-} from "@/lib/ai/tools/types";
+} from "@/lib/ai/tools/workbook/types";
 import { cn } from "@/lib/utils";
 import JsonView from "../ui/json-view";
 import {
   GenerateMcqToolPart,
   GenerateSubjectiveToolPart,
 } from "./tool-part/generate-block-tool-part";
+import { WebSearchToolPart } from "./tool-part/web-search-part";
 
 interface UserMessagePartProps {
   part: TextUIPart;
@@ -110,7 +112,7 @@ export function AssistantTextPart({
 }: AssistantMessagePartProps) {
   const [copied, copy] = useCopy();
   return (
-    <div className="flex flex-col gap-2 group/message">
+    <div className="flex flex-col gap-2 group/message text-sm">
       <div data-testid="message-content" className="flex flex-col gap-4 px-2">
         <Streamdown>{part.text}</Streamdown>
       </div>
@@ -231,6 +233,13 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
     return (
       <div className="p-4">
         <GenerateSubjectiveToolPart part={part} />
+      </div>
+    );
+  }
+  if (toolName === EXA_SEARCH_TOOL_NAME) {
+    return (
+      <div className="p-2 ">
+        <WebSearchToolPart part={part} />
       </div>
     );
   }

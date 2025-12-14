@@ -10,14 +10,16 @@ import {
 } from "ai";
 import { getChatModel } from "@/lib/ai/model";
 import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
+import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import {
   generateMcqTool,
   generateSubjectiveTool,
-} from "@/lib/ai/tools/generate-block-tools";
+} from "@/lib/ai/tools/workbook/generate-block-tools";
 import {
   GEN_MCQ_TOOL_NAME,
   GEN_SUBJECTIVE_TOOL_NAME,
-} from "@/lib/ai/tools/types";
+} from "@/lib/ai/tools/workbook/types";
 import { getSession } from "@/lib/auth/server";
 import { WorkbookCreateChatRequest } from "../../../types";
 
@@ -66,6 +68,7 @@ export async function POST(req: Request) {
         tools: {
           [GEN_MCQ_TOOL_NAME]: generateMcqTool,
           [GEN_SUBJECTIVE_TOOL_NAME]: generateSubjectiveTool,
+          [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         },
       });
       result.consumeStream();
