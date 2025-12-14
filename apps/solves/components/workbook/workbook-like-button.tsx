@@ -56,15 +56,12 @@ export function WorkBookLikeButton({
     }
     const indices = Array.from({ length: iconCount }, (_, i) => i);
 
-    // 이전 애니메이션의 transform/opacity/scale 잔상이 남으면
-    // "위->아래로 이동"처럼 보이는 케이스가 생길 수 있어서 확실히 리셋합니다.
     const reset = indices.map((index) => [
       `.icon-${index}`,
       { x: 0, y: 0, opacity: 0, scale: 0 },
       { duration: 0 },
     ]);
 
-    // 각 아이콘이 항상 "센터에서 터지는" 느낌이 나도록 랜덤 목표값으로 burst합니다.
     const burst = indices.map((index) => [
       `.icon-${index}`,
       {

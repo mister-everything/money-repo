@@ -8,6 +8,7 @@ import { WorkbookOptions } from "./types";
 interface WorkbookEditStoreState {
   workbookOptions: Record<string, WorkbookOptions & { updatedAt: Date }>;
   workBook?: WorkBookWithoutBlocks;
+  focusBlockId?: string;
   blocks: WorkBookBlock[];
 }
 
@@ -15,6 +16,8 @@ interface WorkbookEditStoreDispatch {
   setWorkbookOption: (id: string, options: WorkbookOptions) => void;
   setWorkBook: (workBook: SetStateAction<WorkBookWithoutBlocks>) => void;
   setBlocks: (blocks: SetStateAction<WorkBookBlock[]>) => void;
+  setFocusBlockId: (id: string) => void;
+  appendBlock: (block: WorkBookBlock) => void;
 }
 
 const MAX_WORKBOOKS = 20;
@@ -31,6 +34,26 @@ export const useWorkbookEditStore = create<
   persist(
     (set) => ({
       ...initialState,
+      setFocusBlockId: (id) => {
+        set({
+          focusBlockId: id,
+        });
+      },
+      appendBlock: (block) => {
+        set((prev) => {
+          const maxOrder = Math.max(...prev.blocks.map((b) => b.order), 0);
+          return {
+            blocks: [
+              ...prev.blocks,
+              {
+                ...block,
+                order: maxOrder + 1,
+              },
+            ],
+            focusBlockId: block.id,
+          };
+        });
+      },
       setWorkbookOption: (id, options) => {
         set((state) => {
           const updated = {
@@ -67,6 +90,7 @@ export const useWorkbookEditStore = create<
         return {
           ...initialState,
           ...state,
+          focusBlockId: undefined,
           workBook: undefined,
           blocks: [],
         };
