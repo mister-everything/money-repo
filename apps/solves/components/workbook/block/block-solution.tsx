@@ -14,13 +14,17 @@ import {
   ChevronDownIcon,
   CircleIcon,
   LightbulbIcon,
+  SparklesIcon,
   XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ExplainInput from "@/components/chat/explain-input";
+import PromptInput from "@/components/chat/prompt-input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 import { cn } from "@/lib/utils";
+import { useAiStore } from "@/store/ai-store";
 import { WorkBookComponentMode } from "../types";
 
 export function BlockSolution<T extends BlockType = BlockType>({
@@ -40,10 +44,46 @@ export function BlockSolution<T extends BlockType = BlockType>({
   submit?: BlockAnswerSubmit<T>;
   isCorrect?: boolean;
 }) {
+  const { chatModel, setChatModel } = useAiStore();
+  useChatModelList({
+    onSuccess: (data) => {
+      const defaultModel = data.at(0);
+      if (!chatModel && defaultModel) setChatModel(defaultModel);
+    },
+  });
+
   const [isExpanded, setIsExpanded] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const handleToggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
+
+  const handleApplyPromptToSolution = useCallback(
+    (text: string) => {
+      if (!text.trim()) return;
+      const updated = solution.trim()
+        ? `${solution.trim()}\n\n${text.trim()}`
+        : text.trim();
+      onChangeSolution?.(updated);
+    },
+    [onChangeSolution, solution],
+  );
+
+  const send = useCallback(() => {
+    if (!prompt.trim()) return;
+    setIsSending(true);
+    handleApplyPromptToSolution(prompt);
+    setPrompt("");
+    setIsSending(false);
+  }, [handleApplyPromptToSolution, prompt]);
+
+  const stop = useCallback(() => {
+    setIsSending(false);
+  }, []);
+
+  const isChatPending = isSending;
+  const isPending = isSending;
 
   const correctAnswerMessage = useMemo(() => {
     if (answer?.type == "default")
@@ -258,25 +298,17 @@ export function BlockSolution<T extends BlockType = BlockType>({
             <p className="text-xs text-muted-foreground">
               학습자가 이해하기 쉽도록 자세히 작성해주세요
             </p>
-            <Separator className="my-4" />
-            <div className="flex gap-2 w-full">
-              <Button className="flex-1">직접 작성하기</Button>
-              <Button
-                variant={"secondary"}
-                className="flex-1 bg-input hover:bg-input/70"
-              >
-                AI 챗봇으로 생성하기
-              </Button>
-            </div>
             <div className="mt-2">
-              <Textarea
-                placeholder={`문제에 대한 설명을 직접 입력하세요
-
-예) 대한민국의 수도는 서울특별시입니다. 1394년 조선시대부터 수도로...`}
-                autoFocus
-                value={solution}
-                className="min-h-[100px] max-h-[300px] bg-background resize-none shadow-none"
-                onChange={(e) => onChangeSolution?.(e.target.value)}
+              <ExplainInput
+                input={prompt}
+                onChange={setPrompt}
+                onEnter={send}
+                placeholder="무엇이든 물어보세요"
+                disabledSendButton={isPending}
+                chatModel={chatModel}
+                onChatModelChange={setChatModel}
+                onSendButtonClick={() => (isChatPending ? stop() : send())}
+                isSending={isChatPending}
               />
             </div>
           </div>
