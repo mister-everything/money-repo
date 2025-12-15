@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
   const prompt = makeExplainPrompt({
     question: block.question,
     type: block.type,
-    // 값은 그대로(prompt에 JSON으로 포함) 넘기되, 유효성은 서비스 스키마로 검증합니다.
     content: block.content,
     answer: block.answer,
   });
