@@ -18,10 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
-import {
-  GENERATE_WORKBOOK_TOOL_NAMES,
-  GenerateToolNameType,
-} from "@/lib/ai/tools/workbook/types";
+import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/types";
 import { cn } from "@/lib/utils";
 import JsonView from "../ui/json-view";
 import { GenerateToolPart } from "./tool-part/generate-block-tool-part";
@@ -218,8 +215,8 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
     return !part.state.startsWith(`output-`);
   }, [part.state]);
 
-  const isWorkbookTool = (name: string): name is GenerateToolNameType =>
-    GENERATE_WORKBOOK_TOOL_NAMES.includes(name as GenerateToolNameType);
+  const isWorkbookTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
+    Object.values(GEN_BLOCK_TOOL_NAMES).includes(name as GEN_BLOCK_TOOL_NAMES);
 
   if (isWorkbookTool(toolName)) {
     return (

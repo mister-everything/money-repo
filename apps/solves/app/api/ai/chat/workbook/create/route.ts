@@ -19,13 +19,7 @@ import {
   generateRankingTool,
   generateSubjectiveTool,
 } from "@/lib/ai/tools/workbook/generate-block-tools";
-import {
-  GEN_MCQ_MULTIPLE_TOOL_NAME,
-  GEN_MCQ_TOOL_NAME,
-  GEN_OX_TOOL_NAME,
-  GEN_RANKING_TOOL_NAME,
-  GEN_SUBJECTIVE_TOOL_NAME,
-} from "@/lib/ai/tools/workbook/types";
+import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/types";
 import { getSession } from "@/lib/auth/server";
 import { WorkbookCreateChatRequest } from "../../../types";
 
@@ -72,11 +66,11 @@ export async function POST(req: Request) {
         stopWhen: stepCountIs(5),
         abortSignal: req.signal,
         tools: {
-          [GEN_MCQ_TOOL_NAME]: generateMcqTool,
-          [GEN_MCQ_MULTIPLE_TOOL_NAME]: generateMcqMultipleTool,
-          [GEN_RANKING_TOOL_NAME]: generateRankingTool,
-          [GEN_OX_TOOL_NAME]: generateOxTool,
-          [GEN_SUBJECTIVE_TOOL_NAME]: generateSubjectiveTool,
+          [GEN_BLOCK_TOOL_NAMES.MCQ]: generateMcqTool,
+          [GEN_BLOCK_TOOL_NAMES.MCQ_MULTIPLE]: generateMcqMultipleTool,
+          [GEN_BLOCK_TOOL_NAMES.RANKING]: generateRankingTool,
+          [GEN_BLOCK_TOOL_NAMES.OX]: generateOxTool,
+          [GEN_BLOCK_TOOL_NAMES.SUBJECTIVE]: generateSubjectiveTool,
           [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         },
       });

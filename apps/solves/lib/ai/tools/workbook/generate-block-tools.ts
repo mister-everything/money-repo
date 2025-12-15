@@ -10,11 +10,7 @@ import { generateUUID } from "@workspace/util";
 import { tool as createTool, Tool } from "ai";
 
 import {
-  GEN_MCQ_MULTIPLE_TOOL_NAME,
-  GEN_MCQ_TOOL_NAME,
-  GEN_OX_TOOL_NAME,
-  GEN_RANKING_TOOL_NAME,
-  GEN_SUBJECTIVE_TOOL_NAME,
+  GEN_BLOCK_TOOL_NAMES,
   GenerateMcqInputSchema,
   GenerateMcqMultipleInputSchema,
   GenerateOxInputSchema,
@@ -28,7 +24,7 @@ import {
  * output: 블록 저장/렌더링에 바로 쓸 수 있는 구조
  */
 export const generateMcqTool: Tool = createTool({
-  name: GEN_MCQ_TOOL_NAME,
+  name: GEN_BLOCK_TOOL_NAMES.MCQ,
   description: "객관식 문제를 생성합니다.",
   inputSchema: GenerateMcqInputSchema,
   execute: async ({ question, options, correctOptionIndex, solution }) => {
@@ -69,7 +65,7 @@ export const generateMcqTool: Tool = createTool({
  * output: 블록 저장/렌더링에 바로 쓸 수 있는 구조
  */
 export const generateMcqMultipleTool: Tool = createTool({
-  name: GEN_MCQ_MULTIPLE_TOOL_NAME,
+  name: GEN_BLOCK_TOOL_NAMES.MCQ_MULTIPLE,
   description: "객관식 문제를 생성합니다.",
   inputSchema: GenerateMcqMultipleInputSchema,
   execute: async ({ question, options, correctOptionIndexes, solution }) => {
@@ -106,7 +102,7 @@ export const generateMcqMultipleTool: Tool = createTool({
  * output: 블록 저장/렌더링에 바로 쓸 수 있는 구조
  */
 export const generateSubjectiveTool: Tool = createTool({
-  name: GEN_SUBJECTIVE_TOOL_NAME,
+  name: GEN_BLOCK_TOOL_NAMES.SUBJECTIVE,
   description: "주관식 문제를 생성합니다.",
   inputSchema: GenerateSubjectiveInputSchema,
   execute: async ({ question, answers, solution }) => {
@@ -139,7 +135,7 @@ export const generateSubjectiveTool: Tool = createTool({
  * output: 블록 저장/렌더링에 바로 쓸 수 있는 구조
  */
 export const generateRankingTool: Tool = createTool({
-  name: GEN_RANKING_TOOL_NAME,
+  name: GEN_BLOCK_TOOL_NAMES.RANKING,
   description: "순위 문제를 생성합니다.",
   inputSchema: GenerateRankingInputSchema,
   execute: async ({ question, items, correctOrderIndexes, solution }) => {
@@ -176,7 +172,7 @@ export const generateRankingTool: Tool = createTool({
  * output: 블록 저장/렌더링에 바로 쓸 수 있는 구조
  */
 export const generateOxTool: Tool = createTool({
-  name: GEN_OX_TOOL_NAME,
+  name: GEN_BLOCK_TOOL_NAMES.OX,
   description: "OX 문제를 생성합니다.",
   inputSchema: GenerateOxInputSchema,
   execute: async ({ question, answer, solution }) => {

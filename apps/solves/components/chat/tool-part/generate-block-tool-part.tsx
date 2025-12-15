@@ -14,28 +14,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import {
-  GEN_MCQ_MULTIPLE_TOOL_NAME,
-  GEN_MCQ_TOOL_NAME,
-  GEN_OX_TOOL_NAME,
-  GEN_RANKING_TOOL_NAME,
-  GEN_SUBJECTIVE_TOOL_NAME,
+  GEN_BLOCK_TOOL_NAMES,
   GenerateMcqInput,
   GenerateMcqMultipleInput,
   GenerateOxInput,
   GenerateRankingInput,
   GenerateSubjectiveInput,
-  GenerateToolNameType,
 } from "@/lib/ai/tools/workbook/types";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 
-const toolNameToBlockType: Record<GenerateToolNameType, BlockType> = {
-  [GEN_MCQ_TOOL_NAME]: "mcq",
-  [GEN_MCQ_MULTIPLE_TOOL_NAME]: "mcq-multiple",
-  [GEN_SUBJECTIVE_TOOL_NAME]: "default",
-  [GEN_RANKING_TOOL_NAME]: "ranking",
-  [GEN_OX_TOOL_NAME]: "ox",
+const toolNameToBlockType: Record<GEN_BLOCK_TOOL_NAMES, BlockType> = {
+  [GEN_BLOCK_TOOL_NAMES.MCQ]: "mcq",
+  [GEN_BLOCK_TOOL_NAMES.MCQ_MULTIPLE]: "mcq-multiple",
+  [GEN_BLOCK_TOOL_NAMES.SUBJECTIVE]: "default",
+  [GEN_BLOCK_TOOL_NAMES.RANKING]: "ranking",
+  [GEN_BLOCK_TOOL_NAMES.OX]: "ox",
 };
 
 // 문제 생성중 컴포넌트
@@ -67,7 +62,7 @@ export function GenerateToolPart({
   type,
 }: {
   part: ToolUIPart;
-  type: GenerateToolNameType;
+  type: GEN_BLOCK_TOOL_NAMES;
 }) {
   const [appendBlock, blocks] = useWorkbookEditStore(
     useShallow((state) => [state.appendBlock, state.blocks]),
@@ -101,7 +96,7 @@ export function GenerateToolPart({
 
   const content = useMemo(() => {
     switch (type) {
-      case GEN_MCQ_TOOL_NAME: {
+      case GEN_BLOCK_TOOL_NAMES.MCQ: {
         const mcqInput = input as Partial<GenerateMcqInput> | undefined;
         return (
           <>
@@ -143,7 +138,7 @@ export function GenerateToolPart({
           </>
         );
       }
-      case GEN_MCQ_MULTIPLE_TOOL_NAME: {
+      case GEN_BLOCK_TOOL_NAMES.MCQ_MULTIPLE: {
         const mcqInput = input as Partial<GenerateMcqMultipleInput> | undefined;
         return (
           <>
@@ -186,7 +181,7 @@ export function GenerateToolPart({
           </>
         );
       }
-      case GEN_RANKING_TOOL_NAME: {
+      case GEN_BLOCK_TOOL_NAMES.RANKING: {
         const rankingInput = input as Partial<GenerateRankingInput> | undefined;
         const orderedItems =
           rankingInput?.correctOrderIndexes && rankingInput?.items
@@ -221,7 +216,7 @@ export function GenerateToolPart({
           </>
         );
       }
-      case GEN_OX_TOOL_NAME: {
+      case GEN_BLOCK_TOOL_NAMES.OX: {
         const oxInput = input as Partial<GenerateOxInput> | undefined;
         return (
           <>
@@ -242,7 +237,7 @@ export function GenerateToolPart({
           </>
         );
       }
-      case GEN_SUBJECTIVE_TOOL_NAME:
+      case GEN_BLOCK_TOOL_NAMES.SUBJECTIVE:
       default: {
         const subjectiveInput = input as
           | Partial<GenerateSubjectiveInput>
