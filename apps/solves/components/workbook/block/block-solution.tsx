@@ -4,30 +4,31 @@ import {
   BlockAnswerSubmit,
   BlockContent,
   BlockType,
+  blockValidate,
   McqBlockAnswerSubmit,
   McqBlockContent,
   OxBlockAnswerSubmit,
   RankingBlockContent,
+  SystemPrompt,
 } from "@service/solves/shared";
 import { toAny } from "@workspace/util";
 import {
   ChevronDownIcon,
   CircleIcon,
   LightbulbIcon,
-  SparklesIcon,
   XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ExplainInput from "@/components/chat/explain-input";
-import PromptInput from "@/components/chat/prompt-input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 import { cn } from "@/lib/utils";
 import { useAiStore } from "@/store/ai-store";
 import { WorkBookComponentMode } from "../types";
 
 export function BlockSolution<T extends BlockType = BlockType>({
+  blockId,
+  question,
   solution,
   mode,
   onChangeSolution,
@@ -36,6 +37,8 @@ export function BlockSolution<T extends BlockType = BlockType>({
   submit,
   isCorrect,
 }: {
+  blockId?: string;
+  question: string;
   solution: string;
   mode: WorkBookComponentMode;
   content: BlockContent<T>;
@@ -53,37 +56,103 @@ export function BlockSolution<T extends BlockType = BlockType>({
   });
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const [prompt, setPrompt] = useState("");
   const [isSending, setIsSending] = useState(false);
   const handleToggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
 
-  const handleApplyPromptToSolution = useCallback(
-    (text: string) => {
-      if (!text.trim()) return;
-      const updated = solution.trim()
-        ? `${solution.trim()}\n\n${text.trim()}`
-        : text.trim();
-      onChangeSolution?.(updated);
-    },
-    [onChangeSolution, solution],
-  );
-
-  const send = useCallback(() => {
-    if (!prompt.trim()) return;
-    setIsSending(true);
-    handleApplyPromptToSolution(prompt);
-    setPrompt("");
-    setIsSending(false);
-  }, [handleApplyPromptToSolution, prompt]);
-
   const stop = useCallback(() => {
     setIsSending(false);
   }, []);
 
+  const send = useCallback(async () => {
+    if (!chatModel) return;
+    if (!question?.trim()) return;
+    if (!answer) return;
+    if (isSending) return;
+
+    const validateResult = blockValidate({
+      question,
+      content,
+      answer: (answer ?? { type: content.type }) as BlockAnswer<T>,
+      type: content.type,
+    });
+    if (!validateResult.success) return;
+
+    setIsSending(true);
+
+    try {
+      const response = await fetch("/api/ai/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          block: {
+            id: blockId,
+            type: content.type,
+            question,
+            content,
+            answer,
+          },
+          options: {
+            model: chatModel,
+            systemPrompt: SystemPrompt.EXPLAIN,
+          },
+        }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("AI 응답을 불러오지 못했습니다.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let result = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        result += decoder.decode(value, { stream: true });
+        onChangeSolution?.(result);
+      }
+    } catch (error) {
+      // abort는 정상 흐름으로 취급
+      if ((error as any)?.name !== "AbortError") {
+        console.error(error);
+      }
+    } finally {
+      setIsSending(false);
+    }
+  }, [
+    answer,
+    blockId,
+    chatModel,
+    content,
+    isSending,
+    onChangeSolution,
+    question,
+  ]);
+
   const isChatPending = isSending;
   const isPending = isSending;
+
+  const aiBlockErrorMessage = useMemo(() => {
+    if (mode !== "edit") return;
+    const result = blockValidate({
+      question,
+      content,
+      answer: (answer ?? { type: content.type }) as BlockAnswer<T>,
+      type: content.type,
+    });
+    if (result.success) return;
+    return (
+      Object.values(result.errors ?? {})
+        .flat()
+        .join("\n") || result.message
+    );
+  }, [answer, content, mode, question]);
+
+  const isAiButtonDisabled = Boolean(aiBlockErrorMessage) || isPending;
 
   const correctAnswerMessage = useMemo(() => {
     if (answer?.type == "default")
@@ -300,11 +369,12 @@ export function BlockSolution<T extends BlockType = BlockType>({
             </p>
             <div className="mt-2">
               <ExplainInput
-                input={prompt}
-                onChange={setPrompt}
-                onEnter={send}
-                placeholder="무엇이든 물어보세요"
-                disabledSendButton={isPending}
+                input={solution}
+                onChange={(text) => {
+                  onChangeSolution?.(text);
+                }}
+                placeholder={`해설을 작성하거나 AI로 생성하세요.`}
+                disabledSendButton={isAiButtonDisabled}
                 chatModel={chatModel}
                 onChatModelChange={setChatModel}
                 onSendButtonClick={() => (isChatPending ? stop() : send())}

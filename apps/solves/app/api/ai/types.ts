@@ -1,3 +1,4 @@
+import { SystemPrompt } from "@service/solves/shared";
 import z from "zod";
 
 export const DefaultChatRequest = z.object({
@@ -24,11 +25,22 @@ export const Options = z.object({
   // 도구 정보
   tools: z.array(z.string()).optional(),
   // 시스템 프롬프트
-  systemPrompt: z.string().optional(),
+  systemPrompt: z.enum(SystemPrompt).optional(),
 });
 
 export const CompletionRequest = z.object({
   prompt: z.string(),
+  options: Options,
+});
+
+export const ExplainSolutionRequest = z.object({
+  block: z.object({
+    id: z.string().optional(),
+    type: z.string(),
+    question: z.string(),
+    content: z.any(),
+    answer: z.any(),
+  }),
   options: Options,
 });
 
@@ -39,4 +51,5 @@ export const ChatRequest = z.object({
 
 export type ChatRequest = z.infer<typeof ChatRequest>;
 export type CompletionRequest = z.infer<typeof CompletionRequest>;
+export type ExplainSolutionRequest = z.infer<typeof ExplainSolutionRequest>;
 export type Options = z.infer<typeof Options>;

@@ -255,6 +255,8 @@ function PureBlock<T extends BlockType = BlockType>({
       </CardContent>
       <CardFooter className="flex flex-col mt-2 px-4 md:px-6">
         <BlockSolution
+          blockId={props.id}
+          question={props.question}
           content={props.content}
           solution={props.answer?.solution ?? ""}
           mode={props.mode}
