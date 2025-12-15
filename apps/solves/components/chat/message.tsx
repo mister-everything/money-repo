@@ -1,12 +1,18 @@
 "use client";
 
-import { equal } from "@workspace/util";
+import { equal, errorToString } from "@workspace/util";
 import { ChatStatus, isToolUIPart, type UIMessage } from "ai";
-
+import { AlertTriangleIcon, RefreshCcwIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 import { Think } from "@/components/ui/think";
 import { cn } from "@/lib/utils";
-import { AssistantTextPart, ReasoningPart, UserMessagePart } from "./part";
+import { Button } from "../ui/button";
+import {
+  AssistantTextPart,
+  ReasoningPart,
+  ToolPart,
+  UserMessagePart,
+} from "./part";
 
 function isStreamingMessage(
   props: Pick<MessageProps, "status" | "isLastMessage">,
@@ -42,7 +48,10 @@ const PurePreviewMessage = ({
 
   return (
     <div
-      className={cn("w-full mx-auto max-w-3xl px-2 group/message", className)}
+      className={cn(
+        "w-full mx-auto max-w-3xl px-2 group/message fade-300",
+        className,
+      )}
     >
       <div className="flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl">
         <div className="flex flex-col gap-4 w-full">
@@ -76,17 +85,17 @@ const PurePreviewMessage = ({
 
             if (part.type === "reasoning") {
               return (
-                <ReasoningPart part={part} key={key} streaming={isStreaming} />
+                <ReasoningPart
+                  part={part}
+                  key={key}
+                  streaming={isStreaming}
+                  defaultExpanded={isLastMessage}
+                />
               );
             }
 
             if (isToolUIPart(part)) {
-              return (
-                <div className="flex flex-col" key={key}>
-                  <span>Tool Part</span>
-                  <span>{JSON.stringify(part)}</span>
-                </div>
-              );
+              return <ToolPart key={key} part={part} />;
             }
             if (part.type === "step-start") {
               return null;
@@ -127,3 +136,28 @@ export const Message = memo(
     return true;
   },
 );
+
+export function ChatErrorMessage({
+  error,
+  clearError,
+}: {
+  error: Error;
+  clearError: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-center  flex-col gap-4 bg-point/5 text-point rounded-lg p-6 text-sm ">
+      <AlertTriangleIcon className="size-8" />
+      <p>{errorToString(error)}</p>
+
+      <Button
+        className="w-full shadow-none bg-point/10 text-point border-point hover:bg-point hover:text-background"
+        variant="outline"
+        size="lg"
+        onClick={clearError}
+      >
+        <RefreshCcwIcon />
+        채팅 새로 고침
+      </Button>
+    </div>
+  );
+}

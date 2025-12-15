@@ -1,4 +1,5 @@
 import { toAny } from "@workspace/util";
+import { CircleIcon } from "lucide-react";
 import { ComponentProps, ReactNode, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "./checkbox";
@@ -91,18 +92,33 @@ export function ButtonSelect({
             {name && checked && (
               <input type="hidden" name={name} value={option.value} />
             )}
-            <div className="flex items-center gap-1.5 overflow-hidden">
-              <Checkbox
-                id={key}
-                disabled={disabled}
-                checked={checked}
-                onCheckedChange={() => handleClick(option.value)}
-                className={cn(
-                  "rounded-full shadow-xs transition-all duration-100 ease-linear",
-                  "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
-                  checked ? "ml-0 translate-x-0" : "-ml-5 -translate-x-1",
-                )}
-              />
+            <div className="flex items-center gap-1.5">
+              {multiple ? (
+                <Checkbox
+                  id={key}
+                  disabled={disabled}
+                  checked={checked}
+                  onCheckedChange={() => handleClick(option.value)}
+                  className="shadow-xs"
+                />
+              ) : (
+                <button
+                  type="button"
+                  id={key}
+                  disabled={disabled}
+                  onClick={() => handleClick(option.value)}
+                  className={cn(
+                    "relative h-4 w-4 shrink-0 rounded-full border shadow-xs transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "disabled:cursor-not-allowed disabled:opacity-50",
+                    checked ? "border-primary" : "border-input",
+                  )}
+                >
+                  {checked && (
+                    <CircleIcon className="fill-primary stroke-primary-foreground absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" />
+                  )}
+                </button>
+              )}
               <span className="text-sm font-medium leading-snug">
                 {option.label}
               </span>

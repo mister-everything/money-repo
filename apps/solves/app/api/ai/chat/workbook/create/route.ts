@@ -1,9 +1,26 @@
 import { chatService } from "@service/solves";
 import { generateUUID } from "@workspace/util";
-import { convertToModelMessages, streamText } from "ai";
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  smoothStream,
+  stepCountIs,
+  streamText,
+} from "ai";
 import { getChatModel } from "@/lib/ai/model";
+import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
+import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
+import {
+  generateMcqTool,
+  generateSubjectiveTool,
+} from "@/lib/ai/tools/workbook/generate-block-tools";
+import {
+  GEN_MCQ_TOOL_NAME,
+  GEN_SUBJECTIVE_TOOL_NAME,
+} from "@/lib/ai/tools/workbook/types";
 import { getSession } from "@/lib/auth/server";
-import { logger } from "@/lib/logger";
 import { WorkbookCreateChatRequest } from "../../../types";
 
 export const maxDuration = 300;
@@ -30,29 +47,54 @@ export async function POST(req: Request) {
 
   const userMessage = messages.at(-1);
 
-  const assistantMessageId = generateUUID();
+  const systemPrompt = WorkBookCreatePrompt({
+    categories: [],
+    blockTypes: [],
+    ageGroup: "",
+    difficulty: "",
+    situation: "",
+  });
 
-  const result = streamText({
-    model: getChatModel(model),
-    messages: convertToModelMessages(messages),
-    onFinish: async (ctx) => {
+  const stream = createUIMessageStream({
+    execute: async ({ writer: dataStream }) => {
+      const result = streamText({
+        model: getChatModel(model),
+        messages: convertToModelMessages(messages),
+        system: systemPrompt,
+        experimental_transform: smoothStream({ chunking: "word" }),
+        maxRetries: 1,
+        stopWhen: stepCountIs(5),
+        abortSignal: req.signal,
+        tools: {
+          [GEN_MCQ_TOOL_NAME]: generateMcqTool,
+          [GEN_SUBJECTIVE_TOOL_NAME]: generateSubjectiveTool,
+          [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
+        },
+      });
+      result.consumeStream();
+      dataStream.merge(result.toUIMessageStream());
+    },
+    generateId: generateUUID,
+    onFinish: async ({ responseMessage }) => {
       await chatService.upsertMessage({
         id: userMessage.id,
         threadId,
-        role: "user",
+        role: userMessage.role,
         parts: userMessage.parts,
+        metadata: userMessage.metadata,
       });
+      ``;
       await chatService.upsertMessage({
-        id: assistantMessageId,
         threadId,
-        role: "assistant",
-        parts: [{ type: "text", text: ctx.text }],
+        role: responseMessage.role,
+        parts: responseMessage.parts,
+        metadata: responseMessage.metadata,
       });
     },
-    onError: (error) => {
-      logger.error("Chat error", error);
-    },
+    originalMessages: messages,
   });
 
-  return result.toUIMessageStreamResponse();
+  return createUIMessageStreamResponse({
+    stream,
+  });
 }

@@ -177,4 +177,51 @@ export const aiPriceService = {
 
     return price;
   },
+
+  /**
+   * modelType별 기본 모델 설정
+   * - 같은 modelType의 기존 기본 모델은 해제됨
+   * - 해당 모델이 기본 모델로 설정됨
+   */
+  setDefaultModel: async (priceId: string, modelType: string) => {
+    // 1) 같은 modelType의 기존 기본 모델 해제
+    await pgDb
+      .update(AiProviderPricesTable)
+      .set({
+        isDefaultModel: false,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(AiProviderPricesTable.modelType, modelType),
+          eq(AiProviderPricesTable.isDefaultModel, true),
+        ),
+      );
+
+    // 2) 새로운 기본 모델 설정
+    const [price] = await pgDb
+      .update(AiProviderPricesTable)
+      .set({
+        isDefaultModel: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(AiProviderPricesTable.id, priceId))
+      .returning();
+
+    if (!price) {
+      throw new PublicError(`가격 정보를 찾을 수 없습니다: ${priceId}`);
+    }
+
+    // 캐시 갱신
+    const cacheKey = CacheKeys.aiPrice(price.provider, price.model);
+    if (price.isActive) {
+      await sharedCache.setex(
+        cacheKey,
+        CacheTTL.AI_PRICE,
+        JSON.stringify(price),
+      );
+    }
+
+    return price;
+  },
 };

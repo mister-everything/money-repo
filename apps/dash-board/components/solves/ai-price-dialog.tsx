@@ -3,7 +3,7 @@
 import type { GatewayLanguageModelEntry } from "@ai-sdk/gateway";
 import type { AIPrice } from "@service/solves/shared";
 import { ChevronLeft, Loader, Search } from "lucide-react";
-import { ReactNode, useActionState, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,13 +34,30 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useVercelGatewayPrices } from "@/hooks/query/use-vercel-gateway-prices";
+import { SafeFunction } from "@/lib/protocol/interface";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
 
 function toMillion(price: string) {
   return (Number(price) * 1_000_000).toFixed(2);
 }
 
-interface AIPriceDialogProps {
-  mode: "create" | "edit";
+type AIPriceCreateData = {
+  provider: string;
+  model: string;
+  displayName: string;
+  modelType: "text" | "image" | "audio" | "video" | "embedding";
+  inputTokenPrice: string;
+  outputTokenPrice: string;
+  cachedTokenPrice: string;
+  markupRate: string;
+  isActive: boolean;
+};
+
+type AIPriceUpdateData = AIPriceCreateData & {
+  id: string;
+};
+
+interface AIPriceDialogBaseProps {
   initialData?: AIPrice;
   open?: boolean;
   originPrices?: {
@@ -54,11 +71,13 @@ interface AIPriceDialogProps {
   }[];
   children?: ReactNode;
   onOpenChange?: (open: boolean) => void;
-  action: (
-    prevState: any,
-    formData: FormData,
-  ) => Promise<{ success: boolean; errors?: any; message?: string }>;
 }
+
+type AIPriceDialogProps = AIPriceDialogBaseProps &
+  (
+    | { mode: "create"; action: SafeFunction<AIPriceCreateData, any> }
+    | { mode: "edit"; action: SafeFunction<AIPriceUpdateData, any> }
+  );
 
 export function AIPriceDialog({
   mode,
@@ -68,8 +87,8 @@ export function AIPriceDialog({
   onOpenChange,
   action,
 }: AIPriceDialogProps) {
-  const [state, formAction, isPending] = useActionState(action, null);
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
 
   // Form states
   const [provider, setProvider] = useState(initialData?.provider ?? "");
@@ -93,6 +112,31 @@ export function AIPriceDialog({
     initialData?.markupRate ?? "1.60",
   );
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
+
+  const [, executeAction, isPending] = useSafeAction(action, {
+    onSuccess: () => {
+      toast.success(
+        mode === "create"
+          ? "AI 가격이 생성되었습니다."
+          : "AI 가격이 수정되었습니다.",
+      );
+      setErrors(null);
+      onOpenChange?.(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "저장에 실패했습니다.");
+      if (error.fields) {
+        // Filter out undefined values from fields
+        const filteredFields: Record<string, string[]> = {};
+        for (const [key, value] of Object.entries(error.fields)) {
+          if (value) {
+            filteredFields[key] = value;
+          }
+        }
+        setErrors(filteredFields);
+      }
+    },
+  });
 
   const { data: gatewayPrices } = useVercelGatewayPrices();
 
@@ -128,18 +172,28 @@ export function AIPriceDialog({
     toast.success(`${gatewayModel.name} 모델이 로드되었습니다.`);
   };
 
-  // 성공 시 다이얼로그 닫기
-  useEffect(() => {
-    if (state?.success) {
-      toast.success(state.message);
-      onOpenChange?.(false);
-    } else if (state?.message) {
-      toast.error(state.message);
+  const handleSubmit = () => {
+    const baseData = {
+      provider,
+      model,
+      displayName,
+      modelType: modelType as AIPriceCreateData["modelType"],
+      inputTokenPrice,
+      outputTokenPrice,
+      cachedTokenPrice,
+      markupRate,
+      isActive,
+    };
+
+    if (mode === "edit" && initialData?.id) {
+      executeAction({ ...baseData, id: initialData.id } as any);
+    } else {
+      executeAction(baseData as any);
     }
-  }, [state, onOpenChange]);
+  };
 
   const getFieldError = (fieldName: string) => {
-    return state?.errors?.[fieldName]?.[0];
+    return errors?.[fieldName]?.[0];
   };
 
   return (
@@ -227,18 +281,16 @@ export function AIPriceDialog({
           </Command>
         ) : (
           /* 폼 모드 */
-          <form action={formAction} className="space-y-6">
+          <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Provider */}
               <div className="grid gap-2">
                 <Label htmlFor="provider">AI 제공자</Label>
                 <Input
                   id="provider"
-                  name="provider"
                   placeholder="openai, anthropic, google"
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
-                  required
                 />
                 {getFieldError("provider") && (
                   <p className="text-sm text-destructive">
@@ -252,11 +304,9 @@ export function AIPriceDialog({
                 <Label htmlFor="model">모델명</Label>
                 <Input
                   id="model"
-                  name="model"
                   placeholder="gpt-4o-mini"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  required
                 />
                 {getFieldError("model") && (
                   <p className="text-sm text-destructive">
@@ -271,11 +321,9 @@ export function AIPriceDialog({
               <Label htmlFor="displayName">모델 표시명</Label>
               <Input
                 id="displayName"
-                name="displayName"
                 placeholder="GPT-4o mini"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                required
               />
               {getFieldError("displayName") && (
                 <p className="text-sm text-destructive">
@@ -290,7 +338,6 @@ export function AIPriceDialog({
             {/* Model Type */}
             <div className="grid gap-2">
               <Label htmlFor="modelType">모델 타입</Label>
-              <input type="hidden" name="modelType" value={modelType} />
               <Select value={modelType} onValueChange={setModelType}>
                 <SelectTrigger>
                   <SelectValue placeholder="모델 타입 선택" />
@@ -318,13 +365,11 @@ export function AIPriceDialog({
                 </Label>
                 <Input
                   id="inputTokenPrice"
-                  name="inputTokenPrice"
                   type="number"
                   step="0.00000001"
                   placeholder="0.00000250"
                   value={inputTokenPrice}
                   onChange={(e) => setInputTokenPrice(e.target.value)}
-                  required
                 />
                 {getFieldError("inputTokenPrice") && (
                   <p className="text-sm text-destructive">
@@ -340,13 +385,11 @@ export function AIPriceDialog({
                 </Label>
                 <Input
                   id="outputTokenPrice"
-                  name="outputTokenPrice"
                   type="number"
                   step="0.00000001"
                   placeholder="0.00001000"
                   value={outputTokenPrice}
                   onChange={(e) => setOutputTokenPrice(e.target.value)}
-                  required
                 />
                 {getFieldError("outputTokenPrice") && (
                   <p className="text-sm text-destructive">
@@ -362,13 +405,11 @@ export function AIPriceDialog({
                 </Label>
                 <Input
                   id="cachedTokenPrice"
-                  name="cachedTokenPrice"
                   type="number"
                   step="0.00000001"
                   placeholder="0.00000125"
                   value={cachedTokenPrice}
                   onChange={(e) => setCachedTokenPrice(e.target.value)}
-                  required
                 />
                 {getFieldError("cachedTokenPrice") && (
                   <p className="text-sm text-destructive">
@@ -386,13 +427,11 @@ export function AIPriceDialog({
               <Label htmlFor="markupRate">마진율</Label>
               <Input
                 id="markupRate"
-                name="markupRate"
                 type="number"
                 step="0.001"
                 placeholder="1.60"
                 value={markupRate}
                 onChange={(e) => setMarkupRate(e.target.value)}
-                required
               />
               {getFieldError("markupRate") && (
                 <p className="text-sm text-destructive">
@@ -414,7 +453,6 @@ export function AIPriceDialog({
                   비활성 모델은 가격 조회에서 제외됩니다.
                 </p>
               </div>
-              <input type="hidden" name="isActive" value={String(isActive)} />
               <Switch
                 id="isActive"
                 checked={isActive}
@@ -431,7 +469,7 @@ export function AIPriceDialog({
               >
                 취소
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="button" onClick={handleSubmit} disabled={isPending}>
                 {isPending ? (
                   <Loader className="size-4 animate-spin" />
                 ) : mode === "create" ? (
@@ -441,7 +479,7 @@ export function AIPriceDialog({
                 )}
               </Button>
             </DialogFooter>
-          </form>
+          </div>
         )}
       </DialogContent>
     </Dialog>

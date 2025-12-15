@@ -6,8 +6,8 @@ import type {
 
 import { aiPriceService, creditService } from "@service/solves";
 import { isNull } from "@workspace/util";
-import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
 import { logger } from "@/lib/logger";
+import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
 
 function getTokens(useage: LanguageModelV2Usage) {
   if (isNull(useage.inputTokens)) {

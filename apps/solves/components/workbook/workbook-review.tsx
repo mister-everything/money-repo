@@ -1,11 +1,15 @@
+"use client";
 import {
   BlockAnswerSubmit,
   WorkBookReviewSession,
 } from "@service/solves/shared";
-
+import { CheckIcon, Share2Icon } from "lucide-react";
+import { useCallback } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
-import { GoBackButton } from "../layouts/go-back-button";
+import { useCopy } from "@/hooks/use-copy";
+import { Button } from "../ui/button";
 import { Block } from "./block/block";
+import { WorkBookLikeButton } from "./workbook-like-button";
 
 interface WorkBookReviewProps {
   session: WorkBookReviewSession;
@@ -23,61 +27,100 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
     {} as Record<string, { isCorrect: boolean; submit: BlockAnswerSubmit }>,
   );
 
+  const [copied, copy] = useCopy();
+
+  const handleShare = useCallback(() => {
+    const url = `${window.location.origin}/workbooks/${session.workBook.id}/preview`;
+    copy(url);
+  }, [session.workBook.id]);
+
   return (
     <div className="w-full px-4">
       <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
-        <GoBackButton>뒤로가기</GoBackButton>
+        <div className="ml-auto lg:hidden">
+          <WorkBookLikeButton
+            workBookId={session.workBook.id}
+            initialIsLiked={session.isLiked}
+            initialLikeCount={session.workBook.likeCount}
+          />
+        </div>
       </div>
-      <div className="mx-auto flex flex-col w-full max-w-4xl pb-24">
-        <Card className="mb-8 border-none shadow-none">
-          <CardHeader>
-            <div className="flex items-center justify-center">
-              <div className="space-y-2 text-center">
-                <h3 className="text-3xl font-bold text-foreground">
-                  문제 풀이 결과
-                </h3>
-                <p className="text-base text-muted-foreground">
-                  총{" "}
-                  <span className="font-bold text-primary">
-                    {session.session.totalBlocks ||
-                      session.workBook.blocks.length}
-                  </span>{" "}
-                  문제 중{" "}
-                  <span className="font-bold text-primary">
-                    {session.session.correctBlocks || 0}
-                  </span>{" "}
-                  문제 정답입니다.
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-        {/* 문제들 */}
-        <div className="space-y-6">
-          {session.workBook.blocks.map((problem, index) => {
-            // 해당 블록의 결과 찾기
 
-            return (
-              <Block
-                className={
-                  !submitAnswerByBlockId[problem.id]?.isCorrect
-                    ? "bg-muted-foreground/5"
-                    : ""
-                }
-                index={index}
-                key={problem.id}
-                id={problem.id}
-                question={problem.question}
-                order={problem.order}
-                type={problem.type}
-                content={problem.content}
-                isCorrect={submitAnswerByBlockId[problem.id]?.isCorrect}
-                answer={problem.answer}
-                submit={submitAnswerByBlockId[problem.id]?.submit}
-                mode="review"
-              />
-            );
-          })}
+      <div className="w-full lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,56rem)_minmax(0,1fr)] lg:gap-x-6">
+        <div className="hidden lg:block" />
+        <div className="mx-auto flex flex-col w-full max-w-4xl pb-24 lg:mx-0">
+          <Card className="mb-8 border-none shadow-none">
+            <CardHeader>
+              <div className="flex items-center justify-center">
+                <div className="space-y-2 text-center">
+                  <h3 className="text-3xl font-bold text-foreground">
+                    문제 풀이 결과
+                  </h3>
+                  <p className="text-base text-muted-foreground">
+                    총{" "}
+                    <span className="font-bold text-primary">
+                      {session.session.totalBlocks ||
+                        session.workBook.blocks.length}
+                    </span>{" "}
+                    문제 중{" "}
+                    <span className="font-bold text-primary">
+                      {session.session.correctBlocks || 0}
+                    </span>{" "}
+                    문제 정답입니다.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+          {/* 문제들 */}
+          <div className="space-y-6">
+            {session.workBook.blocks.map((problem, index) => {
+              // 해당 블록의 결과 찾기
+
+              return (
+                <Block
+                  className={
+                    !submitAnswerByBlockId[problem.id]?.isCorrect
+                      ? "bg-muted-foreground/5"
+                      : ""
+                  }
+                  index={index}
+                  key={problem.id}
+                  id={problem.id}
+                  question={problem.question}
+                  order={problem.order}
+                  type={problem.type}
+                  content={problem.content}
+                  isCorrect={submitAnswerByBlockId[problem.id]?.isCorrect}
+                  answer={problem.answer}
+                  submit={submitAnswerByBlockId[problem.id]?.submit}
+                  mode="review"
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div className="hidden lg:flex lg:justify-center">
+          <div className="sticky top-[20%] h-fit pt-1 flex flex-col gap-4">
+            <WorkBookLikeButton
+              workBookId={session.workBook.id}
+              initialIsLiked={session.isLiked}
+              initialLikeCount={session.workBook.likeCount}
+            />
+            <div className="flex flex-col items-center justify-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-muted-foreground"
+                onClick={handleShare}
+              >
+                {copied ? <CheckIcon /> : <Share2Icon />}
+              </Button>
+              <span className="text-2xs text-muted-foreground">
+                {copied ? "링크 복사됨" : "공유"}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -8,9 +8,10 @@ import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { useShallow } from "zustand/shallow";
 import { deleteThreadAction } from "@/actions/chat";
-import { Message } from "@/components/chat/message";
-
+import { ChatErrorMessage, Message } from "@/components/chat/message";
+import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -25,8 +26,10 @@ import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useAiStore } from "@/store/ai-store";
+import { WorkbookOptions } from "@/store/types";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import PromptInput from "../chat/prompt-input";
-import { Button } from "../ui/button";
+import { WorkbookEditOptions } from "./workbook-edit-options";
 
 interface WorkbooksCreateChatProps {
   workbookId: string;
@@ -36,6 +39,19 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const [threadId, setThreadId] = useState<string>();
 
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
+
+  const [workbookOption, _setWorkbookOption] = useWorkbookEditStore(
+    useShallow((state) => [
+      state.workbookOptions[workbookId],
+      state.setWorkbookOption,
+    ]),
+  );
+  const setWorkbookOption = useCallback(
+    (options: WorkbookOptions) => {
+      _setWorkbookOption(workbookId, options);
+    },
+    [workbookId, _setWorkbookOption],
+  );
 
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +87,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const { chatModel, setChatModel } = useAiStore();
   useChatModelList({
     onSuccess: (data) => {
-      const defaultModel = data.at(0);
+      const defaultModel = data.find((m) => m.isDefaultModel) || data.at(0);
       if (!chatModel && defaultModel) setChatModel(defaultModel);
     },
   });
@@ -107,7 +123,15 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     addNewThread();
   }, []);
 
-  const { messages, sendMessage, status, setMessages, stop } = useChat({
+  const {
+    messages,
+    sendMessage,
+    status,
+    error,
+    clearError,
+    setMessages,
+    stop,
+  } = useChat({
     id: threadId,
     generateId: generateUUID,
     onError: handleErrorToast,
@@ -139,8 +163,9 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     try {
       setIsMessagesLoading(true);
       const response = await fetcher<UIMessage[]>(`/api/ai/chat/${threadId}`);
-      return response;
+      setMessages(response);
     } catch (error) {
+      setMessages([]);
       handleErrorToast(error);
     } finally {
       setIsMessagesLoading(false);
@@ -149,14 +174,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const send = useCallback(
     (text: string = input) => {
-      if (status != "ready") return;
+      if (status != "ready" || !threadId || Boolean(error)) return;
       setInput("");
       sendMessage({
         role: "user",
         parts: [{ type: "text", text }],
       });
     },
-    [input, status],
+    [input, status, threadId, error],
   );
 
   const addNewThread = useCallback(() => {
@@ -203,17 +228,18 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     [savedThreadList, isPending],
   );
 
+  const handleClearError = useCallback(() => {
+    if (threadId) {
+      fetchThreadMessages(threadId);
+    }
+    clearError();
+  }, [clearError, threadId]);
+
   useEffect(() => {
     if (!threadId) return;
     const isSavedThread = savedThreadList.some((t) => t.id === threadId);
     if (!isSavedThread) return;
-    fetchThreadMessages(threadId)
-      .then((messages) => {
-        setMessages(messages ?? []);
-      })
-      .catch(() => {
-        setMessages([]);
-      });
+    fetchThreadMessages(threadId);
   }, [threadId]);
 
   useEffect(() => {
@@ -254,6 +280,15 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       });
     }
   }, [isMessagesLoading]);
+
+  useEffect(() => {
+    if (error) {
+      messagesContainerRef.current?.scrollTo({
+        top: messagesContainerRef.current?.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [error]);
 
   return (
     <div className="flex flex-col h-full border rounded-2xl bg-sidebar relative">
@@ -299,6 +334,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             ))
           )}
         </div>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -313,10 +349,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           <TooltipContent>새로운 채팅</TooltipContent>
         </Tooltip>
       </div>
+
       <div
         ref={messagesContainerRef}
         className={cn(
-          "flex-1 overflow-y-auto px-4 py-4 pb-40",
+          "flex-1 overflow-y-auto px-4 py-4 pb-40 relative",
           isMessagesLoading && "bg-background/20",
         )}
       >
@@ -331,7 +368,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                   isLastMessage={isLastMessage}
                   status={status}
                   className={
-                    !isLastMessage
+                    !isLastMessage || error
                       ? undefined
                       : message.role == "assistant"
                         ? "min-h-[calc(65dvh-30px)]"
@@ -342,19 +379,25 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             })}
           </>
         )}
-      </div>
-      <div
-        className={cn(
-          "p-2 absolute bottom-0 left-0 right-0",
-          !threadId && "hidden",
+        {error && (
+          <div className="p-4 my-6">
+            <ChatErrorMessage error={error} clearError={handleClearError} />
+          </div>
         )}
-      >
+      </div>
+      <div className={cn("p-2 absolute bottom-0 left-0 right-0")}>
+        <WorkbookEditOptions
+          options={workbookOption}
+          setOptions={setWorkbookOption}
+        />
         <PromptInput
           input={input}
           onChange={setInput}
           onEnter={send}
           placeholder="무엇이든 물어보세요"
-          disabledSendButton={!isChatPending && isPending}
+          disabledSendButton={
+            (!isChatPending && isPending) || !threadId || Boolean(error)
+          }
           chatModel={chatModel}
           onChatModelChange={setChatModel}
           onSendButtonClick={() => (isChatPending ? stop() : send())}

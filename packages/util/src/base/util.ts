@@ -110,7 +110,7 @@ export const PromiseChain = () => {
   let promise: Promise<any> = Promise.resolve();
   return <T>(asyncFunction: () => Promise<T>): Promise<T> => {
     const resultPromise = promise.then(() => asyncFunction());
-    promise = resultPromise.catch(() => {});
+    promise = resultPromise;
     return resultPromise;
   };
 };

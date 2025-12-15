@@ -1,14 +1,17 @@
 "use client";
 
 import type { AIPrice } from "@service/solves/shared";
-import { Edit } from "lucide-react";
+import { Check, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-import { updateAIPriceAction } from "@/app/(dash-board)/solves/ai-prices/actions";
+import {
+  setDefaultModelAction,
+  updateAIPriceAction,
+} from "@/app/(dash-board)/solves/ai-prices/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
 import {
   Table,
   TableBody,
@@ -23,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useVercelGatewayPrices } from "@/hooks/query/use-vercel-gateway-prices";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { AIPriceDialog } from "./ai-price-dialog";
 
 interface AIPriceTableProps {
@@ -33,6 +37,17 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
   const [editingPrice, setEditingPrice] = useState<AIPrice | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const router = useRouter();
+
+  const [, setDefaultModel, isSettingDefault] = useSafeAction(
+    setDefaultModelAction,
+    {
+      onSuccess: () => {
+        toast.success("기본 모델이 설정되었습니다.");
+        router.refresh();
+      },
+      failMessage: "기본 모델 설정에 실패했습니다.",
+    },
+  );
 
   const { data: gatewayPrices } = useVercelGatewayPrices();
 
@@ -58,11 +73,16 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
     setIsDialogOpen(true);
   };
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setEditingPrice(null);
-    router.refresh(); // Refresh server component data
-  };
+  const handleDialogClose = useCallback(
+    (isOpen: boolean) => {
+      if (!isOpen) {
+        setIsDialogOpen(false);
+        setEditingPrice(null);
+        router.refresh(); // Refresh server component data
+      }
+    },
+    [router],
+  );
 
   const formatPrice = (price: number) => {
     // Convert to per M tokens (multiply by 1,000,000)
@@ -109,18 +129,18 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
               <TableHead>제공자</TableHead>
               <TableHead>모델</TableHead>
               <TableHead>타입</TableHead>
+              <TableHead className="text-center">기본</TableHead>
               <TableHead>입력 토큰</TableHead>
               <TableHead>출력 토큰</TableHead>
               <TableHead>캐시 토큰</TableHead>
               <TableHead>마진율</TableHead>
-
               <TableHead>작업</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {pricesWithGatewayPrices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
+                <TableCell colSpan={10} className="text-center py-8">
                   <p className="text-muted-foreground">
                     등록된 AI 가격이 없습니다.
                   </p>
@@ -146,6 +166,24 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                     <Badge variant="outline">
                       {getModelTypeLabel(price.modelType)}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      variant={price.isDefaultModel ? "default" : "ghost"}
+                      size="icon"
+                      className="h-8 w-8"
+                      disabled={isSettingDefault || price.isDefaultModel}
+                      onClick={() =>
+                        setDefaultModel({
+                          priceId: price.id,
+                          modelType: price.modelType,
+                        })
+                      }
+                    >
+                      <Check
+                        className={`h-4 w-4 ${price.isDefaultModel ? "text-white" : "text-muted-foreground"}`}
+                      />
+                    </Button>
                   </TableCell>
                   <TableCell className="text-right">
                     <Tooltip
@@ -322,7 +360,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
           initialData={editingPrice}
           open={isDialogOpen}
           onOpenChange={handleDialogClose}
-          action={updateAIPriceAction.bind(null, editingPrice.id)}
+          action={updateAIPriceAction}
         />
       )}
     </>

@@ -2,7 +2,10 @@ import { AIPrice } from "@service/solves/shared";
 import { TIME } from "@workspace/util";
 import useSWR, { SWRConfiguration, SWRResponse } from "swr";
 
-type Data = Pick<AIPrice, "provider" | "model" | "displayName">;
+type Data = Pick<
+  AIPrice,
+  "provider" | "model" | "displayName" | "isDefaultModel"
+>;
 
 export const useChatModelList = (
   options?: SWRConfiguration<Data[]>,
