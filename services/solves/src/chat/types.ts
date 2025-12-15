@@ -24,3 +24,10 @@ export type ChatModel = {
   model: string;
   displayName?: string;
 };
+
+// TODO: SystemPrompt DB 관리? 연계 필요할 듯?
+export enum SystemPrompt {
+  SOLVES,
+  EXPLAIN,
+  SOLVE,
+}
