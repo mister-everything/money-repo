@@ -14,12 +14,22 @@ import z from "zod";
  * Tools input,output Type 을 client 에서도 사용 할 수 있도록
  * 별도 파일로 분리
  */
-
 export const GEN_MCQ_TOOL_NAME = "generateMcqTool";
 export const GEN_MCQ_MULTIPLE_TOOL_NAME = "generateMcqMultipleTool";
 export const GEN_SUBJECTIVE_TOOL_NAME = "generateSubjectiveTool";
 export const GEN_RANKING_TOOL_NAME = "generateRankingTool";
 export const GEN_OX_TOOL_NAME = "generateOxTool";
+
+export const GENERATE_WORKBOOK_TOOL_NAMES = [
+  GEN_MCQ_TOOL_NAME,
+  GEN_MCQ_MULTIPLE_TOOL_NAME,
+  GEN_SUBJECTIVE_TOOL_NAME,
+  GEN_RANKING_TOOL_NAME,
+  GEN_OX_TOOL_NAME,
+] as const;
+
+export type GenerateToolNameType =
+  (typeof GENERATE_WORKBOOK_TOOL_NAMES)[number];
 
 // 객관식(단일)
 export const GenerateMcqInputSchema = z.object({
