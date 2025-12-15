@@ -23,7 +23,12 @@ export const GEN_OX_TOOL_NAME = "generateOxTool";
 
 // 객관식(단일)
 export const GenerateMcqInputSchema = z.object({
-  question: z.string().min(1, "문제의 질문을 입력하세요."),
+  question: z
+    .string()
+    .min(
+      1,
+      "문제의 질문을 입력하세요. 필요한 경우 Markdown 형식으로 입력해도 됩니다.",
+    ),
   options: z
     .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
     .min(MCQ_BLOCK_MIN_OPTIONS)
@@ -39,7 +44,12 @@ export const GenerateMcqInputSchema = z.object({
 
 // 객관식(다중)
 export const GenerateMcqMultipleInputSchema = z.object({
-  question: z.string().min(1, "문제의 질문을 입력하세요."),
+  question: z
+    .string()
+    .min(
+      1,
+      "문제의 질문을 입력하세요. 필요한 경우 Markdown 형식으로 입력해도 됩니다.",
+    ),
   options: z
     .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
     .min(MCQ_BLOCK_MIN_OPTIONS)
