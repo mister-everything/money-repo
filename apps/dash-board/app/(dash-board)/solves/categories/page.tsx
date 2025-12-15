@@ -1,6 +1,5 @@
 import { categoryService } from "@service/solves";
-
-import { CategoryTabs } from "@/components/solves/category-tabs";
+import { CategoryTabs } from "./category-tabs";
 
 export const dynamic = "force-dynamic";
 

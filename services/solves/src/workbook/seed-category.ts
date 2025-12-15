@@ -80,7 +80,10 @@ export const seedCategory = async () => {
 
     // 중분류 처리
     for (const subName of category.subs) {
-      const existsSub = await categoryService.existsSubCategoryByName(subName);
+      const existsSub = await categoryService.existsSubCategoryByName(
+        subName,
+        mainCategory.id,
+      );
 
       if (!existsSub) {
         await categoryService.insertSubCategory({

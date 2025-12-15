@@ -183,10 +183,10 @@ export const categoryMainTable = solvesSchema.table("category_main", {
  */
 export const categorySubTable = solvesSchema.table("category_sub", {
   id: serial("category_sub_id").primaryKey(),
-  name: varchar("name", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 50 }).notNull(), // 중분류 이름 (중복 가능) 다른 mainId 에서 중복가능하게 함
   mainId: integer("category_main_id")
     .notNull()
-    .references(() => categoryMainTable.id, { onDelete: "cascade" }),
+    .references(() => categoryMainTable.id, { onDelete: "cascade" }), // 대분류 삭제 시 중분류도 삭제됨
   description: varchar("description", { length: 300 }),
   aiPrompt: varchar("ai_prompt", { length: 300 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),

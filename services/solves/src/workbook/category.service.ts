@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { pgDb } from "../db";
 import { categoryMainTable, categorySubTable } from "./schema";
 import { CategoryMain, CategorySub, CategoryWithSubs } from "./types";
@@ -64,6 +64,7 @@ export const categoryService = {
    */
   existsSubCategoryByName: async (
     name: string,
+    mainId: number,
   ): Promise<CategorySub | null> => {
     const [row] = await pgDb
       .select({
@@ -75,7 +76,13 @@ export const categoryService = {
         createdAt: categorySubTable.createdAt,
       })
       .from(categorySubTable)
-      .where(eq(categorySubTable.name, name));
+      .where(
+        and(
+          eq(categorySubTable.name, name),
+          eq(categorySubTable.mainId, mainId),
+        ),
+      );
+
     return row ?? null;
   },
 
@@ -183,5 +190,19 @@ export const categoryService = {
       });
 
     return row;
+  },
+
+  /**
+   * 대분류 삭제 (CASCADE로 중분류도 함께 삭제됨)
+   */
+  deleteMainCategory: async (id: number): Promise<void> => {
+    await pgDb.delete(categoryMainTable).where(eq(categoryMainTable.id, id));
+  },
+
+  /**
+   * 중분류 삭제
+   */
+  deleteSubCategory: async (id: number): Promise<void> => {
+    await pgDb.delete(categorySubTable).where(eq(categorySubTable.id, id));
   },
 };
