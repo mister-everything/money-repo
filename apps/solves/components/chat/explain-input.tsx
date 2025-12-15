@@ -1,7 +1,7 @@
 "use client";
 import { ChatModel } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
-import { ChevronDown, SendIcon, SparklesIcon, SquareIcon } from "lucide-react";
+import { ChevronDown, SparklesIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { RefObject, useCallback } from "react";
 import { Button } from "../ui/button";
