@@ -13,11 +13,17 @@ import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import {
+  generateMcqMultipleTool,
   generateMcqTool,
+  generateOxTool,
+  generateRankingTool,
   generateSubjectiveTool,
 } from "@/lib/ai/tools/workbook/generate-block-tools";
 import {
+  GEN_MCQ_MULTIPLE_TOOL_NAME,
   GEN_MCQ_TOOL_NAME,
+  GEN_OX_TOOL_NAME,
+  GEN_RANKING_TOOL_NAME,
   GEN_SUBJECTIVE_TOOL_NAME,
 } from "@/lib/ai/tools/workbook/types";
 import { getSession } from "@/lib/auth/server";
@@ -67,6 +73,9 @@ export async function POST(req: Request) {
         abortSignal: req.signal,
         tools: {
           [GEN_MCQ_TOOL_NAME]: generateMcqTool,
+          [GEN_MCQ_MULTIPLE_TOOL_NAME]: generateMcqMultipleTool,
+          [GEN_RANKING_TOOL_NAME]: generateRankingTool,
+          [GEN_OX_TOOL_NAME]: generateOxTool,
           [GEN_SUBJECTIVE_TOOL_NAME]: generateSubjectiveTool,
           [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         },
