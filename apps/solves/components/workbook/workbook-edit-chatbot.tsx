@@ -209,6 +209,13 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     async (threadId: string) => {
       if (isPending) return;
       const isSavedThread = savedThreadList.some((t) => t.id === threadId);
+
+      const focusTempThread = () => {
+        const tempThread = tempThreadList[0];
+        if (!tempThread) addNewThread();
+        else setThreadId(tempThread.id);
+      };
+
       if (isSavedThread) {
         const isConfirmed = await notify.confirm({
           title: "채팅 삭제",
@@ -216,24 +223,25 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           okText: "삭제",
           cancelText: "취소",
         });
-        if (isConfirmed) {
-          deleteAction(threadId);
-          addNewThread();
-        }
+        if (!isConfirmed) return;
+        deleteAction(threadId);
       } else {
         setTempThreadList((prev) => prev.filter((t) => t.id !== threadId));
-        addNewThread();
       }
+      focusTempThread();
     },
-    [savedThreadList, isPending],
+    [tempThreadList, savedThreadList, isPending],
   );
 
   const handleClearError = useCallback(() => {
-    if (threadId) {
-      fetchThreadMessages(threadId);
+    const isSavedThread = savedThreadList.some((t) => t.id === threadId);
+    if (isSavedThread) {
+      fetchThreadMessages(threadId!);
+    } else {
+      setMessages([]);
     }
     clearError();
-  }, [clearError, threadId]);
+  }, [clearError, threadId, savedThreadList]);
 
   useEffect(() => {
     if (!threadId) return;
