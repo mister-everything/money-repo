@@ -1,117 +1,95 @@
 "use client";
 
-import { CategorySub, CategoryWithSubs } from "@service/solves/shared";
+import { Category, CategoryTree } from "@service/solves/shared";
 import { LightbulbIcon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 
-export interface CategorySelection {
-  mainCategories?: CategoryWithSubs[];
-  subCategories?: CategorySub[];
-}
-
 interface CategorySelectorProps {
-  value?: CategorySelection;
-  categories?: CategoryWithSubs[];
+  /** 현재 선택된 카테고리 ID */
+  value?: number;
+  /** 루트 카테고리 목록 (tree 구조) */
+  categories?: CategoryTree[];
   isLoading?: boolean;
-  maxCategoryCount?: number;
-  onCategoryChange?: (selection: CategorySelection) => void;
+  /** 카테고리 선택 시 호출 */
+  onCategoryChange?: (categoryId: number | undefined) => void;
 }
 
 export function CategorySelector({
-  value = { mainCategories: [], subCategories: [] },
+  value,
   categories = [],
-  maxCategoryCount = 5,
   isLoading = false,
   onCategoryChange,
 }: CategorySelectorProps) {
+  // 현재 펼쳐진 루트 카테고리 ID
   const [visibleCategoryId, setVisibleCategoryId] = useState<number | null>(
     null,
   );
 
-  const selectedMainCategoryIds = useMemo(() => {
-    return value.mainCategories?.map((category) => category.id) ?? [];
-  }, [value.mainCategories]);
-
-  const selectedSubCategoryIds = useMemo(() => {
-    return value.subCategories?.map((category) => category.id) ?? [];
-  }, [value.subCategories]);
-
+  // 현재 펼쳐진 루트 카테고리
   const visibleCategory = useMemo(() => {
     return categories?.find((category) => category.id === visibleCategoryId);
   }, [visibleCategoryId, categories]);
 
-  const visibleSubCategories = useMemo(() => {
-    if (!visibleCategory) return null;
-    return visibleCategory?.subs;
+  // 현재 펼쳐진 루트 카테고리의 자식 카테고리들
+  const visibleChildren = useMemo(() => {
+    if (!visibleCategory) return [];
+    return visibleCategory.children ?? [];
   }, [visibleCategory]);
 
-  const visibleSubCategoryIds = useMemo(() => {
-    return visibleSubCategories?.map((category) => category.id) ?? [];
-  }, [visibleSubCategories]);
-
-  const isAllSelected = useMemo(() => {
+  // 선택된 카테고리가 현재 펼쳐진 루트 카테고리인지 확인
+  const isRootSelected = useMemo(() => {
     if (!visibleCategory) return false;
-    return selectedMainCategoryIds.includes(visibleCategory.id);
-  }, [value.mainCategories, visibleCategory]);
+    return value === visibleCategory.id;
+  }, [value, visibleCategory]);
 
-  const handleAllClick = () => {
+  // 선택된 카테고리가 현재 펼쳐진 루트 카테고리의 자식인지 확인
+  const isChildSelected = (childId: number) => {
+    return value === childId;
+  };
+
+  // 루트 카테고리 선택/해제 핸들러
+  const handleRootClick = () => {
     if (!visibleCategory) return;
-    const isInclude = selectedMainCategoryIds.includes(visibleCategory.id);
-    const nextMainCategories = isInclude
-      ? value.mainCategories?.filter(
-          (category) => category.id !== visibleCategory.id,
-        )
-      : [...(value.mainCategories ?? []), visibleCategory];
-
-    onCategoryChange?.({
-      mainCategories: nextMainCategories,
-      subCategories:
-        value.subCategories?.filter(
-          (category) => !visibleSubCategoryIds.includes(category.id),
-        ) ?? [],
-    });
-  };
-  const handleSubCategoryClick = (subCategoryId: number) => {
-    const subCategory = visibleSubCategories?.find(
-      (v) => v.id === subCategoryId,
-    )!;
-    const prevSubCategories = value.subCategories ?? [];
-    const prevMainCategories = (value.mainCategories ?? []).filter(
-      (v) => v.id !== visibleCategory?.id,
-    );
-
-    const nextSubCategories = prevSubCategories.some(
-      (v) => v.id === subCategoryId,
-    )
-      ? prevSubCategories.filter((v) => v.id !== subCategoryId)
-      : [...prevSubCategories, subCategory];
-
-    const isAllSelected = visibleSubCategoryIds.every((id) =>
-      nextSubCategories.some((v) => v.id === id),
-    );
-    const mainCategories = isAllSelected
-      ? [...prevMainCategories, visibleCategory!]
-      : prevMainCategories;
-    const subCategories = isAllSelected
-      ? nextSubCategories.filter((v) => !visibleSubCategoryIds.includes(v.id))
-      : nextSubCategories;
-
-    if (mainCategories.length + subCategories.length > maxCategoryCount) {
-      return toast.warning(
-        `카테고리는 최대 ${maxCategoryCount}개까지 선택할 수 있습니다.`,
-      );
+    if (isRootSelected) {
+      onCategoryChange?.(undefined);
+    } else {
+      onCategoryChange?.(visibleCategory.id);
     }
-
-    onCategoryChange?.({
-      mainCategories,
-      subCategories,
-    });
   };
+
+  // 자식 카테고리 선택/해제 핸들러
+  const handleChildClick = (childId: number) => {
+    if (value === childId) {
+      onCategoryChange?.(undefined);
+    } else {
+      onCategoryChange?.(childId);
+    }
+  };
+
+  // 선택된 카테고리 정보를 찾아서 표시
+  const findSelectedCategoryInfo = ():
+    | { root: Category; child?: Category }
+    | undefined => {
+    if (!value) return undefined;
+
+    for (const root of categories) {
+      if (root.id === value) {
+        return { root };
+      }
+      for (const child of root.children ?? []) {
+        if (child.id === value) {
+          return { root, child };
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const selectedInfo = findSelectedCategoryInfo();
 
   return (
     <div>
@@ -119,55 +97,79 @@ export function CategorySelector({
         {isLoading ? (
           <Skeleton className="w-full h-26" />
         ) : categories?.length ? (
-          categories.map((category) => (
-            <div
-              key={category.id}
-              onClick={() => setVisibleCategoryId(category.id)}
-              className={cn(
-                "flex flex-col items-center gap-2 py-3.5 justify-center min-w-28 cursor-pointer",
-                "hover:bg-secondary/50 rounded-md",
-                visibleCategoryId === category.id && "bg-secondary",
-              )}
-            >
-              <Button className="size-12!">
-                <LightbulbIcon />
-              </Button>
-              <span className="text-sm font-bold">{category.name}</span>
-            </div>
-          ))
+          categories.map((category) => {
+            // 이 루트 카테고리나 그 자식이 선택되었는지 확인
+            const hasSelection =
+              value === category.id ||
+              category.children?.some((child) => child.id === value);
+
+            return (
+              <div
+                key={category.id}
+                onClick={() => setVisibleCategoryId(category.id)}
+                className={cn(
+                  "flex flex-col items-center gap-2 py-3.5 justify-center min-w-28 cursor-pointer",
+                  "hover:bg-secondary/50 rounded-md",
+                  visibleCategoryId === category.id && "bg-secondary",
+                )}
+              >
+                <Button
+                  className={cn(
+                    "size-12!",
+                    hasSelection && "ring-2 ring-primary",
+                  )}
+                >
+                  <LightbulbIcon />
+                </Button>
+                <span className="text-sm font-bold">{category.name}</span>
+              </div>
+            );
+          })
         ) : (
           <div className="flex flex-col items-center gap-2 justify-center w-full h-26">
             <span className="text-sm font-bold">카테고리가 없습니다</span>
           </div>
         )}
       </div>
+
+      {/* 선택된 카테고리 표시 */}
+      {selectedInfo && (
+        <div className="text-sm text-muted-foreground mb-2">
+          선택:{" "}
+          <span className="text-foreground font-medium">
+            {selectedInfo.root.name}
+            {selectedInfo.child && ` > ${selectedInfo.child.name}`}
+          </span>
+        </div>
+      )}
+
       {visibleCategory && (
         <div className="flex flex-wrap items-center gap-2 w-full mb-4">
           <Badge
             variant="secondary"
-            onClick={handleAllClick}
+            onClick={handleRootClick}
             className={cn(
               "rounded-full cursor-pointer py-1.5 hover:bg-primary/5 hover:border-primary transition-all",
-              isAllSelected &&
+              isRootSelected &&
                 "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
           >
-            전체
+            {visibleCategory.name} 전체
           </Badge>
-          {visibleSubCategories?.map((subCategory) => {
-            const isChecked = selectedSubCategoryIds.includes(subCategory.id);
+          {visibleChildren.map((child) => {
+            const isChecked = isChildSelected(child.id);
             return (
               <Badge
-                key={subCategory.id}
+                key={child.id}
                 variant="secondary"
-                onClick={() => handleSubCategoryClick(subCategory.id)}
+                onClick={() => handleChildClick(child.id)}
                 className={cn(
                   "rounded-full cursor-pointer py-1.5 hover:bg-primary/5 hover:border-primary transition-all",
                   isChecked &&
                     "bg-primary/5 hover:bg-primary/10 border-primary",
                 )}
               >
-                {subCategory.name}
+                {child.name}
               </Badge>
             );
           })}

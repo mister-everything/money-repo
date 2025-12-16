@@ -17,14 +17,9 @@ export default async function WorkBookCreatePage({
 
   const initialFormData = await searchParams;
 
-  if (
-    initialFormData?.categories &&
-    !Array.isArray(initialFormData.categories)
-  ) {
-    initialFormData.categories = [initialFormData.categories];
-  }
-  if (initialFormData?.categories?.length) {
-    initialFormData.categories = initialFormData.categories.map(Number);
+  // categoryId가 string이면 number로 변환
+  if (initialFormData?.categoryId) {
+    initialFormData.categoryId = Number(initialFormData.categoryId);
   }
 
   if (
@@ -54,7 +49,7 @@ export default async function WorkBookCreatePage({
           initialFormData={{
             ...{
               situation: "",
-              categories: [],
+              categoryId: undefined,
               blockTypes: Object.keys(blockDisplayNames) as BlockType[],
               ageGroup: "all",
               difficulty: "",

@@ -3,7 +3,6 @@
 import {
   BlockType,
   blockDisplayNames,
-  MAX_CATEGORY_COUNT,
   MAX_INPROGRESS_WORKBOOK_CREATE_COUNT,
 } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
@@ -14,11 +13,7 @@ import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useCategories } from "@/hooks/query/use-categories";
-import {
-  WorkBookAgeGroup,
-  WorkBookDifficulty,
-  WorkBookSituation,
-} from "@/lib/const";
+import { WorkBookSituation } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
@@ -31,10 +26,8 @@ export function WorkbookCreateForm({
   isMaxInprogressWorkbookCreateCount = false,
   initialFormData = {
     situation: "",
-    categories: [],
+    categoryId: undefined,
     blockTypes: Object.keys(blockDisplayNames) as BlockType[],
-    ageGroup: "all",
-    difficulty: "",
   },
 }: {
   isMaxInprogressWorkbookCreateCount?: boolean;
@@ -43,18 +36,32 @@ export function WorkbookCreateForm({
   const router = useRouter();
   const { setWorkbookOption } = useWorkbookEditStore();
 
-  const [mainCategory, setMainCategory] = useState<number>();
+  const [selectedOneDepthCategoryId, setSelectedOneDepthCategoryId] =
+    useState<number>();
+  const [selectedTwoDepthCategoryId, setSelectedTwoDepthCategoryId] =
+    useState<number>();
 
   const [formData, setFormData] = useState(initialFormData);
   const { data: categories = [], isLoading } = useCategories({
     onSuccess: (data) => {
-      if (!mainCategory) {
-        if (!formData.categories.length) setMainCategory(data[0].id);
-        else {
-          const sub = data
-            .flatMap((category) => category.subs)
-            .find((sub) => formData.categories.includes(sub.id));
-          setMainCategory(sub?.mainId ?? formData.categories[0]);
+      if (data.length > 0) {
+        const flatCategories = data.flatMap((category) => [
+          category,
+          ...category.children,
+        ]);
+        const categortId = formData.categoryId || flatCategories[0].id;
+        const category = flatCategories.find(
+          (category) => category.id === categortId,
+        );
+        if (category) {
+          setFormData((prev) => ({ ...prev, categoryId: category?.id }));
+
+          if (category.parentId === null) {
+            setSelectedOneDepthCategoryId(category.id);
+          } else {
+            setSelectedOneDepthCategoryId(category.parentId);
+            setSelectedTwoDepthCategoryId(category.id);
+          }
         }
       }
     },
@@ -69,18 +76,8 @@ export function WorkbookCreateForm({
     successMessage: "문제집 페이지로 이동합니다.",
   });
 
-  const handleCategoryClick = (categoryId: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      categories: (prev.categories.includes(categoryId)
-        ? [...prev.categories.filter((id) => id !== categoryId)]
-        : [...prev.categories, categoryId]
-      ).slice(-MAX_CATEGORY_COUNT),
-    }));
-  };
-
   const handleCreateWorkbook = async () => {
-    if (!valid) {
+    if (!formData.categoryId) {
       return;
     }
     const confirm = await notify.confirm({
@@ -95,19 +92,23 @@ export function WorkbookCreateForm({
     }
     createWorkbook({
       title: "",
-      categories: formData.categories,
+      categoryId: formData.categoryId,
     });
   };
 
-  const subCategories = useMemo(() => {
-    return (
-      categories.find((category) => category.id === mainCategory)?.subs ?? []
-    );
-  }, [mainCategory, categories]);
-
   const valid = useMemo(() => {
-    return formData.categories.length > 0;
-  }, [formData]);
+    return formData.categoryId !== undefined;
+  }, [formData.categoryId]);
+
+  const oneDepthCategories = useMemo(() => {
+    return categories.filter((category) => category.parentId === null);
+  }, [categories]);
+
+  const twoDepthCategories = useMemo(() => {
+    return oneDepthCategories
+      .flatMap((category) => category.children)
+      .filter((category) => category.parentId === selectedOneDepthCategoryId);
+  }, [oneDepthCategories, selectedOneDepthCategoryId]);
 
   return (
     <div className="w-full">
@@ -140,60 +141,62 @@ export function WorkbookCreateForm({
           ) : (
             <ButtonSelect
               disabled={isMaxInprogressWorkbookCreateCount}
-              value={mainCategory?.toString()}
-              onChange={(value) => setMainCategory(Number(value))}
-              options={categories.map((value) => {
-                const allSubCategories = categories.flatMap(
-                  (category) => category.subs,
-                );
-                const selectedSubCategories = formData.categories.map(
-                  (categoryId) =>
-                    allSubCategories.find(
-                      (category) => category.id === categoryId,
-                    ),
-                );
-                const selectedMainCategorySubCount =
-                  selectedSubCategories.filter(
-                    (s) => s?.mainId === value.id,
-                  ).length;
+              value={selectedOneDepthCategoryId?.toString()}
+              onChange={(value) => {
+                if (!value) return;
+                setSelectedOneDepthCategoryId(Number(value));
+                setSelectedTwoDepthCategoryId(undefined);
+                setFormData((prev) => ({
+                  ...prev,
+                  categoryId: Number(value),
+                }));
+              }}
+              options={oneDepthCategories.map((category) => {
                 return {
-                  label: selectedMainCategorySubCount ? (
-                    <div className="flex items-center gap-1.5">
-                      {value.name}{" "}
-                      <div className="text-xs text-primary size-4 rounded-full bg-primary/5 flex items-center justify-center">
-                        {selectedMainCategorySubCount}
-                      </div>
-                    </div>
-                  ) : (
-                    value.name
-                  ),
-                  value: value.id.toString(),
+                  label: category.name,
+                  value: category.id.toString(),
                 };
               })}
             />
           )}
 
-          {subCategories.length > 0 && (
+          {twoDepthCategories.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {subCategories.map((subCategory) => (
+              {twoDepthCategories.map((child) => (
                 <Badge
-                  key={subCategory.id}
+                  key={child.id}
                   variant="secondary"
-                  onClick={() => handleCategoryClick(subCategory.id)}
+                  onClick={() => {
+                    setSelectedTwoDepthCategoryId(child.id);
+                    setFormData((prev) => ({
+                      ...prev,
+                      categoryId: child.id,
+                    }));
+                  }}
                   className={cn(
                     "cursor-pointer rounded-full hover:bg-primary/5 hover:border-primary transition-all",
-                    formData.categories.includes(subCategory.id) &&
+                    selectedTwoDepthCategoryId === child.id &&
                       "bg-primary/5 hover:bg-primary/10 border-primary",
+                    isMaxInprogressWorkbookCreateCount &&
+                      "cursor-not-allowed opacity-50",
                   )}
                 >
-                  {subCategory.name}
+                  {child.name}
                 </Badge>
               ))}
-              {formData.categories.length >= MAX_CATEGORY_COUNT && (
-                <p className="w-full text-xs text-muted-foreground px-2">
-                  최대 {MAX_CATEGORY_COUNT}개까지 선택할 수 있어요.
-                </p>
-              )}
+            </div>
+          )}
+          {selectedOneDepthCategoryId && (
+            <div className="text-sm text-muted-foreground">
+              <span className="text-foreground font-medium">
+                {
+                  oneDepthCategories.find(
+                    (category) => category.id === selectedOneDepthCategoryId,
+                  )?.name
+                }
+                {selectedTwoDepthCategoryId &&
+                  ` > ${twoDepthCategories.find((category) => category.id === selectedTwoDepthCategoryId)?.name}`}
+              </span>
             </div>
           )}
         </div>
@@ -235,43 +238,10 @@ export function WorkbookCreateForm({
             )}
           />
         </div>
-        <div className="space-y-3">
-          <div className="flex flex-cols gap-1">
-            <label className="text-sm font-bold text-foreground">연령대</label>
-          </div>
-          <ButtonSelect
-            disabled={isMaxInprogressWorkbookCreateCount}
-            value={formData.ageGroup}
-            onChange={(value) => {
-              setFormData({ ...formData, ageGroup: value as string });
-            }}
-            name="ageGroup"
-            options={WorkBookAgeGroup.map((value) => ({
-              label: value.label,
-              value: value.value,
-            }))}
-          />
-        </div>
-        <div className="space-y-3">
-          <div className="flex flex-cols gap-1">
-            <label className="text-sm font-bold text-foreground">난이도</label>
-          </div>
-          <ButtonSelect
-            disabled={isMaxInprogressWorkbookCreateCount}
-            value={formData.difficulty}
-            onChange={(value) => {
-              setFormData({ ...formData, difficulty: value as string });
-            }}
-            name="difficulty"
-            options={WorkBookDifficulty.map((value) => ({
-              label: value.label,
-              value: value.value,
-            }))}
-          />
-        </div>
+
         {!valid && !isMaxInprogressWorkbookCreateCount && (
           <p className="w-full text-xs text-muted-foreground px-2 text-center">
-            소재는 최소 1개 이상 선택해주세요.
+            소재를 선택해주세요.
           </p>
         )}
 

@@ -48,10 +48,8 @@ export async function POST(req: Request) {
   const userMessage = messages.at(-1);
 
   const systemPrompt = WorkBookCreatePrompt({
-    categories: [],
+    categoryId: undefined,
     blockTypes: [],
-    ageGroup: "",
-    difficulty: "",
     situation: "",
   });
 

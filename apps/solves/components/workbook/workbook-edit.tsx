@@ -44,6 +44,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCategories } from "@/hooks/query/use-categories";
 import { useToRef } from "@/hooks/use-to-ref";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
@@ -127,6 +128,8 @@ export function WorkbookEdit({
 
   const [isPublishPopupOpen, setIsPublishPopupOpen] = useState(false);
 
+  const { data: categories = [] } = useCategories();
+
   const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
     if (control !== "review") return {};
 
@@ -204,6 +207,17 @@ export function WorkbookEdit({
       updatedBlocks.length > 0
     );
   }, [blocksDiff]);
+
+  const selectedCategory = useMemo(() => {
+    const flatCategories = categories.flatMap((c) => [c, ...c.children]);
+    const category = flatCategories.find((c) => c.id === workBook.categoryId);
+    if (!category) return [];
+    if (category.parentId === null) return [category];
+    return [
+      category,
+      ...flatCategories.filter((c) => c.id === category.parentId),
+    ];
+  }, [categories, workBook.categoryId]);
 
   const handleChangeWorkbookMode = useCallback(
     (mode: WorkBookComponentMode) => {
@@ -513,8 +527,12 @@ export function WorkbookEdit({
             뒤로가기
           </Button>
           <div className="flex-1" />
-          <Button className="rounded-full">임시 소제</Button>
-          <Button className="rounded-full">임시 소제 {">"} 소재</Button>
+
+          {selectedCategory.length > 0 && (
+            <Button className="rounded-full">
+              {selectedCategory.map((c) => c.name).join(" > ")}
+            </Button>
+          )}
         </div>
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
