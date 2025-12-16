@@ -9,10 +9,9 @@ import {
   useEditor,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-
 import { cn } from "lib/utils";
+
 import {
-  FC,
   RefObject,
   useCallback,
   useEffect,
@@ -22,76 +21,44 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
+import { MentionInputItem } from "./mention-item";
+import { MentionSuggestion } from "./mention-suggestion-popup";
+import { SolvesMentionItem, TipTapMentionJsonContent } from "./types";
+import { serializeMention } from "./util";
 
-export type TipTapMentionJsonContentPart<T> =
-  | {
-      type: "text";
-      text: string;
-    }
-  | {
-      type: "mention";
-      attrs: T;
-    }
-  | {
-      type: "hardBreak";
-    };
-
-export type TipTapMentionJsonContent<T = any> = {
-  type: "doc";
-  content: {
-    type: "paragraph";
-    content?: TipTapMentionJsonContentPart<T>[];
-  }[];
-};
-
-export type MentionSuggestionComponentProps<T = any> = {
-  top: number;
-  left: number;
-  onClose: () => void;
-  onSelectMention: (item: T) => void;
-  style?: React.CSSProperties;
-  children?: React.ReactNode;
-};
-
-interface MentionInputProps<T> {
+interface MentionInputProps {
   disabled?: boolean;
   defaultContent?: TipTapMentionJsonContent | string;
-  content?: TipTapMentionJsonContent | string;
   onChange?: (content: {
     json: TipTapMentionJsonContent;
     text: string;
-    mentions: T[];
+    mentions: SolvesMentionItem[];
   }) => void;
   onEnter?: () => void;
   placeholder?: string;
   suggestionChar?: string;
   className?: string;
-  disabledMention?: boolean;
   editorRef?: RefObject<Editor | null>;
   onFocus?: () => void;
   onBlur?: () => void;
   fullWidthSuggestion?: boolean;
-  MentionItemComponent?: FC<{ item: T }>;
-  SuggestionComponent?: FC<MentionSuggestionComponentProps<T>>;
+  items?: (searchValue: string) => SolvesMentionItem[];
 }
 
-export default function MentionInput<T>({
+export default function MentionInput({
   defaultContent,
-  content,
   onChange,
   disabled,
   onEnter,
   placeholder = "",
   suggestionChar = "@",
-  MentionItemComponent,
-  disabledMention,
-  SuggestionComponent,
+  items,
   className,
   editorRef,
   onFocus,
   onBlur,
   fullWidthSuggestion = false,
-}: MentionInputProps<T>) {
+}: MentionInputProps) {
   const [open, setOpen] = useState(false);
   const position = useRef<{
     top: number;
@@ -114,9 +81,17 @@ export default function MentionInput<T>({
       immediatelyRender: false,
       extensions: [
         StarterKit.configure({
-          codeBlock: false,
+          // We only want "mention + plain text". Disable all markdown-like input rules / formatting.
           blockquote: false,
+          bold: false,
+          bulletList: false,
           code: false,
+          codeBlock: false,
+          heading: false,
+          italic: false,
+          listItem: false,
+          orderedList: false,
+          strike: false,
         }),
         Mention.configure({
           HTMLAttributes: {
@@ -126,15 +101,16 @@ export default function MentionInput<T>({
             const el = document.createElement("div");
             el.className = "inline-flex";
             const root = createRoot(el);
-            if (MentionItemComponent)
-              root.render(
-                <MentionItemComponent item={props.node.attrs.id as T} />,
-              );
+            root.render(
+              <MentionInputItem
+                item={props.node.attrs.id as SolvesMentionItem}
+              />,
+            );
+
             return el;
           },
           suggestion: {
             char: suggestionChar,
-
             render: () => {
               return {
                 onStart: (props) => {
@@ -169,7 +145,6 @@ export default function MentionInput<T>({
           },
         }),
       ],
-      content: defaultContent ?? content,
       autofocus: true,
       onUpdate: ({ editor }) => {
         const json = editor.getJSON() as TipTapMentionJsonContent;
@@ -178,9 +153,10 @@ export default function MentionInput<T>({
           ?.flatMap(({ content }) => {
             return content
               ?.filter((v) => v.type == "mention")
-              .map((v) => v.attrs.id);
+              .map((v) => (v as any).attrs.id);
           })
-          .filter(Boolean) as T[];
+          .filter(Boolean) as SolvesMentionItem[];
+
         latestContent.current = {
           json,
           text,
@@ -198,13 +174,31 @@ export default function MentionInput<T>({
         onBlur?.();
       },
       editorProps: {
+        // Always paste as plain text to avoid HTML/markdown-like transformations.
+        handlePaste: (view, event) => {
+          const text = event.clipboardData?.getData("text/plain");
+          if (text == null) return false;
+          event.preventDefault();
+          const normalized = text.replace(/\r\n/g, "\n");
+          view.dispatch(view.state.tr.insertText(normalized));
+          return true;
+        },
         attributes: {
           class:
             "w-full max-h-80 min-h-[2rem] break-words overflow-y-auto resize-none focus:outline-none px-2 py-1 prose prose-sm dark:prose-invert ",
         },
+        content: defaultContent ?? "",
       },
     };
-  }, [disabled, MentionItemComponent, suggestionChar, onChange]);
+  }, [
+    disabled,
+    suggestionChar,
+    defaultContent,
+    onChange,
+    onFocus,
+    onBlur,
+    fullWidthSuggestion,
+  ]);
 
   const editor = useEditor(editorConfig);
 
@@ -232,42 +226,25 @@ export default function MentionInput<T>({
     [editor, onEnter, open],
   );
 
-  // Memoize the DOM structure
-  const suggestion = useMemo(() => {
-    if (!open || disabledMention) return null;
-    if (!SuggestionComponent) return null;
-    return createPortal(
-      <SuggestionComponent
-        top={position.current?.top ?? 0}
-        left={position.current?.left ?? 0}
-        onClose={() => {
-          setOpen(false);
-        }}
-        onSelectMention={(item) => {
-          editor
-            ?.chain()
-            .focus()
-            .insertContentAt(position.current!.range, [
-              {
-                type: "mention",
-                attrs: {
-                  id: item,
-                },
-              },
-            ])
-            .run();
-          setOpen(false);
-        }}
-        style={{
-          width:
-            fullWidthSuggestion && containerWidth
-              ? `${containerWidth}px`
-              : undefined,
-        }}
-      />,
-      document.body,
-    );
-  }, [open, disabledMention, containerWidth, fullWidthSuggestion]);
+  const onSelectMention = useCallback(
+    (item: SolvesMentionItem) => {
+      editor
+        ?.chain()
+        .focus()
+        .insertContentAt(position.current!.range, [
+          {
+            type: "mention",
+            attrs: {
+              id: item,
+              label: serializeMention(item),
+            },
+          },
+        ])
+        .run();
+      setOpen(false);
+    },
+    [editor],
+  );
 
   const placeholderElement = useMemo(() => {
     if (!editor?.isEmpty) return null;
@@ -289,25 +266,12 @@ export default function MentionInput<T>({
     editor?.commands.focus();
   }, [open]);
 
-  useEffect(() => {
-    if (content != undefined && onChange) {
-      if (
-        typeof content == "string" &&
-        content != latestContent.current?.text
-      ) {
-        editor?.commands.setContent(content);
-      } else if (
-        typeof content != "string" &&
-        content != latestContent.current?.json
-      ) {
-        editor?.commands.setContent(content);
-      }
-    }
-  }, [content]);
-
   const focus = useCallback(() => {
     editor?.commands.focus();
   }, [editor]);
+  const showSuggestion = useMemo(() => {
+    return open && Boolean(items);
+  }, [open, Boolean(items)]);
 
   return (
     <div
@@ -316,7 +280,20 @@ export default function MentionInput<T>({
       className={cn("relative w-full", className)}
     >
       <EditorContent editor={editor} onKeyDown={handleKeyDown} />
-      {suggestion}
+      {showSuggestion &&
+        createPortal(
+          <MentionSuggestion
+            onSelectMention={onSelectMention}
+            width={
+              fullWidthSuggestion && containerWidth ? containerWidth : undefined
+            }
+            onClose={() => setOpen(false)}
+            top={position.current?.top ?? 0}
+            left={position.current?.left ?? 0}
+            items={items as (searchValue: string) => SolvesMentionItem[]}
+          />,
+          document.body,
+        )}
       {placeholderElement}
     </div>
   );

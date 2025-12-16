@@ -1,4 +1,4 @@
-import { truncateString } from "@workspace/util";
+import { isString } from "@workspace/util";
 import { getToolName, ReasoningUIPart, TextUIPart, ToolUIPart } from "ai";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -20,6 +20,8 @@ import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/types";
 import { cn } from "@/lib/utils";
+import { MentionItem } from "../mention/mention-item";
+import { normalizeMentions } from "../mention/util";
 import JsonView from "../ui/json-view";
 import { GenerateToolPart } from "./tool-part/generate-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
@@ -30,24 +32,23 @@ interface UserMessagePartProps {
 }
 
 const MAX_TEXT_LENGTH = 600;
+
 export function UserMessagePart({ part }: UserMessagePartProps) {
   const [copied, copy] = useCopy();
 
   const [expanded, setExpanded] = useState(false);
 
+  const normalizedText = useMemo(() => {
+    return normalizeMentions(part.text);
+  }, [part.text]);
+
   const isLongText = useMemo(
     () => part.text.length > MAX_TEXT_LENGTH,
     [part.text],
   );
-  const displayText = useMemo(
-    () =>
-      expanded || !isLongText
-        ? part.text
-        : truncateString(part.text, MAX_TEXT_LENGTH),
-    [expanded, isLongText, part.text],
-  );
+
   return (
-    <div className="flex flex-col gap-2 items-end my-2">
+    <div className="flex flex-col gap-2 items-end my-2 text-sm">
       <div
         data-testid="message-content"
         className="flex flex-col gap-4 max-w-full relative overflow-hidden bg-primary text-primary-foreground px-4 py-3 rounded-2xl"
@@ -55,9 +56,25 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
         {isLongText && !expanded && (
           <div className="absolute pointer-events-none bg-linear-to-t from-accent to-transparent w-full h-40 bottom-0 left-0" />
         )}
-        <p className={cn("whitespace-pre-wrap text-sm wrap-break-word")}>
-          {displayText}
-        </p>
+        <div
+          className={cn(
+            "whitespace-pre-wrap text-sm break-words flex flex-wrap",
+            isLongText && !expanded ? "max-h-40 overflow-hidden" : "",
+          )}
+        >
+          {normalizedText.map((segment, idx) => {
+            if (isString(segment)) {
+              return (
+                <span key={`t-${idx}`} className="inline">
+                  {segment}
+                </span>
+              );
+            }
+            return (
+              <MentionItem item={segment} key={`m-${segment.id}-${idx}`} />
+            );
+          })}
+        </div>
         {isLongText && (
           <Button
             variant="ghost"
