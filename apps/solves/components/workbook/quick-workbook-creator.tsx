@@ -1,78 +1,44 @@
 "use client";
-
-import {
-  BlockType,
-  blockDisplayNames,
-  CategoryWithSubs,
-  MAX_CATEGORY_COUNT,
-} from "@service/solves/shared";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
-import {
-  WorkBookAgeGroup,
-  WorkBookDifficulty,
-  WorkBookSituation,
-} from "@/lib/const";
+import { useCategories } from "@/hooks/query/use-categories";
+import { WorkBookSituation } from "@/lib/const";
 import { cn } from "@/lib/utils";
-import { WorkbookOptions } from "@/store/types";
+
 import { Badge } from "../ui/badge";
 
-export function QuickWorkbookCreator({
-  categories,
-}: {
-  categories: CategoryWithSubs[];
-}) {
+export function QuickWorkbookCreator() {
   const router = useRouter();
+  const { data: categories = [] } = useCategories();
+  const [situation, setSituation] = useState<string>("");
+  const [oneDepthCategoryId, setOneDepthCategoryId] = useState<
+    number | undefined
+  >(undefined);
+  const [twoDepthCategoryId, setTwoDepthCategoryId] = useState<
+    number | undefined
+  >(undefined);
 
-  const [mainCategory, setMainCategory] = useState<number>();
+  const oneDepthCategories = useMemo(() => {
+    return categories.filter((category) => category.parentId === null);
+  }, [categories]);
 
-  const [formData, setFormData] = useState<WorkbookOptions>({
-    situation: "",
-    categories: [],
-    blockTypes: Object.keys(blockDisplayNames) as BlockType[],
-    ageGroup: "all",
-    difficulty: "",
-  });
-
-  const handleCategoryClick = (categoryId: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      categories: (prev.categories.includes(categoryId)
-        ? [...prev.categories.filter((id) => id !== categoryId)]
-        : [...prev.categories, categoryId]
-      ).slice(-MAX_CATEGORY_COUNT),
-    }));
-  };
-
-  const subCategories = useMemo(() => {
-    return (
-      categories.find((category) => category.id === mainCategory)?.subs ?? []
-    );
-  }, [mainCategory, categories]);
+  const twoDepthCategories = useMemo(() => {
+    return oneDepthCategories
+      .flatMap((category) => category.children)
+      .filter((category) => category.parentId === oneDepthCategoryId);
+  }, [categories, oneDepthCategoryId]);
 
   const handleNavigate = () => {
     const params = new URLSearchParams();
 
-    if (formData.situation) {
-      params.set("situation", formData.situation);
+    if (situation) {
+      params.set("situation", situation);
     }
-    if (formData.ageGroup) {
-      params.set("ageGroup", formData.ageGroup);
-    }
-    if (formData.difficulty) {
-      params.set("difficulty", formData.difficulty);
-    }
-    if (formData.blockTypes.length > 0) {
-      formData.blockTypes.forEach((type) => {
-        params.append("blockTypes", type);
-      });
-    }
-    if (formData.categories.length > 0) {
-      formData.categories.forEach((categoryId) => {
-        params.append("categories", categoryId.toString());
-      });
+    const categoryId = twoDepthCategoryId ?? oneDepthCategoryId;
+    if (categoryId) {
+      params.set("categoryId", categoryId.toString());
     }
 
     const queryString = params.toString();
@@ -95,44 +61,11 @@ export function QuickWorkbookCreator({
           <div className="space-y-2">
             <label className="text-sm font-bold text-foreground">상황</label>
             <ButtonSelect
-              value={formData.situation}
+              value={situation}
               onChange={(value) => {
-                setFormData({ ...formData, situation: value as string });
+                setSituation(value as string);
               }}
               options={WorkBookSituation.map((value) => ({
-                label: value.label,
-                value: value.value,
-              }))}
-            />
-          </div>
-
-          {/* 유형 */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-foreground">유형</label>
-            <ButtonSelect
-              value={formData.blockTypes}
-              multiple={true}
-              onChange={(value) => {
-                setFormData({ ...formData, blockTypes: value as BlockType[] });
-              }}
-              options={Object.entries(blockDisplayNames).map(
-                ([value, label]) => ({
-                  label,
-                  value,
-                }),
-              )}
-            />
-          </div>
-
-          {/* 연령대 */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-foreground">연령대</label>
-            <ButtonSelect
-              value={formData.ageGroup}
-              onChange={(value) => {
-                setFormData({ ...formData, ageGroup: value as string });
-              }}
-              options={WorkBookAgeGroup.map((value) => ({
                 label: value.label,
                 value: value.value,
               }))}
@@ -145,79 +78,49 @@ export function QuickWorkbookCreator({
           {/* 소재 */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-foreground">소재</label>
-            {
-              <ButtonSelect
-                value={mainCategory?.toString()}
-                onChange={(value) => setMainCategory(Number(value))}
-                options={categories.map((value) => {
-                  const allSubCategories = categories.flatMap(
-                    (category) => category.subs,
-                  );
-                  const selectedSubCategories = formData.categories.map(
-                    (categoryId) =>
-                      allSubCategories.find(
-                        (category) => category.id === categoryId,
-                      ),
-                  );
-                  const selectedMainCategorySubCount =
-                    selectedSubCategories.filter(
-                      (s) => s?.mainId === value.id,
-                    ).length;
-                  return {
-                    label: selectedMainCategorySubCount ? (
-                      <div className="flex items-center gap-1.5">
-                        {value.name}{" "}
-                        <div className="text-xs text-primary size-4 rounded-full bg-primary/5 flex items-center justify-center">
-                          {selectedMainCategorySubCount}
-                        </div>
-                      </div>
-                    ) : (
-                      value.name
-                    ),
-                    value: value.id.toString(),
-                  };
-                })}
-              />
-            }
+            <ButtonSelect
+              value={oneDepthCategoryId?.toString()}
+              onChange={(value) => setOneDepthCategoryId(Number(value))}
+              options={oneDepthCategories.map((category) => ({
+                label: category.name,
+                value: category.id.toString(),
+              }))}
+            />
 
-            {subCategories.length > 0 && (
+            {/* 선택된 카테고리 표시 */}
+            {oneDepthCategoryId && (
+              <div className="text-sm text-muted-foreground">
+                선택:{" "}
+                <span className="text-foreground font-medium">
+                  {
+                    oneDepthCategories.find(
+                      (category) => category.id === oneDepthCategoryId,
+                    )?.name
+                  }
+                  {twoDepthCategoryId &&
+                    ` > ${twoDepthCategories.find((category) => category.id === twoDepthCategoryId)?.name}`}
+                </span>
+              </div>
+            )}
+
+            {twoDepthCategories.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {subCategories.map((subCategory) => (
+                {twoDepthCategories.map((category) => (
                   <Badge
-                    key={subCategory.id}
+                    key={category.id}
                     variant="secondary"
-                    onClick={() => handleCategoryClick(subCategory.id)}
+                    onClick={() => setTwoDepthCategoryId(category.id)}
                     className={cn(
                       "cursor-pointer rounded-full hover:bg-primary/5 hover:border-primary transition-all",
-                      formData.categories.includes(subCategory.id) &&
+                      twoDepthCategoryId === category.id &&
                         "bg-primary/5 hover:bg-primary/10 border-primary",
                     )}
                   >
-                    {subCategory.name}
+                    {category.name}
                   </Badge>
                 ))}
-                {formData.categories.length >= MAX_CATEGORY_COUNT && (
-                  <p className="w-full text-xs text-muted-foreground px-2">
-                    최대 {MAX_CATEGORY_COUNT}개까지 선택할 수 있어요.
-                  </p>
-                )}
               </div>
             )}
-          </div>
-
-          {/* 난이도 */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-foreground">난이도</label>
-            <ButtonSelect
-              value={formData.difficulty}
-              onChange={(value) => {
-                setFormData({ ...formData, difficulty: value as string });
-              }}
-              options={WorkBookDifficulty.map((value) => ({
-                label: value.label,
-                value: value.value,
-              }))}
-            />
           </div>
         </div>
       </div>

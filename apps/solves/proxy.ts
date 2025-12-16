@@ -16,7 +16,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
   // 워크북 preview 페이지는 로그인 없이 접근 가능 (공개 미리보기)
-  if (/^\/workbooks\/[^/]+\/preview$/.test(pathname)) {
+  if (
+    /^\/workbooks\/[^/]+\/preview$/.test(pathname) ||
+    /^\/api\/categories$/.test(pathname)
+  ) {
     return NextResponse.next();
   }
   const session = await safeGetSession();

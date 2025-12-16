@@ -1,187 +1,145 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { pgDb } from "../db";
-import { categoryMainTable, categorySubTable } from "./schema";
-import { CategoryMain, CategorySub, CategoryWithSubs } from "./types";
+import { categoryTable } from "./schema";
+import { Category, CategoryTree } from "./types";
+
+/**
+ * flat 카테고리 리스트를 트리 구조로 변환
+ */
+function buildCategoryTree(categories: Category[]): CategoryTree[] {
+  const categoryMap = new Map<number, CategoryTree>();
+
+  // 먼저 모든 카테고리를 children 배열과 함께 맵에 저장
+  for (const category of categories) {
+    categoryMap.set(category.id, { ...category, children: [] });
+  }
+
+  const roots: CategoryTree[] = [];
+
+  // 부모-자식 관계 설정
+  for (const category of categories) {
+    const node = categoryMap.get(category.id)!;
+    if (category.parentId === null) {
+      roots.push(node);
+    } else {
+      const parent = categoryMap.get(category.parentId);
+      if (parent) {
+        parent.children.push(node);
+      }
+    }
+  }
+
+  return roots;
+}
 
 export const categoryService = {
   /**
-   * 전체 카테고리 조회 (대분류 + 중분류 트리 구조)
+   * 전체 카테고리 조회 (트리 구조)
    */
-  getAllCategoriesWithSubs: async (): Promise<CategoryWithSubs[]> => {
-    const mainCategoriesSQL = pgDb
+  getAllCategories: async (): Promise<CategoryTree[]> => {
+    const categories = await pgDb
       .select({
-        id: categoryMainTable.id,
-        name: categoryMainTable.name,
-        description: categoryMainTable.description,
-        aiPrompt: categoryMainTable.aiPrompt,
-        createdAt: categoryMainTable.createdAt,
+        id: categoryTable.id,
+        name: categoryTable.name,
+        parentId: categoryTable.parentId,
+        description: categoryTable.description,
+        aiPrompt: categoryTable.aiPrompt,
+        createdAt: categoryTable.createdAt,
       })
-      .from(categoryMainTable);
+      .from(categoryTable);
 
-    const subCategoriesSQL = pgDb
-      .select({
-        id: categorySubTable.id,
-        name: categorySubTable.name,
-        mainId: categorySubTable.mainId,
-        description: categorySubTable.description,
-        aiPrompt: categorySubTable.aiPrompt,
-        createdAt: categorySubTable.createdAt,
-      })
-      .from(categorySubTable);
-
-    const [mainCategories, subCategories] = await Promise.all([
-      mainCategoriesSQL,
-      subCategoriesSQL,
-    ]);
-
-    return mainCategories.map((main) => ({
-      ...main,
-      subs: subCategories.filter((sub) => sub.mainId === main.id),
-    }));
+    return buildCategoryTree(categories);
   },
 
   /**
-   * 대분류 존재 여부 확인 (by name)
+   * 카테고리 조회 (by name and parentId)
    */
-  existsMainCategoryByName: async (
+  getCategoryByNameAndParent: async (
     name: string,
-  ): Promise<CategoryMain | null> => {
+    parentId: number | null,
+  ): Promise<Category | null> => {
+    const whereCondition =
+      parentId === null
+        ? and(eq(categoryTable.name, name), isNull(categoryTable.parentId))
+        : and(
+            eq(categoryTable.name, name),
+            eq(categoryTable.parentId, parentId),
+          );
+
     const [row] = await pgDb
       .select({
-        id: categoryMainTable.id,
-        name: categoryMainTable.name,
-        description: categoryMainTable.description,
-        aiPrompt: categoryMainTable.aiPrompt,
-        createdAt: categoryMainTable.createdAt,
+        id: categoryTable.id,
+        name: categoryTable.name,
+        parentId: categoryTable.parentId,
+        description: categoryTable.description,
+        aiPrompt: categoryTable.aiPrompt,
+        createdAt: categoryTable.createdAt,
       })
-      .from(categoryMainTable)
-      .where(eq(categoryMainTable.name, name));
+      .from(categoryTable)
+      .where(whereCondition);
+
     return row ?? null;
   },
 
   /**
-   * 중분류 존재 여부 확인 (by name)
+   * 카테고리 생성
    */
-  existsSubCategoryByName: async (
-    name: string,
-  ): Promise<CategorySub | null> => {
+  insertCategory: async (
+    data: Omit<Category, "id" | "createdAt"> & { createdId?: string },
+  ): Promise<Category> => {
     const [row] = await pgDb
-      .select({
-        id: categorySubTable.id,
-        name: categorySubTable.name,
-        mainId: categorySubTable.mainId,
-        description: categorySubTable.description,
-        aiPrompt: categorySubTable.aiPrompt,
-        createdAt: categorySubTable.createdAt,
-      })
-      .from(categorySubTable)
-      .where(eq(categorySubTable.name, name));
-    return row ?? null;
-  },
-
-  /**
-   * 대분류 생성
-   */
-  insertMainCategory: async (
-    data: Omit<CategoryMain, "id" | "createdAt"> & { createdId?: string },
-  ): Promise<CategoryMain> => {
-    const [row] = await pgDb
-      .insert(categoryMainTable)
+      .insert(categoryTable)
       .values({
         name: data.name,
+        parentId: data.parentId,
         description: data.description,
         aiPrompt: data.aiPrompt,
         createdId: data.createdId,
       })
       .returning({
-        id: categoryMainTable.id,
-        name: categoryMainTable.name,
-        description: categoryMainTable.description,
-        aiPrompt: categoryMainTable.aiPrompt,
-        createdAt: categoryMainTable.createdAt,
+        id: categoryTable.id,
+        name: categoryTable.name,
+        parentId: categoryTable.parentId,
+        description: categoryTable.description,
+        aiPrompt: categoryTable.aiPrompt,
+        createdAt: categoryTable.createdAt,
       });
 
     return row;
   },
 
   /**
-   * 대분류 수정
+   * 카테고리 수정
    */
-  updateMainCategory: async (
+  updateCategory: async (
     id: number,
-    data: Partial<Omit<CategoryMain, "id" | "createdAt">>,
-  ): Promise<CategoryMain> => {
+    data: Partial<Omit<Category, "id" | "createdAt">>,
+  ): Promise<Category> => {
     const [row] = await pgDb
-      .update(categoryMainTable)
+      .update(categoryTable)
       .set({
         name: data.name,
+        parentId: data.parentId,
         description: data.description,
         aiPrompt: data.aiPrompt,
       })
-      .where(eq(categoryMainTable.id, id))
+      .where(eq(categoryTable.id, id))
       .returning({
-        id: categoryMainTable.id,
-        name: categoryMainTable.name,
-        description: categoryMainTable.description,
-        aiPrompt: categoryMainTable.aiPrompt,
-        createdAt: categoryMainTable.createdAt,
+        id: categoryTable.id,
+        name: categoryTable.name,
+        parentId: categoryTable.parentId,
+        description: categoryTable.description,
+        aiPrompt: categoryTable.aiPrompt,
+        createdAt: categoryTable.createdAt,
       });
 
     return row;
   },
 
   /**
-   * 중분류 생성
+   * 카테고리 삭제
    */
-  insertSubCategory: async (
-    data: Omit<CategorySub, "id" | "createdAt"> & { createdId?: string },
-  ): Promise<CategorySub> => {
-    const [row] = await pgDb
-      .insert(categorySubTable)
-      .values({
-        name: data.name,
-        mainId: data.mainId,
-        description: data.description,
-        aiPrompt: data.aiPrompt,
-        createdId: data.createdId,
-      })
-      .returning({
-        id: categorySubTable.id,
-        name: categorySubTable.name,
-        mainId: categorySubTable.mainId,
-        description: categorySubTable.description,
-        aiPrompt: categorySubTable.aiPrompt,
-        createdAt: categorySubTable.createdAt,
-      });
-
-    return row;
-  },
-
-  /**
-   * 중분류 수정
-   */
-  updateSubCategory: async (
-    id: number,
-    data: Partial<Omit<CategorySub, "id" | "createdAt">>,
-  ): Promise<CategorySub> => {
-    const [row] = await pgDb
-      .update(categorySubTable)
-      .set({
-        name: data.name,
-        mainId: data.mainId,
-        description: data.description,
-        aiPrompt: data.aiPrompt,
-      })
-      .where(eq(categorySubTable.id, id))
-      .returning({
-        id: categorySubTable.id,
-        name: categorySubTable.name,
-        mainId: categorySubTable.mainId,
-        description: categorySubTable.description,
-        aiPrompt: categorySubTable.aiPrompt,
-        createdAt: categorySubTable.createdAt,
-      });
-
-    return row;
+  deleteCategory: async (id: number): Promise<void> => {
+    await pgDb.delete(categoryTable).where(eq(categoryTable.id, id));
   },
 };
