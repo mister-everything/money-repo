@@ -7,7 +7,7 @@ import {
   ChatThreadTable,
   WorkbookCreateChatThreadTable,
 } from "./schema";
-import { ChatMessage, ChatThread } from "./types";
+import { ChatMessage, ChatThread, SystemPrompt } from "./types";
 
 export const chatService = {
   async createThreadIfNotExists(param: {
@@ -129,5 +129,19 @@ export const chatService = {
       threadId: param.threadId,
       userId: param.userId,
     });
+  },
+
+  /**
+   * 시스템 프롬프트 조회
+   * @param systemPrompt - 시스템 프롬프트 Enum 값
+   * @returns 시스템 프롬프트
+   */
+  async getSystemPrompt(systemPrompt: SystemPrompt) {
+    // const [prompt] = await pgDb
+    //   .select({ prompt: SystemPromptTable.prompt })
+    //   .from(SystemPromptTable)
+    //   .where(eq(SystemPromptTable.name, systemPrompt));
+    // return prompt?.prompt;
+    return null;
   },
 };

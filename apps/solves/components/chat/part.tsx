@@ -18,16 +18,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
-import {
-  GEN_MCQ_TOOL_NAME,
-  GEN_SUBJECTIVE_TOOL_NAME,
-} from "@/lib/ai/tools/workbook/types";
+import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/types";
 import { cn } from "@/lib/utils";
 import JsonView from "../ui/json-view";
-import {
-  GenerateMcqToolPart,
-  GenerateSubjectiveToolPart,
-} from "./tool-part/generate-block-tool-part";
+import { GenerateToolPart } from "./tool-part/generate-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
 
 interface UserMessagePartProps {
@@ -221,21 +215,17 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
     return !part.state.startsWith(`output-`);
   }, [part.state]);
 
-  if (toolName === GEN_MCQ_TOOL_NAME) {
+  const isWorkbookTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
+    Object.values(GEN_BLOCK_TOOL_NAMES).includes(name as GEN_BLOCK_TOOL_NAMES);
+
+  if (isWorkbookTool(toolName)) {
     return (
       <div className="p-4">
-        <GenerateMcqToolPart part={part} />
+        <GenerateToolPart part={part} type={toolName} />
       </div>
     );
   }
 
-  if (toolName === GEN_SUBJECTIVE_TOOL_NAME) {
-    return (
-      <div className="p-4">
-        <GenerateSubjectiveToolPart part={part} />
-      </div>
-    );
-  }
   if (toolName === EXA_SEARCH_TOOL_NAME) {
     return (
       <div className="p-2 ">
