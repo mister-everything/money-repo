@@ -174,7 +174,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const send = useCallback(
     (text: string = input) => {
-      if (status != "ready" || !threadId || Boolean(error)) return;
+      if (status != "ready" || !threadId || Boolean(error) || !text?.trim())
+        return;
       setInput("");
       sendMessage({
         role: "user",

@@ -23,38 +23,44 @@ import {
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 
-export type TipTapMentionJsonContentPart =
+export type TipTapMentionJsonContentPart<T> =
   | {
       type: "text";
       text: string;
     }
   | {
       type: "mention";
-      attrs: {
-        id: string;
-        label: string;
-      };
+      attrs: T;
     }
   | {
       type: "hardBreak";
     };
 
-export type TipTapMentionJsonContent = {
+export type TipTapMentionJsonContent<T = any> = {
   type: "doc";
   content: {
     type: "paragraph";
-    content?: TipTapMentionJsonContentPart[];
+    content?: TipTapMentionJsonContentPart<T>[];
   }[];
 };
 
-interface MentionInputProps {
+export type MentionSuggestionComponentProps<T = any> = {
+  top: number;
+  left: number;
+  onClose: () => void;
+  onSelectMention: (item: T) => void;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+};
+
+interface MentionInputProps<T> {
   disabled?: boolean;
   defaultContent?: TipTapMentionJsonContent | string;
   content?: TipTapMentionJsonContent | string;
   onChange?: (content: {
     json: TipTapMentionJsonContent;
     text: string;
-    mentions: { label: string; id: string }[];
+    mentions: T[];
   }) => void;
   onEnter?: () => void;
   placeholder?: string;
@@ -65,20 +71,11 @@ interface MentionInputProps {
   onFocus?: () => void;
   onBlur?: () => void;
   fullWidthSuggestion?: boolean;
-  MentionItem?: FC<{
-    label: string;
-    id: string;
-  }>;
-  Suggestion?: FC<{
-    top: number;
-    left: number;
-    onClose: () => void;
-    onSelectMention: (item: { label: string; id: string }) => void;
-    style?: React.CSSProperties;
-  }>;
+  MentionItemComponent?: FC<{ item: T }>;
+  SuggestionComponent?: FC<MentionSuggestionComponentProps<T>>;
 }
 
-export default function MentionInput({
+export default function MentionInput<T>({
   defaultContent,
   content,
   onChange,
@@ -86,15 +83,15 @@ export default function MentionInput({
   onEnter,
   placeholder = "",
   suggestionChar = "@",
-  MentionItem,
+  MentionItemComponent,
   disabledMention,
-  Suggestion,
+  SuggestionComponent,
   className,
   editorRef,
   onFocus,
   onBlur,
   fullWidthSuggestion = false,
-}: MentionInputProps) {
+}: MentionInputProps<T>) {
   const [open, setOpen] = useState(false);
   const position = useRef<{
     top: number;
@@ -129,17 +126,15 @@ export default function MentionInput({
             const el = document.createElement("div");
             el.className = "inline-flex";
             const root = createRoot(el);
-            if (MentionItem)
+            if (MentionItemComponent)
               root.render(
-                <MentionItem
-                  label={props.node.attrs.label}
-                  id={props.node.attrs.id}
-                />,
+                <MentionItemComponent item={props.node.attrs.id as T} />,
               );
             return el;
           },
           suggestion: {
             char: suggestionChar,
+
             render: () => {
               return {
                 onStart: (props) => {
@@ -183,9 +178,9 @@ export default function MentionInput({
           ?.flatMap(({ content }) => {
             return content
               ?.filter((v) => v.type == "mention")
-              .map((v) => (v.type == "mention" ? v.attrs : undefined));
+              .map((v) => v.attrs.id);
           })
-          .filter(Boolean) as { label: string; id: string }[];
+          .filter(Boolean) as T[];
         latestContent.current = {
           json,
           text,
@@ -209,7 +204,7 @@ export default function MentionInput({
         },
       },
     };
-  }, [disabled, MentionItem, suggestionChar, onChange]);
+  }, [disabled, MentionItemComponent, suggestionChar, onChange]);
 
   const editor = useEditor(editorConfig);
 
@@ -228,12 +223,7 @@ export default function MentionInput({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const isSubmit =
-        !open &&
-        e.key === "Enter" &&
-        editor?.getText().trim().length &&
-        !e.shiftKey &&
-        !e.metaKey &&
-        !e.nativeEvent.isComposing;
+        !open && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing;
       if (isSubmit) {
         e.preventDefault();
         onEnter?.();
@@ -245,9 +235,9 @@ export default function MentionInput({
   // Memoize the DOM structure
   const suggestion = useMemo(() => {
     if (!open || disabledMention) return null;
-    if (!Suggestion) return null;
+    if (!SuggestionComponent) return null;
     return createPortal(
-      <Suggestion
+      <SuggestionComponent
         top={position.current?.top ?? 0}
         left={position.current?.left ?? 0}
         onClose={() => {
@@ -260,7 +250,9 @@ export default function MentionInput({
             .insertContentAt(position.current!.range, [
               {
                 type: "mention",
-                attrs: item,
+                attrs: {
+                  id: item,
+                },
               },
             ])
             .run();
