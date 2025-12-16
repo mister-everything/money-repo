@@ -1,7 +1,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { ChatThread } from "@service/solves/shared";
+import { ChatThread, getBlockDisplayName } from "@service/solves/shared";
+import { Editor } from "@tiptap/react";
 import { deduplicateByKey, generateUUID } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
 import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
@@ -29,6 +30,8 @@ import { useAiStore } from "@/store/ai-store";
 import { WorkbookOptions } from "@/store/types";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import PromptInput from "../chat/prompt-input";
+import { SolvesMentionItem } from "../mention/types";
+import { toBlockMention } from "../mention/util";
 import { WorkbookEditOptions } from "./workbook-edit-options";
 
 interface WorkbooksCreateChatProps {
@@ -40,10 +43,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
 
-  const [workbookOption, _setWorkbookOption] = useWorkbookEditStore(
+  const [workbookOption, _setWorkbookOption, blocks] = useWorkbookEditStore(
     useShallow((state) => [
       state.workbookOptions[workbookId],
       state.setWorkbookOption,
+      state.blocks,
     ]),
   );
   const setWorkbookOption = useCallback(
@@ -55,6 +59,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<Editor | null>(null);
   const autoScrollRef = useRef(false);
 
   const [, deleteAction] = useSafeAction(deleteThreadAction, {
@@ -97,6 +102,26 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const latest = useToRef({ chatModel, threadId, tempThreadList });
 
   const [input, setInput] = useState<string>("");
+
+  const [, setSelectedMentions] = useState<SolvesMentionItem[]>([]);
+
+  const metionItems = useCallback(
+    (searchValue: string): SolvesMentionItem[] => {
+      if (!searchValue.trim())
+        return blocks.map((b, order) => {
+          return toBlockMention({ ...b, order: order + 1 });
+        });
+      return blocks
+        .filter(
+          (b, i) =>
+            b.question?.toLowerCase().includes(searchValue.toLowerCase()) ||
+            searchValue == String(i) ||
+            getBlockDisplayName(b.type).includes(searchValue),
+        )
+        .map((b, order) => toBlockMention({ ...b, order: order + 1 }));
+    },
+    [blocks],
+  );
 
   const threadList = useMemo(() => {
     const sortByCreatedAtDesc = [...tempThreadList, ...savedThreadList].sort(
@@ -174,8 +199,9 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const send = useCallback(
     (text: string = input) => {
-      if (status != "ready" || !threadId || Boolean(error)) return;
-      setInput("");
+      if (status != "ready" || !threadId || Boolean(error) || !text?.trim())
+        return;
+      editorRef.current?.commands.setContent("");
       sendMessage({
         role: "user",
         parts: [{ type: "text", text }],
@@ -400,8 +426,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         />
         <PromptInput
           input={input}
+          editorRef={editorRef}
           onChange={setInput}
           onEnter={send}
+          onMentionChange={setSelectedMentions}
+          metionItems={metionItems}
           placeholder="무엇이든 물어보세요"
           disabledSendButton={
             (!isChatPending && isPending) || !threadId || Boolean(error)

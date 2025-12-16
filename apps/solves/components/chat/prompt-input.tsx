@@ -4,38 +4,42 @@ import { Editor } from "@tiptap/react";
 import { ChevronDown, SendIcon, SquareIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { RefObject, useCallback } from "react";
+import { SolvesMentionItem } from "../mention/types";
 import { Button } from "../ui/button";
 import { ModelProviderIcon } from "../ui/model-provider-icon";
 import { ModelDropDownMenu } from "./model-drop-down-menu";
 
-const MentionInput = dynamic(() => import("@/components/ui/mention-input"), {
-  ssr: false,
-  loading() {
-    return <div className="h-8 w-full animate-pulse"></div>;
+const MentionInput = dynamic(
+  () => import("@/components/mention/mention-input"),
+  {
+    ssr: false,
+    loading() {
+      return <div className="h-8 w-full animate-pulse"></div>;
+    },
   },
-});
+);
 
 interface PromptInputProps {
   onChange: (text: string) => void;
+  onMentionChange?: (mentions: SolvesMentionItem[]) => void;
   onEnter?: () => void;
   placeholder?: string;
   input: string;
-  ref?: RefObject<Editor | null>;
   onFocus?: () => void;
   onBlur?: () => void;
-
   onSendButtonClick?: () => void;
   disabledSendButton?: boolean;
   isSending?: boolean;
   chatModel?: ChatModel;
   onChatModelChange?: (model: ChatModel) => void;
+  metionItems?: (searchValue: string) => SolvesMentionItem[];
+  editorRef?: RefObject<Editor | null>;
 }
 
 export default function PromptInput({
   onChange,
   onEnter,
   placeholder,
-  ref,
   input,
   onFocus,
   onBlur,
@@ -44,27 +48,31 @@ export default function PromptInput({
   isSending,
   chatModel,
   onChatModelChange,
+  metionItems,
+  onMentionChange,
+  editorRef,
 }: PromptInputProps) {
   const handleChange = useCallback(
-    ({ text }: { text: string; mentions: { label: string; id: string }[] }) => {
+    ({ text, mentions }: { text: string; mentions: SolvesMentionItem[] }) => {
       onChange(text);
+      onMentionChange?.(mentions);
     },
-    [onChange],
+    [],
   );
 
   return (
     <div className="bg-background border text-sm rounded-2xl p-2 flex flex-col gap-2">
       <div className="w-full">
         <MentionInput
-          content={input}
+          defaultContent={input}
           onEnter={chatModel ? onEnter : undefined}
           placeholder={chatModel ? placeholder : "AI를 먼저 선택해주세요"}
           suggestionChar="@"
           onChange={handleChange}
-          editorRef={ref}
+          editorRef={editorRef}
           onFocus={onFocus}
           onBlur={onBlur}
-          fullWidthSuggestion={true}
+          items={metionItems}
         />
       </div>
       <div className="w-full flex justify-end gap-1 items-center">
