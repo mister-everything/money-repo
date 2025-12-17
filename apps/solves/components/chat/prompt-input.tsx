@@ -4,6 +4,7 @@ import { Editor } from "@tiptap/react";
 import { ChevronDown, SendIcon, SquareIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { RefObject, useCallback } from "react";
+import { cn } from "@/lib/utils";
 import { SolvesMentionItem } from "../mention/types";
 import { Button } from "../ui/button";
 import { ModelProviderIcon } from "../ui/model-provider-icon";
@@ -34,6 +35,7 @@ interface PromptInputProps {
   onChatModelChange?: (model: ChatModel) => void;
   metionItems?: (searchValue: string) => SolvesMentionItem[];
   editorRef?: RefObject<Editor | null>;
+  className?: string;
 }
 
 export default function PromptInput({
@@ -51,6 +53,7 @@ export default function PromptInput({
   metionItems,
   onMentionChange,
   editorRef,
+  className,
 }: PromptInputProps) {
   const handleChange = useCallback(
     ({ text, mentions }: { text: string; mentions: SolvesMentionItem[] }) => {
@@ -61,7 +64,12 @@ export default function PromptInput({
   );
 
   return (
-    <div className="bg-background border text-sm rounded-2xl p-2 flex flex-col gap-2">
+    <div
+      className={cn(
+        "bg-background border text-sm rounded-2xl p-2 flex flex-col gap-2",
+        className,
+      )}
+    >
       <div className="w-full">
         <MentionInput
           defaultContent={input}

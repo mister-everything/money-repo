@@ -1,5 +1,6 @@
-import { chatService } from "@service/solves";
-import { generateUUID } from "@workspace/util";
+import { categoryService, chatService } from "@service/solves";
+import { BlockType } from "@service/solves/shared";
+import { generateUUID, isNull } from "@workspace/util";
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -12,23 +13,24 @@ import { getChatModel } from "@/lib/ai/model";
 import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
-import {
-  generateMcqMultipleTool,
-  generateMcqTool,
-  generateOxTool,
-  generateRankingTool,
-  generateSubjectiveTool,
-} from "@/lib/ai/tools/workbook/generate-block-tools";
-import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/types";
+import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
+
 import { getSession } from "@/lib/auth/server";
 import { WorkbookCreateChatRequest } from "../../../types";
 
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const { messages, model, threadId, workbookId } = await req
-    .json()
-    .then(WorkbookCreateChatRequest.parse);
+  const {
+    messages,
+    model,
+    threadId,
+    workbookId,
+    blockTypes,
+    situation,
+    normalizeBlock,
+    category: categoryId,
+  } = await req.json().then(WorkbookCreateChatRequest.parse);
 
   const session = await getSession();
 
@@ -47,10 +49,15 @@ export async function POST(req: Request) {
 
   const userMessage = messages.at(-1);
 
+  const category = isNull(categoryId)
+    ? undefined
+    : await categoryService.getById(categoryId);
+
   const systemPrompt = WorkBookCreatePrompt({
-    categoryId: undefined,
-    blockTypes: [],
-    situation: "",
+    category: category ?? undefined,
+    blockTypes,
+    situation: situation ?? "",
+    normalizeBlock,
   });
 
   const stream = createUIMessageStream({
@@ -64,11 +71,7 @@ export async function POST(req: Request) {
         stopWhen: stepCountIs(5),
         abortSignal: req.signal,
         tools: {
-          [GEN_BLOCK_TOOL_NAMES.MCQ]: generateMcqTool,
-          [GEN_BLOCK_TOOL_NAMES.MCQ_MULTIPLE]: generateMcqMultipleTool,
-          [GEN_BLOCK_TOOL_NAMES.RANKING]: generateRankingTool,
-          [GEN_BLOCK_TOOL_NAMES.OX]: generateOxTool,
-          [GEN_BLOCK_TOOL_NAMES.SUBJECTIVE]: generateSubjectiveTool,
+          ...loadGenerateBlockTools(blockTypes as BlockType[]),
           [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         },
       });

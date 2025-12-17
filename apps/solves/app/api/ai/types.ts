@@ -13,6 +13,10 @@ export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
   z.object({
     threadId: z.string(),
     workbookId: z.string(),
+    situation: z.string().optional(),
+    blockTypes: z.array(z.string()).optional(),
+    normalizeBlock: z.array(z.string()).optional(),
+    category: z.number().nullish(),
   }).shape,
 );
 

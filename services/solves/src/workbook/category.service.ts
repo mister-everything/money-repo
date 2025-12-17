@@ -1,6 +1,8 @@
 import { PublicError } from "@workspace/error";
 import { and, eq, isNull } from "drizzle-orm";
+import { CacheKeys } from "../cache-keys";
 import { pgDb } from "../db";
+import { sharedCache } from "../shared-cache";
 import { categoryTable } from "./schema";
 import { Category, CategoryTree } from "./types";
 
@@ -34,6 +36,29 @@ function buildCategoryTree(categories: Category[]): CategoryTree[] {
 }
 
 export const categoryService = {
+  getById: async (id: number): Promise<Category | null> => {
+    const cacheKey = CacheKeys.category(id);
+    const cached = await sharedCache.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached) as Category;
+    }
+    const [row] = await pgDb
+      .select({
+        id: categoryTable.id,
+        name: categoryTable.name,
+        parentId: categoryTable.parentId,
+        description: categoryTable.description,
+        aiPrompt: categoryTable.aiPrompt,
+        createdAt: categoryTable.createdAt,
+      })
+      .from(categoryTable)
+      .where(eq(categoryTable.id, id));
+    if (row) {
+      await sharedCache.setex(cacheKey, 3600, JSON.stringify(row));
+    }
+    return row ?? null;
+  },
+
   /**
    * 전체 카테고리 조회 (트리 구조)
    */
@@ -119,6 +144,14 @@ export const categoryService = {
         createdAt: categoryTable.createdAt,
       });
 
+    if (row) {
+      await sharedCache.setex(
+        CacheKeys.category(row.id),
+        3600,
+        JSON.stringify(row),
+      );
+    }
+
     return row;
   },
 
@@ -146,6 +179,14 @@ export const categoryService = {
         createdAt: categoryTable.createdAt,
       });
 
+    if (row) {
+      await sharedCache.setex(
+        CacheKeys.category(row.id),
+        3600,
+        JSON.stringify(row),
+      );
+    }
+
     return row;
   },
 
@@ -154,5 +195,6 @@ export const categoryService = {
    */
   deleteCategory: async (id: number): Promise<void> => {
     await pgDb.delete(categoryTable).where(eq(categoryTable.id, id));
+    await sharedCache.del(CacheKeys.category(id));
   },
 };
