@@ -1,5 +1,6 @@
 import z, { ZodError } from "zod";
 import { logger } from "../logger";
+import { MAX_QUESTION_LENGTH } from "./block-config";
 import { WorkBookBlock } from "./types";
 import { parseAnswer, parseContent } from "./utils";
 
@@ -33,7 +34,10 @@ export const blockValidate = (
         question: z
           .string("질문은 필수 입력값입니다.")
           .min(1, "질문은 최소 1자 이상 입력해주세요.")
-          .max(500, "최대 500자 이하로 입력해주세요."),
+          .max(
+            MAX_QUESTION_LENGTH,
+            `최대 ${MAX_QUESTION_LENGTH}자 이하로 입력해주세요.`,
+          ),
       })
       .safeParse({
         question: block.question,

@@ -18,7 +18,6 @@ describe("apps/solves/components/mention/util", () => {
     expect(mention.order).toBe(3);
     expect(mention.blockType).toBe("explain");
     // truncateString(..., 14): slices to 14 chars then appends "..."
-    expect(mention.question).toBe("12345678901234...");
   });
 
   test("serializeMention: wraps mention as @mention:[<json>]", () => {
@@ -26,7 +25,6 @@ describe("apps/solves/components/mention/util", () => {
       kind: "block",
       id: "b1",
       order: 1,
-      question: "hello",
       blockType: "default",
     };
 
@@ -48,7 +46,6 @@ describe("apps/solves/components/mention/util", () => {
       kind: "block",
       id: "b2",
       order: 2,
-      question: "q",
       blockType: "default",
     };
     const input = `hi ${serializeMention(mention)} bye`;
@@ -61,14 +58,12 @@ describe("apps/solves/components/mention/util", () => {
       kind: "block",
       id: "a",
       order: 1,
-      question: "q1",
       blockType: "default",
     };
     const m2: Extract<SolvesMentionItem, { kind: "block" }> = {
       kind: "block",
       id: "b",
       order: 2,
-      question: "q2",
       blockType: "default",
     };
     const input = `A ${serializeMention(m1)} B ${serializeMention(m2)} C`;

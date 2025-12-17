@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { normalizeBlock } from "../normalize-block";
+import { normalizeDetailBlock } from "../normalize-block";
 import { WorkBookBlock } from "../types";
 
-describe("normalizeBlock", () => {
+describe("normalizeDetailBlock", () => {
   describe("default block (주관식)", () => {
     const defaultBlock: WorkBookBlock<"default"> = {
       id: "test-default-id",
@@ -18,7 +18,7 @@ describe("normalizeBlock", () => {
     };
 
     it("should normalize default block correctly", () => {
-      const result = JSON.parse(normalizeBlock(defaultBlock));
+      const result = JSON.parse(normalizeDetailBlock(defaultBlock));
 
       expect(result.id).toBe("test-default-id");
       expect(result.type).toBe("default");
@@ -35,7 +35,7 @@ describe("normalizeBlock", () => {
         answer: { type: "default", answer: [] },
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithoutAnswer));
+      const result = JSON.parse(normalizeDetailBlock(blockWithoutAnswer));
       expect(result.correctAnswer).toBe("정답을 작성하지 않음.");
     });
   });
@@ -51,7 +51,7 @@ describe("normalizeBlock", () => {
     };
 
     it("should normalize ox block with true answer", () => {
-      const result = JSON.parse(normalizeBlock(oxBlockTrue));
+      const result = JSON.parse(normalizeDetailBlock(oxBlockTrue));
 
       expect(result.type).toBe("ox");
       expect(result.correctAnswer).toBe("o");
@@ -63,7 +63,7 @@ describe("normalizeBlock", () => {
         answer: { type: "ox", answer: false },
       };
 
-      const result = JSON.parse(normalizeBlock(oxBlockFalse));
+      const result = JSON.parse(normalizeDetailBlock(oxBlockFalse));
       expect(result.correctAnswer).toBe("x");
     });
   });
@@ -86,7 +86,7 @@ describe("normalizeBlock", () => {
     };
 
     it("should normalize mcq block content as option texts", () => {
-      const result = JSON.parse(normalizeBlock(mcqBlock));
+      const result = JSON.parse(normalizeDetailBlock(mcqBlock));
 
       expect(result.type).toBe("mcq");
       expect(result.content).toEqual(["아시아", "유럽", "아프리카"]);
@@ -99,7 +99,7 @@ describe("normalizeBlock", () => {
         content: { type: "mcq", options: [] } as any,
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithoutOptions));
+      const result = JSON.parse(normalizeDetailBlock(blockWithoutOptions));
       expect(result.content).toBe("보기를 작성하지 않음");
     });
 
@@ -109,7 +109,7 @@ describe("normalizeBlock", () => {
         answer: { type: "mcq", answer: "non-existent-id" },
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithWrongAnswer));
+      const result = JSON.parse(normalizeDetailBlock(blockWithWrongAnswer));
       expect(result.correctAnswer).toBe("정답을 작성하지 않음.");
     });
 
@@ -131,7 +131,7 @@ describe("normalizeBlock", () => {
         answer: { type: "mcq", answer: "opt-1" },
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithSource));
+      const result = JSON.parse(normalizeDetailBlock(blockWithSource));
       expect(result.content).toEqual([
         "https://example.com/image.png",
         "텍스트 옵션",
@@ -162,7 +162,7 @@ describe("normalizeBlock", () => {
     };
 
     it("should normalize mcq-multiple block correctly", () => {
-      const result = JSON.parse(normalizeBlock(mcqMultipleBlock));
+      const result = JSON.parse(normalizeDetailBlock(mcqMultipleBlock));
 
       expect(result.type).toBe("mcq-multiple");
       expect(result.content).toEqual(["한국", "일본", "프랑스", "중국"]);
@@ -175,7 +175,7 @@ describe("normalizeBlock", () => {
         answer: { type: "mcq-multiple", answer: [] },
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithEmptyAnswer));
+      const result = JSON.parse(normalizeDetailBlock(blockWithEmptyAnswer));
       expect(result.correctAnswer).toBe("정답을 작성하지 않음.");
     });
 
@@ -188,7 +188,9 @@ describe("normalizeBlock", () => {
         },
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithPartialWrongAnswer));
+      const result = JSON.parse(
+        normalizeDetailBlock(blockWithPartialWrongAnswer),
+      );
       expect(result.correctAnswer).toEqual(["한국", "일본"]);
     });
   });
@@ -214,7 +216,7 @@ describe("normalizeBlock", () => {
     };
 
     it("should normalize ranking block correctly", () => {
-      const result = JSON.parse(normalizeBlock(rankingBlock));
+      const result = JSON.parse(normalizeDetailBlock(rankingBlock));
 
       expect(result.type).toBe("ranking");
       expect(result.content).toEqual(["중국", "인도", "미국"]);
@@ -227,7 +229,7 @@ describe("normalizeBlock", () => {
         content: { type: "ranking", items: [] } as any,
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithoutItems));
+      const result = JSON.parse(normalizeDetailBlock(blockWithoutItems));
       expect(result.content).toBe("보기를 작성하지 않음");
     });
 
@@ -240,7 +242,9 @@ describe("normalizeBlock", () => {
         },
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithPartialWrongOrder));
+      const result = JSON.parse(
+        normalizeDetailBlock(blockWithPartialWrongOrder),
+      );
       expect(result.correctAnswer).toEqual(["중국", "미국"]);
     });
 
@@ -262,7 +266,7 @@ describe("normalizeBlock", () => {
         answer: { type: "ranking", order: ["item-1", "item-2"] },
       };
 
-      const result = JSON.parse(normalizeBlock(blockWithSource));
+      const result = JSON.parse(normalizeDetailBlock(blockWithSource));
       expect(result.content).toEqual(["https://example.com/1.png", "텍스트"]);
     });
   });
@@ -278,7 +282,7 @@ describe("normalizeBlock", () => {
         answer: { type: "default", answer: ["답"] },
       };
 
-      const result = JSON.parse(normalizeBlock(block));
+      const result = JSON.parse(normalizeDetailBlock(block));
       expect(result.question).toBe("질문입니다");
     });
 
@@ -296,7 +300,7 @@ describe("normalizeBlock", () => {
         },
       };
 
-      const result = JSON.parse(normalizeBlock(block));
+      const result = JSON.parse(normalizeDetailBlock(block));
       expect(result.solution).toBe("설명입니다");
     });
 
@@ -310,7 +314,7 @@ describe("normalizeBlock", () => {
         answer: {} as any,
       };
 
-      const result = JSON.parse(normalizeBlock(block));
+      const result = JSON.parse(normalizeDetailBlock(block));
       expect(result.correctAnswer).toBe("정답을 작성하지 않음.");
     });
   });

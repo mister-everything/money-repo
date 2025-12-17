@@ -5,7 +5,6 @@ export type SolvesMentionItem =
       kind: "block"; // 문제 블록 멘션
       id: string;
       order: number;
-      question: string;
       blockType: BlockType;
     }
   | {

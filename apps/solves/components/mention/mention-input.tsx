@@ -21,7 +21,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { MentionInputItem } from "./mention-item";
+import { MentionItem } from "./mention-item";
 import { MentionSuggestion } from "./mention-suggestion-popup";
 import { SolvesMentionItem, TipTapMentionJsonContent } from "./types";
 import { serializeMention } from "./util";
@@ -34,6 +34,7 @@ interface MentionInputProps {
     text: string;
     mentions: SolvesMentionItem[];
   }) => void;
+  onAppendMention?: (mention: SolvesMentionItem) => void;
   onEnter?: () => void;
   placeholder?: string;
   suggestionChar?: string;
@@ -58,6 +59,7 @@ export default function MentionInput({
   onFocus,
   onBlur,
   fullWidthSuggestion = false,
+  onAppendMention,
 }: MentionInputProps) {
   const [open, setOpen] = useState(false);
   const position = useRef<{
@@ -102,9 +104,7 @@ export default function MentionInput({
             el.className = "inline-flex";
             const root = createRoot(el);
             root.render(
-              <MentionInputItem
-                item={props.node.attrs.id as SolvesMentionItem}
-              />,
+              <MentionItem item={props.node.attrs.id as SolvesMentionItem} />,
             );
 
             return el;
@@ -241,9 +241,10 @@ export default function MentionInput({
           },
         ])
         .run();
+      onAppendMention?.(item);
       setOpen(false);
     },
-    [editor],
+    [editor, onAppendMention],
   );
 
   const placeholderElement = useMemo(() => {

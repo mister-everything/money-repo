@@ -31,9 +31,10 @@ interface PromptInputProps {
   onSendButtonClick?: () => void;
   disabledSendButton?: boolean;
   isSending?: boolean;
+  onAppendMention?: (mention: SolvesMentionItem) => void;
   chatModel?: ChatModel;
   onChatModelChange?: (model: ChatModel) => void;
-  metionItems?: (searchValue: string) => SolvesMentionItem[];
+  mentionItems?: (searchValue: string) => SolvesMentionItem[];
   editorRef?: RefObject<Editor | null>;
   className?: string;
 }
@@ -50,7 +51,8 @@ export default function PromptInput({
   isSending,
   chatModel,
   onChatModelChange,
-  metionItems,
+  mentionItems,
+  onAppendMention,
   onMentionChange,
   editorRef,
   className,
@@ -80,7 +82,8 @@ export default function PromptInput({
           editorRef={editorRef}
           onFocus={onFocus}
           onBlur={onBlur}
-          items={metionItems}
+          items={mentionItems}
+          onAppendMention={onAppendMention}
         />
       </div>
       <div className="w-full flex justify-end gap-1 items-center">

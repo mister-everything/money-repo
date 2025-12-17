@@ -16,10 +16,12 @@ import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
 import { getSession } from "@/lib/auth/server";
-import { logger } from "@/lib/logger";
-import { WorkbookCreateChatRequest } from "../../../types";
+import { createLogger } from "@/lib/logger";
+import { WorkbookCreateChatRequest } from "../../../util";
 
 export const maxDuration = 300;
+
+const logger = createLogger("workbook-create-chat", "bgBlue");
 
 export async function POST(req: Request) {
   const {
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
     workbookId,
     blockTypes,
     situation,
-    normalizeBlock,
+    normalizeBlocks,
     category: categoryId,
   } = await req.json().then(WorkbookCreateChatRequest.parse);
 
@@ -58,7 +60,7 @@ export async function POST(req: Request) {
     category: category ?? undefined,
     blockTypes,
     situation: situation ?? "",
-    normalizeBlock,
+    normalizeBlocks,
   });
 
   if (!IS_PROD) logger.debug(systemPrompt);

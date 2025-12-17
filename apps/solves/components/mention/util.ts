@@ -1,5 +1,4 @@
 import type { WorkBookBlock } from "@service/solves/shared";
-import { truncateString } from "@workspace/util";
 import { SolvesMentionItem } from "./types";
 
 export const toBlockMention = (
@@ -9,7 +8,6 @@ export const toBlockMention = (
     kind: "block",
     id: block.id,
     order: block.order,
-    question: truncateString(block.question?.trim() ?? "", 14),
     blockType: block.type,
   };
 };

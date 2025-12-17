@@ -1,5 +1,6 @@
 "use client";
 
+import { UseChatHelpers } from "@ai-sdk/react";
 import { equal, errorToString } from "@workspace/util";
 import { ChatStatus, isToolUIPart, type UIMessage } from "ai";
 import { AlertTriangleIcon, RefreshCcwIcon } from "lucide-react";
@@ -25,6 +26,7 @@ export interface MessageProps {
   isLastMessage?: boolean;
   status?: ChatStatus;
   className?: string;
+  addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
 }
 
 const PurePreviewMessage = ({
@@ -32,6 +34,7 @@ const PurePreviewMessage = ({
   status,
   isLastMessage,
   className,
+  addToolOutput,
 }: MessageProps) => {
   if (message.role == "system") {
     return null; // system message 는 표기하지 않음
@@ -95,7 +98,9 @@ const PurePreviewMessage = ({
             }
 
             if (isToolUIPart(part)) {
-              return <ToolPart key={key} part={part} />;
+              return (
+                <ToolPart key={key} part={part} addToolOutput={addToolOutput} />
+              );
             }
             if (part.type === "step-start") {
               return null;
