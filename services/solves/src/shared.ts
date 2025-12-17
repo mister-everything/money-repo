@@ -4,5 +4,6 @@ export * from "./workbook/block-config";
 export * from "./workbook/block-validate";
 export * from "./workbook/blocks";
 export * from "./workbook/error";
+export * from "./workbook/normalize-block";
 export * from "./workbook/types";
 export * from "./workbook/utils";
