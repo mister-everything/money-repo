@@ -27,7 +27,7 @@ const menuItems = [
     icon: TrendingUpDownIcon,
   },
   {
-    title: "카테고리 관리",
+    title: "소재 관리",
     url: "/solves/categories",
     icon: FolderTreeIcon,
   },

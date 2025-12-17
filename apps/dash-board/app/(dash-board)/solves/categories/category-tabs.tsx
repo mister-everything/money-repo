@@ -1,21 +1,21 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { CategoryTree } from "@service/solves/shared";
+import { isNull } from "@workspace/util";
+import {
+  ChevronRightIcon,
+  Loader,
+  Pencil,
+  PlusIcon,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  addMainCategoryAction,
-  addSubCategoryAction,
-  deleteMainCategoryAction,
-  deleteSubCategoryAction,
-  updateMainCategoryAction,
-  updateSubCategoryAction,
-} from "@/app/(dash-board)/solves/categories/actions";
-import { MainCategoryDialog } from "@/components/solves/main-category-dialog";
-import { SubCategoryDialog } from "@/components/solves/sub-category-dialog";
-import { Badge } from "@/components/ui/badge";
+import { deleteCategoryAction } from "@/app/(dash-board)/solves/categories/actions";
+import { CategoryDialog } from "@/components/solves/category-dialog";
 import { Button } from "@/components/ui/button";
+import { ButtonSelect } from "@/components/ui/button-select";
 import {
   Card,
   CardContent,
@@ -23,83 +23,60 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/notify";
+import { Separator } from "@/components/ui/separator";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
-
-type Category = {
-  id: number;
-  name: string;
-  description: string | null;
-  aiPrompt: string | null;
-  createdAt: Date | string;
-  subs: {
-    id: number;
-    name: string;
-    mainId: number;
-    description: string | null;
-    aiPrompt: string | null;
-    createdAt: Date | string;
-  }[];
-};
+import { cn } from "@/lib/utils";
 
 interface Props {
-  categories: Category[];
+  categories: CategoryTree[];
 }
 
 export function CategoryTabs({ categories }: Props) {
   const router = useRouter();
-  const [selectedId, setSelectedId] = useState<number>(categories[0]?.id ?? 0);
 
-  const selected = useMemo<Category>(
-    () => categories.find((c) => c.id === selectedId) ?? categories[0],
-    [categories, selectedId]
+  const flatedCategories = useMemo(
+    () => categories.flatMap((c) => [c, ...c.children]),
+    [categories],
   );
 
-  const [, deleteMainCategory] = useSafeAction(deleteMainCategoryAction, {
+  const [selectedId, setSelectedId] = useState<number | undefined>(
+    categories[0]?.id,
+  );
+
+  const selectedCategory = useMemo(() => {
+    return flatedCategories.find((v) => v.id == selectedId);
+  }, [flatedCategories, selectedId]);
+
+  const oneDepthCategory = useMemo(() => {
+    if (!selectedCategory) return;
+    if (isNull(selectedCategory.parentId)) return selectedCategory;
+    return flatedCategories.find((c) => c.id == selectedCategory.parentId);
+  }, [flatedCategories, selectedCategory]);
+
+  const twoDepthCategories = useMemo(() => {
+    return oneDepthCategory?.children ?? [];
+  }, [oneDepthCategory]);
+
+  const [, deleteCategory, isDeleting] = useSafeAction(deleteCategoryAction, {
     onSuccess: () => {
-      toast.success("대분류가 삭제되었습니다.");
-      setSelectedId(categories[0]?.id ?? 0);
+      toast.success("삭제되었습니다.");
       router.refresh();
     },
     onError: (error) => {
-      toast.error(error.message || "대분류 삭제에 실패했습니다.");
+      toast.error(error.message || "삭제에 실패했습니다.");
     },
   });
-
-  const [, deleteSubCategory] = useSafeAction(deleteSubCategoryAction, {
-    onSuccess: () => {
-      toast.success("중분류가 삭제되었습니다.");
-      router.refresh();
-    },
-    onError: (error) => {
-      toast.error(error.message || "중분류 삭제에 실패했습니다.");
-    },
-  });
-
-  const handleDeleteMainCategory = async (category: Category) => {
+  const handleDeleteCategory = async (category: CategoryTree) => {
     const confirmed = await notify.confirm({
-      title: "대분류 삭제",
-      description: `"${category.name}" 대분류를 삭제하시겠습니까? 이 대분류에 속한 모든 중분류도 함께 삭제됩니다.`,
+      title: "삭제",
+      description: `"${category.name}" 삭제하시겠습니까? ${isNull(category.parentId) ? "이 분류에 속한 모든 중분류도 함께 삭제됩니다." : ""}`,
       okText: "삭제",
       cancelText: "취소",
     });
-
-    if (confirmed) {
-      deleteMainCategory({ id: category.id });
-    }
-  };
-
-  const handleDeleteSubCategory = async (subCategory: Category["subs"][0]) => {
-    const confirmed = await notify.confirm({
-      title: "중분류 삭제",
-      description: `"${subCategory.name}" 중분류를 삭제하시겠습니까?`,
-      okText: "삭제",
-      cancelText: "취소",
-    });
-
-    if (confirmed) {
-      deleteSubCategory({ id: subCategory.id });
-    }
+    if (!confirmed) return;
+    deleteCategory({ categoryId: category.id });
   };
 
   const formatDate = (date: Date | string) =>
@@ -110,141 +87,126 @@ export function CategoryTabs({ categories }: Props) {
     });
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <section className="flex flex-col gap-4 bg-red">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          {categories.map((category) => {
-            const isActive = category.id === selectedId;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setSelectedId(category.id)}
-                className={[
-                  "whitespace-nowrap rounded-full border px-4 py-2 text-sm transition-all",
-                  isActive
-                    ? "border-primary/60 bg-primary/10 text-primary shadow-sm"
-                    : "border-muted-foreground/20 bg-muted/40 hover:border-primary/40 hover:text-primary",
-                ].join(" ")}
-              >
-                {category.name}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {category.subs.length}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <MainCategoryDialog mode="add" action={addMainCategoryAction} />
-          <SubCategoryDialog
-            mode="add"
-            action={addSubCategoryAction}
-            mainCategories={categories.map((c) => ({ id: c.id, name: c.name }))}
-            selectedCategoryId={selectedId}
+          <CategoryDialog>
+            <Button className="rounded-full" size={"sm"}>
+              <PlusIcon /> 대분류 추가
+            </Button>
+          </CategoryDialog>
+          <ButtonSelect
+            value={oneDepthCategory?.id?.toString()}
+            onChange={(value) =>
+              setSelectedId(value ? Number(value) : undefined)
+            }
+            options={categories.map((category) => ({
+              label: category.name,
+              value: category.id.toString(),
+            }))}
           />
         </div>
+        {oneDepthCategory && (
+          <div className="flex flex-wrap gap-2 fade-300">
+            <CategoryDialog initialCategory={{ parentId: oneDepthCategory.id }}>
+              <Button className="rounded-full" size={"sm"}>
+                <PlusIcon />
+                {oneDepthCategory.name}의 중분류 추가
+              </Button>
+            </CategoryDialog>
+            {twoDepthCategories.map((category) => (
+              <Button
+                key={category.id}
+                size={"sm"}
+                variant="secondary"
+                onClick={() => setSelectedId(category.id)}
+                className={cn(
+                  "cursor-pointer rounded-full hover:bg-primary/10 transition-all",
+                  selectedId === category.id &&
+                    "bg-primary/5 hover:bg-primary/10 ring-primary ring",
+                )}
+              >
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Card className="border bg-card/70 shadow-md">
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="text-xl">{selected.name}</CardTitle>
-            <CardDescription>
-              {selected.description || "설명이 아직 없습니다."}
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline">중분류 {selected.subs.length}개</Badge>
-              <span>생성일 {formatDate(selected.createdAt)}</span>
+      {selectedCategory && (
+        <Card className="shadow-none">
+          <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                {oneDepthCategory?.id == selectedCategory.parentId ? (
+                  <>
+                    {oneDepthCategory!.name}{" "}
+                    <ChevronRightIcon className="text-muted-foreground" />
+                  </>
+                ) : (
+                  ""
+                )}
+                {selectedCategory.name}
+              </CardTitle>
+              <CardDescription></CardDescription>
             </div>
-            <div className="flex items-center gap-1">
-              <MainCategoryDialog
-                mode="edit"
-                action={updateMainCategoryAction}
-                category={selected}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDeleteMainCategory(selected)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-xl border bg-muted/40 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              대분류 AI Prompt
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-foreground">
-              {selected.aiPrompt || (
-                <span className="text-muted-foreground">AI Prompt 미작성</span>
-              )}
-            </p>
-          </div>
-
-          {selected.subs.length === 0 ? (
-            <div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-              해당 대분류에 연결된 중분류가 없습니다.
-            </div>
-          ) : (
-            <div className="divide-y rounded-xl border bg-background/70">
-              {selected.subs.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="grid gap-3 px-4 py-4 md:grid-cols-[1.2fr_1fr_120px_auto]"
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{formatDate(selectedCategory.createdAt)}</span>
+              </div>
+              <div className="h-4">
+                <Separator orientation="vertical" />
+              </div>
+              <div className="flex items-center gap-1">
+                <CategoryDialog
+                  id={selectedId}
+                  initialCategory={selectedCategory}
                 >
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">
-                      {sub.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {sub.description || "설명 없음"}
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <p className="text-xs uppercase text-muted-foreground">
-                      AI Prompt
-                    </p>
-                    {sub.aiPrompt ? (
-                      <p className="text-foreground">{sub.aiPrompt}</p>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        미작성
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-start justify-end text-xs text-muted-foreground">
-                    {formatDate(sub.createdAt)}
-                  </div>
-                  <div className="flex items-start gap-1">
-                    <SubCategoryDialog
-                      mode="edit"
-                      action={updateSubCategoryAction}
-                      category={sub}
-                      mainCategories={categories.map((c) => ({
-                        id: c.id,
-                        name: c.name,
-                      }))}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteSubCategory(sub)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                  <Button variant="ghost" size="icon" disabled={isDeleting}>
+                    <Pencil className="text-muted-foreground" />
+                  </Button>
+                </CategoryDialog>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={isDeleting}
+                  onClick={() => handleDeleteCategory(selectedCategory)}
+                >
+                  {isDeleting ? (
+                    <Loader className="text-destructive animate-spin" />
+                  ) : (
+                    <Trash2 className="text-destructive" />
+                  )}
+                </Button>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <Label className="text-muted-foreground ml-2" htmlFor="description">
+              설명
+            </Label>
+            <div className="rounded-xl border bg-muted/40 p-4 mb-6">
+              <p className="leading-relaxed text-foreground">
+                {selectedCategory.description || (
+                  <span className="text-muted-foreground">설명 미작성</span>
+                )}
+              </p>
+            </div>
+            <Label className="text-muted-foreground ml-2" htmlFor="aiPrompt">
+              AI Prompt
+            </Label>
+            <div className="rounded-xl border bg-muted/40 p-4 mb-6">
+              <p className="leading-relaxed text-foreground">
+                {selectedCategory.aiPrompt || (
+                  <span className="text-muted-foreground">
+                    AI Prompt 미작성
+                  </span>
+                )}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }
