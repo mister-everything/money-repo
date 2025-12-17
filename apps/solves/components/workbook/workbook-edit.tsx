@@ -513,8 +513,8 @@ export function WorkbookEdit({
             뒤로가기
           </Button>
           <div className="flex-1" />
-          <Button className="rounded-full">임시 소제</Button>
-          <Button className="rounded-full">임시 소제 {">"} 소재</Button>
+          <Button className="rounded-full">임시 소재</Button>
+          <Button className="rounded-full">임시 소재 {">"} 소재</Button>
         </div>
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader

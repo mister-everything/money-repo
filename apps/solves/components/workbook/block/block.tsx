@@ -12,6 +12,7 @@ import {
   CheckIcon,
   CircleIcon,
   PencilIcon,
+  SparklesIcon,
   TrashIcon,
   XIcon,
 } from "lucide-react";
@@ -25,6 +26,12 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { InDevelopment } from "@/components/ui/in-development";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import PromptInputDynamicGrow from "@/components/ui/prompt-input-dynamic-grow";
 import {
   Tooltip,
   TooltipContent,
@@ -151,6 +158,30 @@ function PureBlock<T extends BlockType = BlockType>({
                 <span>문제 삭제</span>
               </TooltipContent>
             </Tooltip>
+          )}
+          {props.mode === "edit" && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <SparklesIcon className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-fit border-none p-0 shadow-none"
+                align="end"
+                side="left"
+              >
+                <PromptInputDynamicGrow
+                  placeholder="AI로 문제를 수정하세요"
+                  onSubmit={(value) => {
+                    console.log("Chat submitted:", value);
+                  }}
+                  menuOptions={["문제", "보기", "해설"]}
+                  showEffects={true}
+                  expandOnFocus={true}
+                />
+              </PopoverContent>
+            </Popover>
           )}
 
           {props.mode === "edit" && (
