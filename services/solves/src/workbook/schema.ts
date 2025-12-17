@@ -20,6 +20,24 @@ import {
 } from "./blocks";
 
 /**
+ * 문제집 카테고리 테이블
+ * parentId를 통한 무한 계층 구조 지원
+ */
+export const categoryTable = solvesSchema.table("category", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  parentId: integer("parent_id").references(() => categoryTable.id, {
+    onDelete: "set null",
+  }),
+  description: varchar("description", { length: 300 }),
+  aiPrompt: varchar("ai_prompt", { length: 300 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdId: text("created_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }),
+});
+
+/**
  * 문제집 테이블
  * 문제들의 모음을 관리하는 테이블
  */
@@ -51,6 +69,12 @@ export const workBooksTable = solvesSchema.table("work_books", {
   firstSolverCount: bigint("first_solver_count", { mode: "number" })
     .notNull()
     .default(0),
+  /**
+   * 문제집 카테고리 (nullable)
+   */
+  categoryId: integer("category_id").references(() => categoryTable.id, {
+    onDelete: "set null",
+  }),
 });
 
 /**
@@ -160,64 +184,6 @@ export const workBookTagsTable = solvesSchema.table(
       .references(() => tagsTable.id, { onDelete: "cascade" }),
   },
   (table) => [primaryKey({ columns: [table.workBookId, table.tagId] })],
-);
-
-/**
- * 문제집 카테고리 대분류
- * 문제집의 소재 대분류 정보 저장
- */
-export const categoryMainTable = solvesSchema.table("category_main", {
-  id: serial("category_main_id").primaryKey(),
-  name: varchar("name", { length: 50 }).notNull().unique(),
-  description: varchar("description", { length: 300 }),
-  aiPrompt: varchar("ai_prompt", { length: 300 }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdId: text("created_id").references(() => userTable.id, {
-    onDelete: "set null",
-  }),
-});
-
-/**
- * 문제집 카테고리 중분류
- * 문제집의 소재 중분류 정보 저장
- */
-export const categorySubTable = solvesSchema.table("category_sub", {
-  id: serial("category_sub_id").primaryKey(),
-  name: varchar("name", { length: 50 }).notNull(), // 중분류 이름 (중복 가능) 다른 mainId 에서 중복가능하게 함
-  mainId: integer("category_main_id")
-    .notNull()
-    .references(() => categoryMainTable.id, { onDelete: "cascade" }), // 대분류 삭제 시 중분류도 삭제됨
-  description: varchar("description", { length: 300 }),
-  aiPrompt: varchar("ai_prompt", { length: 300 }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  createdId: text("created_id").references(() => userTable.id, {
-    onDelete: "set null",
-  }),
-});
-
-/**
- * 문제집 카테고리 연결 테이블
- * 문제집 생성 시 추가 필요
- */
-export const workBookCategoryTable = solvesSchema.table(
-  "work_book_category",
-  {
-    workBookId: uuid("work_book_id")
-      .notNull()
-      .references(() => workBooksTable.id, { onDelete: "cascade" }),
-    categoryMainId: integer("category_main_id")
-      .notNull()
-      .references(() => categoryMainTable.id, { onDelete: "cascade" }),
-    categorySubId: integer("category_sub_id")
-      .notNull()
-      .references(() => categorySubTable.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-  },
-  (table) => [
-    primaryKey({
-      columns: [table.workBookId, table.categoryMainId, table.categorySubId],
-    }),
-  ],
 );
 
 export const WorkBookLikes = solvesSchema.table(

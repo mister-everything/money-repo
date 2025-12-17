@@ -1,15 +1,23 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { ChatThread } from "@service/solves/shared";
-import { deduplicateByKey, generateUUID } from "@workspace/util";
+import {
+  blockDisplayNames,
+  ChatThread,
+  getBlockDisplayName,
+  normalizeBlock,
+} from "@service/solves/shared";
+import { Editor } from "@tiptap/react";
+import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
 import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import z from "zod";
 import { useShallow } from "zustand/shallow";
 import { deleteThreadAction } from "@/actions/chat";
+import { WorkbookCreateChatRequest } from "@/app/api/ai/types";
 import { ChatErrorMessage, Message } from "@/components/chat/message";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
@@ -21,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 import { useToRef } from "@/hooks/use-to-ref";
+import { WorkBookSituation } from "@/lib/const";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
@@ -29,7 +38,13 @@ import { useAiStore } from "@/store/ai-store";
 import { WorkbookOptions } from "@/store/types";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import PromptInput from "../chat/prompt-input";
-import { WorkbookEditOptions } from "./workbook-edit-options";
+import { SolvesMentionItem } from "../mention/types";
+import { toBlockMention } from "../mention/util";
+import { Badge } from "../ui/badge";
+import {
+  WorkbookOptionBlockTypes,
+  WorkbookOptionSituation,
+} from "./workbook-edit-options";
 
 interface WorkbooksCreateChatProps {
   workbookId: string;
@@ -40,12 +55,15 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
 
-  const [workbookOption, _setWorkbookOption] = useWorkbookEditStore(
-    useShallow((state) => [
-      state.workbookOptions[workbookId],
-      state.setWorkbookOption,
-    ]),
-  );
+  const [workbookOption, _setWorkbookOption, blocks, workBook] =
+    useWorkbookEditStore(
+      useShallow((state) => [
+        state.workbookOptions[workbookId] as WorkbookOptions | undefined,
+        state.setWorkbookOption,
+        state.blocks,
+        state.workBook,
+      ]),
+    );
   const setWorkbookOption = useCallback(
     (options: WorkbookOptions) => {
       _setWorkbookOption(workbookId, options);
@@ -55,6 +73,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<Editor | null>(null);
   const autoScrollRef = useRef(false);
 
   const [, deleteAction] = useSafeAction(deleteThreadAction, {
@@ -94,9 +113,39 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
-  const latest = useToRef({ chatModel, threadId, tempThreadList });
+  const [selectedMentions, setSelectedMentions] = useState<SolvesMentionItem[]>(
+    [],
+  );
+
+  const latest = useToRef({
+    workBook,
+    chatModel,
+    threadId,
+    tempThreadList,
+    workbookOption,
+    selectedMentions,
+    blocks,
+  });
 
   const [input, setInput] = useState<string>("");
+
+  const metionItems = useCallback(
+    (searchValue: string): SolvesMentionItem[] => {
+      if (!searchValue.trim())
+        return blocks.map((b, order) => {
+          return toBlockMention({ ...b, order: order + 1 });
+        });
+      return blocks
+        .filter(
+          (b, i) =>
+            b.question?.toLowerCase().includes(searchValue.toLowerCase()) ||
+            searchValue == String(i) ||
+            getBlockDisplayName(b.type).includes(searchValue),
+        )
+        .map((b, order) => toBlockMention({ ...b, order: order + 1 }));
+    },
+    [blocks],
+  );
 
   const threadList = useMemo(() => {
     const sortByCreatedAtDesc = [...tempThreadList, ...savedThreadList].sort(
@@ -139,13 +188,40 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     transport: new DefaultChatTransport({
       api: "/api/ai/chat/workbook/create",
       prepareSendMessagesRequest: ({ messages, id }) => {
-        return {
-          body: {
+        const {
+          chatModel,
+          workBook,
+          workbookOption,
+          blocks,
+          selectedMentions,
+        } = latest.current;
+
+        const orderedBlocks = blocks.map((v, order) => ({
+          ...v,
+          order: order + 1,
+        }));
+        const body: z.infer<typeof WorkbookCreateChatRequest> =
+          WorkbookCreateChatRequest.parse({
             messages,
-            model: latest.current.chatModel,
+            model: chatModel!,
             workbookId,
             threadId: id,
-          },
+            situation: workbookOption?.situation,
+            blockTypes: workbookOption?.blockTypes,
+            category: workBook?.categoryId,
+            normalizeBlock: selectedMentions.length
+              ? (selectedMentions
+                  .map((v) => {
+                    if (v.kind != "block") return undefined;
+                    const block = orderedBlocks.find((b) => b.id == v.id);
+                    if (!block) return undefined;
+                    return normalizeBlock(block);
+                  })
+                  .filter(Boolean) as string[])
+              : undefined,
+          });
+        return {
+          body,
         };
       },
     }),
@@ -174,12 +250,13 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const send = useCallback(
     (text: string = input) => {
-      if (status != "ready" || !threadId || Boolean(error)) return;
-      setInput("");
+      if (status != "ready" || !threadId || Boolean(error) || !text?.trim())
+        return;
       sendMessage({
         role: "user",
         parts: [{ type: "text", text }],
       });
+      nextTick().then(() => editorRef.current?.commands.setContent(""));
     },
     [input, status, threadId, error],
   );
@@ -394,22 +471,83 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         )}
       </div>
       <div className={cn("p-2 absolute bottom-0 left-0 right-0")}>
-        <WorkbookEditOptions
-          options={workbookOption}
-          setOptions={setWorkbookOption}
-        />
-        <PromptInput
-          input={input}
-          onChange={setInput}
-          onEnter={send}
-          placeholder="무엇이든 물어보세요"
-          disabledSendButton={
-            (!isChatPending && isPending) || !threadId || Boolean(error)
-          }
-          chatModel={chatModel}
-          onChatModelChange={setChatModel}
-          onSendButtonClick={() => (isChatPending ? stop() : send())}
-        />
+        <div className="bg-background border rounded-2xl p-2 flex flex-col gap-1">
+          <div className="flex flex-wrap gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <WorkbookOptionSituation
+                    value={workbookOption?.situation}
+                    onChange={(value) =>
+                      setWorkbookOption({
+                        ...workbookOption!,
+                        situation: value,
+                      })
+                    }
+                    align="start"
+                    side="top"
+                  >
+                    <Badge
+                      variant={"secondary"}
+                      className="data-[state=open]:bg-input! text-xs"
+                    >
+                      {WorkBookSituation.find(
+                        (value) => value.value === workbookOption?.situation,
+                      )?.label || "상황"}
+                    </Badge>
+                  </WorkbookOptionSituation>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>상황</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <WorkbookOptionBlockTypes
+                    value={workbookOption?.blockTypes}
+                    onChange={(value) =>
+                      setWorkbookOption({
+                        ...workbookOption,
+                        blockTypes: value,
+                      })
+                    }
+                    align="start"
+                    side="top"
+                  >
+                    <Badge
+                      variant={"secondary"}
+                      className="data-[state=open]:bg-input! text-xs cursor-pointer"
+                    >
+                      {workbookOption?.blockTypes.length ==
+                      Object.keys(blockDisplayNames).length
+                        ? "모든 유형"
+                        : workbookOption?.blockTypes
+                            .map((value) => blockDisplayNames[value])
+                            .join(", ") || "문제 유형"}
+                    </Badge>
+                  </WorkbookOptionBlockTypes>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>문제 유형</TooltipContent>
+            </Tooltip>
+          </div>
+          <PromptInput
+            className="bg-transition border-none p-0"
+            input={input}
+            editorRef={editorRef}
+            onChange={setInput}
+            onEnter={send}
+            onMentionChange={setSelectedMentions}
+            metionItems={metionItems}
+            placeholder="무엇이든 물어보세요"
+            disabledSendButton={
+              (!isChatPending && isPending) || !threadId || Boolean(error)
+            }
+            chatModel={chatModel}
+            onChatModelChange={setChatModel}
+            onSendButtonClick={() => (isChatPending ? stop() : send())}
+          />
+        </div>
       </div>
     </div>
   );

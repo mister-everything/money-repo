@@ -8,12 +8,15 @@ import { Button } from "../ui/button";
 import { ModelProviderIcon } from "../ui/model-provider-icon";
 import { ModelDropDownMenu } from "./model-drop-down-menu";
 
-const MentionInput = dynamic(() => import("@/components/ui/mention-input"), {
-  ssr: false,
-  loading() {
-    return <div className="h-8 w-full animate-pulse"></div>;
+const MentionInput = dynamic(
+  () => import("@/components/mention/mention-input"),
+  {
+    ssr: false,
+    loading() {
+      return <div className="h-8 w-full animate-pulse"></div>;
+    },
   },
-});
+);
 
 interface ExplainInputProps {
   onChange: (text: string) => void;
@@ -23,7 +26,6 @@ interface ExplainInputProps {
   ref?: RefObject<Editor | null>;
   onFocus?: () => void;
   onBlur?: () => void;
-
   onSendButtonClick?: () => void;
   disabledSendButton?: boolean;
   isSending?: boolean;
@@ -46,7 +48,7 @@ export default function ExplainInput({
   onChatModelChange,
 }: ExplainInputProps) {
   const handleChange = useCallback(
-    ({ text }: { text: string; mentions: { label: string; id: string }[] }) => {
+    ({ text }: { text: string }) => {
       onChange(text);
     },
     [onChange],
@@ -56,7 +58,7 @@ export default function ExplainInput({
     <div className="bg-background border text-sm rounded-2xl p-2 flex flex-col gap-2">
       <div className="w-full">
         <MentionInput
-          content={input}
+          defaultContent={input}
           onEnter={chatModel ? onEnter : undefined}
           placeholder={chatModel ? placeholder : "AI를 먼저 선택해주세요"}
           suggestionChar="@"

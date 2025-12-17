@@ -6,6 +6,7 @@ import {
   BlockContent,
   BlockType,
   blockValidate,
+  CategoryTree,
   checkAnswer,
   initializeBlock,
   initialSubmitAnswer,
@@ -19,12 +20,19 @@ import {
   arrayToObject,
   deduplicate,
   equal,
+  isNull,
   objectFlow,
   StateUpdate,
 } from "@workspace/util";
-import { ArrowLeftIcon, GripVerticalIcon, PlusIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  GripVerticalIcon,
+  PlusIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -44,14 +52,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCategories } from "@/hooks/query/use-categories";
 import { useToRef } from "@/hooks/use-to-ref";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
+import { Skeleton } from "../ui/skeleton";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./types";
+import { WorkBookCategoryUpdatePopup } from "./workbook-category-update-popup";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";
 import { WorkbookPublishPopup } from "./workbook-publish-popup";
@@ -126,6 +137,9 @@ export function WorkbookEdit({
   const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
 
   const [isPublishPopupOpen, setIsPublishPopupOpen] = useState(false);
+
+  const { data: categories = [], isLoading: isCategoriesLoading } =
+    useCategories();
 
   const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
     if (control !== "review") return {};
@@ -204,6 +218,17 @@ export function WorkbookEdit({
       updatedBlocks.length > 0
     );
   }, [blocksDiff]);
+
+  const selectedCategory = useMemo(() => {
+    const flatCategories = categories.flatMap((c) => [c, ...c.children]);
+    const category = flatCategories.find((c) => c.id === workBook.categoryId);
+    if (!category) return [];
+    if (category.parentId === null) return [category];
+    return [
+      flatCategories.find((c) => c.id === category.parentId),
+      category,
+    ].filter(Boolean) as CategoryTree[];
+  }, [categories, workBook.categoryId]);
 
   const handleChangeWorkbookMode = useCallback(
     (mode: WorkBookComponentMode) => {
@@ -509,12 +534,39 @@ export function WorkbookEdit({
       <div ref={ref} className="h-full overflow-y-auto relative">
         <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
           <Button variant="ghost" onClick={handleGoBack} disabled={isPending}>
-            <ArrowLeftIcon className="size-4!" />
+            <ChevronLeftIcon className="size-4!" />
             뒤로가기
           </Button>
           <div className="flex-1" />
-          <Button className="rounded-full">임시 소제</Button>
-          <Button className="rounded-full">임시 소제 {">"} 소재</Button>
+
+          {isCategoriesLoading ? (
+            <Skeleton className="w-24 h-9 rounded-full " />
+          ) : isNull(workBook.categoryId) ? (
+            <>
+              <WorkBookCategoryUpdatePopup
+                workBookId={workBook.id}
+                onSavedCategory={(categoryId) => {
+                  setWorkBook((prev) => ({ ...prev, categoryId }));
+                }}
+              >
+                <Button className="rounded-full text-xs">소재 선택</Button>
+              </WorkBookCategoryUpdatePopup>
+            </>
+          ) : (
+            selectedCategory.length > 0 && (
+              <Button className="rounded-full text-xs">
+                {selectedCategory.map((c, i) => {
+                  if (i == 0) return <Fragment key={i}>{c.name}</Fragment>;
+                  return (
+                    <Fragment key={i}>
+                      <ChevronRightIcon className="size-3.5" />
+                      {c.name}
+                    </Fragment>
+                  );
+                })}
+              </Button>
+            )
+          )}
         </div>
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader

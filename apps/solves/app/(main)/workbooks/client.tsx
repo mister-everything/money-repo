@@ -1,5 +1,6 @@
 "use client";
 import { WorkBookWithoutBlocks } from "@service/solves/shared";
+import { arrayToObject } from "@workspace/util";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -20,10 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  CategorySelection,
-  CategorySelector,
-} from "@/components/workbook/category-selector";
+import { CategoryMultipleSelector } from "@/components/workbook/category-selector";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { useCategories } from "@/hooks/query/use-categories";
 
@@ -39,15 +37,10 @@ export function WorkbooksClient({
 }: {
   initialWorkBooks: WorkBookWithoutBlocks[];
 }) {
-  const { data: categories, isLoading: isCategoriesLoading } = useCategories({
-    fallbackData: [],
-  });
+  const { data: categories = [], isLoading: isCategoriesLoading } =
+    useCategories();
 
-  const [selectedCategories, setSelectedCategories] =
-    useState<CategorySelection>({
-      mainCategories: [],
-      subCategories: [],
-    });
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
 
   const [searchParams, setSearchParams] = useState<
     z.infer<typeof SearchWorkbooksRequest>
@@ -56,9 +49,13 @@ export function WorkbooksClient({
     limit: 30,
     search: "",
     sort: "latest",
-    categoryMainIds: [],
-    categorySubIds: [],
+    categoryIds: [],
   });
+
+  const flatedCategories = useMemo(
+    () => categories.flatMap((c) => [c, ...c.children]),
+    [categories],
+  );
 
   const { data: workBooks, isValidating } = useSWR(
     // `/api/workbooks?${new URLSearchParams(JSON.stringify(searchParams)).toString()}`,
@@ -69,46 +66,20 @@ export function WorkbooksClient({
       revalidateOnMount: false,
     },
   );
-
-  const flatCategories = useMemo(() => {
-    const main = (selectedCategories.mainCategories ?? []).map((v) => ({
-      type: "main",
-      name: v.name,
-      id: v.id,
-    }));
-    const sub = (selectedCategories.subCategories ?? []).map((v) => {
-      const main = categories?.find((m) => m.id === v.mainId);
-      return {
-        type: "sub",
-        name: (
-          <>
-            {main?.name} <ChevronRightIcon className="size-3" /> {v.name}
-          </>
-        ),
-        id: v.id,
-      };
-    });
-
-    return [...main, ...sub];
-  }, [selectedCategories, categories]);
-
-  const handleRemoveCategory = (type: string, id: number) => {
-    if (type === "main") {
-      setSelectedCategories({
-        ...selectedCategories,
-        mainCategories: selectedCategories.mainCategories?.filter(
-          (v) => v.id !== id,
-        ),
-      });
-    } else {
-      setSelectedCategories({
-        ...selectedCategories,
-        subCategories: selectedCategories.subCategories?.filter(
-          (v) => v.id !== id,
-        ),
-      });
-    }
+  const handleRemoveCategory = (categoryId: number) => {
+    setSelectedCategoryIds((prev) => prev.filter((v) => v != categoryId));
   };
+
+  const selectedCategories = useMemo(() => {
+    if (!selectedCategoryIds.length) return [];
+    const categoryById = arrayToObject(flatedCategories, (v) => String(v.id));
+    return flatedCategories
+      .filter((v) => selectedCategoryIds.includes(v.id))
+      .map((v) => ({
+        ...v,
+        parentName: v.parentId ? categoryById[v.parentId].name : undefined,
+      }));
+  }, [selectedCategoryIds, flatedCategories]);
 
   return (
     <div className="w-full flex flex-col min-h-screen ">
@@ -127,27 +98,37 @@ export function WorkbooksClient({
             className="w-full lg:w-md"
           />
         </div>
-        <CategorySelector
-          value={selectedCategories}
+        <CategoryMultipleSelector
+          value={selectedCategoryIds}
           categories={categories}
           isLoading={isCategoriesLoading}
-          onCategoryChange={setSelectedCategories}
+          onCategoryChange={setSelectedCategoryIds}
         />
       </div>
 
       <div className="flex flex-col gap-2 bg-secondary/40 border-t p-6 pt-4! lg:p-10 flex-1">
         <div className="flex flex-wrap gap-2 items-center">
-          {flatCategories.map((v) => (
-            <Badge
-              onClick={() => handleRemoveCategory(v.type, v.id)}
-              key={v.type + v.id}
-              className="rounded-full cursor-pointer group"
-            >
-              {v.name}
-              <XIcon className="size-3 hidden group-hover:block" />
-            </Badge>
-          ))}
+          {selectedCategories.map((c) => {
+            return (
+              <Badge
+                key={c.id}
+                onClick={() => handleRemoveCategory(c.id)}
+                className="rounded-full cursor-pointer group"
+              >
+                {c.parentName ? (
+                  <>
+                    {c.parentName}
+                    <ChevronRightIcon />
+                  </>
+                ) : null}
+                {c.name}
+
+                <XIcon className="size-3 hidden group-hover:block" />
+              </Badge>
+            );
+          })}
         </div>
+
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm flex items-center gap-1">
             문제집{" "}

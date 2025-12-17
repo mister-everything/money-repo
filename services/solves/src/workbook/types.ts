@@ -47,6 +47,7 @@ export type WorkBook = {
   ownerProfile?: string | null;
   createdAt: Date;
   publishedAt?: Date | null;
+  categoryId?: number | null;
   /**
    * 난이도(평균 점수) 표시에 필요한 통계값
    * - solverCount < 10 이면 UI에서 "새로운 문제집"으로 표시
@@ -104,25 +105,25 @@ export type WorkBookReviewSession = {
   }[];
 };
 
-export type CategoryMain = {
+/**
+ * 카테고리 타입
+ * parentId를 통한 무한 계층 구조 지원
+ */
+export type Category = {
   id: number;
   name: string;
+  parentId: number | null;
   description: string | null;
   aiPrompt: string | null;
   createdAt: Date;
 };
 
-export type CategorySub = {
-  id: number;
-  name: string;
-  mainId: number;
-  description: string | null;
-  aiPrompt: string | null;
-  createdAt: Date;
-};
-
-export type CategoryWithSubs = CategoryMain & {
-  subs: CategorySub[];
+/**
+ * 카테고리 트리 구조
+ * children을 통한 계층 표현
+ */
+export type CategoryTree = Category & {
+  children: CategoryTree[];
 };
 
 export enum WorkBookDifficultyLevel {

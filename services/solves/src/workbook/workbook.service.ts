@@ -16,11 +16,9 @@ import { blockValidate } from "./block-validate";
 import { BlockAnswer, BlockAnswerSubmit } from "./blocks";
 import {
   blocksTable,
-  categorySubTable,
   tagsTable,
   WorkBookLikes,
   workBookBlockAnswerSubmitsTable,
-  workBookCategoryTable,
   workBookSubmitsTable,
   workBooksTable,
   workBookTagsTable,
@@ -65,6 +63,7 @@ const WorkBookColumnsForList = {
   likeCount: workBooksTable.likeCount,
   firstSolverCount: workBooksTable.firstSolverCount,
   firstScoreSum: workBooksTable.firstScoreSum,
+  categoryId: workBooksTable.categoryId,
 };
 
 type GetWorkBookOptions = {
@@ -335,7 +334,7 @@ export const workBookService = {
   createWorkBook: async (workBook: {
     ownerId: string;
     title: string;
-    subCategories: number[];
+    categoryId?: number;
   }): Promise<{ id: string }> => {
     const isMaxInprogressWorkbookCreateCount =
       await workBookService.isMaxInprogressWorkbookCreateCount(
@@ -350,31 +349,15 @@ export const workBookService = {
     const data: typeof workBooksTable.$inferInsert = {
       ownerId: workBook.ownerId,
       title: workBook.title,
+      categoryId: workBook.categoryId,
     };
 
-    return pgDb.transaction(async (tx) => {
-      const [newWorkBook] = await tx
-        .insert(workBooksTable)
-        .values(data)
-        .returning({ id: workBooksTable.id });
+    const [newWorkBook] = await pgDb
+      .insert(workBooksTable)
+      .values(data)
+      .returning({ id: workBooksTable.id });
 
-      if (workBook.subCategories.length > 0) {
-        const subCategories = await tx
-          .select({ id: categorySubTable.id, mainId: categorySubTable.mainId })
-          .from(categorySubTable)
-          .where(inArray(categorySubTable.id, workBook.subCategories));
-
-        await tx.insert(workBookCategoryTable).values(
-          subCategories.map((subCategory) => ({
-            workBookId: newWorkBook.id,
-            categoryMainId: subCategory.mainId,
-            categorySubId: subCategory.id,
-          })),
-        );
-      }
-
-      return newWorkBook;
-    });
+    return newWorkBook;
   },
 
   copyWorkBook: async ({
@@ -391,6 +374,7 @@ export const workBookService = {
         title: workBooksTable.title,
         description: workBooksTable.description,
         isPublic: workBooksTable.isPublic,
+        categoryId: workBooksTable.categoryId,
       })
       .from(workBooksTable)
       .where(
@@ -416,6 +400,7 @@ export const workBookService = {
           likeCount: 0,
           firstScoreSum: 0,
           firstSolverCount: 0,
+          categoryId: origin.categoryId,
         })
         .returning({ id: workBooksTable.id });
 
@@ -462,24 +447,6 @@ export const workBookService = {
         );
       }
 
-      const categories = await tx
-        .select({
-          categoryMainId: workBookCategoryTable.categoryMainId,
-          categorySubId: workBookCategoryTable.categorySubId,
-        })
-        .from(workBookCategoryTable)
-        .where(eq(workBookCategoryTable.workBookId, workBookId));
-
-      if (categories.length > 0) {
-        await tx.insert(workBookCategoryTable).values(
-          categories.map((c) => ({
-            workBookId: newWorkBookId,
-            categoryMainId: c.categoryMainId,
-            categorySubId: c.categorySubId,
-          })),
-        );
-      }
-
       return { id: newWorkBookId };
     });
   },
@@ -508,6 +475,26 @@ export const workBookService = {
     if (result.rowCount === 0) {
       throw new PublicError("문제집을 찾을 수 없습니다.");
     }
+  },
+
+  updateWorkBookCategory: async ({
+    workBookId,
+    categoryId,
+  }: {
+    workBookId: string;
+    categoryId: number;
+  }) => {
+    await pgDb
+      .update(workBooksTable)
+      .set({
+        categoryId,
+      })
+      .where(
+        and(
+          eq(workBooksTable.id, workBookId),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
   },
 
   updateWorkBook: async (workBook: {

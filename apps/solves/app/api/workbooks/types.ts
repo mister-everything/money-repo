@@ -15,6 +15,5 @@ export const SearchWorkbooksRequest = z.object({
     .enum(["popular", "latest", "highest", "lowest"])
     .default("popular")
     .optional(),
-  categoryMainIds: z.array(z.number()).default([]).optional(),
-  categorySubIds: z.array(z.number()).default([]).optional(),
+  categoryIds: z.array(z.number()).optional(),
 });

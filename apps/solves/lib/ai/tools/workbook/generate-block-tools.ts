@@ -5,7 +5,7 @@
  * DB id 등의 불필요한 값은 포함하지 않는다.
  */
 
-import { WorkBookBlock } from "@service/solves/shared";
+import { All_BLOCKS, BlockType, WorkBookBlock } from "@service/solves/shared";
 import { generateUUID } from "@workspace/util";
 import { tool as createTool, Tool } from "ai";
 
@@ -193,3 +193,34 @@ export const generateOxTool: Tool = createTool({
     return block;
   },
 });
+
+export const loadGenerateBlockTools = (blockTypes?: BlockType[]) => {
+  const allowedBlockTypes = blockTypes?.length
+    ? blockTypes.filter((type) => Boolean(All_BLOCKS[type]))
+    : Object.keys(All_BLOCKS);
+
+  return allowedBlockTypes.reduce(
+    (prev, type) => {
+      switch (type as BlockType) {
+        case "mcq":
+          prev[GEN_BLOCK_TOOL_NAMES.MCQ] = generateMcqTool;
+          break;
+        case "mcq-multiple":
+          prev[GEN_BLOCK_TOOL_NAMES.MCQ_MULTIPLE] = generateMcqMultipleTool;
+          break;
+        case "ranking":
+          prev[GEN_BLOCK_TOOL_NAMES.RANKING] = generateRankingTool;
+          break;
+        case "ox":
+          prev[GEN_BLOCK_TOOL_NAMES.OX] = generateOxTool;
+          break;
+        case "default":
+          prev[GEN_BLOCK_TOOL_NAMES.SUBJECTIVE] = generateSubjectiveTool;
+          break;
+      }
+
+      return prev;
+    },
+    {} as Record<string, Tool>,
+  );
+};

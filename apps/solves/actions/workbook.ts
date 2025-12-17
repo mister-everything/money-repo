@@ -10,17 +10,15 @@ import { safeAction } from "@/lib/protocol/server-action";
 export const createWorkbookAction = safeAction(
   z.object({
     title: z.string().optional().default(""),
-    categories: z
-      .array(z.number())
-      .min(1, "소재는 최소 1개 이상 선택해주세요."),
+    categoryId: z.number().min(1, "카테고리를 선택해주세요."),
   }),
-  async ({ title, categories }) => {
+  async ({ title, categoryId }) => {
     const session = await getSession();
 
     const savedWorkBook = await workBookService.createWorkBook({
       title,
       ownerId: session.user.id,
-      subCategories: categories,
+      categoryId,
     });
 
     return savedWorkBook;
@@ -196,5 +194,22 @@ export const copyWorkbookAction = safeAction(
       userId: session.user.id,
     });
     return { copiedWorkBookId: newWorkBook.id };
+  },
+);
+
+export const updateWorkBookCategoryAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    categoryId: z.number(),
+  }),
+  async ({ categoryId, workBookId }) => {
+    const session = await getSession();
+    await workBookService.checkEditPermission(workBookId, session.user.id);
+    await workBookService.updateWorkBookCategory({
+      workBookId,
+      categoryId,
+    });
+
+    return { categoryId };
   },
 );
