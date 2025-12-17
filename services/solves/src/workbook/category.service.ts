@@ -1,3 +1,4 @@
+import { PublicError } from "@workspace/error";
 import { and, eq, isNull } from "drizzle-orm";
 import { pgDb } from "../db";
 import { categoryTable } from "./schema";
@@ -87,6 +88,19 @@ export const categoryService = {
   insertCategory: async (
     data: Omit<Category, "id" | "createdAt"> & { createdId?: string },
   ): Promise<Category> => {
+    if (data.parentId != null) {
+      // 2depth 이상 불가
+      const [parent] = await pgDb
+        .select({
+          grandParentId: categoryTable.parentId,
+        })
+        .from(categoryTable)
+        .where(eq(categoryTable.id, data.parentId));
+      if (!parent) throw new PublicError("부모 카테고리가 존재하지 않습니다.");
+      if (parent.grandParentId != null) {
+        throw new PublicError("최대 2 Depth 까지 생성 가능.");
+      }
+    }
     const [row] = await pgDb
       .insert(categoryTable)
       .values({
@@ -113,13 +127,12 @@ export const categoryService = {
    */
   updateCategory: async (
     id: number,
-    data: Partial<Omit<Category, "id" | "createdAt">>,
+    data: Partial<Omit<Category, "id" | "createdAt" | "parentId">>,
   ): Promise<Category> => {
     const [row] = await pgDb
       .update(categoryTable)
       .set({
         name: data.name,
-        parentId: data.parentId,
         description: data.description,
         aiPrompt: data.aiPrompt,
       })

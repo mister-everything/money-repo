@@ -196,3 +196,20 @@ export const copyWorkbookAction = safeAction(
     return { copiedWorkBookId: newWorkBook.id };
   },
 );
+
+export const updateWorkBookCategoryAction = safeAction(
+  z.object({
+    workBookId: z.string(),
+    categoryId: z.number(),
+  }),
+  async ({ categoryId, workBookId }) => {
+    const session = await getSession();
+    await workBookService.checkEditPermission(workBookId, session.user.id);
+    await workBookService.updateWorkBookCategory({
+      workBookId,
+      categoryId,
+    });
+
+    return { categoryId };
+  },
+);

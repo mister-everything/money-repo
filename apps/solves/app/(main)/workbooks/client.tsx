@@ -1,5 +1,6 @@
 "use client";
-import { Category, WorkBookWithoutBlocks } from "@service/solves/shared";
+import { WorkBookWithoutBlocks } from "@service/solves/shared";
+import { arrayToObject } from "@workspace/util";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -7,7 +8,7 @@ import {
   XIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import z from "zod";
 import { SearchWorkbooksRequest } from "@/app/api/workbooks/types";
@@ -20,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { CategorySelector } from "@/components/workbook/category-selector";
+import { CategoryMultipleSelector } from "@/components/workbook/category-selector";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { useCategories } from "@/hooks/query/use-categories";
 
@@ -36,14 +37,10 @@ export function WorkbooksClient({
 }: {
   initialWorkBooks: WorkBookWithoutBlocks[];
 }) {
-  const { data: categories, isLoading: isCategoriesLoading } = useCategories({
-    fallbackData: [],
-  });
+  const { data: categories = [], isLoading: isCategoriesLoading } =
+    useCategories();
 
-  // 선택된 카테고리 ID (단일)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<
-    number | undefined
-  >();
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
 
   const [searchParams, setSearchParams] = useState<
     z.infer<typeof SearchWorkbooksRequest>
@@ -52,8 +49,13 @@ export function WorkbooksClient({
     limit: 30,
     search: "",
     sort: "latest",
-    categoryId: undefined,
+    categoryIds: [],
   });
+
+  const flatedCategories = useMemo(
+    () => categories.flatMap((c) => [c, ...c.children]),
+    [categories],
+  );
 
   const { data: workBooks, isValidating } = useSWR(
     // `/api/workbooks?${new URLSearchParams(JSON.stringify(searchParams)).toString()}`,
@@ -64,37 +66,20 @@ export function WorkbooksClient({
       revalidateOnMount: false,
     },
   );
-
-  // 선택된 카테고리 정보 찾기
-  const findSelectedCategoryInfo = ():
-    | { root: Category; child?: Category }
-    | undefined => {
-    if (!selectedCategoryId || !categories) return undefined;
-
-    for (const root of categories) {
-      if (root.id === selectedCategoryId) {
-        return { root };
-      }
-      for (const child of root.children ?? []) {
-        if (child.id === selectedCategoryId) {
-          return { root, child };
-        }
-      }
-    }
-    return undefined;
+  const handleRemoveCategory = (categoryId: number) => {
+    setSelectedCategoryIds((prev) => prev.filter((v) => v != categoryId));
   };
 
-  const selectedInfo = findSelectedCategoryInfo();
-
-  const handleRemoveCategory = () => {
-    setSelectedCategoryId(undefined);
-    setSearchParams((prev) => ({ ...prev, categoryId: undefined }));
-  };
-
-  const handleCategoryChange = (categoryId: number | undefined) => {
-    setSelectedCategoryId(categoryId);
-    setSearchParams((prev) => ({ ...prev, categoryId }));
-  };
+  const selectedCategories = useMemo(() => {
+    if (!selectedCategoryIds.length) return [];
+    const categoryById = arrayToObject(flatedCategories, (v) => String(v.id));
+    return flatedCategories
+      .filter((v) => selectedCategoryIds.includes(v.id))
+      .map((v) => ({
+        ...v,
+        parentName: v.parentId ? categoryById[v.parentId].name : undefined,
+      }));
+  }, [selectedCategoryIds, flatedCategories]);
 
   return (
     <div className="w-full flex flex-col min-h-screen ">
@@ -113,33 +98,37 @@ export function WorkbooksClient({
             className="w-full lg:w-md"
           />
         </div>
-        <CategorySelector
-          value={selectedCategoryId}
+        <CategoryMultipleSelector
+          value={selectedCategoryIds}
           categories={categories}
           isLoading={isCategoriesLoading}
-          onCategoryChange={handleCategoryChange}
+          onCategoryChange={setSelectedCategoryIds}
         />
       </div>
 
       <div className="flex flex-col gap-2 bg-secondary/40 border-t p-6 pt-4! lg:p-10 flex-1">
-        {/* 선택된 카테고리 표시 */}
-        {selectedInfo && (
-          <div className="flex flex-wrap gap-2 items-center">
-            <Badge
-              onClick={handleRemoveCategory}
-              className="rounded-full cursor-pointer group"
-            >
-              {selectedInfo.root.name}
-              {selectedInfo.child && (
-                <>
-                  <ChevronRightIcon className="size-3" />
-                  {selectedInfo.child.name}
-                </>
-              )}
-              <XIcon className="size-3 hidden group-hover:block" />
-            </Badge>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2 items-center">
+          {selectedCategories.map((c) => {
+            return (
+              <Badge
+                key={c.id}
+                onClick={() => handleRemoveCategory(c.id)}
+                className="rounded-full cursor-pointer group"
+              >
+                {c.parentName ? (
+                  <>
+                    {c.parentName}
+                    <ChevronRightIcon />
+                  </>
+                ) : null}
+                {c.name}
+
+                <XIcon className="size-3 hidden group-hover:block" />
+              </Badge>
+            );
+          })}
+        </div>
+
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm flex items-center gap-1">
             문제집{" "}

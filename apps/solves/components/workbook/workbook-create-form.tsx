@@ -5,7 +5,7 @@ import {
   blockDisplayNames,
   MAX_INPROGRESS_WORKBOOK_CREATE_COUNT,
 } from "@service/solves/shared";
-import { errorToString } from "@workspace/util";
+import { errorToString, isNull } from "@workspace/util";
 import { Loader, TriangleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -18,9 +18,8 @@ import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
-import { Badge } from "../ui/badge";
 import { notify } from "../ui/notify";
-import { Skeleton } from "../ui/skeleton";
+import { CategorySelector } from "./category-selector";
 
 export function WorkbookCreateForm({
   isMaxInprogressWorkbookCreateCount = false,
@@ -36,11 +35,6 @@ export function WorkbookCreateForm({
   const router = useRouter();
   const { setWorkbookOption } = useWorkbookEditStore();
 
-  const [selectedOneDepthCategoryId, setSelectedOneDepthCategoryId] =
-    useState<number>();
-  const [selectedTwoDepthCategoryId, setSelectedTwoDepthCategoryId] =
-    useState<number>();
-
   const [formData, setFormData] = useState(initialFormData);
   const { data: categories = [], isLoading } = useCategories({
     onSuccess: (data) => {
@@ -49,19 +43,12 @@ export function WorkbookCreateForm({
           category,
           ...category.children,
         ]);
-        const categortId = formData.categoryId || flatCategories[0].id;
+        const categortId = formData.categoryId;
         const category = flatCategories.find(
           (category) => category.id === categortId,
         );
         if (category) {
           setFormData((prev) => ({ ...prev, categoryId: category?.id }));
-
-          if (category.parentId === null) {
-            setSelectedOneDepthCategoryId(category.id);
-          } else {
-            setSelectedOneDepthCategoryId(category.parentId);
-            setSelectedTwoDepthCategoryId(category.id);
-          }
         }
       }
     },
@@ -97,18 +84,8 @@ export function WorkbookCreateForm({
   };
 
   const valid = useMemo(() => {
-    return formData.categoryId !== undefined;
+    return !isNull(formData.categoryId);
   }, [formData.categoryId]);
-
-  const oneDepthCategories = useMemo(() => {
-    return categories.filter((category) => category.parentId === null);
-  }, [categories]);
-
-  const twoDepthCategories = useMemo(() => {
-    return oneDepthCategories
-      .flatMap((category) => category.children)
-      .filter((category) => category.parentId === selectedOneDepthCategoryId);
-  }, [oneDepthCategories, selectedOneDepthCategoryId]);
 
   return (
     <div className="w-full">
@@ -123,10 +100,11 @@ export function WorkbookCreateForm({
         )}
       </div>
 
-      <div className="space-y-3 w-full">
+      <div className="space-y-4 w-full">
         <div className="space-y-3">
           <div className="flex items-center gap-1">
             <label className="text-sm font-bold text-foreground">소재</label>
+
             {!isMaxInprogressWorkbookCreateCount && (
               <>
                 <TriangleAlertIcon className="size-2.5 text-background fill-point ml-2" />
@@ -136,69 +114,14 @@ export function WorkbookCreateForm({
               </>
             )}
           </div>
-          {isLoading ? (
-            <Skeleton className="w-full h-16" />
-          ) : (
-            <ButtonSelect
-              disabled={isMaxInprogressWorkbookCreateCount}
-              value={selectedOneDepthCategoryId?.toString()}
-              onChange={(value) => {
-                if (!value) return;
-                setSelectedOneDepthCategoryId(Number(value));
-                setSelectedTwoDepthCategoryId(undefined);
-                setFormData((prev) => ({
-                  ...prev,
-                  categoryId: Number(value),
-                }));
-              }}
-              options={oneDepthCategories.map((category) => {
-                return {
-                  label: category.name,
-                  value: category.id.toString(),
-                };
-              })}
-            />
-          )}
-
-          {twoDepthCategories.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {twoDepthCategories.map((child) => (
-                <Badge
-                  key={child.id}
-                  variant="secondary"
-                  onClick={() => {
-                    setSelectedTwoDepthCategoryId(child.id);
-                    setFormData((prev) => ({
-                      ...prev,
-                      categoryId: child.id,
-                    }));
-                  }}
-                  className={cn(
-                    "cursor-pointer rounded-full hover:bg-primary/5 hover:border-primary transition-all",
-                    selectedTwoDepthCategoryId === child.id &&
-                      "bg-primary/5 hover:bg-primary/10 border-primary",
-                    isMaxInprogressWorkbookCreateCount &&
-                      "cursor-not-allowed opacity-50",
-                  )}
-                >
-                  {child.name}
-                </Badge>
-              ))}
-            </div>
-          )}
-          {selectedOneDepthCategoryId && (
-            <div className="text-sm text-muted-foreground">
-              <span className="text-foreground font-medium">
-                {
-                  oneDepthCategories.find(
-                    (category) => category.id === selectedOneDepthCategoryId,
-                  )?.name
-                }
-                {selectedTwoDepthCategoryId &&
-                  ` > ${twoDepthCategories.find((category) => category.id === selectedTwoDepthCategoryId)?.name}`}
-              </span>
-            </div>
-          )}
+          <CategorySelector
+            categories={categories}
+            isLoading={isLoading}
+            onCategoryChange={(ct) =>
+              setFormData((prev) => ({ ...prev, categoryId: ct }))
+            }
+            value={formData.categoryId}
+          />
         </div>
         <div className="space-y-3">
           <div className="flex flex-cols gap-1">
@@ -250,7 +173,7 @@ export function WorkbookCreateForm({
           variant={isMaxInprogressWorkbookCreateCount ? "secondary" : "default"}
           disabled={isPending || isMaxInprogressWorkbookCreateCount || !valid}
           className={cn(
-            "w-full rounded-lg py-6 text-base",
+            "w-full rounded-lg py-6 text-base mt-2",
             isMaxInprogressWorkbookCreateCount &&
               "border-dashed shadow-none py-8",
           )}
