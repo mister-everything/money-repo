@@ -17,6 +17,8 @@ export const CacheKeys = {
    * @returns Redis key: price:{provider}:{model}
    */
   aiPrice: (provider: string, model: string) => `price:${provider}:${model}`,
+
+  category: (id: number) => `category:${id}`,
 } as const;
 
 /**

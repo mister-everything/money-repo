@@ -1,34 +1,23 @@
 "use client";
+import { isNull } from "@workspace/util";
+
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useCategories } from "@/hooks/query/use-categories";
 import { WorkBookSituation } from "@/lib/const";
-import { cn } from "@/lib/utils";
 
-import { Badge } from "../ui/badge";
+import { CategorySelector } from "./category-selector";
 
 export function QuickWorkbookCreator() {
   const router = useRouter();
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [], isLoading } = useCategories();
   const [situation, setSituation] = useState<string>("");
-  const [oneDepthCategoryId, setOneDepthCategoryId] = useState<
+
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
     number | undefined
   >(undefined);
-  const [twoDepthCategoryId, setTwoDepthCategoryId] = useState<
-    number | undefined
-  >(undefined);
-
-  const oneDepthCategories = useMemo(() => {
-    return categories.filter((category) => category.parentId === null);
-  }, [categories]);
-
-  const twoDepthCategories = useMemo(() => {
-    return oneDepthCategories
-      .flatMap((category) => category.children)
-      .filter((category) => category.parentId === oneDepthCategoryId);
-  }, [categories, oneDepthCategoryId]);
 
   const handleNavigate = () => {
     const params = new URLSearchParams();
@@ -36,9 +25,9 @@ export function QuickWorkbookCreator() {
     if (situation) {
       params.set("situation", situation);
     }
-    const categoryId = twoDepthCategoryId ?? oneDepthCategoryId;
-    if (categoryId) {
-      params.set("categoryId", categoryId.toString());
+
+    if (!isNull(selectedCategoryId)) {
+      params.set("categoryId", selectedCategoryId.toString());
     }
 
     const queryString = params.toString();
@@ -73,56 +62,12 @@ export function QuickWorkbookCreator() {
           </div>
         </div>
 
-        {/* Right Column: 소재, 난이도 */}
-        <div className="space-y-4">
-          {/* 소재 */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-foreground">소재</label>
-            <ButtonSelect
-              value={oneDepthCategoryId?.toString()}
-              onChange={(value) => setOneDepthCategoryId(Number(value))}
-              options={oneDepthCategories.map((category) => ({
-                label: category.name,
-                value: category.id.toString(),
-              }))}
-            />
-
-            {/* 선택된 카테고리 표시 */}
-            {oneDepthCategoryId && (
-              <div className="text-sm text-muted-foreground">
-                선택:{" "}
-                <span className="text-foreground font-medium">
-                  {
-                    oneDepthCategories.find(
-                      (category) => category.id === oneDepthCategoryId,
-                    )?.name
-                  }
-                  {twoDepthCategoryId &&
-                    ` > ${twoDepthCategories.find((category) => category.id === twoDepthCategoryId)?.name}`}
-                </span>
-              </div>
-            )}
-
-            {twoDepthCategories.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {twoDepthCategories.map((category) => (
-                  <Badge
-                    key={category.id}
-                    variant="secondary"
-                    onClick={() => setTwoDepthCategoryId(category.id)}
-                    className={cn(
-                      "cursor-pointer rounded-full hover:bg-primary/5 hover:border-primary transition-all",
-                      twoDepthCategoryId === category.id &&
-                        "bg-primary/5 hover:bg-primary/10 border-primary",
-                    )}
-                  >
-                    {category.name}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <CategorySelector
+          categories={categories}
+          isLoading={isLoading}
+          onCategoryChange={setSelectedCategoryId}
+          value={selectedCategoryId}
+        />
       </div>
 
       <Button size="lg" className="w-full py-6" onClick={handleNavigate}>

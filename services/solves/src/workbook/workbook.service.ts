@@ -477,6 +477,26 @@ export const workBookService = {
     }
   },
 
+  updateWorkBookCategory: async ({
+    workBookId,
+    categoryId,
+  }: {
+    workBookId: string;
+    categoryId: number;
+  }) => {
+    await pgDb
+      .update(workBooksTable)
+      .set({
+        categoryId,
+      })
+      .where(
+        and(
+          eq(workBooksTable.id, workBookId),
+          isNull(workBooksTable.deletedAt),
+        ),
+      );
+  },
+
   updateWorkBook: async (workBook: {
     id: string;
     title?: string;

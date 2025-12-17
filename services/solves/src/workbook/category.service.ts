@@ -1,5 +1,8 @@
+import { PublicError } from "@workspace/error";
 import { and, eq, isNull } from "drizzle-orm";
+import { CacheKeys } from "../cache-keys";
 import { pgDb } from "../db";
+import { sharedCache } from "../shared-cache";
 import { categoryTable } from "./schema";
 import { Category, CategoryTree } from "./types";
 
@@ -33,6 +36,29 @@ function buildCategoryTree(categories: Category[]): CategoryTree[] {
 }
 
 export const categoryService = {
+  getById: async (id: number): Promise<Category | null> => {
+    const cacheKey = CacheKeys.category(id);
+    const cached = await sharedCache.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached) as Category;
+    }
+    const [row] = await pgDb
+      .select({
+        id: categoryTable.id,
+        name: categoryTable.name,
+        parentId: categoryTable.parentId,
+        description: categoryTable.description,
+        aiPrompt: categoryTable.aiPrompt,
+        createdAt: categoryTable.createdAt,
+      })
+      .from(categoryTable)
+      .where(eq(categoryTable.id, id));
+    if (row) {
+      await sharedCache.setex(cacheKey, 3600, JSON.stringify(row));
+    }
+    return row ?? null;
+  },
+
   /**
    * 전체 카테고리 조회 (트리 구조)
    */
@@ -87,6 +113,19 @@ export const categoryService = {
   insertCategory: async (
     data: Omit<Category, "id" | "createdAt"> & { createdId?: string },
   ): Promise<Category> => {
+    if (data.parentId != null) {
+      // 2depth 이상 불가
+      const [parent] = await pgDb
+        .select({
+          grandParentId: categoryTable.parentId,
+        })
+        .from(categoryTable)
+        .where(eq(categoryTable.id, data.parentId));
+      if (!parent) throw new PublicError("부모 카테고리가 존재하지 않습니다.");
+      if (parent.grandParentId != null) {
+        throw new PublicError("최대 2 Depth 까지 생성 가능.");
+      }
+    }
     const [row] = await pgDb
       .insert(categoryTable)
       .values({
@@ -105,6 +144,14 @@ export const categoryService = {
         createdAt: categoryTable.createdAt,
       });
 
+    if (row) {
+      await sharedCache.setex(
+        CacheKeys.category(row.id),
+        3600,
+        JSON.stringify(row),
+      );
+    }
+
     return row;
   },
 
@@ -113,13 +160,12 @@ export const categoryService = {
    */
   updateCategory: async (
     id: number,
-    data: Partial<Omit<Category, "id" | "createdAt">>,
+    data: Partial<Omit<Category, "id" | "createdAt" | "parentId">>,
   ): Promise<Category> => {
     const [row] = await pgDb
       .update(categoryTable)
       .set({
         name: data.name,
-        parentId: data.parentId,
         description: data.description,
         aiPrompt: data.aiPrompt,
       })
@@ -133,6 +179,14 @@ export const categoryService = {
         createdAt: categoryTable.createdAt,
       });
 
+    if (row) {
+      await sharedCache.setex(
+        CacheKeys.category(row.id),
+        3600,
+        JSON.stringify(row),
+      );
+    }
+
     return row;
   },
 
@@ -141,5 +195,6 @@ export const categoryService = {
    */
   deleteCategory: async (id: number): Promise<void> => {
     await pgDb.delete(categoryTable).where(eq(categoryTable.id, id));
+    await sharedCache.del(CacheKeys.category(id));
   },
 };
