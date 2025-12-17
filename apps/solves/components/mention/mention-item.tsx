@@ -1,44 +1,27 @@
 import { getBlockDisplayName } from "@service/solves/shared";
+import { AtSignIcon } from "lucide-react";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { SolvesMentionItem } from "./types";
 
-export function MentionItem({ item }: { item: SolvesMentionItem }) {
-  if (item.kind === "block") {
-    return (
-      <Badge
-        className="text-2xs mx-0.5 flex items-center gap-1 px-1"
-        variant="secondary"
-      >
-        <div className="text-3xs bg-foreground text-background rounded size-3 flex items-center justify-center">
-          {item.order}
-        </div>
-        {getBlockDisplayName(item.blockType)} 문제
-      </Badge>
-    );
-  }
-  return (
-    <p className="text-muted-foreground">지원되지 않는 멘션 타입입니다.</p>
-  );
-}
-
-export function MentionInputItem({ item }: { item: SolvesMentionItem }) {
+export function MentionItem({
+  item,
+  className,
+}: {
+  item: SolvesMentionItem;
+  className?: string;
+}) {
   return (
     <div
       className={cn(
-        "text-sele mx-1 rounded-full bg-primary/10 p-1 text-2xs flex items-center gap-2 cursor-pointer hover:ring-1 ring-primary max-w-48",
+        "text-blue-500 flex items-center mx-1 px-1 bg-blue-500/5 rounded",
+        className,
       )}
     >
-      {item.kind === "block" ? (
-        <>
-          <Badge className="text-3xs rounded-full" variant="default">
-            문제 {item.order}
-          </Badge>
-          <span className="flex-1 truncate">{item.question}</span>
-        </>
-      ) : (
-        <p>지원되지 않는 멘션 타입입니다.</p>
-      )}
+      <AtSignIcon className="size-3" />
+      {item.kind === "block" ? `문제${item.order}` : item.name}
     </div>
   );
 }
@@ -50,6 +33,10 @@ export function MentionSuggestionItem({
   item: SolvesMentionItem;
   isSelected?: boolean;
 }) {
+  const block = useMemo(() => {
+    if (item.kind !== "block") return null;
+    return useWorkbookEditStore.getState().blocks.find((b) => b.id === item.id);
+  }, []);
   return (
     <div
       className={cn(
@@ -61,10 +48,10 @@ export function MentionSuggestionItem({
         <>
           {" "}
           <Badge className="text-2xs w-12 truncate">문제 {item.order}</Badge>
-          <Badge className="text-2xs w-12 truncate" variant="secondary">
+          <Badge className="text-2xs w-16 truncate" variant="secondary">
             {getBlockDisplayName(item.blockType)}
           </Badge>
-          <span className="flex-1 truncate">{item.question}</span>
+          <span className="truncate flex-1">{block?.question}</span>
         </>
       ) : (
         <p>지원되지 않는 멘션 타입입니다.</p>

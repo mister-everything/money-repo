@@ -38,9 +38,11 @@ ${
     ? `# 현재 생성된 문제집 내용
 아래 자료를 참고하여 문제집 제작을 도와주세요.
 \`\`\`
-${normalizeBlock.join("\n\n")}`.trim()
+${normalizeBlock.join("\n\n")}
+\`\`\`
+`.trim()
     : ""
 }
-\`\`\`
+
     `.trim();
 };

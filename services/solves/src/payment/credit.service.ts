@@ -2,7 +2,7 @@ import { PublicError } from "@workspace/error";
 import { eq, sql } from "drizzle-orm";
 import { CacheKeys, CacheTTL } from "../cache-keys";
 import { pgDb } from "../db";
-import { logger } from "../logger";
+import { createLogger } from "../logger";
 import { sharedCache } from "../shared-cache";
 import {
   CreditLedgerTable,
@@ -11,6 +11,8 @@ import {
 } from "./schema";
 import { AIPrice, TxnKind } from "./types";
 import { calculateCost, toDecimal } from "./utils";
+
+const logger = createLogger("creadit");
 
 /**
  * Credit Service
@@ -122,7 +124,7 @@ export const creditService = {
       newBalance: result.newBalance,
     };
     logger.info(
-      `[consumeAICredit] ${price.displayName} cost: ${cost.totalMarketCost.toFixed(8)}, vendorCost: ${vendorCost}, marketCost: ${cost.totalMarketCost - (vendorCost || cost.totalCost)}, balance: ${result.newBalance}
+      `${price.displayName}: ${(cost.totalMarketCost * 1450).toFixed(2)}원 \ncost: ${cost.totalMarketCost.toFixed(8)}, vendorCost: ${vendorCost}, marketCost: ${cost.totalMarketCost - (vendorCost || cost.totalCost)}, balance: ${result.newBalance}
       inputTokens: ${inputTokens}, outputTokens: ${outputTokens}
       `,
     );

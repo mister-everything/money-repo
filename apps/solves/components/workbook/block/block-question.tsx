@@ -1,3 +1,4 @@
+import { MAX_QUESTION_LENGTH } from "@service/solves/shared";
 import { useCallback, useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,7 +38,7 @@ export function BlockQuestion({
           className="min-h-[100px] max-h-[300px] resize-none shadow-none"
           value={question}
           placeholder={placeholder}
-          maxLength={300}
+          maxLength={MAX_QUESTION_LENGTH}
           autoFocus
           onChange={handleChangeQuestion}
         />

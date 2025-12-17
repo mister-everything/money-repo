@@ -31,6 +31,7 @@ interface PromptInputProps {
   onSendButtonClick?: () => void;
   disabledSendButton?: boolean;
   isSending?: boolean;
+  onAppendMention?: (mention: SolvesMentionItem) => void;
   chatModel?: ChatModel;
   onChatModelChange?: (model: ChatModel) => void;
   metionItems?: (searchValue: string) => SolvesMentionItem[];
@@ -51,6 +52,7 @@ export default function PromptInput({
   chatModel,
   onChatModelChange,
   metionItems,
+  onAppendMention,
   onMentionChange,
   editorRef,
   className,
@@ -81,6 +83,7 @@ export default function PromptInput({
           onFocus={onFocus}
           onBlur={onBlur}
           items={metionItems}
+          onAppendMention={onAppendMention}
         />
       </div>
       <div className="w-full flex justify-end gap-1 items-center">

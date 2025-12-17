@@ -5,7 +5,7 @@
     }
   ],
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "tailwindCSS.experimental.configFile": "packages/tailwind-config/shared-styles.css",
+
   "[json][jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },

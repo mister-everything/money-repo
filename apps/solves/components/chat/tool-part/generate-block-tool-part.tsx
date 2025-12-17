@@ -4,8 +4,9 @@ import {
   getBlockDisplayName,
   WorkBookBlock,
 } from "@service/solves/shared";
+import { toAny } from "@workspace/util";
 import { ToolUIPart } from "ai";
-import { AlertTriangleIcon, CheckIcon } from "lucide-react";
+import { AlertTriangleIcon, CheckIcon, CircleIcon, XIcon } from "lucide-react";
 import { ReactNode, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
@@ -38,13 +39,20 @@ function BaseCard({
   title,
   isPending,
   children,
+  disabled,
 }: {
   title: string;
   isPending: boolean;
   children: ReactNode;
+  disabled: boolean;
 }) {
   return (
-    <div className="text-sm rounded-lg border bg-background p-4 shadow-sm space-y-3 fade-300">
+    <div
+      className={cn(
+        "text-sm rounded-lg border bg-background p-4 shadow-sm space-y-3 fade-300",
+        disabled && "border-secondary shadow-none bg-secondary",
+      )}
+    >
       <div className="font-semibold text-foreground">
         {isPending ? (
           <TextShimmer className="text-sm">문제 생성중</TextShimmer>
@@ -74,7 +82,7 @@ export function GenerateToolPart({
     [part.state],
   );
 
-  const input = part.input;
+  const input = part.input || toAny(part).rawInput;
   const output = part.output as WorkBookBlock | undefined;
   const blockType = toolNameToBlockType[type];
 
@@ -119,7 +127,7 @@ export function GenerateToolPart({
                     <input
                       type="radio"
                       readOnly
-                      checked={isCorrect}
+                      checked={isCorrect ?? false}
                       className="h-4 w-4 accent-primary"
                     />
                     <span>{opt}</span>
@@ -162,7 +170,7 @@ export function GenerateToolPart({
                     <input
                       type="radio"
                       readOnly
-                      checked={isCorrect}
+                      checked={isCorrect ?? false}
                       className="h-4 w-4 accent-primary"
                     />
                     <span>{opt}</span>
@@ -223,11 +231,27 @@ export function GenerateToolPart({
             <div className="text-foreground py-2">
               <Streamdown>{oxInput?.question ?? ""}</Streamdown>
             </div>
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm fade-300 border-muted bg-muted/40">
-              <span className="font-semibold text-primary">
-                {oxInput?.answer ? "O" : "X"}
-              </span>
-              <span className="text-muted-foreground text-xs">정답</span>
+            <div className="grid grid-cols-2 gap-4 h-44 lg:h-64">
+              <div
+                className={cn(
+                  "justify-center text-muted-foreground border flex h-full w-full items-center rounded-lg transition-colors",
+                  oxInput?.answer
+                    ? "border-primary/60 bg-primary/5 text-primary"
+                    : "border-muted bg-muted/40",
+                )}
+              >
+                <CircleIcon className="size-14 md:size-24" />
+              </div>
+              <div
+                className={cn(
+                  "justify-center text-muted-foreground border flex h-full w-full items-center rounded-lg transition-colors",
+                  !oxInput?.answer
+                    ? "border-primary/60 bg-primary/5 text-primary"
+                    : "border-muted bg-muted/40",
+                )}
+              >
+                <XIcon className="size-14 md:size-24" />
+              </div>
             </div>
             {oxInput?.solution && (
               <div className="text-xspx-3 p-2 text-muted-foreground">
@@ -269,10 +293,14 @@ export function GenerateToolPart({
   }, [input, type]);
 
   return (
-    <BaseCard title={getBlockDisplayName(blockType)} isPending={isPending}>
+    <BaseCard
+      title={getBlockDisplayName(blockType)}
+      isPending={isPending}
+      disabled={appendedBlock || Boolean(part.errorText)}
+    >
       {content}
       {part.errorText ? (
-        <p className="text-destructive text-xs text-center py-2 font-semibold flex items-center justify-center gap-2">
+        <p className="text-muted-foreground text-sm text-center py-2 flex items-center justify-center gap-2">
           <AlertTriangleIcon className="size-3" />
           문제 생성에 문제가 발생했어요.
         </p>

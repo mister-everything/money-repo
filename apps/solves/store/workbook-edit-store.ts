@@ -3,6 +3,7 @@ import { isFunction } from "@workspace/util";
 import { SetStateAction } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { SolvesMentionItem } from "@/components/mention/types";
 import { WorkbookOptions } from "./types";
 
 interface WorkbookEditStoreState {
@@ -10,10 +11,12 @@ interface WorkbookEditStoreState {
   workBook?: WorkBookWithoutBlocks;
   focusBlockId?: string;
   blocks: WorkBookBlock[];
+  mentions: SolvesMentionItem[];
 }
 
 interface WorkbookEditStoreDispatch {
   setWorkbookOption: (id: string, options: WorkbookOptions) => void;
+  setMentions: (mentions: SolvesMentionItem[]) => void;
   setWorkBook: (workBook: SetStateAction<WorkBookWithoutBlocks>) => void;
   setBlocks: (blocks: SetStateAction<WorkBookBlock[]>) => void;
   setFocusBlockId: (id: string) => void;
@@ -26,6 +29,7 @@ const initialState: WorkbookEditStoreState = {
   workbookOptions: {},
   blocks: [],
   workBook: undefined,
+  mentions: [],
 };
 
 export const useWorkbookEditStore = create<
@@ -53,6 +57,9 @@ export const useWorkbookEditStore = create<
             focusBlockId: block.id,
           };
         });
+      },
+      setMentions: (mentions) => {
+        set({ mentions });
       },
       setWorkbookOption: (id, options) => {
         set((state) => {
@@ -90,6 +97,7 @@ export const useWorkbookEditStore = create<
         return {
           ...initialState,
           ...state,
+          mentions: [],
           focusBlockId: undefined,
           workBook: undefined,
           blocks: [],

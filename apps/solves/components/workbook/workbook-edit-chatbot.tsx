@@ -10,7 +10,7 @@ import {
 import { Editor } from "@tiptap/react";
 import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
-import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
+import { BookPlusIcon, LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -55,15 +55,24 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
 
-  const [workbookOption, _setWorkbookOption, blocks, workBook] =
-    useWorkbookEditStore(
-      useShallow((state) => [
-        state.workbookOptions[workbookId] as WorkbookOptions | undefined,
-        state.setWorkbookOption,
-        state.blocks,
-        state.workBook,
-      ]),
-    );
+  const [
+    workbookOption,
+    _setWorkbookOption,
+    blocks,
+    workBook,
+    mentions,
+    setMentions,
+  ] = useWorkbookEditStore(
+    useShallow((state) => [
+      state.workbookOptions[workbookId] as WorkbookOptions | undefined,
+      state.setWorkbookOption,
+      state.blocks,
+      state.workBook,
+      state.mentions,
+      state.setMentions,
+    ]),
+  );
+
   const setWorkbookOption = useCallback(
     (options: WorkbookOptions) => {
       _setWorkbookOption(workbookId, options);
@@ -113,18 +122,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
-  const [selectedMentions, setSelectedMentions] = useState<SolvesMentionItem[]>(
-    [],
-  );
-
   const latest = useToRef({
     workBook,
     chatModel,
     threadId,
     tempThreadList,
     workbookOption,
-    selectedMentions,
     blocks,
+    mentions,
   });
 
   const [input, setInput] = useState<string>("");
@@ -188,13 +193,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     transport: new DefaultChatTransport({
       api: "/api/ai/chat/workbook/create",
       prepareSendMessagesRequest: ({ messages, id }) => {
-        const {
-          chatModel,
-          workBook,
-          workbookOption,
-          blocks,
-          selectedMentions,
-        } = latest.current;
+        const { chatModel, workBook, workbookOption, blocks, mentions } =
+          latest.current;
 
         const orderedBlocks = blocks.map((v, order) => ({
           ...v,
@@ -209,8 +209,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             situation: workbookOption?.situation,
             blockTypes: workbookOption?.blockTypes,
             category: workBook?.categoryId,
-            normalizeBlock: selectedMentions.length
-              ? (selectedMentions
+            normalizeBlock: mentions.length
+              ? (mentions
                   .map((v) => {
                     if (v.kind != "block") return undefined;
                     const block = orderedBlocks.find((b) => b.id == v.id);
@@ -234,6 +234,18 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const isPending = useMemo(() => {
     return isMessagesLoading || isThreadValidating || isChatPending;
   }, [isMessagesLoading, isThreadValidating, isChatPending]);
+
+  const mentionWithBlock = useMemo(() => {
+    const blockMentions = mentions.filter(
+      (mention) => mention.kind == "block",
+    ) as Extract<SolvesMentionItem, { kind: "block" }>[];
+    return blockMentions.map((mention) => {
+      return {
+        ...mention,
+        block: blocks.find((block) => block.id == mention.id),
+      };
+    });
+  }, [mentions]);
 
   const fetchThreadMessages = useCallback(async (threadId: string) => {
     try {
@@ -320,6 +332,20 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     clearError();
   }, [clearError, threadId, savedThreadList]);
 
+  const handleAppendMention = useCallback(
+    (mention: SolvesMentionItem) => {
+      setMentions(deduplicateByKey([...mentions, mention], "id"));
+    },
+    [mentions],
+  );
+
+  const handleRemoveMention = useCallback(
+    (mentionId: string) => {
+      setMentions(mentions.filter((mention) => mention.id !== mentionId));
+    },
+    [mentions],
+  );
+
   useEffect(() => {
     if (!threadId) return;
     const isSavedThread = savedThreadList.some((t) => t.id === threadId);
@@ -374,6 +400,17 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       });
     }
   }, [error]);
+
+  const blockIds = useMemo(() => {
+    return blocks.map((b) => b.id).join(",");
+  }, [blocks]);
+
+  useEffect(() => {
+    const ids = blockIds.split(",");
+    setMentions(
+      mentions.filter((m) => m.kind != "block" || ids.includes(m.id)),
+    );
+  }, [blockIds]);
 
   return (
     <div className="flex flex-col h-full border rounded-2xl bg-sidebar relative">
@@ -456,8 +493,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                     !isLastMessage || error
                       ? undefined
                       : message.role == "assistant"
-                        ? "min-h-[calc(65dvh-30px)]"
-                        : "min-h-[calc(65dvh+70px)]"
+                        ? "min-h-[calc(60dvh-30px)]"
+                        : "min-h-[calc(60dvh+70px)]"
                   }
                 />
               );
@@ -473,63 +510,92 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       <div className={cn("p-2 absolute bottom-0 left-0 right-0")}>
         <div className="bg-background border rounded-2xl p-2 flex flex-col gap-1">
           <div className="flex flex-wrap gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <WorkbookOptionSituation
-                    value={workbookOption?.situation}
-                    onChange={(value) =>
-                      setWorkbookOption({
-                        ...workbookOption!,
-                        situation: value,
-                      })
-                    }
-                    align="start"
-                    side="top"
-                  >
-                    <Badge
-                      variant={"secondary"}
-                      className="data-[state=open]:bg-input! text-xs"
-                    >
-                      {WorkBookSituation.find(
-                        (value) => value.value === workbookOption?.situation,
-                      )?.label || "상황"}
-                    </Badge>
-                  </WorkbookOptionSituation>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>상황</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <WorkbookOptionBlockTypes
-                    value={workbookOption?.blockTypes}
-                    onChange={(value) =>
-                      setWorkbookOption({
-                        ...workbookOption,
-                        blockTypes: value,
-                      })
-                    }
-                    align="start"
-                    side="top"
-                  >
-                    <Badge
-                      variant={"secondary"}
-                      className="data-[state=open]:bg-input! text-xs cursor-pointer"
-                    >
-                      {workbookOption?.blockTypes.length ==
-                      Object.keys(blockDisplayNames).length
-                        ? "모든 유형"
-                        : workbookOption?.blockTypes
-                            .map((value) => blockDisplayNames[value])
-                            .join(", ") || "문제 유형"}
-                    </Badge>
-                  </WorkbookOptionBlockTypes>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>문제 유형</TooltipContent>
-            </Tooltip>
+            {mentionWithBlock.length ? (
+              mentionWithBlock.map((mention) => (
+                <Tooltip key={mention.id} delayDuration={500}>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Badge
+                        variant={"secondary"}
+                        onClick={() => handleRemoveMention(mention.id)}
+                        className="fade-300 ring ring-primary bg-primary/10 text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                      >
+                        <BookPlusIcon className="size-3 text-primary" />
+                        {`문제 ${mention.order}`}
+                        <span className="text-3xs max-w-24 truncate text-muted-foreground">
+                          {mention.block?.question}
+                        </span>
+                        <XIcon className="size-3" />
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    문제가 AI에 참고 됩니다. 문제를 제거하려면 클릭해주세요.
+                  </TooltipContent>
+                </Tooltip>
+              ))
+            ) : (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <WorkbookOptionSituation
+                        value={workbookOption?.situation}
+                        onChange={(value) =>
+                          setWorkbookOption({
+                            ...workbookOption!,
+                            situation: value,
+                          })
+                        }
+                        align="start"
+                        side="top"
+                      >
+                        <Badge
+                          variant={"secondary"}
+                          className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                        >
+                          {WorkBookSituation.find(
+                            (value) =>
+                              value.value === workbookOption?.situation,
+                          )?.label || "상황"}
+                        </Badge>
+                      </WorkbookOptionSituation>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>상황</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <WorkbookOptionBlockTypes
+                        value={workbookOption?.blockTypes}
+                        onChange={(value) =>
+                          setWorkbookOption({
+                            ...workbookOption,
+                            blockTypes: value,
+                          })
+                        }
+                        align="start"
+                        side="top"
+                      >
+                        <Badge
+                          variant={"secondary"}
+                          className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer"
+                        >
+                          {workbookOption?.blockTypes.length ==
+                          Object.keys(blockDisplayNames).length
+                            ? "모든 유형"
+                            : workbookOption?.blockTypes
+                                .map((value) => blockDisplayNames[value])
+                                .join(", ") || "문제 유형"}
+                        </Badge>
+                      </WorkbookOptionBlockTypes>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>문제 유형</TooltipContent>
+                </Tooltip>
+              </>
+            )}
           </div>
           <PromptInput
             className="bg-transition border-none p-0"
@@ -537,8 +603,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             editorRef={editorRef}
             onChange={setInput}
             onEnter={send}
-            onMentionChange={setSelectedMentions}
             metionItems={metionItems}
+            onAppendMention={handleAppendMention}
             placeholder="무엇이든 물어보세요"
             disabledSendButton={
               (!isChatPending && isPending) || !threadId || Boolean(error)
