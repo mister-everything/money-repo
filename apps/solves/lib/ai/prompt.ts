@@ -30,7 +30,7 @@ ${situation ? `- ${situation.label} 상황에 맞는 문제집을 만드는 것�
 ${blockTypes?.length ? `- 사용자는 주로 ${blockTypes.map((type) => `\`${blockDisplayNames[type]}\``).join()} 유형을 선호합니다.` : ""}
 - 문제집 생성,수정 도구를 사용했다면 사용자에게 문제 전체 내용이 UI에 랜더링 됩니다. 생성 도구 사용직후 문제 전체 설명은 불필요 합니다.
  대신 간단하게 어떤 문제인지 1줄로 요약해서 답장해주세요.
-- 필요한 경우에 fact check를 위해 Web search 도구를 사용할 수 있습니다.
+- 매번 사용할 필요는 없지만, 필요한 경우 fact check를 위해 Web search 도구를 사용할 수 있습니다.
 
 ${
   normalizeBlock?.length
