@@ -1,4 +1,4 @@
-import { arrayToObject, exclude } from "@workspace/util";
+import { arrayToObject, exclude, truncateString } from "@workspace/util";
 import {
   BlockAnswer,
   BlockContent,
@@ -10,12 +10,25 @@ import { WorkBookBlock } from "./types";
 
 // block to string
 // 아마 대부분 ai prompt 에 block 내용을 전달하기 위한 목적으로 사용 예정
-export function normalizeBlock(block: WorkBookBlock): string {
+
+export function noralizeSummaryBlock(block: WorkBookBlock): string {
+  const { question, order, type } = block;
+  return JSON.stringify({
+    ref: "summary",
+    type,
+    order,
+    question: truncateString(question.trim(), 20),
+  });
+}
+
+export function normalizeDetailBlock(block: WorkBookBlock): string {
   const { id, question, order, content, answer, type, ...rest } = block;
 
   const data = {
+    ref: "detail",
     id,
     type,
+    order,
     question: question.trim(),
     content: normalizeContent(content),
     correctAnswer: normalizeAnswer({
@@ -23,7 +36,6 @@ export function normalizeBlock(block: WorkBookBlock): string {
       content,
     }),
     solution: answer.solution?.trim(),
-    order,
     ...rest,
   };
 

@@ -16,7 +16,7 @@ export const useChatModelList = (
     revalidateOnFocus: false,
     dedupingInterval: TIME.MINUTES(10),
     onSuccess: (data) => {
-      const initialChatModel = useAiStore.getInitialState().chatModel;
+      const initialChatModel = useAiStore.getState().chatModel;
       if (
         !initialChatModel ||
         !data.some(

@@ -4,7 +4,7 @@ import {
   getBlockDisplayName,
   WorkBookBlock,
 } from "@service/solves/shared";
-import { toAny } from "@workspace/util";
+
 import { ToolUIPart } from "ai";
 import { AlertTriangleIcon, CheckIcon, CircleIcon, XIcon } from "lucide-react";
 import { ReactNode, useCallback, useMemo } from "react";
@@ -82,7 +82,7 @@ export function GenerateToolPart({
     [part.state],
   );
 
-  const input = part.input || toAny(part).rawInput;
+  const input = part.input;
   const output = part.output as WorkBookBlock | undefined;
   const blockType = toolNameToBlockType[type];
 

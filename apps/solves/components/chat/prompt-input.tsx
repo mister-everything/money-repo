@@ -34,7 +34,7 @@ interface PromptInputProps {
   onAppendMention?: (mention: SolvesMentionItem) => void;
   chatModel?: ChatModel;
   onChatModelChange?: (model: ChatModel) => void;
-  metionItems?: (searchValue: string) => SolvesMentionItem[];
+  mentionItems?: (searchValue: string) => SolvesMentionItem[];
   editorRef?: RefObject<Editor | null>;
   className?: string;
 }
@@ -51,7 +51,7 @@ export default function PromptInput({
   isSending,
   chatModel,
   onChatModelChange,
-  metionItems,
+  mentionItems,
   onAppendMention,
   onMentionChange,
   editorRef,
@@ -82,7 +82,7 @@ export default function PromptInput({
           editorRef={editorRef}
           onFocus={onFocus}
           onBlur={onBlur}
-          items={metionItems}
+          items={mentionItems}
           onAppendMention={onAppendMention}
         />
       </div>

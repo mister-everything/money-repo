@@ -1,5 +1,12 @@
+import { UseChatHelpers } from "@ai-sdk/react";
 import { isString } from "@workspace/util";
-import { getToolName, ReasoningUIPart, TextUIPart, ToolUIPart } from "ai";
+import {
+  getToolName,
+  ReasoningUIPart,
+  TextUIPart,
+  ToolUIPart,
+  UIMessage,
+} from "ai";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckIcon,
@@ -18,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+
 import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/types";
 import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
@@ -223,7 +231,12 @@ export function ReasoningPart({
   );
 }
 
-export function ToolPart({ part }: { part: ToolUIPart }) {
+export function ToolPart({
+  part,
+}: {
+  part: ToolUIPart;
+  addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toolName = useMemo(() => getToolName(part), [part.type]);
@@ -245,7 +258,7 @@ export function ToolPart({ part }: { part: ToolUIPart }) {
 
   if (toolName === EXA_SEARCH_TOOL_NAME) {
     return (
-      <div className="p-2 ">
+      <div className="p-2">
         <WebSearchToolPart part={part} />
       </div>
     );
