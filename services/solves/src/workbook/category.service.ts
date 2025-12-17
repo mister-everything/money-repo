@@ -150,7 +150,7 @@ export const categoryService = {
         3600,
         JSON.stringify(row),
       );
-    }
+    } else throw new PublicError("카테고리 생성에 실패했습니다.");
 
     return row;
   },
@@ -164,11 +164,7 @@ export const categoryService = {
   ): Promise<Category> => {
     const [row] = await pgDb
       .update(categoryTable)
-      .set({
-        name: data.name,
-        description: data.description,
-        aiPrompt: data.aiPrompt,
-      })
+      .set(data)
       .where(eq(categoryTable.id, id))
       .returning({
         id: categoryTable.id,
@@ -185,7 +181,7 @@ export const categoryService = {
         3600,
         JSON.stringify(row),
       );
-    }
+    } else throw new PublicError("카테고리를 찾을 수 없습니다.");
 
     return row;
   },
