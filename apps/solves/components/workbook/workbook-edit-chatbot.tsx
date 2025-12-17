@@ -5,9 +5,10 @@ import {
   blockDisplayNames,
   ChatThread,
   getBlockDisplayName,
+  normalizeBlock,
 } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
-import { deduplicateByKey, generateUUID } from "@workspace/util";
+import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
 import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
 import { LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,7 +58,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const [workbookOption, _setWorkbookOption, blocks, workBook] =
     useWorkbookEditStore(
       useShallow((state) => [
-        state.workbookOptions[workbookId],
+        state.workbookOptions[workbookId] as WorkbookOptions | undefined,
         state.setWorkbookOption,
         state.blocks,
         state.workBook,
@@ -112,17 +113,21 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
+  const [selectedMentions, setSelectedMentions] = useState<SolvesMentionItem[]>(
+    [],
+  );
+
   const latest = useToRef({
     workBook,
     chatModel,
     threadId,
     tempThreadList,
     workbookOption,
+    selectedMentions,
+    blocks,
   });
 
   const [input, setInput] = useState<string>("");
-
-  const [, setSelectedMentions] = useState<SolvesMentionItem[]>([]);
 
   const metionItems = useCallback(
     (searchValue: string): SolvesMentionItem[] => {
@@ -183,16 +188,38 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     transport: new DefaultChatTransport({
       api: "/api/ai/chat/workbook/create",
       prepareSendMessagesRequest: ({ messages, id }) => {
-        const { chatModel, workBook, workbookOption } = latest.current;
-        const body: z.infer<typeof WorkbookCreateChatRequest> = {
-          messages,
-          model: chatModel!,
-          workbookId,
-          threadId: id,
-          situation: workbookOption.situation,
-          blockTypes: workbookOption.blockTypes,
-          category: workBook?.categoryId,
-        };
+        const {
+          chatModel,
+          workBook,
+          workbookOption,
+          blocks,
+          selectedMentions,
+        } = latest.current;
+
+        const orderedBlocks = blocks.map((v, order) => ({
+          ...v,
+          order: order + 1,
+        }));
+        const body: z.infer<typeof WorkbookCreateChatRequest> =
+          WorkbookCreateChatRequest.parse({
+            messages,
+            model: chatModel!,
+            workbookId,
+            threadId: id,
+            situation: workbookOption?.situation,
+            blockTypes: workbookOption?.blockTypes,
+            category: workBook?.categoryId,
+            normalizeBlock: selectedMentions.length
+              ? (selectedMentions
+                  .map((v) => {
+                    if (v.kind != "block") return undefined;
+                    const block = orderedBlocks.find((b) => b.id == v.id);
+                    if (!block) return undefined;
+                    return normalizeBlock(block);
+                  })
+                  .filter(Boolean) as string[])
+              : undefined,
+          });
         return {
           body,
         };
@@ -225,11 +252,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     (text: string = input) => {
       if (status != "ready" || !threadId || Boolean(error) || !text?.trim())
         return;
-      editorRef.current?.commands.setContent("");
       sendMessage({
         role: "user",
         parts: [{ type: "text", text }],
       });
+      nextTick().then(() => editorRef.current?.commands.setContent(""));
     },
     [input, status, threadId, error],
   );
@@ -452,7 +479,10 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                   <WorkbookOptionSituation
                     value={workbookOption?.situation}
                     onChange={(value) =>
-                      setWorkbookOption({ ...workbookOption, situation: value })
+                      setWorkbookOption({
+                        ...workbookOption!,
+                        situation: value,
+                      })
                     }
                     align="start"
                     side="top"

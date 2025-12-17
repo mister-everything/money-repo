@@ -1,6 +1,7 @@
 import { categoryService, chatService } from "@service/solves";
 import { BlockType } from "@service/solves/shared";
 import { generateUUID, isNull } from "@workspace/util";
+import { IS_PROD } from "@workspace/util/const";
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -14,8 +15,8 @@ import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
-
 import { getSession } from "@/lib/auth/server";
+import { logger } from "@/lib/logger";
 import { WorkbookCreateChatRequest } from "../../../types";
 
 export const maxDuration = 300;
@@ -59,6 +60,8 @@ export async function POST(req: Request) {
     situation: situation ?? "",
     normalizeBlock,
   });
+
+  if (!IS_PROD) logger.debug(systemPrompt);
 
   const stream = createUIMessageStream({
     execute: async ({ writer: dataStream }) => {
