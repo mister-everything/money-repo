@@ -6,5 +6,5 @@ export const SERVICE_NAME = "solves-service";
  * 환경 변수로 설정 가능, 기본값: 5
  */
 export const INITIAL_CREDIT_BALANCE = Number(
-  process.env.INITIAL_CREDIT_BALANCE || "5",
+  process.env.INITIAL_CREDIT_BALANCE || "2",
 );
