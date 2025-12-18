@@ -622,6 +622,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             mentionItems={mentionItems}
             onAppendMention={handleAppendMention}
             placeholder="무엇이든 물어보세요"
+            isSending={isChatPending}
             disabledSendButton={
               (!isChatPending && isPending) || !threadId || Boolean(error)
             }
