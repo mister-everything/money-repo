@@ -185,6 +185,20 @@ export function ReasoningPart({
 }: ReasoningPartProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  const startedAt = useMemo(() => {
+    if (!streaming) return null;
+    return Date.now();
+  }, []);
+  const endedAt = useMemo(() => {
+    if (streaming) return Date.now();
+    return Date.now();
+  }, [streaming]);
+
+  const durationSeconds = useMemo(() => {
+    if (!startedAt || !endedAt) return null;
+    return Math.floor((endedAt - startedAt) / 1000);
+  }, [startedAt, endedAt]);
+
   return (
     <div
       className="flex flex-col cursor-pointer text-sm"
@@ -196,7 +210,11 @@ export function ReasoningPart({
         {streaming ? (
           <TextShimmer>생각중...</TextShimmer>
         ) : (
-          <div className="font-medium">생각하는 과정</div>
+          <div className="font-medium fade-300">
+            {durationSeconds
+              ? `${durationSeconds}초 동안 생각함`
+              : "잠시 생각함"}
+          </div>
         )}
 
         <button

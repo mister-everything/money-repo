@@ -25,12 +25,12 @@ export const getChatModel = (model: ChatModel) => {
         settings: {
           providerOptions: {
             openai: {
-              reasoningEffort: "medium",
+              reasoningEffort: "low",
               reasoningSummary: "auto",
             },
             google: {
               thinkingConfig: {
-                thinkingLevel: "medium",
+                thinkingLevel: "low",
                 includeThoughts: true,
               },
             },
