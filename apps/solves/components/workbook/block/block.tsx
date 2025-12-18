@@ -25,7 +25,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { WorkBookComponentMode } from "../types";
 import {
   DefaultBlockContent,
   McqMultipleBlockContent,
@@ -36,6 +35,7 @@ import {
 import { BlockEditCheckButton } from "./block-edit-check-button";
 import { BlockQuestion } from "./block-question";
 import { BlockSolution } from "./block-solution";
+import { WorkBookComponentMode } from "./types";
 
 export type BlockProps<T extends BlockType = BlockType> = {
   id: string;

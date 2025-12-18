@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 import { cn } from "@/lib/utils";
 import { useAiStore } from "@/store/ai-store";
-import { WorkBookComponentMode } from "../types";
+import { WorkBookComponentMode } from "./types";
 
 export function BlockSolution<T extends BlockType = BlockType>({
   blockId,

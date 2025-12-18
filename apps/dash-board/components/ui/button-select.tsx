@@ -99,7 +99,6 @@ export function ButtonSelect({
                   disabled={disabled}
                   checked={checked}
                   onCheckedChange={() => handleClick(option.value)}
-                  className="shadow-xs"
                 />
               ) : (
                 <button
@@ -108,14 +107,14 @@ export function ButtonSelect({
                   disabled={disabled}
                   onClick={() => handleClick(option.value)}
                   className={cn(
-                    "relative h-4 w-4 shrink-0 rounded-full border shadow-xs transition-colors",
+                    "relative h-4 w-4 shrink-0 rounded-full border transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     "disabled:cursor-not-allowed disabled:opacity-50",
-                    checked ? "border-primary" : "border-input",
+                    checked ? "border-primary bg-primary" : "border-input",
                   )}
                 >
                   {checked && (
-                    <CircleIcon className="fill-primary stroke-primary-foreground absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" />
+                    <CircleIcon className="fill-background stroke-background absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" />
                   )}
                 </button>
               )}

@@ -1,11 +1,10 @@
-import { UIMessage } from "@ai-sdk/react";
 import { SystemPrompt } from "@service/solves/shared";
 import { exclude } from "@workspace/util";
-import { UIMessagePart } from "ai";
+import { isToolUIPart, ToolUIPart, UIMessage, UIMessagePart } from "ai";
 import z from "zod";
 
 export const DefaultChatRequest = z.object({
-  messages: z.array(z.any()),
+  messages: z.array(z.any() as z.ZodType<UIMessage>),
   model: z.object({
     provider: z.string(),
     model: z.string(),
@@ -19,24 +18,28 @@ export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
     description: z.string().nullish(),
     workbookId: z.string(),
     situation: z.string().optional(),
+    ageGroup: z.string().optional(),
     blockTypes: z.array(z.string()).optional(),
     normalizeBlocks: z.array(z.string()).optional(),
     category: z.number().nullish(),
   }).shape,
 );
 
-export const uiMessageToSaveMessage = (uiMessage: UIMessage): UIMessage => {
-  return {
-    ...uiMessage,
-    parts: uiMessage.parts.map(
-      (part) =>
-        exclude(part as any, [
-          "providerMetadata",
-          "callProviderMetadata",
-        ]) as UIMessagePart<any, any>,
-    ),
-  };
+export const uiPartToSavePart = (
+  part: UIMessagePart<any, any>,
+): UIMessagePart<any, any> => {
+  return exclude(part as any, [
+    "providerMetadata",
+    "callProviderMetadata",
+  ]) as UIMessagePart<any, any>;
 };
+
+export function extractInProgressToolPart(message: UIMessage): ToolUIPart[] {
+  if (message.role != "assistant") return [];
+  return message.parts.filter(
+    (part) => isToolUIPart(part) && part.state.startsWith("input-"),
+  ) as ToolUIPart[];
+}
 
 export const Options = z.object({
   // 모델 정보

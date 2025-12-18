@@ -88,12 +88,7 @@ const PurePreviewMessage = ({
 
             if (part.type === "reasoning") {
               return (
-                <ReasoningPart
-                  part={part}
-                  key={key}
-                  streaming={isStreaming}
-                  defaultExpanded={isLastMessage}
-                />
+                <ReasoningPart part={part} key={key} streaming={isStreaming} />
               );
             }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { WorkBookWithoutBlocks } from "@service/solves/shared";
-import { CheckIcon, HashIcon, PencilIcon } from "lucide-react";
+import { HashIcon, PencilIcon } from "lucide-react";
 import { ComponentProps, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { WorkBookComponentMode } from "./types";
+import { BlockEditCheckButton } from "./block/block-edit-check-button";
+import { WorkBookComponentMode } from "./block/types";
 
 type WorkbookHeaderProps = {
   book: WorkBookWithoutBlocks;
@@ -97,27 +98,10 @@ export function WorkbookHeader({
               <TooltipContent>문제집 수정하기</TooltipContent>
             </Tooltip>
           ) : mode === "edit" && onModeChange ? (
-            <Tooltip open={feedback ? undefined : false}>
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    onClick={() => onModeChange("preview")}
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "hover:bg-primary hover:text-primary-foreground",
-                      !feedback && "text-primary-foreground bg-primary",
-                    )}
-                    disabled={Boolean(feedback)}
-                  >
-                    <CheckIcon />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="whitespace-pre-wrap">
-                {feedback}
-              </TooltipContent>
-            </Tooltip>
+            <BlockEditCheckButton
+              feedback={feedback}
+              onClick={() => onModeChange("preview")}
+            />
           ) : null}
         </CardTitle>
         {mode == "edit" ? (

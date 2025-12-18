@@ -10,7 +10,12 @@ import {
 } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
 import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
-import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
+import {
+  ChatOnFinishCallback,
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  UIMessage,
+} from "ai";
 import { BookPlusIcon, LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,7 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useChatModelList } from "@/hooks/query/use-chat-model-list";
 import { useToRef } from "@/hooks/use-to-ref";
-import { WorkBookSituation } from "@/lib/const";
+import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
@@ -43,6 +48,7 @@ import { SolvesMentionItem } from "../mention/types";
 import { toBlockMention } from "../mention/util";
 import { Badge } from "../ui/badge";
 import {
+  WorkbookOptionAgeGroup,
   WorkbookOptionBlockTypes,
   WorkbookOptionSituation,
 } from "./workbook-edit-options";
@@ -193,6 +199,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     id: threadId,
     generateId: generateUUID,
     onError: handleErrorToast,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onFinish,
     transport: new DefaultChatTransport({
       api: "/api/ai/chat/workbook/create",
@@ -226,6 +233,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             threadId: id,
             situation: workbookOption?.situation,
             blockTypes: workbookOption?.blockTypes,
+            ageGroup: workbookOption?.ageGroup,
             category: workBook?.categoryId,
             normalizeBlocks,
           });
@@ -581,6 +589,33 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>상황</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <WorkbookOptionAgeGroup
+                        value={workbookOption?.ageGroup}
+                        onChange={(value) =>
+                          setWorkbookOption({
+                            ...workbookOption!,
+                            ageGroup: value,
+                          })
+                        }
+                        align="start"
+                        side="top"
+                      >
+                        <Badge
+                          variant={"secondary"}
+                          className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                        >
+                          {WorkBookAgeGroup.find(
+                            (value) => value.value === workbookOption?.ageGroup,
+                          )?.label || "연령대"}
+                        </Badge>
+                      </WorkbookOptionAgeGroup>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>연령대</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>

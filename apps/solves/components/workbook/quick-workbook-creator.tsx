@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useCategories } from "@/hooks/query/use-categories";
-import { WorkBookSituation } from "@/lib/const";
+import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 
 import { CategorySelector } from "./category-selector";
 
@@ -14,6 +14,7 @@ export function QuickWorkbookCreator() {
   const router = useRouter();
   const { data: categories = [], isLoading } = useCategories();
   const [situation, setSituation] = useState<string>("");
+  const [ageGroup, setAgeGroup] = useState<string>("");
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<
     number | undefined
@@ -55,6 +56,19 @@ export function QuickWorkbookCreator() {
                 setSituation(value as string);
               }}
               options={WorkBookSituation.map((value) => ({
+                label: value.label,
+                value: value.value,
+              }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-foreground">연령대</label>
+            <ButtonSelect
+              value={ageGroup || ""}
+              onChange={(value) => {
+                setAgeGroup(value as string);
+              }}
+              options={WorkBookAgeGroup.map((value) => ({
                 label: value.label,
                 value: value.value,
               }))}

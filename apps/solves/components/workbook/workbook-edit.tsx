@@ -61,7 +61,7 @@ import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { Skeleton } from "../ui/skeleton";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
-import { WorkBookComponentMode } from "./types";
+import { WorkBookComponentMode } from "./block/types";
 import { WorkBookCategoryUpdatePopup } from "./workbook-category-update-popup";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";
@@ -112,6 +112,7 @@ export function WorkbookEdit({
     blocks = initialBlocks,
     workBook = initialWorkbook,
     focusBlockId,
+    setFocusBlockId,
     appendBlock,
     setBlocks,
     setWorkBook,
@@ -474,8 +475,11 @@ export function WorkbookEdit({
       {} as Record<string, string>,
     );
     setFeedbacks(nextFeedbacks);
-    if (Object.keys(nextFeedbacks).length > 0) {
+    const keys = Object.keys(nextFeedbacks);
+    if (keys.length > 0) {
       return false;
+    } else {
+      setFocusBlockId(keys[0]);
     }
     return true;
   }, []);
@@ -497,7 +501,6 @@ export function WorkbookEdit({
     }
     const isValid = handleValidateBlocks(stateRef.current.blocks);
     if (!isValid) {
-      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return "문제를 먼저 수정해주세요.";
     }
     return true;
@@ -507,7 +510,6 @@ export function WorkbookEdit({
     const result = validateWorkbook();
     if (result !== true) {
       toast.warning(result);
-      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     setIsPublishPopupOpen(true);
@@ -697,7 +699,6 @@ export function WorkbookEdit({
           const result = validateWorkbook();
           if (result !== true) {
             toast.warning(result);
-            ref.current?.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }
           handleChangeControl(control == "edit" ? "solve" : "edit");

@@ -6,8 +6,13 @@ import type {
 
 import { aiPriceService, creditService } from "@service/solves";
 import { isNull } from "@workspace/util";
+import { simulateReadableStream } from "ai";
 import { logger } from "@/lib/logger";
-import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
+import {
+  getWallet,
+  getWalletThrowIfNotEnoughBalance,
+} from "../auth/get-balance";
+import { generateSimulateStreamPart } from "./generate-simulate-stream-part";
 
 function getTokens(useage: LanguageModelV2Usage) {
   if (isNull(useage.inputTokens)) {
@@ -41,6 +46,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         );
       }
       const result = await doGenerate();
+
       const { inputTokens, outputTokens } = getTokens(result.usage);
       const vendorCost =
         result.providerMetadata?.gateway?.marketCost ||
@@ -57,7 +63,19 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
     },
 
     wrapStream: async ({ doStream, model }) => {
-      const wallet = await getWalletThrowIfNotEnoughBalance();
+      const wallet = await getWallet();
+      if (Number(wallet.balance || 0) <= 0) {
+        const stream = simulateReadableStream<LanguageModelV2StreamPart>({
+          chunks: generateSimulateStreamPart(
+            `크레딧이 부족합니다. 제가 더이상 대화를 할 수 없어요.\n\n먼저 **크레딧을 충전하고** , 다시 우리 대화를 이어 가볼까요?😘\n\n제가 크레딧을 **충전하는 방법**을 아래 작성 해드릴게요!`,
+          ),
+          initialDelayInMs: 1000,
+          chunkDelayInMs: 30,
+        });
+        return {
+          stream,
+        };
+      }
 
       const [provider, modelName] = model.modelId.split("/");
 
@@ -66,9 +84,20 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         modelName,
       );
       if (!price) {
-        throw new Error(
+        logger.warn(
           `Price not found for provider: ${provider} and model: ${modelName}`,
         );
+        const stream = simulateReadableStream<LanguageModelV2StreamPart>({
+          chunks: generateSimulateStreamPart(
+            `지금 사용하신 \`${provider}\`의 \`${modelName}\` 모델은 사용 불가능합니다.\n
+            다른 모델을 선택하고, 다시 한번 말씀해주세요. 🤣`,
+          ),
+          initialDelayInMs: 1000,
+          chunkDelayInMs: 30,
+        });
+        return {
+          stream,
+        };
       }
 
       const { stream, ...rest } = await doStream();

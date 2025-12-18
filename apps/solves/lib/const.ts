@@ -23,3 +23,42 @@ export const WorkBookSituation = [
     aiPrompt: "",
   },
 ] as const;
+
+export const WorkBookAgeGroup = [
+  {
+    label: "전체",
+    value: "all",
+    description: "",
+    aiPrompt: "",
+  },
+  {
+    label: "유아",
+    value: "toddler",
+    description: "",
+    aiPrompt: "",
+  },
+  {
+    label: "아동",
+    value: "child",
+    description: "",
+    aiPrompt: "",
+  },
+  {
+    label: "청소년",
+    value: "teen",
+    description: "",
+    aiPrompt: "",
+  },
+  {
+    label: "성인",
+    value: "adult",
+    description: "",
+    aiPrompt: "",
+  },
+  {
+    label: "시니어",
+    value: "senior",
+    description: "",
+    aiPrompt: "",
+  },
+] as const;

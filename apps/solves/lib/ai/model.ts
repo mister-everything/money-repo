@@ -1,6 +1,11 @@
 import { ChatModel } from "@service/solves/shared";
 
-import { gateway, LanguageModel, wrapLanguageModel } from "ai";
+import {
+  defaultSettingsMiddleware,
+  gateway,
+  LanguageModel,
+  wrapLanguageModel,
+} from "ai";
 import { vercelGatewayLanguageModelCreditMiddleware } from "./credit-middleware";
 
 const memory = new Map<string, LanguageModel>();
@@ -14,7 +19,25 @@ export const getChatModel = (model: ChatModel) => {
   }
   const chatModel = wrapLanguageModel({
     model: gateway(key),
-    middleware: [vercelGatewayLanguageModelCreditMiddleware],
+    middleware: [
+      vercelGatewayLanguageModelCreditMiddleware,
+      defaultSettingsMiddleware({
+        settings: {
+          providerOptions: {
+            openai: {
+              reasoningEffort: "low",
+              reasoningSummary: "auto",
+            },
+            google: {
+              thinkingConfig: {
+                thinkingLevel: "low",
+                includeThoughts: true,
+              },
+            },
+          },
+        },
+      }),
+    ],
   });
   memory.set(key, chatModel);
   return chatModel;

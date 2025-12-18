@@ -3,7 +3,7 @@ import { useCallback, useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { WorkBookComponentMode } from "../types";
+import { WorkBookComponentMode } from "./types";
 
 interface BlockQuestionProps {
   question: string;

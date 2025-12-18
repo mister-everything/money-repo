@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
 import { normalizeMentions } from "../mention/util";
 import JsonView from "../ui/json-view";
-import { GenerateToolPart } from "./tool-part/generate-block-tool-part";
+import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
 
 interface UserMessagePartProps {
@@ -66,7 +66,7 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
         )}
         <div
           className={cn(
-            "whitespace-pre-wrap text-sm break-words flex flex-wrap",
+            "whitespace-pre-wrap text-sm wrap-break-word flex flex-wrap",
             isLongText && !expanded ? "max-h-40 overflow-hidden" : "",
           )}
         >
@@ -185,6 +185,20 @@ export function ReasoningPart({
 }: ReasoningPartProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  const startedAt = useMemo(() => {
+    if (!streaming) return null;
+    return Date.now();
+  }, []);
+  const endedAt = useMemo(() => {
+    if (streaming) return Date.now();
+    return Date.now();
+  }, [streaming]);
+
+  const durationSeconds = useMemo(() => {
+    if (!startedAt || !endedAt) return null;
+    return Math.floor((endedAt - startedAt) / 1000);
+  }, [startedAt, endedAt]);
+
   return (
     <div
       className="flex flex-col cursor-pointer text-sm"
@@ -196,7 +210,11 @@ export function ReasoningPart({
         {streaming ? (
           <TextShimmer>생각중...</TextShimmer>
         ) : (
-          <div className="font-medium">생각하는 과정</div>
+          <div className="font-medium fade-300">
+            {durationSeconds
+              ? `${durationSeconds}초 동안 생각함`
+              : "잠시 생각함"}
+          </div>
         )}
 
         <button
@@ -245,13 +263,13 @@ export function ToolPart({
     return !part.state.startsWith(`output-`);
   }, [part.state]);
 
-  const isWorkbookTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
+  const isGenerateBlockTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
     Object.values(GEN_BLOCK_TOOL_NAMES).includes(name as GEN_BLOCK_TOOL_NAMES);
 
-  if (isWorkbookTool(toolName)) {
+  if (isGenerateBlockTool(toolName)) {
     return (
       <div className="p-4">
-        <GenerateToolPart part={part} type={toolName} />
+        <GenerateBlockToolPart part={part} type={toolName} />
       </div>
     );
   }
