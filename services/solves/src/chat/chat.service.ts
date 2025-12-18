@@ -10,8 +10,9 @@ import {
 import { ChatMessage, ChatThread, SystemPrompt } from "./types";
 
 export const chatService = {
-  async createThreadIfNotExists(param: {
+  async createWorkBookThreadIfNotExists(param: {
     threadId: string;
+    workbookId: string;
     userId: string;
     title?: string;
   }) {
@@ -30,19 +31,26 @@ export const chatService = {
       };
     }
 
-    const newThread = await pgDb
-      .insert(ChatThreadTable)
-      .values({
-        id: param.threadId,
-        userId: param.userId,
-        title: param.title ?? "",
-      })
-      .returning();
+    return pgDb.transaction(async (tx) => {
+      const [newThread] = await tx
+        .insert(ChatThreadTable)
+        .values({
+          id: param.threadId,
+          userId: param.userId,
+          title: param.title ?? "",
+        })
+        .returning();
 
-    return {
-      ...newThread,
-      isNew: true,
-    };
+      await tx.insert(WorkbookCreateChatThreadTable).values({
+        workbookId: param.workbookId,
+        threadId: param.threadId,
+        userId: param.userId,
+      });
+      return {
+        ...newThread,
+        isNew: true,
+      };
+    });
   },
 
   async deleteThread(threadId: string) {
@@ -114,21 +122,6 @@ export const chatService = {
       )
       .orderBy(desc(ChatThreadTable.updatedAt));
     return threads;
-  },
-  /**
-   * workbookId와 threadId를 연결
-   * @param param - workbookId, threadId, userId
-   */
-  async linkThreadToWorkbook(param: {
-    workbookId: string;
-    threadId: string;
-    userId: string;
-  }) {
-    await pgDb.insert(WorkbookCreateChatThreadTable).values({
-      workbookId: param.workbookId,
-      threadId: param.threadId,
-      userId: param.userId,
-    });
   },
 
   /**

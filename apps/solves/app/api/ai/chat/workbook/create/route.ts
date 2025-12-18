@@ -37,18 +37,12 @@ export async function POST(req: Request) {
 
   const session = await getSession();
 
-  const thread = await chatService.createThreadIfNotExists({
+  const thread = await chatService.createWorkBookThreadIfNotExists({
     threadId,
+    workbookId,
     userId: session.user.id,
     title: new Date().toLocaleTimeString("ko-KR", { hour12: false }),
   });
-  if (thread.isNew) {
-    await chatService.linkThreadToWorkbook({
-      workbookId,
-      threadId,
-      userId: session.user.id,
-    });
-  }
 
   const userMessage = messages.at(-1);
 
@@ -87,14 +81,15 @@ export async function POST(req: Request) {
     onFinish: async ({ responseMessage }) => {
       await chatService.upsertMessage({
         id: userMessage.id,
-        threadId,
+        threadId: thread.id,
         role: userMessage.role,
         parts: userMessage.parts,
         metadata: userMessage.metadata,
       });
       ``;
       await chatService.upsertMessage({
-        threadId,
+        id: responseMessage.id,
+        threadId: thread.id,
         role: responseMessage.role,
         parts: responseMessage.parts,
         metadata: responseMessage.metadata,

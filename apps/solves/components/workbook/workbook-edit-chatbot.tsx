@@ -221,6 +221,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             messages,
             model: chatModel!,
             workbookId,
+            title: workBook?.title,
+            description: workBook?.description,
             threadId: id,
             situation: workbookOption?.situation,
             blockTypes: workbookOption?.blockTypes,
@@ -462,7 +464,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                       e.stopPropagation();
                       handleDeleteThread(thread.id);
                     }}
-                    className="shrink-0 hidden group-hover:block hover:bg-background transition-all p-1 rounded-sm"
+                    className="shrink-0 hover:bg-background transition-all p-1 rounded-sm"
                   >
                     <XIcon className="size-3" />
                   </span>

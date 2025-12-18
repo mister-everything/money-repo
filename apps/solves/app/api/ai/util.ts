@@ -15,6 +15,8 @@ export const DefaultChatRequest = z.object({
 export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
   z.object({
     threadId: z.string(),
+    title: z.string().nullish(),
+    description: z.string().nullish(),
     workbookId: z.string(),
     situation: z.string().optional(),
     blockTypes: z.array(z.string()).optional(),

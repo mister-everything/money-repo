@@ -2,11 +2,15 @@ import { blockDisplayNames, Category } from "@service/solves/shared";
 import { MAX_BLOCK_COUNT, WorkBookSituation } from "../const";
 
 export const WorkBookCreatePrompt = ({
+  title,
+  description,
   blockTypes,
   situation: situationLabel,
   category,
   normalizeBlocks,
 }: {
+  title?: string;
+  description?: string;
   category?: Category;
   situation?: string;
   blockTypes?: string[];
@@ -38,9 +42,16 @@ export const WorkBookCreatePrompt = ({
 - 문제집 생성,수정 도구를 사용했다면 사용자에게 문제 전체 내용이 UI에 랜더링 됩니다. 생성 도구 사용직후 문제 전체 설명은 불필요 합니다.
  대신 간단하게 어떤 문제인지 1줄로 요약해서 답장해주세요. 도구를 통해 문제를 생성해도 문제집에 바로 추가 되는 것은 아닙니다. 사용자는 UI에 추가하기 버튼을 통해 문제를 문제집에 추가 할 수 있습니다.
 - 매번 사용할 필요는 없지만, 필요한 경우 fact check를 위해 Web search 도구를 사용할 수 있습니다.
-- 문제 생성 도구 사용시, 한번에 많은 문제를 한번에 생성하는 것이 아니라 1~3개 씩 생성하고, 사용에게 의사를 물어본 후 필요시 문제를 더 생성하는 것이 좋습니다.
+- 문제 생성 도구 사용시, 한번에 많은 문제를 한번에 생성하는 것이 아니라 1~3개 씩 생성하고, 만들어진 문제들을 간단히 요약하여 전달 한 후에 검토를 요청하고, 그 이후 문제를 더 생성할지 결정하세요.
+- 문제 생성 도구 사용시, question 필드에는 markdown 형식으로 입력해도 됩니다. 질문의 중요 부분은 bold,code 형식으로 강조 표시를 해주세요.
 
 # 현재 생성된 문제집 내용
+> 아래 자료를 참고하여 문제집 제작을 도와주세요.
+
+- 문제집 제목: ${title || "아직 제목이 없습니다."}
+- 문제집 설명: ${description || "아직 설명이 없습니다."}
+
+- 문제: 
 ${
   normalizeBlocks?.length
     ? `
@@ -49,15 +60,13 @@ ${
 따라서 다음 규칙을 따르세요:
 - 요약만 보고는 문제 내용 수정·평가가 불가능하다고 판단되면, 해당 문제의 번호(order) 또는 질문(question)을 언급하며 아래 예와 같이 사용자에게 @ 멘션을 요청하세요.
 예: “5번 문제의 자세한 정보가 필요합니다. \`@5\` 형태로 문제를 멘션해주시면 제가 문제 전체를 확인 할 수 있습니다.”
-- 사용자가 멘션을 보내면 반드시 ‘확인했다’고 답하고 이어서 작업을 진행하세요.
-
-## 아래 자료를 참고하여 문제집 제작을 도와주세요.
+- 사용자가 멘션을 보내면 반드시 문제를 확인했다고 답하고 이어서 작업을 진행하세요.
 \`\`\`
 ${normalizeBlocks.join("\n\n")}
 \`\`\`
 `.trim()
-    : "아직 문제집 내용이 없습니다."
+    : "아직 문제집에 추가된 문제가 없습니다."
 }
 
-    `.trim();
+`.trim();
 };

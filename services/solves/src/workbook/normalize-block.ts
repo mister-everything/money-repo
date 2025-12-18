@@ -17,7 +17,7 @@ export function noralizeSummaryBlock(block: WorkBookBlock): string {
     ref: "summary",
     type,
     order,
-    question: truncateString(question.trim(), 20),
+    question: truncateString(question.trim(), 30),
   });
 }
 
