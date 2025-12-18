@@ -6,7 +6,7 @@
  */
 
 import { All_BLOCKS, BlockType, WorkBookBlock } from "@service/solves/shared";
-import { generateUUID } from "@workspace/util";
+import { generateUUID, wait } from "@workspace/util";
 import { tool as createTool, Tool } from "ai";
 
 import {
@@ -17,6 +17,8 @@ import {
   GenerateRankingInputSchema,
   GenerateSubjectiveInputSchema,
 } from "./types";
+
+const TOOL_DELAY = 3000; // 고의적으로 지연시간을 줘서 툴 사용 효과를 확인할 수 있도록
 
 /**
  * 객관식(단일) 생성 툴
@@ -31,6 +33,8 @@ export const generateMcqTool: Tool = createTool({
     if (correctOptionIndex < 0 || correctOptionIndex >= options.length) {
       throw new Error("correctOptionIndex 범위를 확인하세요.");
     }
+
+    await wait(TOOL_DELAY);
     const optionObjects = options.map((text) => ({
       id: generateUUID(),
       type: "text" as const,
@@ -77,6 +81,7 @@ export const generateMcqMultipleTool: Tool = createTool({
     const answerIds = optionObjects
       .filter((_, index) => correctOptionIndexes.includes(index))
       .map((option) => option.id);
+    await wait(TOOL_DELAY);
     const block: WorkBookBlock<"mcq-multiple"> = {
       id: generateUUID(),
       question,
@@ -110,6 +115,7 @@ export const generateSubjectiveTool: Tool = createTool({
       new Set(answers.map((a) => a.trim())),
     ).filter((a) => a.length > 0);
 
+    await wait(TOOL_DELAY);
     const block: WorkBookBlock<"default"> = {
       id: generateUUID(),
       question,
@@ -147,6 +153,7 @@ export const generateRankingTool: Tool = createTool({
     const answerIds = itemObjects
       .filter((_, index) => correctOrderIndexes.includes(index))
       .map((item) => item.id);
+    await wait(TOOL_DELAY);
     const block: WorkBookBlock<"ranking"> = {
       id: generateUUID(),
       question,
@@ -176,6 +183,7 @@ export const generateOxTool: Tool = createTool({
   description: "OX 문제를 생성합니다.",
   inputSchema: GenerateOxInputSchema,
   execute: async ({ question, answer, solution }) => {
+    await wait(TOOL_DELAY);
     const block: WorkBookBlock<"ox"> = {
       id: generateUUID(),
       question,

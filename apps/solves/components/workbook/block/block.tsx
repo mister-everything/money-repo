@@ -8,13 +8,7 @@ import {
   getBlockDisplayName,
 } from "@service/solves/shared";
 import { equal, exclude, StateUpdate } from "@workspace/util";
-import {
-  CheckIcon,
-  CircleIcon,
-  PencilIcon,
-  TrashIcon,
-  XIcon,
-} from "lucide-react";
+import { CircleIcon, PencilIcon, TrashIcon, XIcon } from "lucide-react";
 import { memo, Ref, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +33,7 @@ import {
   OXBlockContent,
   RankingBlockContent,
 } from "./block-content";
+import { BlockEditCheckButton } from "./block-edit-check-button";
 import { BlockQuestion } from "./block-question";
 import { BlockSolution } from "./block-solution";
 
@@ -154,28 +149,10 @@ function PureBlock<T extends BlockType = BlockType>({
           )}
 
           {props.mode === "edit" && (
-            <Tooltip open={blockErrorMessage ? undefined : false}>
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    onClick={props.onToggleEditMode}
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "hover:bg-primary hover:text-primary-foreground",
-                      !blockErrorMessage &&
-                        "text-primary-foreground bg-primary",
-                    )}
-                    disabled={Boolean(blockErrorMessage)}
-                  >
-                    <CheckIcon />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="whitespace-pre-wrap">
-                {blockErrorMessage}
-              </TooltipContent>
-            </Tooltip>
+            <BlockEditCheckButton
+              feedback={blockErrorMessage}
+              onClick={props.onToggleEditMode}
+            />
           )}
 
           {props.mode === "review" &&

@@ -73,25 +73,29 @@ export const chatService = {
       .orderBy(ChatMessageTable.createdAt);
     return result as ChatMessage[];
   },
-  async upsertMessage(
-    message: Omit<ChatMessage, "createdAt" | "id"> & { id?: string },
-  ) {
-    await pgDb
-      .insert(ChatMessageTable)
-      .values({
-        id: message.id ?? generateUUID(),
-        threadId: message.threadId,
-        role: message.role,
-        parts: message.parts,
-        metadata: message.metadata,
-      })
-      .onConflictDoUpdate({
-        target: [ChatMessageTable.id],
-        set: {
-          parts: message.parts,
-          metadata: message.metadata,
-        },
-      });
+  upsertMessage: async (
+    ...messages: (Omit<ChatMessage, "createdAt" | "id"> & { id?: string })[]
+  ) => {
+    await pgDb.transaction(async (tx) => {
+      for (const message of messages) {
+        await tx
+          .insert(ChatMessageTable)
+          .values({
+            id: message.id ?? generateUUID(),
+            threadId: message.threadId,
+            role: message.role,
+            parts: message.parts,
+            metadata: message.metadata,
+          })
+          .onConflictDoUpdate({
+            target: [ChatMessageTable.id],
+            set: {
+              parts: message.parts,
+              metadata: message.metadata,
+            },
+          });
+      }
+    });
   },
 
   /**

@@ -40,24 +40,29 @@ function BaseCard({
   isPending,
   children,
   disabled,
+  className,
 }: {
   title: string;
   isPending: boolean;
   children: ReactNode;
   disabled: boolean;
+  className?: string;
 }) {
   return (
     <div
       className={cn(
         "text-sm rounded-lg border bg-background p-4 shadow-sm space-y-3 fade-300",
-        disabled && "border-secondary shadow-none bg-secondary",
+        (isPending || disabled) &&
+          "text-muted-foreground border-secondary shadow-none bg-secondary",
+        isPending && "animate-pulse",
+        className,
       )}
     >
       <div className="font-semibold text-foreground">
         {isPending ? (
-          <TextShimmer className="text-sm">문제 생성중</TextShimmer>
+          <TextShimmer className="text-sm fade-300">문제 생성중</TextShimmer>
         ) : (
-          <Badge className="rounded-full">{title}</Badge>
+          <Badge className="rounded-full fade-300">{title}</Badge>
         )}
       </div>
       {children}
@@ -108,7 +113,7 @@ export function GenerateToolPart({
         const mcqInput = input as Partial<GenerateMcqInput> | undefined;
         return (
           <>
-            <div className="text-foreground py-2">
+            <div className="py-2 fade-300">
               <Streamdown>{mcqInput?.question ?? ""}</Streamdown>
             </div>
             <div className="space-y-2">
@@ -139,7 +144,7 @@ export function GenerateToolPart({
               })}
             </div>
             {mcqInput?.solution && (
-              <div className="text-xspx-3 p-2 text-muted-foreground">
+              <div className="text-xspx-3 p-2 text-muted-foreground fade-300">
                 {mcqInput.solution}
               </div>
             )}
@@ -150,7 +155,7 @@ export function GenerateToolPart({
         const mcqInput = input as Partial<GenerateMcqMultipleInput> | undefined;
         return (
           <>
-            <div className="text-foreground py-2">
+            <div className="py-2 fade-300">
               <Streamdown>{mcqInput?.question ?? ""}</Streamdown>
             </div>
             <div className="space-y-2">
@@ -182,7 +187,7 @@ export function GenerateToolPart({
               })}
             </div>
             {mcqInput?.solution && (
-              <div className="text-xspx-3 p-2 text-muted-foreground">
+              <div className="text-xspx-3 p-2 text-muted-foreground fade-300">
                 {mcqInput.solution}
               </div>
             )}
@@ -200,7 +205,7 @@ export function GenerateToolPart({
 
         return (
           <>
-            <div className="text-foreground py-2">
+            <div className="py-2 fade-300">
               <Streamdown>{rankingInput?.question ?? ""}</Streamdown>
             </div>
             <div className="space-y-2">
@@ -217,7 +222,7 @@ export function GenerateToolPart({
               ))}
             </div>
             {rankingInput?.solution && (
-              <div className="text-xspx-3 p-2 text-muted-foreground">
+              <div className="text-xspx-3 p-2 text-muted-foreground fade-300">
                 {rankingInput.solution}
               </div>
             )}
@@ -228,7 +233,7 @@ export function GenerateToolPart({
         const oxInput = input as Partial<GenerateOxInput> | undefined;
         return (
           <>
-            <div className="text-foreground py-2">
+            <div className="py-2 fade-300">
               <Streamdown>{oxInput?.question ?? ""}</Streamdown>
             </div>
             <div className="grid grid-cols-2 gap-4 h-44 lg:h-64">
@@ -254,7 +259,7 @@ export function GenerateToolPart({
               </div>
             </div>
             {oxInput?.solution && (
-              <div className="text-xspx-3 p-2 text-muted-foreground">
+              <div className="text-xspx-3 p-2 text-muted-foreground fade-300">
                 {oxInput.solution}
               </div>
             )}
@@ -268,7 +273,7 @@ export function GenerateToolPart({
           | undefined;
         return (
           <>
-            <div className="text-foreground py-2">
+            <div className="py-2 fade-300">
               <Streamdown>{subjectiveInput?.question ?? ""}</Streamdown>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -282,7 +287,7 @@ export function GenerateToolPart({
               ))}
             </div>
             {subjectiveInput?.solution && (
-              <div className="text-xspx-3 p-2 text-muted-foreground">
+              <div className="text-xspx-3 p-2 text-muted-foreground fade-300">
                 {subjectiveInput.solution}
               </div>
             )}
@@ -306,7 +311,7 @@ export function GenerateToolPart({
         </p>
       ) : !isPending && output ? (
         <Button
-          className="w-full"
+          className="w-full fade-300"
           variant={appendedBlock ? "ghost" : "default"}
           size="sm"
           disabled={appendedBlock}

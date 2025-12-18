@@ -1,5 +1,5 @@
 import { categoryService, chatService } from "@service/solves";
-import { BlockType } from "@service/solves/shared";
+import { BlockType, ChatMetadata } from "@service/solves/shared";
 import { generateUUID, isNull } from "@workspace/util";
 import { IS_PROD } from "@workspace/util/const";
 import {
@@ -9,6 +9,7 @@ import {
   smoothStream,
   stepCountIs,
   streamText,
+  UIMessage,
 } from "ai";
 import { getChatModel } from "@/lib/ai/model";
 import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
 
   if (!IS_PROD) logger.debug(systemPrompt);
 
-  const stream = createUIMessageStream({
+  const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer: dataStream }) => {
       const result = streamText({
         model: getChatModel(model),
@@ -79,21 +80,32 @@ export async function POST(req: Request) {
     },
     generateId: generateUUID,
     onFinish: async ({ responseMessage }) => {
-      await chatService.upsertMessage({
-        id: userMessage.id,
-        threadId: thread.id,
-        role: userMessage.role,
-        parts: userMessage.parts,
-        metadata: userMessage.metadata,
-      });
-      ``;
-      await chatService.upsertMessage({
-        id: responseMessage.id,
-        threadId: thread.id,
-        role: responseMessage.role,
-        parts: responseMessage.parts,
-        metadata: responseMessage.metadata,
-      });
+      if (responseMessage.id == userMessage.id) {
+        await chatService.upsertMessage({
+          id: responseMessage.id,
+          threadId: thread.id,
+          role: responseMessage.role,
+          parts: responseMessage.parts,
+          metadata: responseMessage.metadata as ChatMetadata,
+        });
+      } else {
+        await chatService.upsertMessage(
+          {
+            id: userMessage.id,
+            threadId: thread.id,
+            role: userMessage.role,
+            parts: userMessage.parts,
+            metadata: userMessage.metadata,
+          },
+          {
+            id: responseMessage.id,
+            threadId: thread.id,
+            role: responseMessage.role,
+            parts: responseMessage.parts,
+            metadata: responseMessage.metadata as ChatMetadata,
+          },
+        );
+      }
     },
     originalMessages: messages,
   });
