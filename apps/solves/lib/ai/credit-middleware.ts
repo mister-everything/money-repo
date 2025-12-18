@@ -9,6 +9,12 @@ import { isNull } from "@workspace/util";
 import { logger } from "@/lib/logger";
 import { getWalletThrowIfNotEnoughBalance } from "../auth/get-balance";
 
+// const stream = simulateReadableStream({
+//   chunks: ['잘못된', ' ', '요청!'],
+//   initialDelayInMs: 100,
+//   chunkDelayInMs: 50,
+// });
+
 function getTokens(useage: LanguageModelV2Usage) {
   if (isNull(useage.inputTokens)) {
     // @TODO  중요 에러 일 수 있기 때문에 Notice  되도록
@@ -41,6 +47,7 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
         );
       }
       const result = await doGenerate();
+
       const { inputTokens, outputTokens } = getTokens(result.usage);
       const vendorCost =
         result.providerMetadata?.gateway?.marketCost ||

@@ -18,7 +18,11 @@ import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
 import { getSession } from "@/lib/auth/server";
 import { createLogger } from "@/lib/logger";
-import { WorkbookCreateChatRequest } from "../../../util";
+import {
+  extractInProgressToolPart,
+  uiPartToSavePart,
+  WorkbookCreateChatRequest,
+} from "../../../util";
 
 export const maxDuration = 300;
 
@@ -45,7 +49,7 @@ export async function POST(req: Request) {
     title: new Date().toLocaleTimeString("ko-KR", { hour12: false }),
   });
 
-  const userMessage = messages.at(-1);
+  const lastMessage = messages.at(-1)!;
 
   const category = isNull(categoryId)
     ? undefined
@@ -57,11 +61,28 @@ export async function POST(req: Request) {
     situation: situation ?? "",
     normalizeBlocks,
   });
+  logger.debug(`model: ${model.provider}/${model.model}`);
 
   if (!IS_PROD) logger.debug(systemPrompt);
 
   const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer: dataStream }) => {
+      const inProgressToolParts = extractInProgressToolPart(lastMessage);
+      if (inProgressToolParts.length) {
+        await Promise.all(
+          inProgressToolParts.map((part) => {
+            const output = "도구가 실행되지 않음.";
+            part.output = output;
+
+            dataStream.write({
+              type: "tool-output-available",
+              toolCallId: part.toolCallId,
+              output,
+            });
+          }),
+        );
+      }
+
       const result = streamText({
         model: getChatModel(model),
         messages: convertToModelMessages(messages),
@@ -80,28 +101,28 @@ export async function POST(req: Request) {
     },
     generateId: generateUUID,
     onFinish: async ({ responseMessage }) => {
-      if (responseMessage.id == userMessage.id) {
+      if (responseMessage.id == lastMessage.id) {
         await chatService.upsertMessage({
           id: responseMessage.id,
           threadId: thread.id,
           role: responseMessage.role,
-          parts: responseMessage.parts,
+          parts: responseMessage.parts.map(uiPartToSavePart),
           metadata: responseMessage.metadata as ChatMetadata,
         });
       } else {
         await chatService.upsertMessage(
           {
-            id: userMessage.id,
+            id: lastMessage.id,
             threadId: thread.id,
-            role: userMessage.role,
-            parts: userMessage.parts,
-            metadata: userMessage.metadata,
+            role: lastMessage.role,
+            parts: lastMessage.parts.map(uiPartToSavePart),
+            metadata: lastMessage.metadata as ChatMetadata,
           },
           {
             id: responseMessage.id,
             threadId: thread.id,
             role: responseMessage.role,
-            parts: responseMessage.parts,
+            parts: responseMessage.parts.map(uiPartToSavePart),
             metadata: responseMessage.metadata as ChatMetadata,
           },
         );

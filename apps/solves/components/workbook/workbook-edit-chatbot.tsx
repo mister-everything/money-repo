@@ -10,7 +10,12 @@ import {
 } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
 import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
-import { ChatOnFinishCallback, DefaultChatTransport, UIMessage } from "ai";
+import {
+  ChatOnFinishCallback,
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  UIMessage,
+} from "ai";
 import { BookPlusIcon, LoaderIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -193,6 +198,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     id: threadId,
     generateId: generateUUID,
     onError: handleErrorToast,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onFinish,
     transport: new DefaultChatTransport({
       api: "/api/ai/chat/workbook/create",
