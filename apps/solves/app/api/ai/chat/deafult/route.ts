@@ -1,6 +1,6 @@
 import { convertToModelMessages, streamText } from "ai";
 import { getChatModel } from "@/lib/ai/model";
-import { DefaultChatRequest } from "../../util";
+import { DefaultChatRequest } from "../../shared";
 
 export const maxDuration = 300;
 // Example

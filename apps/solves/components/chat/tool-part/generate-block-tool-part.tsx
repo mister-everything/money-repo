@@ -21,7 +21,7 @@ import {
   GenerateOxInput,
   GenerateRankingInput,
   GenerateSubjectiveInput,
-} from "@/lib/ai/tools/workbook/types";
+} from "@/lib/ai/tools/workbook/shared";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";

@@ -23,7 +23,7 @@ import useSWR from "swr";
 import z from "zod";
 import { useShallow } from "zustand/shallow";
 import { deleteThreadAction } from "@/actions/chat";
-import { WorkbookCreateChatRequest } from "@/app/api/ai/util";
+import { WorkbookCreateChatRequest } from "@/app/api/ai/shared";
 import { ChatErrorMessage, Message } from "@/components/chat/message";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
@@ -44,8 +44,8 @@ import { useAiStore } from "@/store/ai-store";
 import { WorkbookOptions } from "@/store/types";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import PromptInput from "../chat/prompt-input";
+import { toBlockMention } from "../mention/shared";
 import { SolvesMentionItem } from "../mention/types";
-import { toBlockMention } from "../mention/util";
 import { Badge } from "../ui/badge";
 import {
   WorkbookOptionAgeGroup,

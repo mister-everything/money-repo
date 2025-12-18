@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
+import { normalizeMentions, serializeMention, toBlockMention } from "./shared";
 import type { SolvesMentionItem } from "./types";
-import { normalizeMentions, serializeMention, toBlockMention } from "./util";
 
 describe("apps/solves/components/mention/util", () => {
   test("toBlockMention: converts block -> mention and truncates question to 20 chars", () => {

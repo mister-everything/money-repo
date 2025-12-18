@@ -26,10 +26,10 @@ import {
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 
-import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/types";
+import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
-import { normalizeMentions } from "../mention/util";
+import { normalizeMentions } from "../mention/shared";
 import JsonView from "../ui/json-view";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";

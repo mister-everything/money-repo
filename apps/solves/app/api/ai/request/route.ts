@@ -4,7 +4,7 @@ import { streamText } from "ai";
 import { NextRequest } from "next/server";
 import { getChatModel } from "@/lib/ai/model";
 import { nextFail } from "@/lib/protocol/next-route-helper";
-import { ExplainSolutionRequest } from "../util";
+import { ExplainSolutionRequest } from "../shared";
 
 function makeExplainPrompt(param: {
   question: string;

@@ -22,7 +22,7 @@ import {
   extractInProgressToolPart,
   uiPartToSavePart,
   WorkbookCreateChatRequest,
-} from "../../../util";
+} from "../../../shared";
 
 export const maxDuration = 300;
 

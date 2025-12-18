@@ -23,8 +23,8 @@ import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { MentionItem } from "./mention-item";
 import { MentionSuggestion } from "./mention-suggestion-popup";
+import { serializeMention } from "./shared";
 import { SolvesMentionItem, TipTapMentionJsonContent } from "./types";
-import { serializeMention } from "./util";
 
 interface MentionInputProps {
   disabled?: boolean;
