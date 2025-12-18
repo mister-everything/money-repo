@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     workbookId,
     blockTypes,
     situation,
+    ageGroup,
     normalizeBlocks,
     category: categoryId,
   } = await req.json().then(WorkbookCreateChatRequest.parse);
@@ -59,6 +60,8 @@ export async function POST(req: Request) {
     category: category ?? undefined,
     blockTypes,
     situation: situation ?? "",
+    ageGroup: ageGroup ?? "",
+    userName: session.user.name,
     normalizeBlocks,
   });
   logger.debug(`model: ${model.provider}/${model.model}`);

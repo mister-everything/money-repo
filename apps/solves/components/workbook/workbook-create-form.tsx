@@ -13,7 +13,7 @@ import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useCategories } from "@/hooks/query/use-categories";
-import { WorkBookSituation } from "@/lib/const";
+import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
@@ -25,6 +25,7 @@ export function WorkbookCreateForm({
   isMaxInprogressWorkbookCreateCount = false,
   initialFormData = {
     situation: "",
+    ageGroup: "",
     categoryId: undefined,
     blockTypes: Object.keys(blockDisplayNames) as BlockType[],
   },
@@ -159,6 +160,23 @@ export function WorkbookCreateForm({
                 value,
               }),
             )}
+          />
+        </div>
+        <div className="space-y-3">
+          <div className="flex flex-cols gap-1">
+            <label className="text-sm font-bold text-foreground">연령대</label>
+          </div>
+          <ButtonSelect
+            disabled={isMaxInprogressWorkbookCreateCount}
+            value={formData.ageGroup || ""}
+            onChange={(value) => {
+              setFormData({ ...formData, ageGroup: value as string });
+            }}
+            name="ageGroup"
+            options={WorkBookAgeGroup.map((value) => ({
+              label: value.label,
+              value: value.value,
+            }))}
           />
         </div>
 

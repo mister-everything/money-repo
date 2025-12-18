@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { WorkBookComponentMode } from "./types";
+import { WorkBookComponentMode } from "./block/types";
 
 type WorkbookHeaderProps = {
   book: WorkBookWithoutBlocks;

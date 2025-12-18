@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/notify";
 import { cn } from "@/lib/utils";
-import { WorkBookComponentMode } from "../types";
+import { WorkBookComponentMode } from "./types";
 
 // 정답 일때
 const okClass =

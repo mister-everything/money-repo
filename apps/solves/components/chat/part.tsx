@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
 import { normalizeMentions } from "../mention/util";
 import JsonView from "../ui/json-view";
-import { GenerateToolPart } from "./tool-part/generate-block-tool-part";
+import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
 
 interface UserMessagePartProps {
@@ -66,7 +66,7 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
         )}
         <div
           className={cn(
-            "whitespace-pre-wrap text-sm break-words flex flex-wrap",
+            "whitespace-pre-wrap text-sm wrap-break-word flex flex-wrap",
             isLongText && !expanded ? "max-h-40 overflow-hidden" : "",
           )}
         >
@@ -245,13 +245,13 @@ export function ToolPart({
     return !part.state.startsWith(`output-`);
   }, [part.state]);
 
-  const isWorkbookTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
+  const isGenerateBlockTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
     Object.values(GEN_BLOCK_TOOL_NAMES).includes(name as GEN_BLOCK_TOOL_NAMES);
 
-  if (isWorkbookTool(toolName)) {
+  if (isGenerateBlockTool(toolName)) {
     return (
       <div className="p-4">
-        <GenerateToolPart part={part} type={toolName} />
+        <GenerateBlockToolPart part={part} type={toolName} />
       </div>
     );
   }

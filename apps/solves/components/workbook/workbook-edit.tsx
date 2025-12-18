@@ -61,7 +61,7 @@ import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { Skeleton } from "../ui/skeleton";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
-import { WorkBookComponentMode } from "./types";
+import { WorkBookComponentMode } from "./block/types";
 import { WorkBookCategoryUpdatePopup } from "./workbook-category-update-popup";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";

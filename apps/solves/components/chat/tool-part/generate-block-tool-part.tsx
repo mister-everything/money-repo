@@ -70,7 +70,7 @@ function BaseCard({
   );
 }
 
-export function GenerateToolPart({
+export function GenerateBlockToolPart({
   part,
   type,
 }: {

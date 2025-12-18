@@ -3,7 +3,7 @@
 import { BlockType, blockDisplayNames } from "@service/solves/shared";
 
 import { ButtonSelect } from "@/components/ui/button-select";
-import { WorkBookSituation } from "@/lib/const";
+import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
@@ -83,6 +83,42 @@ export function WorkbookOptionBlockTypes({
                 value,
               }),
             )}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function WorkbookOptionAgeGroup({
+  children,
+  value,
+  onChange,
+  align,
+  side,
+}: BasePopupProps & {
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="w-[320px]" align={align} side={side}>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-foreground">연령대</h4>
+            <p className="text-muted-foreground text-xs">
+              문제집이 사용될 연령대를 선택하세요.
+            </p>
+          </div>
+          <ButtonSelect
+            value={value ?? ""}
+            onChange={onChange as any}
+            name="ageGroup"
+            options={WorkBookAgeGroup.map((value) => ({
+              label: value.label,
+              value: value.value,
+            }))}
           />
         </div>
       </PopoverContent>
