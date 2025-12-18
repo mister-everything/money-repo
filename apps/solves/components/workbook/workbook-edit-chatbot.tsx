@@ -635,11 +635,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                           variant={"secondary"}
                           className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer"
                         >
-                          {workbookOption?.blockTypes.length ==
+                          {workbookOption?.blockTypes?.length ==
                           Object.keys(blockDisplayNames).length
                             ? "모든 유형"
                             : workbookOption?.blockTypes
-                                .map((value) => blockDisplayNames[value])
+                                ?.map((value) => blockDisplayNames[value])
                                 .join(", ") || "문제 유형"}
                         </Badge>
                       </WorkbookOptionBlockTypes>

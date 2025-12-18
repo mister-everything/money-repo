@@ -285,3 +285,61 @@ export function arrayToObject<T>(
     {} as Record<string, T>,
   );
 }
+
+export function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+/**
+ * 짧은 고유 ID 생성기
+ *
+ * @param options.prefix - ID 앞에 붙일 접두사
+ * @param options.length - 랜덤 부분 길이 (기본값: 4)
+ * @param options.existingIds - 중복 방지를 위한 기존 ID 목록
+ *
+ * @example
+ * const gen = createIdGenerator({ prefix: "opt-", length: 4 });
+ * gen(); // "opt-aB3_"
+ * gen(); // "opt-Xk9-"
+ */
+export const createIdGenerator = (options?: {
+  prefix?: string;
+  length?: number;
+  existingIds?: string[];
+}) => {
+  const { prefix = "", length = 4, existingIds = [] } = options ?? {};
+  const usedIds = new Set<string>(existingIds);
+
+  // 영문 대소문자, 숫자, 특수문자(-, _)
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+
+  const generate = (): string => {
+    let id: string;
+    let attempts = 0;
+    const maxAttempts = 1000;
+
+    do {
+      let randomPart = "";
+      for (let i = 0; i < length; i++) {
+        randomPart += chars[Math.floor(Math.random() * chars.length)];
+      }
+      id = prefix + randomPart;
+      attempts++;
+
+      if (attempts >= maxAttempts) {
+        throw new Error("Failed to generate unique ID after maximum attempts");
+      }
+    } while (usedIds.has(id));
+
+    usedIds.add(id);
+    return id;
+  };
+
+  return generate;
+};

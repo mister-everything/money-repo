@@ -21,6 +21,11 @@ import {
   GenerateOxInput,
   GenerateRankingInput,
   GenerateSubjectiveInput,
+  mcqMultipleToolInputToBlock,
+  mcqToolInputToBlock,
+  oxToolInputToBlock,
+  rankingToolInputToBlock,
+  subjectiveToolInputToBlock,
 } from "@/lib/ai/tools/workbook/shared";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { cn } from "@/lib/utils";
@@ -88,7 +93,7 @@ export function GenerateBlockToolPart({
   );
 
   const input = part.input;
-  const output = part.output as WorkBookBlock | undefined;
+  const output = part.output as { id: string } | undefined;
   const blockType = toolNameToBlockType[type];
 
   const appendedBlock = useMemo(() => {
@@ -97,12 +102,53 @@ export function GenerateBlockToolPart({
   }, [blocks, output]);
 
   const handleAppendBlock = useCallback(
-    (block: WorkBookBlock) => {
+    (id: string, aiInput: any) => {
       if (blocksLength >= MAX_BLOCK_COUNT) {
         toast.warning(`문제는 최대 ${MAX_BLOCK_COUNT}개까지 입니다.`);
         return;
       }
-      appendBlock(block);
+      let block: WorkBookBlock | undefined;
+      switch (type) {
+        case GEN_BLOCK_TOOL_NAMES.MCQ: {
+          block = mcqToolInputToBlock({
+            id,
+            input: aiInput as GenerateMcqInput,
+          });
+          break;
+        }
+        case GEN_BLOCK_TOOL_NAMES.MCQ_MULTIPLE: {
+          block = mcqMultipleToolInputToBlock({
+            id,
+            input: aiInput as GenerateMcqMultipleInput,
+          });
+          break;
+        }
+        case GEN_BLOCK_TOOL_NAMES.SUBJECTIVE: {
+          block = subjectiveToolInputToBlock({
+            id,
+            input: aiInput as GenerateSubjectiveInput,
+          });
+          break;
+        }
+        case GEN_BLOCK_TOOL_NAMES.RANKING: {
+          block = rankingToolInputToBlock({
+            id,
+            input: aiInput as GenerateRankingInput,
+          });
+          break;
+        }
+        case GEN_BLOCK_TOOL_NAMES.OX: {
+          block = oxToolInputToBlock({
+            id,
+            input: aiInput as GenerateOxInput,
+          });
+          break;
+        }
+        default: {
+          toast.error(`문제가 발생했어요.`);
+        }
+      }
+      block && appendBlock(block);
     },
     [appendBlock, blocksLength],
   );
@@ -136,9 +182,6 @@ export function GenerateBlockToolPart({
                       className="h-4 w-4 accent-primary"
                     />
                     <span>{opt}</span>
-                    {isCorrect && (
-                      <span className="ml-auto text-xs text-primary">정답</span>
-                    )}
                   </label>
                 );
               })}
@@ -179,9 +222,6 @@ export function GenerateBlockToolPart({
                       className="h-4 w-4 accent-primary"
                     />
                     <span>{opt}</span>
-                    {isCorrect && (
-                      <span className="ml-auto text-xs text-primary">정답</span>
-                    )}
                   </label>
                 );
               })}
@@ -315,7 +355,7 @@ export function GenerateBlockToolPart({
           variant={appendedBlock ? "ghost" : "default"}
           size="sm"
           disabled={appendedBlock}
-          onClick={() => handleAppendBlock(output)}
+          onClick={() => handleAppendBlock(output.id, input)}
         >
           {appendedBlock ? (
             <>

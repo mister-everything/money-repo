@@ -117,7 +117,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
   ) => {
     const current = formatPrice(Number(currentPrice));
     const provider = formatPrice(Number(providerPrice));
-    return `${tokenType} 토큰\nVercel Gateway: $${provider}/M\n현재 가격: $${current}/M`;
+    return `${tokenType} 토큰\nVercel Gateway: $${provider}/M\n현재 가격: $${current}/M\n원화(1450원 기준): ${Number(current) * 1450}원`;
   };
 
   return (
@@ -126,6 +126,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>이름</TableHead>
               <TableHead>제공자</TableHead>
               <TableHead>모델</TableHead>
               <TableHead>타입</TableHead>
@@ -150,6 +151,9 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
               pricesWithGatewayPrices.map((price) => (
                 <TableRow key={price.id}>
                   <TableCell className="font-medium text-center">
+                    {price.displayName}
+                  </TableCell>
+                  <TableCell className="font-medium text-center">
                     {price.provider}
                   </TableCell>
                   <TableCell>
@@ -171,7 +175,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                     <Button
                       variant={price.isDefaultModel ? "default" : "ghost"}
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 disabled:opacity-100"
                       disabled={isSettingDefault || price.isDefaultModel}
                       onClick={() =>
                         setDefaultModel({
@@ -186,16 +190,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                     </Button>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Tooltip
-                      open={
-                        hasPriceDiff(
-                          price.inputTokenPrice,
-                          price.providerInputTokenPrice,
-                        )
-                          ? undefined
-                          : false
-                      }
-                    >
+                    <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center justify-end gap-1">
@@ -236,16 +231,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                     </Tooltip>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Tooltip
-                      open={
-                        hasPriceDiff(
-                          price.outputTokenPrice,
-                          price.providerOutputTokenPrice,
-                        )
-                          ? undefined
-                          : false
-                      }
-                    >
+                    <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center justify-end gap-1">
@@ -286,16 +272,7 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                     </Tooltip>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Tooltip
-                      open={
-                        hasPriceDiff(
-                          price.cachedTokenPrice,
-                          price.providerCachedTokenPrice,
-                        )
-                          ? undefined
-                          : false
-                      }
-                    >
+                    <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center justify-end gap-1">

@@ -7,7 +7,9 @@ import {
   RANKING_BLOCK_ITEM_MAX_LENGTH,
   RANKING_BLOCK_MAX_ITEMS,
   RANKING_BLOCK_MIN_ITEMS,
+  WorkBookBlock,
 } from "@service/solves/shared";
+import { createIdGenerator, shuffle } from "@workspace/util";
 import z from "zod";
 
 /**
@@ -23,14 +25,19 @@ export enum GEN_BLOCK_TOOL_NAMES {
   OX = "generateOX",
 }
 
-// 객관식(단일)
-export const GenerateMcqInputSchema = z.object({
+// 공통 입력 스키마
+const BASE = z.object({
   question: z
     .string()
     .min(
       1,
       "문제의 질문을 입력하세요. 필요한 경우 Markdown 형식으로 입력해도 됩니다.",
     ),
+  solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
+});
+
+// 객관식(단일)
+export const GenerateMcqInputSchema = BASE.extend({
   options: z
     .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
     .min(MCQ_BLOCK_MIN_OPTIONS)
@@ -41,17 +48,47 @@ export const GenerateMcqInputSchema = z.object({
     .int()
     .nonnegative()
     .describe("options 배열에서 정답 인덱스를 입력하세요."),
-  solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
 });
 
+export const mcqToolInputToBlock = ({
+  id,
+  input,
+}: {
+  id: string;
+  input: z.infer<typeof GenerateMcqInputSchema>;
+}): WorkBookBlock<"mcq"> => {
+  const { question, options, correctOptionIndex, solution } = input;
+  const gen = createIdGenerator();
+
+  const optionObjects = options.map((text) => ({
+    id: gen(),
+    type: "text" as const,
+    text,
+  }));
+
+  const answerId = optionObjects[correctOptionIndex].id;
+
+  const block: WorkBookBlock<"mcq"> = {
+    id,
+    question,
+    content: {
+      type: "mcq",
+      options: optionObjects,
+    },
+    answer: {
+      type: "mcq",
+      answer: answerId,
+      solution,
+    },
+    type: "mcq",
+    order: 0,
+  };
+
+  return block;
+};
+
 // 객관식(다중)
-export const GenerateMcqMultipleInputSchema = z.object({
-  question: z
-    .string()
-    .min(
-      1,
-      "문제의 질문을 입력하세요. 필요한 경우 Markdown 형식으로 입력해도 됩니다.",
-    ),
+export const GenerateMcqMultipleInputSchema = BASE.extend({
   options: z
     .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
     .min(MCQ_BLOCK_MIN_OPTIONS)
@@ -62,23 +99,89 @@ export const GenerateMcqMultipleInputSchema = z.object({
     .min(1)
     .max(MCQ_BLOCK_MAX_OPTIONS)
     .describe("정답인 보기의 인덱스 배열을 입력하세요."),
-  solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
 });
 
+export const mcqMultipleToolInputToBlock = ({
+  id,
+  input,
+}: {
+  id: string;
+  input: z.infer<typeof GenerateMcqMultipleInputSchema>;
+}): WorkBookBlock<"mcq-multiple"> => {
+  const { question, options, correctOptionIndexes, solution } = input;
+  const gen = createIdGenerator();
+
+  const optionObjects = options.map((text) => ({
+    id: gen(),
+    type: "text" as const,
+    text,
+  }));
+
+  const answerIds = optionObjects
+    .filter((_, index) => correctOptionIndexes.includes(index))
+    .map((option) => option.id);
+
+  const block: WorkBookBlock<"mcq-multiple"> = {
+    id,
+    question,
+    type: "mcq-multiple",
+    content: {
+      type: "mcq-multiple",
+      options: optionObjects,
+    },
+    answer: {
+      type: "mcq-multiple",
+      answer: answerIds,
+      solution,
+    },
+    order: 0,
+  };
+
+  return block;
+};
+
 // 주관식
-export const GenerateSubjectiveInputSchema = z.object({
-  question: z.string().min(1).describe("문제의 질문을 입력하세요."),
+export const GenerateSubjectiveInputSchema = BASE.extend({
   answers: z
     .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
     .min(1)
     .max(DEFAULT_BLOCK_MAX_ANSWERS)
     .describe("정답을 입력하세요."),
-  solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
 });
 
+export const subjectiveToolInputToBlock = ({
+  id,
+  input,
+}: {
+  id: string;
+  input: z.infer<typeof GenerateSubjectiveInputSchema>;
+}): WorkBookBlock<"default"> => {
+  const { question, answers, solution } = input;
+
+  const uniqueAnswers = Array.from(
+    new Set(answers.map((a) => a.trim())),
+  ).filter((a) => a.length > 0);
+
+  const block: WorkBookBlock<"default"> = {
+    id,
+    question,
+    type: "default",
+    content: {
+      type: "default",
+    },
+    answer: {
+      type: "default",
+      answer: uniqueAnswers,
+      solution,
+    },
+    order: 0,
+  };
+
+  return block;
+};
+
 // 순위
-export const GenerateRankingInputSchema = z.object({
-  question: z.string().min(1).describe("문제의 질문을 입력하세요."),
+export const GenerateRankingInputSchema = BASE.extend({
   items: z
     .array(z.string().min(1).max(RANKING_BLOCK_ITEM_MAX_LENGTH))
     .min(RANKING_BLOCK_MIN_ITEMS)
@@ -89,17 +192,78 @@ export const GenerateRankingInputSchema = z.object({
     .min(RANKING_BLOCK_MIN_ITEMS)
     .max(RANKING_BLOCK_MAX_ITEMS)
     .describe("items 배열의 올바른 순서 인덱스 배열을 입력하세요."),
-  solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
 });
 
+export const rankingToolInputToBlock = ({
+  id,
+  input,
+}: {
+  id: string;
+  input: z.infer<typeof GenerateRankingInputSchema>;
+}): WorkBookBlock<"ranking"> => {
+  const { question, items, correctOrderIndexes, solution } = input;
+  const gen = createIdGenerator();
+
+  const itemObjects = items.map((text) => ({
+    id: gen(),
+    type: "text" as const,
+    text,
+  }));
+
+  const answerIds = correctOrderIndexes.map((index) => itemObjects[index].id);
+
+  const block: WorkBookBlock<"ranking"> = {
+    id,
+    question,
+    type: "ranking",
+    content: {
+      type: "ranking",
+      items: shuffle(itemObjects),
+    },
+    answer: {
+      type: "ranking",
+      order: answerIds,
+      solution,
+    },
+    order: 0,
+  };
+
+  return block;
+};
+
 // OX
-export const GenerateOxInputSchema = z.object({
-  question: z.string().min(1).describe("문제의 질문을 입력하세요."),
+export const GenerateOxInputSchema = BASE.extend({
   answer: z
     .boolean()
     .describe("정답이 참이면 true, 거짓이면 false로 입력하세요."),
-  solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
 });
+
+export const oxToolInputToBlock = ({
+  id,
+  input,
+}: {
+  id: string;
+  input: z.infer<typeof GenerateOxInputSchema>;
+}): WorkBookBlock<"ox"> => {
+  const { question, answer, solution } = input;
+
+  const block: WorkBookBlock<"ox"> = {
+    id,
+    question,
+    type: "ox",
+    content: {
+      type: "ox",
+    },
+    answer: {
+      type: "ox",
+      answer,
+      solution,
+    },
+    order: 0,
+  };
+
+  return block;
+};
 
 export type GenerateMcqInput = z.infer<typeof GenerateMcqInputSchema>;
 export type GenerateMcqMultipleInput = z.infer<

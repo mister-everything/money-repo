@@ -12,7 +12,7 @@ import {
   RANKING_BLOCK_ITEM_MAX_LENGTH,
   RANKING_BLOCK_MAX_ITEMS,
 } from "@service/solves/shared";
-import { deduplicate, generateUUID, StateUpdate } from "@workspace/util";
+import { createIdGenerator, deduplicate, StateUpdate } from "@workspace/util";
 import { CheckIcon, CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -179,17 +179,22 @@ export function McqMultipleBlockContent({
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
-    onUpdateContent?.((prev) => ({
-      ...prev,
-      options: [
-        ...(prev?.options || []),
-        {
-          id: generateUUID(),
-          text: newAnswer,
-          type: "text",
-        },
-      ],
-    }));
+    onUpdateContent?.((prev) => {
+      const gen = createIdGenerator({
+        existingIds: prev?.options?.map((option) => option.id) || [],
+      });
+      return {
+        ...prev,
+        options: [
+          ...(prev?.options || []),
+          {
+            id: gen(),
+            text: newAnswer,
+            type: "text",
+          },
+        ],
+      };
+    });
   }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
@@ -378,17 +383,22 @@ export function McqSingleBlockContent({
       })
       .then((answer) => answer.trim());
     if (!newAnswer) return;
-    onUpdateContent?.((prev) => ({
-      ...prev,
-      options: [
-        ...(prev?.options || []),
-        {
-          id: generateUUID(),
-          text: newAnswer,
-          type: "text",
-        },
-      ],
-    }));
+    onUpdateContent?.((prev) => {
+      const gen = createIdGenerator({
+        existingIds: prev?.options?.map((option) => option.id) || [],
+      });
+      return {
+        ...prev,
+        options: [
+          ...(prev?.options || []),
+          {
+            id: gen(),
+            text: newAnswer,
+            type: "text",
+          },
+        ],
+      };
+    });
   }, [onUpdateContent, content?.options?.length]);
 
   const removeOption = useCallback(
@@ -658,13 +668,18 @@ export function RankingBlockContent({
       })
       .then((text) => text.trim());
     if (!newItem) return;
-    onUpdateContent?.((prev) => ({
-      ...prev,
-      items: [
-        ...(prev?.items || []),
-        { id: generateUUID(), text: newItem, type: "text" as const },
-      ],
-    }));
+    onUpdateContent?.((prev) => {
+      const gen = createIdGenerator({
+        existingIds: prev?.items?.map((item) => item.id) || [],
+      });
+      return {
+        ...prev,
+        items: [
+          ...(prev?.items || []),
+          { id: gen(), text: newItem, type: "text" as const },
+        ],
+      };
+    });
   }, [onUpdateContent, items.length]);
 
   const removeItem = useCallback(

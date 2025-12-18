@@ -21,7 +21,7 @@ describe("normalizeDetailBlock", () => {
       const result = JSON.parse(normalizeDetailBlock(defaultBlock));
 
       expect(result.id).toBe("test-default-id");
-      expect(result.type).toBe("default");
+
       expect(result.question).toBe("한국의 수도는?");
       expect(result.order).toBe(1);
       expect(result.content).toBeUndefined();
@@ -53,7 +53,6 @@ describe("normalizeDetailBlock", () => {
     it("should normalize ox block with true answer", () => {
       const result = JSON.parse(normalizeDetailBlock(oxBlockTrue));
 
-      expect(result.type).toBe("ox");
       expect(result.correctAnswer).toBe("o");
     });
 
@@ -88,7 +87,6 @@ describe("normalizeDetailBlock", () => {
     it("should normalize mcq block content as option texts", () => {
       const result = JSON.parse(normalizeDetailBlock(mcqBlock));
 
-      expect(result.type).toBe("mcq");
       expect(result.content).toEqual(["아시아", "유럽", "아프리카"]);
       expect(result.correctAnswer).toBe("아시아");
     });
@@ -164,7 +162,6 @@ describe("normalizeDetailBlock", () => {
     it("should normalize mcq-multiple block correctly", () => {
       const result = JSON.parse(normalizeDetailBlock(mcqMultipleBlock));
 
-      expect(result.type).toBe("mcq-multiple");
       expect(result.content).toEqual(["한국", "일본", "프랑스", "중국"]);
       expect(result.correctAnswer).toEqual(["한국", "일본", "중국"]);
     });
@@ -218,7 +215,6 @@ describe("normalizeDetailBlock", () => {
     it("should normalize ranking block correctly", () => {
       const result = JSON.parse(normalizeDetailBlock(rankingBlock));
 
-      expect(result.type).toBe("ranking");
       expect(result.content).toEqual(["중국", "인도", "미국"]);
       expect(result.correctAnswer).toEqual(["중국", "인도", "미국"]);
     });

@@ -7,6 +7,7 @@ import {
   RankingBlockContent,
 } from "./blocks";
 import { WorkBookBlock } from "./types";
+import { getBlockDisplayName } from "./utils";
 
 // block to string
 // 아마 대부분 ai prompt 에 block 내용을 전달하기 위한 목적으로 사용 예정
@@ -15,7 +16,7 @@ export function noralizeSummaryBlock(block: WorkBookBlock): string {
   const { question, order, type } = block;
   return JSON.stringify({
     ref: "summary",
-    type,
+    type: getBlockDisplayName(type),
     order,
     question: truncateString(question.trim(), 30),
   });
@@ -27,7 +28,7 @@ export function normalizeDetailBlock(block: WorkBookBlock): string {
   const data = {
     ref: "detail",
     id,
-    type,
+    type: getBlockDisplayName(type),
     order,
     question: question.trim(),
     content: normalizeContent(content),

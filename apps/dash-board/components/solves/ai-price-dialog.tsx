@@ -200,7 +200,7 @@ export function AIPriceDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
 
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl! max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isSearchMode
@@ -267,10 +267,24 @@ export function AIPriceDialog({
                     {model.pricing && (
                       <div className="flex flex-col text-xs text-muted-foreground text-right">
                         {model.pricing.input && (
-                          <span>In: ${toMillion(model.pricing.input)}/M</span>
+                          <span>
+                            In: ${toMillion(model.pricing.input)}/M (1450원
+                            기준: $
+                            {(
+                              Number(toMillion(model.pricing.input)) * 1450
+                            ).toFixed(2)}
+                            원)
+                          </span>
                         )}
                         {model.pricing.output && (
-                          <span>Out: ${toMillion(model.pricing.output)}/M</span>
+                          <span>
+                            Out: ${toMillion(model.pricing.output)}/M (1450원
+                            기준: $
+                            {(
+                              Number(toMillion(model.pricing.output)) * 1450
+                            ).toFixed(2)}
+                            원)
+                          </span>
                         )}
                       </div>
                     )}
