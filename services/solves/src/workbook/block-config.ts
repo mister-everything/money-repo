@@ -35,7 +35,7 @@ export const RANKING_BLOCK_ITEM_MAX_LENGTH = 30;
 // Common
 // ============================================
 /** 옵션/항목 텍스트 최대 글자수 (공통) */
-export const BLOCK_OPTION_TEXT_MAX_LENGTH = 100;
+export const BLOCK_OPTION_TEXT_MAX_LENGTH = 200;
 
 export const MAX_INPROGRESS_WORKBOOK_CREATE_COUNT = 3;
 

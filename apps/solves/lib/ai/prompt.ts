@@ -1,5 +1,5 @@
 import { blockDisplayNames, Category } from "@service/solves/shared";
-import { WorkBookSituation } from "../const";
+import { MAX_BLOCK_COUNT, WorkBookSituation } from "../const";
 
 export const WorkBookCreatePrompt = ({
   blockTypes,
@@ -32,12 +32,13 @@ export const WorkBookCreatePrompt = ({
 문제 유형은 ${Object.entries(blockDisplayNames)
     .map(([key, value]) => `\`${value}(${key})\``)
     .join()}로 총 ${Object.entries(blockDisplayNames).length}개가 있습니다.
-문제의 구성은 \`질문\`, \`보기\`, \`정답\`, \`해설\` 4가지 요소로 구성됩니다.
+문제집은 최대 ${MAX_BLOCK_COUNT}개의 문제를 포함 할 수 있고, 문제의 구성은 \`질문\`, \`보기\`, \`정답\`, \`해설\` 4가지 요소로 구성 됩니다.
 
 # 당신의 목적과 도구 사용시 주의사항${categoryPrompt}${situationPrompt}${blockTypesPrompt}
 - 문제집 생성,수정 도구를 사용했다면 사용자에게 문제 전체 내용이 UI에 랜더링 됩니다. 생성 도구 사용직후 문제 전체 설명은 불필요 합니다.
  대신 간단하게 어떤 문제인지 1줄로 요약해서 답장해주세요. 도구를 통해 문제를 생성해도 문제집에 바로 추가 되는 것은 아닙니다. 사용자는 UI에 추가하기 버튼을 통해 문제를 문제집에 추가 할 수 있습니다.
 - 매번 사용할 필요는 없지만, 필요한 경우 fact check를 위해 Web search 도구를 사용할 수 있습니다.
+- 문제 생성 도구 사용시, 한번에 많은 문제를 한번에 생성하는 것이 아니라 1~3개 씩 생성하고, 사용에게 의사를 물어본 후 필요시 문제를 더 생성하는 것이 좋습니다.
 
 # 현재 생성된 문제집 내용
 ${
