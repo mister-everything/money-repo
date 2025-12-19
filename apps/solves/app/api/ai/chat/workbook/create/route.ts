@@ -1,5 +1,10 @@
-import { categoryService, chatService } from "@service/solves";
-import { BlockType, ChatMetadata } from "@service/solves/shared";
+import { aiPriceService, categoryService, chatService } from "@service/solves";
+import {
+  AssistantMessageMetadata,
+  BlockType,
+  ChatMetadata,
+  calculateCost,
+} from "@service/solves/shared";
 import { generateUUID, isNull } from "@workspace/util";
 import { IS_PROD } from "@workspace/util/const";
 import {
@@ -13,6 +18,7 @@ import {
 } from "ai";
 import { getChatModel } from "@/lib/ai/model";
 import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
+import { getTokens } from "@/lib/ai/shared";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
@@ -68,6 +74,11 @@ export async function POST(req: Request) {
 
   if (!IS_PROD) logger.debug(systemPrompt);
 
+  const price = await aiPriceService.getActivePriceByProviderAndModelName(
+    model.provider,
+    model.model,
+  );
+
   const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer: dataStream }) => {
       const inProgressToolParts = extractInProgressToolPart(lastMessage);
@@ -99,8 +110,29 @@ export async function POST(req: Request) {
           [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         },
       });
+
       result.consumeStream();
-      dataStream.merge(result.toUIMessageStream());
+      dataStream.merge(
+        result.toUIMessageStream({
+          messageMetadata: ({ part }) => {
+            if (part.type == "finish") {
+              const { inputTokens, outputTokens } = getTokens(part.totalUsage);
+              const metadata: AssistantMessageMetadata = {
+                input: inputTokens,
+                output: outputTokens,
+                model: `${model.provider}/${model.model}`,
+                cost: Number(
+                  calculateCost(price!, {
+                    input: inputTokens,
+                    output: outputTokens,
+                  }).totalMarketCost.toFixed(6),
+                ),
+              };
+              return metadata;
+            }
+          },
+        }),
+      );
     },
     generateId: generateUUID,
     onFinish: async ({ responseMessage }) => {

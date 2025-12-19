@@ -51,6 +51,7 @@ type AIPriceCreateData = {
   cachedTokenPrice: string;
   markupRate: string;
   isActive: boolean;
+  maxContext: number | null;
 };
 
 type AIPriceUpdateData = AIPriceCreateData & {
@@ -112,6 +113,9 @@ export function AIPriceDialog({
     initialData?.markupRate ?? "1.60",
   );
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
+  const [maxContext, setMaxContext] = useState<number | null>(
+    initialData?.maxContext ?? null,
+  );
 
   const [, executeAction, isPending] = useSafeAction(action, {
     onSuccess: () => {
@@ -167,6 +171,7 @@ export function AIPriceDialog({
         "0",
     );
     setModelType(mapModelType(gatewayModel.modelType || "language"));
+    setMaxContext(gatewayModel.maxContextLength ?? null);
 
     setIsSearchMode(false);
     toast.success(`${gatewayModel.name} 모델이 로드되었습니다.`);
@@ -183,6 +188,7 @@ export function AIPriceDialog({
       cachedTokenPrice,
       markupRate,
       isActive,
+      maxContext,
     };
 
     if (mode === "edit" && initialData?.id) {
@@ -436,25 +442,53 @@ export function AIPriceDialog({
               </div>
             </div>
 
-            {/* Markup Rate */}
-            <div className="grid gap-2">
-              <Label htmlFor="markupRate">마진율</Label>
-              <Input
-                id="markupRate"
-                type="number"
-                step="0.001"
-                placeholder="1.60"
-                value={markupRate}
-                onChange={(e) => setMarkupRate(e.target.value)}
-              />
-              {getFieldError("markupRate") && (
-                <p className="text-sm text-destructive">
-                  {getFieldError("markupRate")}
+            {/* Markup Rate & Max Context */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="markupRate">마진율</Label>
+                <Input
+                  id="markupRate"
+                  type="number"
+                  step="0.001"
+                  placeholder="1.60"
+                  value={markupRate}
+                  onChange={(e) => setMarkupRate(e.target.value)}
+                />
+                {getFieldError("markupRate") && (
+                  <p className="text-sm text-destructive">
+                    {getFieldError("markupRate")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  고객 청구금액 = 원가 × 마진율 (예: 1.60 = 60% 마진)
                 </p>
-              )}
-              <p className="text-sm text-muted-foreground">
-                고객 청구금액 = 원가 × 마진율 (예: 1.60 = 60% 마진)
-              </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="maxContext">최대 컨텍스트 (토큰)</Label>
+                <Input
+                  id="maxContext"
+                  type="number"
+                  step="1000"
+                  placeholder="128000"
+                  value={maxContext ?? ""}
+                  onChange={(e) =>
+                    setMaxContext(
+                      e.target.value ? Number(e.target.value) : null,
+                    )
+                  }
+                />
+                {getFieldError("maxContext") && (
+                  <p className="text-sm text-destructive">
+                    {getFieldError("maxContext")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {maxContext
+                    ? `${Math.round(maxContext / 1000)}k 토큰`
+                    : "컨텍스트 길이 미설정"}
+                </p>
+              </div>
             </div>
 
             {/* Active Status */}

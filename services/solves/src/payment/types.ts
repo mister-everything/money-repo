@@ -16,6 +16,7 @@ export interface AIPrice {
   markupRate: string;
   isActive: boolean;
   isDefaultModel: boolean; // modelType별 기본 모델 여부
+  maxContext: number | null; // 최대 컨텍스트 길이 (토큰 수)
 }
 
 /**
@@ -134,6 +135,7 @@ export const createAIPriceSchema = z.object({
     })
     .default("1.60"),
   isActive: z.boolean().default(true),
+  maxContext: z.number().int().positive().nullable().optional(),
 });
 
 export type CreateAIPrice = z.infer<typeof createAIPriceSchema>;

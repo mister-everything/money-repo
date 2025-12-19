@@ -27,12 +27,7 @@ export enum GEN_BLOCK_TOOL_NAMES {
 
 // 공통 입력 스키마
 const BASE = z.object({
-  question: z
-    .string()
-    .min(
-      1,
-      "문제의 질문을 입력하세요. 필요한 경우 Markdown 형식으로 입력해도 됩니다.",
-    ),
+  question: z.string().min(1, "문제의 질문을 입력하세요."),
   solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
 });
 
@@ -146,7 +141,7 @@ export const GenerateSubjectiveInputSchema = BASE.extend({
     .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
     .min(1)
     .max(DEFAULT_BLOCK_MAX_ANSWERS)
-    .describe("정답을 입력하세요."),
+    .describe("정답 단어를 입력하세요."),
 });
 
 export const subjectiveToolInputToBlock = ({

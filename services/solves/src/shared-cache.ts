@@ -1,5 +1,6 @@
 import { Cache, MemoryCache, RedisCache } from "@workspace/cache";
 import { IS_PROD } from "@workspace/util/const";
+import { randomBytes } from "crypto";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -42,3 +43,43 @@ export const sharedCache = cacheInstance;
 
 // alias for cache
 export const serverState = cacheInstance;
+/**
+ * 분산 락 헬퍼
+ * Redis 기반 락 획득/해제 (중복 작업 방지)
+ */
+export class DistributedLock {
+  private lockKey: string;
+  private ttl: number;
+  private lockValue: string;
+
+  constructor(lockKey: string, ttl: number = 60) {
+    this.lockKey = lockKey;
+    this.ttl = ttl;
+    this.lockValue = randomBytes(16).toString("hex");
+  }
+
+  /**
+   * 락 획득 시도
+   * @returns 획득 성공 여부
+   */
+  async acquire(): Promise<boolean> {
+    const existing = await sharedCache.get(this.lockKey);
+    if (existing) {
+      return false; // 이미 락이 있음
+    }
+
+    await sharedCache.setex(this.lockKey, this.ttl, this.lockValue);
+    return true;
+  }
+
+  /**
+   * 락 해제
+   * 자신이 획득한 락만 해제 가능
+   */
+  async release(): Promise<void> {
+    const existing = await sharedCache.get(this.lockKey);
+    if (existing === this.lockValue) {
+      await sharedCache.del(this.lockKey);
+    }
+  }
+}

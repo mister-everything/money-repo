@@ -1,8 +1,17 @@
 import { UIMessage } from "ai";
 
-export type ChatMetadata = {
-  // 어떤 데이터 할 쥐  고 민 중!
+export type UserMessageMetadata = {};
+export type AssistantMessageMetadata = {
+  input?: number;
+  output?: number;
+  cost?: number;
+  model?: string;
 };
+
+export type ChatMetadata =
+  | UserMessageMetadata
+  | AssistantMessageMetadata
+  | undefined;
 
 export type ChatThread = {
   title: string;
