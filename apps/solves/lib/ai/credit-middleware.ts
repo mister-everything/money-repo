@@ -11,13 +11,15 @@ import {
   getWallet,
   getWalletThrowIfNotEnoughBalance,
 } from "../auth/get-balance";
+import { getSession } from "../auth/server";
 import { generateSimulateStreamPart } from "./generate-simulate-stream-part";
 import { getTokens } from "./shared";
 
 export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middleware =
   {
     wrapGenerate: async ({ doGenerate, model }) => {
-      const wallet = await getWalletThrowIfNotEnoughBalance();
+      const session = await getSession();
+      const wallet = await getWalletThrowIfNotEnoughBalance(session.user.id);
       const [provider, modelName] = model.modelId.split("/");
       const price = await aiPriceService.getActivePriceByProviderAndModelName(
         provider,
@@ -46,7 +48,8 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
     },
 
     wrapStream: async ({ doStream, model }) => {
-      const wallet = await getWallet();
+      const session = await getSession();
+      const wallet = await getWallet(session.user.id);
       if (Number(wallet.balance || 0) <= 0) {
         const stream = simulateReadableStream<LanguageModelV2StreamPart>({
           chunks: generateSimulateStreamPart(

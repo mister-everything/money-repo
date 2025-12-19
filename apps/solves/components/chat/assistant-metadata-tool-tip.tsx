@@ -1,4 +1,4 @@
-import { AssistantMessageMetadata } from "@service/solves/shared";
+import { AssistantMessageMetadata, displayCost } from "@service/solves/shared";
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ModelProviderIcon } from "../ui/model-provider-icon";
@@ -48,7 +48,7 @@ export function AssistantMetadataToolTip({
           <>
             <div className="flex flex-col gap-2">
               <h4 className="text-sm font-semibold flex items-center gap-2">
-                토큰 사용량
+                사용량
               </h4>
               <div className="space-y-2">
                 {metadata.input !== undefined && (
@@ -70,10 +70,10 @@ export function AssistantMetadataToolTip({
                 {metadata.cost !== undefined && (
                   <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-primary/10 border border-primary/20">
                     <span className="text-xs font-medium text-primary">
-                      비용
+                      사용된 크레딧
                     </span>
                     <span className="text-xs font-mono font-bold text-primary">
-                      {(metadata.cost * 1450).toLocaleString()}원
+                      {displayCost(metadata.cost).toLocaleString()}
                     </span>
                   </div>
                 )}

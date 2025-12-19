@@ -1,15 +1,19 @@
 "use client";
 
+import { displayCost } from "@service/solves/shared";
+import { isNull, wait } from "@workspace/util";
 import {
   ChevronUpIcon,
+  LoaderIcon,
   LogOutIcon,
   MoonIcon,
   SparkleIcon,
   SunIcon,
+  WalletIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useBalance } from "@/hooks/query/use-balance";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +40,22 @@ export const NavUser = memo(function NavUser() {
   }, []);
 
   const { resolvedTheme, setTheme } = useTheme();
+
+  const [canFetchBalance, setCanFetchBalance] = useState(true);
+
+  const {
+    data: balance,
+    mutate,
+    isValidating: isLoadingBalance,
+  } = useBalance();
+
+  const fetchBalance = useCallback(() => {
+    if (!canFetchBalance) return;
+    setCanFetchBalance(false);
+    mutate().then(() => {
+      wait(3000).then(() => setCanFetchBalance(true));
+    });
+  }, [canFetchBalance]);
 
   const isAnonymous = useMemo(() => {
     return !isPending && !data && !isRefetching;
@@ -142,6 +163,24 @@ export const NavUser = memo(function NavUser() {
           {resolvedTheme === "light"
             ? "다크 모드로 변경"
             : "라이트 모드로 변경"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!canFetchBalance || isLoadingBalance}
+          onClick={(e) => {
+            fetchBalance();
+            e.preventDefault();
+          }}
+        >
+          {isLoadingBalance ? (
+            <LoaderIcon className="animate-spin" />
+          ) : (
+            <WalletIcon />
+          )}
+          {isLoadingBalance
+            ? "  크레딧 조회중..."
+            : isNull(balance)
+              ? "크레딧 조회하기"
+              : `크레딧 ${Math.round(displayCost(balance)).toLocaleString()}`}
         </DropdownMenuItem>
         <DropdownMenuItem>
           <SparkleIcon />

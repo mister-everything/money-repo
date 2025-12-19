@@ -3,8 +3,8 @@ import { CacheKeys, CacheTTL } from "../cache-keys";
 import { INITIAL_CREDIT_BALANCE } from "../const";
 import { pgDb } from "../db";
 import { sharedCache } from "../shared-cache";
-import { toDecimal } from "./calculate-cost";
 import { CreditWalletTable } from "./schema";
+import { toDecimal } from "./shared";
 import type { Wallet } from "./types";
 
 /**

@@ -31,3 +31,8 @@ export const calculateCost = (
 export const toDecimal = (value: number, scale: number = 8): string => {
   return value.toFixed(scale);
 };
+
+export const displayCost = (cost: number) => {
+  const weight = 1500; // 대략적인 환율!
+  return cost * weight;
+};

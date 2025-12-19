@@ -1,5 +1,5 @@
 export * from "./chat/types";
-export * from "./payment/calculate-cost";
+export * from "./payment/shared";
 export * from "./payment/types";
 export * from "./workbook/block-config";
 export * from "./workbook/block-validate";
