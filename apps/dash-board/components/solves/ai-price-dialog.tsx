@@ -171,7 +171,6 @@ export function AIPriceDialog({
         "0",
     );
     setModelType(mapModelType(gatewayModel.modelType || "language"));
-    setMaxContext(gatewayModel.maxContextLength ?? null);
 
     setIsSearchMode(false);
     toast.success(`${gatewayModel.name} 모델이 로드되었습니다.`);
