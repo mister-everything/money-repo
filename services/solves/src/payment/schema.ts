@@ -109,6 +109,7 @@ export const AiProviderPricesTable = solvesSchema.table(
      *  eg: true, false
      */
     isDefaultModel: boolean("is_default_model").notNull().default(false),
+    maxContext: integer("max_context"),
     ...timestamps,
   },
   (t) => [

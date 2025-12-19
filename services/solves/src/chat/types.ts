@@ -1,8 +1,18 @@
 import { UIMessage } from "ai";
 
-export type ChatMetadata = {
-  // 어떤 데이터 할 쥐  고 민 중!
+export type UserMessageMetadata = {};
+export type AssistantMessageMetadata = {
+  input?: number;
+  output?: number;
+  cost?: number;
+  provider?: string;
+  model?: string;
 };
+
+export type ChatMetadata =
+  | UserMessageMetadata
+  | AssistantMessageMetadata
+  | undefined;
 
 export type ChatThread = {
   title: string;
@@ -23,6 +33,8 @@ export type ChatModel = {
   provider: string;
   model: string;
   displayName?: string;
+  contextSize?: number;
+  isDefaultModel?: boolean;
 };
 
 // TODO: SystemPrompt DB 관리? 연계 필요할 듯?

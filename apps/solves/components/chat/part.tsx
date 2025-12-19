@@ -1,4 +1,5 @@
 import { UseChatHelpers } from "@ai-sdk/react";
+import { AssistantMessageMetadata } from "@service/solves/shared";
 import { isString } from "@workspace/util";
 import {
   getToolName,
@@ -13,6 +14,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CopyIcon,
+  EllipsisIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -25,12 +27,12 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
-
 import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
 import { normalizeMentions } from "../mention/shared";
 import JsonView from "../ui/json-view";
+import { AssistantMetadataToolTip } from "./assistant-metadata-tool-tip";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
 
@@ -124,10 +126,12 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
 interface AssistantMessagePartProps {
   part: TextUIPart;
   streaming?: boolean;
+  metadata?: AssistantMessageMetadata;
 }
 export function AssistantTextPart({
   part,
   streaming,
+  metadata,
 }: AssistantMessagePartProps) {
   const [copied, copy] = useCopy();
   return (
@@ -137,20 +141,33 @@ export function AssistantTextPart({
       </div>
       <div className="flex w-full opacity-0 group-hover/message:opacity-100 transition-opacity duration-300">
         {!streaming && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                data-testid="message-edit-button"
-                variant="ghost"
-                size="icon"
-                className={cn("size-3! p-4!")}
-                onClick={() => copy(part.text)}
-              >
-                {copied ? <CheckIcon /> : <CopyIcon />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">복사하기</TooltipContent>
-          </Tooltip>
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="message-edit-button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn("size-3! p-4!")}
+                  onClick={() => copy(part.text)}
+                >
+                  {copied ? <CheckIcon /> : <CopyIcon />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>복사하기</TooltipContent>
+            </Tooltip>
+            {metadata && (
+              <AssistantMetadataToolTip metadata={metadata}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("size-3! p-4!")}
+                >
+                  <EllipsisIcon />
+                </Button>
+              </AssistantMetadataToolTip>
+            )}
+          </>
         )}
       </div>
     </div>

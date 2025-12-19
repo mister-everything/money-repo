@@ -1,40 +1,25 @@
 import type {
   LanguageModelV2Middleware,
   LanguageModelV2StreamPart,
-  LanguageModelV2Usage,
 } from "@ai-sdk/provider";
 
 import { aiPriceService, creditService } from "@service/solves";
-import { isNull } from "@workspace/util";
+
 import { simulateReadableStream } from "ai";
 import { logger } from "@/lib/logger";
 import {
   getWallet,
   getWalletThrowIfNotEnoughBalance,
 } from "../auth/get-balance";
+import { getSession } from "../auth/server";
 import { generateSimulateStreamPart } from "./generate-simulate-stream-part";
-
-function getTokens(useage: LanguageModelV2Usage) {
-  if (isNull(useage.inputTokens)) {
-    // @TODO  중요 에러 일 수 있기 때문에 Notice  되도록
-    logger.warn(`inputTokens is null for useage: ${JSON.stringify(useage)}`);
-  }
-
-  if (isNull(useage.outputTokens)) {
-    // @TODO  중요 에러 일 수 있기 때문에 Notice  되도록
-    logger.warn(`outputTokens is null for useage: ${JSON.stringify(useage)}`);
-  }
-
-  return {
-    inputTokens: (useage.inputTokens || 0) + (useage.reasoningTokens || 0),
-    outputTokens: useage.outputTokens || 0,
-  };
-}
+import { getTokens } from "./shared";
 
 export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middleware =
   {
     wrapGenerate: async ({ doGenerate, model }) => {
-      const wallet = await getWalletThrowIfNotEnoughBalance();
+      const session = await getSession();
+      const wallet = await getWalletThrowIfNotEnoughBalance(session.user.id);
       const [provider, modelName] = model.modelId.split("/");
       const price = await aiPriceService.getActivePriceByProviderAndModelName(
         provider,
@@ -63,7 +48,8 @@ export const vercelGatewayLanguageModelCreditMiddleware: LanguageModelV2Middlewa
     },
 
     wrapStream: async ({ doStream, model }) => {
-      const wallet = await getWallet();
+      const session = await getSession();
+      const wallet = await getWallet(session.user.id);
       if (Number(wallet.balance || 0) <= 0) {
         const stream = simulateReadableStream<LanguageModelV2StreamPart>({
           chunks: generateSimulateStreamPart(

@@ -12,6 +12,8 @@ export async function GET() {
         provider: model.provider,
         model: model.model,
         displayName: model.displayName,
+        contextSize: model.maxContext,
+        isDefaultModel: model.isDefaultModel,
       };
     }),
   );

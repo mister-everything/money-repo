@@ -135,13 +135,14 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
               <TableHead>출력 토큰</TableHead>
               <TableHead>캐시 토큰</TableHead>
               <TableHead>마진율</TableHead>
+              <TableHead>컨텍스트</TableHead>
               <TableHead>작업</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {pricesWithGatewayPrices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8">
+                <TableCell colSpan={11} className="text-center py-8">
                   <p className="text-muted-foreground">
                     등록된 AI 가격이 없습니다.
                   </p>
@@ -314,6 +315,11 @@ export function AIPriceTable({ prices }: AIPriceTableProps) {
                   </TableCell>
                   <TableCell className="text-right text-sm">
                     {price.markupRate}×
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {price.maxContext
+                      ? `${Math.round(price.maxContext / 1000)}k`
+                      : "-"}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button

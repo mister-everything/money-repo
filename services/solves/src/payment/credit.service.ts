@@ -9,10 +9,10 @@ import {
   CreditWalletTable,
   UsageEventsTable,
 } from "./schema";
+import { calculateCost, toDecimal } from "./shared";
 import { AIPrice, TxnKind } from "./types";
-import { calculateCost, toDecimal } from "./utils";
 
-const logger = createLogger("creadit");
+const logger = createLogger("creadit", "bgCyanBright");
 
 /**
  * Credit Service
