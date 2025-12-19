@@ -73,7 +73,7 @@ export function ReadBlockToolPart({
         executeRef.current();
       });
     }
-  }, []);
+  }, [part.state]);
 
   return (
     <div
