@@ -69,7 +69,7 @@ export function ReadBlockToolPart({
 
   useEffect(() => {
     if (part.state == "input-available" && !part.errorText) {
-      wait(2000).then(() => {
+      wait(4000).then(() => {
         executeRef.current();
       });
     }
