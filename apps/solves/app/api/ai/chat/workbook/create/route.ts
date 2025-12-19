@@ -5,6 +5,7 @@ import {
   ChatMetadata,
   calculateCost,
 } from "@service/solves/shared";
+import { PublicError } from "@workspace/error";
 import { generateUUID, isNull } from "@workspace/util";
 import { IS_PROD } from "@workspace/util/const";
 import {
@@ -152,7 +153,7 @@ export async function POST(req: Request) {
           parts: responseMessage.parts.map(uiPartToSavePart),
           metadata: responseMessage.metadata as ChatMetadata,
         });
-      } else {
+      } else if (responseMessage.parts.length) {
         await chatService.upsertMessage(
           {
             id: lastMessage.id,
@@ -169,9 +170,16 @@ export async function POST(req: Request) {
             metadata: responseMessage.metadata as ChatMetadata,
           },
         );
+      } else {
+        throw new PublicError("채팅에 문제가 발생했습니다. 다시 시도해주세요.");
       }
     },
     originalMessages: messages,
+    onError: (error) => {
+      // @TODO error 로그 저장해서 원인 분석해야함
+      logger.error({ error });
+      throw error;
+    },
   });
 
   return createUIMessageStreamResponse({

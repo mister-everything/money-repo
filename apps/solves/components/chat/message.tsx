@@ -3,12 +3,18 @@
 import { UseChatHelpers } from "@ai-sdk/react";
 import { AssistantMessageMetadata } from "@service/solves/shared";
 import { equal, errorToString } from "@workspace/util";
+import { IS_PROD } from "@workspace/util/const";
 import { ChatStatus, isToolUIPart, type UIMessage } from "ai";
-import { AlertTriangleIcon, RefreshCcwIcon } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  MessageSquareWarningIcon,
+  RefreshCcwIcon,
+} from "lucide-react";
 import { memo, useMemo } from "react";
 import { Think } from "@/components/ui/think";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { notify } from "../ui/notify";
 import {
   AssistantTextPart,
   ReasoningPart,
@@ -151,19 +157,44 @@ export function ChatErrorMessage({
   clearError: () => void;
 }) {
   return (
-    <div className="flex items-center justify-center  flex-col gap-4 bg-point/5 text-point rounded-lg p-6 text-sm ">
+    <div className="flex items-center justify-center flex-col gap-2 bg-point/5 text-point rounded-lg p-6 text-sm ">
       <AlertTriangleIcon className="size-8" />
-      <p>{errorToString(error)}</p>
+      <p className="text-lg">
+        {IS_PROD
+          ? "문제가 발생했습니다. 다시 시도해주세요."
+          : errorToString(error)}
+      </p>
+      <p className="text-2xs text-point/60">
+        계속 문제가 발생하면 새로운 채팅을 시작해주세요.
+      </p>
 
-      <Button
-        className="w-full shadow-none bg-point/10 text-point border-point hover:bg-point hover:text-background"
-        variant="outline"
-        size="lg"
-        onClick={clearError}
-      >
-        <RefreshCcwIcon />
-        채팅 새로 고침
-      </Button>
+      <div className="flex items-center justify-center gap-2 mt-2">
+        <Button
+          className="w-full shadow-none bg-point/10 text-point border-point hover:bg-point hover:text-background"
+          variant="outline"
+          size="lg"
+          onClick={() => {
+            notify.alert({
+              title: "채팅 오류 신고",
+              description:
+                "기능 구현 중입니다. neo.cgoing@gmail.com 으로 신고해주세요.",
+              okText: "확인",
+            });
+          }}
+        >
+          <MessageSquareWarningIcon />
+          신고하기
+        </Button>
+        <Button
+          className="w-full shadow-none bg-point/10 text-point border-point hover:bg-point hover:text-background"
+          variant="outline"
+          size="lg"
+          onClick={clearError}
+        >
+          <RefreshCcwIcon />
+          채팅 새로 고침
+        </Button>
+      </div>
     </div>
   );
 }
