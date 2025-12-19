@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import { READ_BLOCK_TOOL_NAME } from "@/lib/ai/tools/workbook/read-block-tool";
 import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
@@ -34,6 +35,7 @@ import { normalizeMentions } from "../mention/shared";
 import JsonView from "../ui/json-view";
 import { AssistantMetadataToolTip } from "./assistant-metadata-tool-tip";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
+import { ReadBlockToolPart } from "./tool-part/read-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
 
 interface UserMessagePartProps {
@@ -218,7 +220,7 @@ export function ReasoningPart({
 
   return (
     <div
-      className="flex flex-col cursor-pointer text-sm"
+      className="flex flex-col cursor-pointer text-sm group select-none"
       onClick={() => {
         setIsExpanded(!isExpanded);
       }}
@@ -227,7 +229,7 @@ export function ReasoningPart({
         {streaming ? (
           <TextShimmer>생각중...</TextShimmer>
         ) : (
-          <div className="font-medium fade-300">
+          <div className="fade-300">
             {durationSeconds
               ? `${durationSeconds}초 동안 생각함`
               : "잠시 생각함"}
@@ -239,13 +241,15 @@ export function ReasoningPart({
           type="button"
           className="cursor-pointer"
         >
-          <ChevronDownIcon size={16} />
+          <ChevronDownIcon
+            className={cn("size-3.5", isExpanded ? "rotate-180" : "")}
+          />
         </button>
       </div>
 
       <div className="pl-4">
         <AnimatePresence initial={false}>
-          {isExpanded && (
+          {(isExpanded || streaming) && (
             <motion.div
               data-testid="message-reasoning"
               key="content"
@@ -257,7 +261,11 @@ export function ReasoningPart({
               style={{ overflow: "hidden" }}
               className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
             >
-              <Streamdown>{part.text || (streaming ? "" : "...🤔")}</Streamdown>
+              <Streamdown className="fade-300">
+                {(streaming
+                  ? part.text?.split("\n").slice(-3).join("\n")
+                  : part.text) || "...🤔"}
+              </Streamdown>
             </motion.div>
           )}
         </AnimatePresence>
@@ -268,6 +276,7 @@ export function ReasoningPart({
 
 export function ToolPart({
   part,
+  addToolOutput,
 }: {
   part: ToolUIPart;
   addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
@@ -297,6 +306,9 @@ export function ToolPart({
         <WebSearchToolPart part={part} />
       </div>
     );
+  }
+  if (toolName === READ_BLOCK_TOOL_NAME) {
+    return <ReadBlockToolPart part={part} addToolOutput={addToolOutput} />;
   }
 
   return (

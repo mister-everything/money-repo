@@ -73,7 +73,7 @@ export function AssistantMetadataToolTip({
                       사용된 크레딧
                     </span>
                     <span className="text-xs font-mono font-bold text-primary">
-                      {displayCost(metadata.cost).toLocaleString()}
+                      {Math.round(displayCost(metadata.cost)).toLocaleString()}
                     </span>
                   </div>
                 )}

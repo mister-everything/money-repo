@@ -22,6 +22,10 @@ import { getTokens } from "@/lib/ai/shared";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
+import {
+  READ_BLOCK_TOOL_NAME,
+  readBlockTool,
+} from "@/lib/ai/tools/workbook/read-block-tool";
 import { getSession } from "@/lib/auth/server";
 import { createLogger } from "@/lib/logger";
 import {
@@ -43,7 +47,7 @@ export async function POST(req: Request) {
     blockTypes,
     situation,
     ageGroup,
-    normalizeBlocks,
+    serializeBlocks,
     category: categoryId,
   } = await req.json().then(WorkbookCreateChatRequest.parse);
 
@@ -68,7 +72,7 @@ export async function POST(req: Request) {
     situation: situation ?? "",
     ageGroup: ageGroup ?? "",
     userName: session.user.name,
-    normalizeBlocks,
+    serializeBlocks,
   });
   logger.debug(`model: ${model.provider}/${model.model}`);
 
@@ -82,12 +86,12 @@ export async function POST(req: Request) {
   const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer: dataStream }) => {
       const inProgressToolParts = extractInProgressToolPart(lastMessage);
+      logger.info({ inProgressToolParts });
       if (inProgressToolParts.length) {
         await Promise.all(
-          inProgressToolParts.map((part) => {
-            const output = "도구가 실행되지 않음.";
+          inProgressToolParts.map(async (part) => {
+            const output = "사용자가 도구 사용을 cancel 하였습니다.";
             part.output = output;
-
             dataStream.write({
               type: "tool-output-available",
               toolCallId: part.toolCallId,
@@ -108,6 +112,9 @@ export async function POST(req: Request) {
         tools: {
           ...loadGenerateBlockTools(blockTypes as BlockType[]),
           [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
+          ...(!serializeBlocks?.length
+            ? {}
+            : { [READ_BLOCK_TOOL_NAME]: readBlockTool }),
         },
       });
 
@@ -115,7 +122,7 @@ export async function POST(req: Request) {
       dataStream.merge(
         result.toUIMessageStream({
           messageMetadata: ({ part }) => {
-            if (part.type == "finish") {
+            if (part.type == "finish" && price) {
               const { inputTokens, outputTokens } = getTokens(part.totalUsage);
               const metadata: AssistantMessageMetadata = {
                 input: inputTokens,

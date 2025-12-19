@@ -12,27 +12,27 @@ import { getBlockDisplayName } from "./utils";
 // block to string
 // 아마 대부분 ai prompt 에 block 내용을 전달하기 위한 목적으로 사용 예정
 
-export function noralizeSummaryBlock(block: WorkBookBlock): string {
+export function serializeSummaryBlock(block: WorkBookBlock) {
   const { question, order, type } = block;
-  return JSON.stringify({
+  return {
+    order,
     ref: "summary",
     type: getBlockDisplayName(type),
-    order,
     question: truncateString(question.trim(), 30),
-  });
+  };
 }
 
-export function normalizeDetailBlock(block: WorkBookBlock): string {
+export function serializeDetailBlock(block: WorkBookBlock) {
   const { id, question, order, content, answer, type, ...rest } = block;
 
   const data = {
+    order,
     ref: "detail",
     id,
     type: getBlockDisplayName(type),
-    order,
     question: question.trim(),
-    content: normalizeContent(content),
-    correctAnswer: normalizeAnswer({
+    content: serializeContent(content),
+    correctAnswer: serializeAnswer({
       answer,
       content,
     }),
@@ -40,10 +40,10 @@ export function normalizeDetailBlock(block: WorkBookBlock): string {
     ...rest,
   };
 
-  return JSON.stringify(data);
+  return data;
 }
 
-function normalizeContent(content: BlockContent) {
+function serializeContent(content: BlockContent) {
   const noOption = "보기를 작성하지 않음";
   switch (content.type) {
     case "default":
@@ -63,7 +63,7 @@ function normalizeContent(content: BlockContent) {
   return exclude(content, ["type"]);
 }
 
-function normalizeAnswer({
+function serializeAnswer({
   answer,
   content,
 }: {

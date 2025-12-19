@@ -6,8 +6,8 @@ import {
   blockDisplayNames,
   ChatThread,
   getBlockDisplayName,
-  noralizeSummaryBlock,
-  normalizeDetailBlock,
+  serializeDetailBlock,
+  serializeSummaryBlock,
 } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
 import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
@@ -214,15 +214,15 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           })
           .filter(Boolean);
 
-        const normalizeBlocks = blocks
+        const serializeBlocks = blocks
           .map((v, order) => ({
             ...v,
             order: order + 1,
           }))
           .map((v) =>
             mentionIds.includes(v.id)
-              ? normalizeDetailBlock(v)
-              : noralizeSummaryBlock(v),
+              ? JSON.stringify(serializeDetailBlock(v))
+              : JSON.stringify(serializeSummaryBlock(v)),
           );
         const body: z.infer<typeof WorkbookCreateChatRequest> =
           WorkbookCreateChatRequest.parse({
@@ -236,7 +236,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             blockTypes: workbookOption?.blockTypes,
             ageGroup: workbookOption?.ageGroup,
             category: workBook?.categoryId,
-            normalizeBlocks,
+            serializeBlocks,
           });
         return {
           body,
@@ -248,9 +248,9 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const addToolOutput = useCallback<UseChatHelpers<UIMessage>["addToolOutput"]>(
     async (toolOutput) => {
       await _addToolOutput(toolOutput);
-      sendMessage();
+      // sendMessage();
     },
-    [_addToolOutput, sendMessage],
+    [_addToolOutput],
   );
 
   const isChatPending = useMemo(() => {

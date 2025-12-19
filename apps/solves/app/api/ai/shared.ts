@@ -20,7 +20,7 @@ export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
     situation: z.string().optional(),
     ageGroup: z.string().optional(),
     blockTypes: z.array(z.string()).optional(),
-    normalizeBlocks: z.array(z.string()).optional(),
+    serializeBlocks: z.array(z.string()).optional(),
     category: z.number().nullish(),
   }).shape,
 );
