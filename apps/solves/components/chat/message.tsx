@@ -1,6 +1,7 @@
 "use client";
 
 import { UseChatHelpers } from "@ai-sdk/react";
+import { AssistantMessageMetadata } from "@service/solves/shared";
 import { equal, errorToString } from "@workspace/util";
 import { ChatStatus, isToolUIPart, type UIMessage } from "ai";
 import { AlertTriangleIcon, RefreshCcwIcon } from "lucide-react";
@@ -80,6 +81,11 @@ const PurePreviewMessage = ({
                 return (
                   <AssistantTextPart
                     part={part}
+                    metadata={
+                      !isStreaming && isLastPart
+                        ? (message.metadata as AssistantMessageMetadata)
+                        : undefined
+                    }
                     streaming={isStreaming}
                     key={key}
                   />

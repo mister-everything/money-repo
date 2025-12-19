@@ -120,7 +120,8 @@ export async function POST(req: Request) {
               const metadata: AssistantMessageMetadata = {
                 input: inputTokens,
                 output: outputTokens,
-                model: `${model.provider}/${model.model}`,
+                provider: model.provider,
+                model: model.model,
                 cost: Number(
                   calculateCost(price!, {
                     input: inputTokens,

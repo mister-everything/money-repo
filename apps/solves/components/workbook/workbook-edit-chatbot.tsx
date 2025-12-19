@@ -2,6 +2,7 @@
 
 import { UseChatHelpers, useChat } from "@ai-sdk/react";
 import {
+  AssistantMessageMetadata,
   blockDisplayNames,
   ChatThread,
   getBlockDisplayName,
@@ -256,9 +257,25 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     return status == "submitted" || status == "streaming";
   }, [status]);
 
+  const threadContextPercent = useMemo(() => {
+    const lastMessage = messages.at(-1);
+    if (isChatPending || lastMessage?.role != "assistant") return 0;
+    const metadata = lastMessage.metadata as
+      | AssistantMessageMetadata
+      | undefined;
+    const contextSize = chatModel?.contextSize || 200_000;
+    const inputTokens = metadata?.input || 0;
+    const percent = Math.round((inputTokens / contextSize) * 100);
+    return percent;
+  }, [messages.at(-1)?.metadata, isChatPending]);
+
   const isPending = useMemo(() => {
     return isMessagesLoading || isThreadValidating || isChatPending;
   }, [isMessagesLoading, isThreadValidating, isChatPending]);
+
+  const overContextSize = useMemo(() => {
+    return threadContextPercent >= 90;
+  }, [threadContextPercent]);
 
   const mentionWithBlock = useMemo(() => {
     const blockMentions = mentions.filter(
@@ -287,7 +304,13 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   const send = useCallback(
     (text: string = input) => {
-      if (status != "ready" || !threadId || Boolean(error) || !text?.trim())
+      if (
+        overContextSize ||
+        status != "ready" ||
+        !threadId ||
+        Boolean(error) ||
+        !text?.trim()
+      )
         return;
       sendMessage({
         role: "user",
@@ -295,7 +318,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       });
       nextTick().then(() => editorRef.current?.commands.setContent(""));
     },
-    [input, status, threadId, error],
+    [input, status, threadId, error, overContextSize],
   );
 
   const addNewThread = useCallback(() => {
@@ -516,7 +539,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                   status={status}
                   addToolOutput={addToolOutput}
                   className={
-                    !isLastMessage || error
+                    !isLastMessage || error || overContextSize
                       ? undefined
                       : message.role == "assistant"
                         ? "min-h-[calc(60dvh-30px)]"
@@ -532,10 +555,19 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             <ChatErrorMessage error={error} clearError={handleClearError} />
           </div>
         )}
+        {overContextSize && (
+          <div className="p-4 my-6 bg-accent rounded-lg">
+            <div className="text-sm text-muted-foreground text-center">
+              <span>
+                채팅 컨텍스트 사이즈를 초과했습니다. 새로운 채팅을 시작하세요.
+              </span>
+            </div>
+          </div>
+        )}
       </div>
       <div className={cn("p-2 absolute bottom-0 left-0 right-0")}>
         <div className="bg-background border rounded-2xl p-2 flex flex-col gap-1">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             {mentionWithBlock.length ? (
               mentionWithBlock.map((mention) => (
                 <Tooltip key={mention.id} delayDuration={500}>
@@ -649,6 +681,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                 </Tooltip>
               </>
             )}
+            {threadContextPercent >= 20 && (
+              <span className="ml-auto text-2xs text-muted-foreground">
+                {threadContextPercent}%
+              </span>
+            )}
           </div>
           <PromptInput
             className="bg-transition border-none p-0"
@@ -661,7 +698,10 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             placeholder="무엇이든 물어보세요"
             isSending={isChatPending}
             disabledSendButton={
-              (!isChatPending && isPending) || !threadId || Boolean(error)
+              (!isChatPending && isPending) ||
+              !threadId ||
+              Boolean(error) ||
+              overContextSize
             }
             chatModel={chatModel}
             onChatModelChange={setChatModel}
