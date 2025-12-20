@@ -915,7 +915,10 @@ export const workBookService = {
       .from(workBookSubmitsTable)
       .innerJoin(
         workBooksTable,
-        eq(workBookSubmitsTable.workBookId, workBooksTable.id),
+        and(
+          eq(workBookSubmitsTable.workBookId, workBooksTable.id),
+          isNull(workBooksTable.deletedAt),
+        ),
       )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
       .where(and(...where))
