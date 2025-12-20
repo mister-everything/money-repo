@@ -7,6 +7,7 @@ import { ChevronDownIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 import z from "zod";
+import { useShallow } from "zustand/shallow";
 import { Badge } from "@/components/ui/badge";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { useToRef } from "@/hooks/use-to-ref";
@@ -40,6 +41,10 @@ export function ReadBlockToolPart({
 
   const [expanded, setExpanded] = useState(false);
 
+  const blockIds = useWorkbookEditStore(
+    useShallow((state) => state.blocks.map((v) => v.id)),
+  );
+
   const output = part.output as
     | ReturnType<typeof serializeDetailBlock>[]
     | undefined;
@@ -67,6 +72,10 @@ export function ReadBlockToolPart({
 
   const executeRef = useToRef(execute);
 
+  const handleBlockClick = useCallback((blockId: string) => {
+    useWorkbookEditStore.getState().setFocusBlockId(blockId);
+  }, []);
+
   useEffect(() => {
     if (part.state == "input-available" && !part.errorText) {
       wait(4000).then(() => {
@@ -77,12 +86,12 @@ export function ReadBlockToolPart({
 
   return (
     <div
-      className="flex flex-col cursor-pointer text-sm group select-none"
+      className="flex flex-col text-sm group select-none"
       onClick={() => {
         setExpanded(!expanded);
       }}
     >
-      <div className="flex flex-row gap-2 items-center text-muted-foreground hover:text-accent-foreground transition-colors">
+      <div className="cursor-pointer flex flex-row gap-2 items-center text-muted-foreground hover:text-accent-foreground transition-colors">
         {part.errorText ? (
           "문제 조회를 실패하였습니다."
         ) : (
@@ -120,7 +129,7 @@ export function ReadBlockToolPart({
           </button>
         ) : null}
       </div>
-      <div className="pl-4">
+      <div className="px-4" onClick={(e) => e.stopPropagation()}>
         <AnimatePresence initial={false}>
           {expanded && (
             <motion.div
@@ -132,21 +141,39 @@ export function ReadBlockToolPart({
               variants={variants}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               style={{ overflow: "hidden" }}
-              className="pl-6 text-2xs text-muted-foreground border-l flex flex-col gap-4"
+              className="text-2xs text-muted-foreground grid grid-cols-2 gap-4 border-l px-2"
             >
               {output?.map((v) => {
                 return (
                   <div
+                    onClick={() =>
+                      blockIds.includes(v.id) && handleBlockClick(v.id)
+                    }
                     key={v.id}
-                    className="rounded-lg border bg-background p-4 shadow-sm space-y-3 fade-300"
+                    className={cn(
+                      "rounded-lg border bg-background p-4 space-y-3 fade-300",
+                      blockIds.includes(v.id)
+                        ? "hover:bg-secondary cursor-pointer"
+                        : "border-input bg-input",
+                    )}
                   >
                     <div className="flex items-center gap-1">
-                      <Badge className="rounded-full">{`문제 ${v.order}`}</Badge>{" "}
+                      <Badge
+                        variant={
+                          blockIds.includes(v.id) ? "default" : "secondary"
+                        }
+                        className="rounded-full"
+                      >{`문제 ${v.order}`}</Badge>{" "}
                       <Badge className="rounded-full" variant={"secondary"}>
                         {v.type}
                       </Badge>
                     </div>
                     <Streamdown>{v.question}</Streamdown>
+                    {!blockIds.includes(v.id) ? (
+                      <p className=" text-center text-2xs">
+                        이 문제는 제거되었습니다.
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}
