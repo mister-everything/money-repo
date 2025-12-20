@@ -87,7 +87,6 @@ export async function POST(req: Request) {
   const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer: dataStream }) => {
       const inProgressToolParts = extractInProgressToolPart(lastMessage);
-      logger.info({ inProgressToolParts });
       if (inProgressToolParts.length) {
         await Promise.all(
           inProgressToolParts.map(async (part) => {

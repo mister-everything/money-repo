@@ -18,11 +18,13 @@ import {
 import {
   applyStateUpdate,
   arrayToObject,
+  createDebounce,
   deduplicate,
   equal,
   isNull,
   objectFlow,
   StateUpdate,
+  TIME,
 } from "@workspace/util";
 import {
   ChevronLeftIcon,
@@ -95,6 +97,8 @@ const extractBlockDiff = (prev: WorkBookBlock[], next: WorkBookBlock[]) => {
 
   return { deletedBlocks, addedBlocks, updatedBlocks };
 };
+
+const debounce = createDebounce();
 
 export function WorkbookEdit({
   book: initialWorkbook,
@@ -188,10 +192,31 @@ export function WorkbookEdit({
     [isBookPending, isBlocksPending, isPublishing],
   );
 
+  const handleSave = async () => {
+    if (isWorkBookDiff) {
+      await updateWorkbook({
+        id: workBook.id,
+        title: workBook.title,
+        description: workBook.description || "",
+      });
+    }
+
+    if (isBlocksDiff) {
+      const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
+      await processUpdateBlocks({
+        workbookId: workBook.id,
+        deleteBlocks: deletedBlocks.map((b) => b.id),
+        insertBlocks: addedBlocks,
+        updateBlocks: updatedBlocks,
+      });
+    }
+  };
+
   const stateRef = useToRef({
     isPending,
     blocks,
     workBook,
+    handleSave,
   });
 
   const blocksDiff = useMemo(() => {
@@ -253,6 +278,9 @@ export function WorkbookEdit({
 
         return nextBlocks;
       });
+      debounce(() => {
+        stateRef.current.handleSave();
+      }, TIME.SECONDS(10));
     },
     [],
   );
@@ -271,6 +299,9 @@ export function WorkbookEdit({
         });
         return nextBlocks;
       });
+      debounce(() => {
+        stateRef.current.handleSave();
+      }, TIME.SECONDS(10));
     },
     [],
   );
@@ -278,15 +309,24 @@ export function WorkbookEdit({
   const handleUpdateSolution = useCallback(
     (id: string, solution: string) => {
       handleUpdateAnswer(id, { solution });
+      debounce(() => {
+        stateRef.current.handleSave();
+      }, TIME.SECONDS(10));
     },
     [handleUpdateAnswer],
   );
 
   const handleChangeTitle = useCallback((title: string) => {
     setWorkBook((prev) => ({ ...prev, title }));
+    debounce(() => {
+      stateRef.current.handleSave();
+    }, TIME.SECONDS(10));
   }, []);
   const handleChangeDescription = useCallback((description: string) => {
     setWorkBook((prev) => ({ ...prev, description }));
+    debounce(() => {
+      stateRef.current.handleSave();
+    }, TIME.SECONDS(10));
   }, []);
 
   const deleteFeedback = useCallback((id: string) => {
@@ -298,6 +338,9 @@ export function WorkbookEdit({
     setBlocks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, question } : b)),
     );
+    debounce(() => {
+      stateRef.current.handleSave();
+    }, TIME.SECONDS(10));
   }, []);
   const handleToggleEditMode = useCallback((id: string) => {
     if (stateRef.current.isPending) return;
@@ -418,26 +461,6 @@ export function WorkbookEdit({
     [],
   );
 
-  const handleSave = async () => {
-    if (isWorkBookDiff) {
-      await updateWorkbook({
-        id: workBook.id,
-        title: workBook.title,
-        description: workBook.description || "",
-      });
-    }
-
-    if (isBlocksDiff) {
-      const { deletedBlocks, addedBlocks, updatedBlocks } = blocksDiff;
-      await processUpdateBlocks({
-        workbookId: workBook.id,
-        deleteBlocks: deletedBlocks.map((b) => b.id),
-        insertBlocks: addedBlocks,
-        updateBlocks: updatedBlocks,
-      });
-    }
-  };
-
   const handleGoBack = useCallback(async () => {
     if (isWorkBookDiff || isBlocksDiff) {
       const answer = await notify.confirm({
@@ -521,7 +544,7 @@ export function WorkbookEdit({
       publish({ workBookId: workBook.id, tags });
       setIsPublishPopupOpen(false);
     },
-    [publish, workBook.id],
+    [publish, workBook.id, handleSave],
   );
 
   useEffect(() => {

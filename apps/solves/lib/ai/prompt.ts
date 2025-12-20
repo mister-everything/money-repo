@@ -21,7 +21,7 @@ export const WorkBookCreatePrompt = ({
   serializeBlocks?: string[]; // 문제가 이미 toString 되어 있어야 함.
 }) => {
   const categoryPrompt = category
-    ? `\n- 가장 중요한 문제집의 소재는 **${category.name}**입니다. **${category.name}** 와 관련된 문제를 생성해주세요. ${category.aiPrompt ? `\n${category.aiPrompt}` : ""}`
+    ? `\n- 가장 중요한 문제집의 소재는 **${category.name}**입니다. **${category.name}** 와 관련된 문제를 생성해주세요. ${category.aiPrompt ? ` ${category.aiPrompt}` : ""}`
     : "";
 
   const situation = WorkBookSituation.find(
