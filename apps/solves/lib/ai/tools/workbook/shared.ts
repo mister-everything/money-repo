@@ -9,7 +9,7 @@ import {
   RANKING_BLOCK_MIN_ITEMS,
   WorkBookBlock,
 } from "@service/solves/shared";
-import { createIdGenerator, shuffle } from "@workspace/util";
+import { createIdGenerator, normalizeNewLine, shuffle } from "@workspace/util";
 import z from "zod";
 
 /**
@@ -65,7 +65,7 @@ export const mcqToolInputToBlock = ({
 
   const block: WorkBookBlock<"mcq"> = {
     id,
-    question,
+    question: normalizeNewLine(question),
     content: {
       type: "mcq",
       options: optionObjects,
@@ -118,7 +118,7 @@ export const mcqMultipleToolInputToBlock = ({
 
   const block: WorkBookBlock<"mcq-multiple"> = {
     id,
-    question,
+    question: normalizeNewLine(question),
     type: "mcq-multiple",
     content: {
       type: "mcq-multiple",
@@ -159,7 +159,7 @@ export const subjectiveToolInputToBlock = ({
 
   const block: WorkBookBlock<"default"> = {
     id,
-    question,
+    question: normalizeNewLine(question),
     type: "default",
     content: {
       type: "default",
@@ -209,7 +209,7 @@ export const rankingToolInputToBlock = ({
 
   const block: WorkBookBlock<"ranking"> = {
     id,
-    question,
+    question: normalizeNewLine(question),
     type: "ranking",
     content: {
       type: "ranking",
@@ -244,7 +244,7 @@ export const oxToolInputToBlock = ({
 
   const block: WorkBookBlock<"ox"> = {
     id,
-    question,
+    question: normalizeNewLine(question),
     type: "ox",
     content: {
       type: "ox",

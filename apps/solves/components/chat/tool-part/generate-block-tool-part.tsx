@@ -4,7 +4,7 @@ import {
   getBlockDisplayName,
   WorkBookBlock,
 } from "@service/solves/shared";
-
+import { normalizeNewLine } from "@workspace/util";
 import { ToolUIPart } from "ai";
 import { AlertTriangleIcon, CheckIcon, CircleIcon, XIcon } from "lucide-react";
 import { ReactNode, useCallback, useMemo } from "react";
@@ -160,10 +160,12 @@ export function GenerateBlockToolPart({
         return (
           <>
             <div className="py-2 fade-300">
-              <Streamdown>{mcqInput?.question ?? ""}</Streamdown>
+              <Streamdown>
+                {normalizeNewLine(mcqInput?.question ?? "")}
+              </Streamdown>
             </div>
             <div className="space-y-2">
-              {mcqInput?.options?.map((opt, index) => {
+              {mcqInput?.options?.map?.((opt, index) => {
                 const isCorrect = index === mcqInput?.correctOptionIndex;
                 return (
                   <label
@@ -199,10 +201,12 @@ export function GenerateBlockToolPart({
         return (
           <>
             <div className="py-2 fade-300">
-              <Streamdown>{mcqInput?.question ?? ""}</Streamdown>
+              <Streamdown>
+                {normalizeNewLine(mcqInput?.question ?? "")}
+              </Streamdown>
             </div>
             <div className="space-y-2">
-              {mcqInput?.options?.map((opt, index) => {
+              {mcqInput?.options?.map?.((opt, index) => {
                 const isCorrect =
                   mcqInput?.correctOptionIndexes?.includes(index);
                 return (
@@ -246,7 +250,9 @@ export function GenerateBlockToolPart({
         return (
           <>
             <div className="py-2 fade-300">
-              <Streamdown>{rankingInput?.question ?? ""}</Streamdown>
+              <Streamdown>
+                {normalizeNewLine(rankingInput?.question ?? "")}
+              </Streamdown>
             </div>
             <div className="space-y-2">
               {orderedItems?.map((item, idx) => (
@@ -274,7 +280,9 @@ export function GenerateBlockToolPart({
         return (
           <>
             <div className="py-2 fade-300">
-              <Streamdown>{oxInput?.question ?? ""}</Streamdown>
+              <Streamdown>
+                {normalizeNewLine(oxInput?.question ?? "")}
+              </Streamdown>
             </div>
             <div className="grid grid-cols-2 gap-4 h-44 lg:h-64">
               <div
@@ -314,7 +322,9 @@ export function GenerateBlockToolPart({
         return (
           <>
             <div className="py-2 fade-300">
-              <Streamdown>{subjectiveInput?.question ?? ""}</Streamdown>
+              <Streamdown>
+                {normalizeNewLine(subjectiveInput?.question ?? "")}
+              </Streamdown>
             </div>
             <div className="flex flex-wrap gap-2">
               {subjectiveInput?.answers?.map((ans: string, idx: number) => (

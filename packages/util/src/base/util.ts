@@ -343,3 +343,7 @@ export const createIdGenerator = (options?: {
 
   return generate;
 };
+
+export const normalizeNewLine = (text: string) => {
+  return text.replace(/\\n/g, "\n");
+};
