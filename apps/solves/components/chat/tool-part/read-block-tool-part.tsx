@@ -141,7 +141,10 @@ export function ReadBlockToolPart({
               variants={variants}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               style={{ overflow: "hidden" }}
-              className="text-2xs text-muted-foreground grid grid-cols-2 gap-4 border-l px-2"
+              className={cn(
+                "text-2xs text-muted-foreground grid grid-cols-2 gap-4 border-l px-4 pb-4",
+                output?.length == 1 ? "grid-cols-1" : "grid-cols-2",
+              )}
             >
               {output?.map((v) => {
                 return (
