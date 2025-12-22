@@ -5,6 +5,7 @@ import {
   userTable,
   verificationTable,
 } from "@service/auth";
+import { userService } from "@service/auth/user.service";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
@@ -85,9 +86,18 @@ export const solvesBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
   },
   plugins: [
     customSession(async ({ session, user }) => {
+      // DB에서 확장 정보 조회
+      const [extendedData, hasPrivacyConsent] = await Promise.all([
+        userService.getUserExtendedData(user.id),
+        userService.hasPrivacyConsent(user.id),
+      ]);
       return {
         session,
-        user,
+        user: {
+          ...user,
+          nickname: extendedData?.nickname ?? null,
+          hasPrivacyConsent,
+        },
       };
     }),
     anonymous(),
