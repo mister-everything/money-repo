@@ -25,6 +25,10 @@ export enum GEN_BLOCK_TOOL_NAMES {
   OX = "generateOX",
 }
 
+export enum WORKBOOK_META_TOOL_NAMES {
+  META = "generateWorkbookMeta",
+}
+
 // 공통 입력 스키마
 const BASE = z.object({
   question: z.string().min(1, "문제의 질문을 입력하세요."),
@@ -269,3 +273,33 @@ export type GenerateSubjectiveInput = z.infer<
 >;
 export type GenerateRankingInput = z.infer<typeof GenerateRankingInputSchema>;
 export type GenerateOxInput = z.infer<typeof GenerateOxInputSchema>;
+
+// Workbook 메타 (제목/설명) 생성
+export const GenerateWorkbookMetaInputSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "문제집 제목은 최소 1자 이상 입력하세요.")
+    .max(20, "문제집 제목은 최대 20자 (UI 입력 제한) 입니다.")
+    .describe(
+      "제목은 필수이고, 최대는 20자입니다. 줄바꿈 없이 한 줄로 작성하세요.",
+    ),
+  description: z
+    .string()
+    .trim()
+    .min(1, "한줄 설명은 최소 1자이상 입력하세요.")
+    .max(25, "한줄 설명은 최대 25자입니다.")
+    .describe(
+      "설명은 필수이고, 최대는 25자입니다. 줄바꿈 없이 한 줄로 작성하세요.",
+    ),
+  note: z
+    .string()
+    .trim()
+    .max(120, "메모는 120자 이하로 작성하세요.")
+    .optional()
+    .describe("제목/설명에 반영한 컨셉, 대상, 난이도 메모"),
+});
+
+export type GenerateWorkbookMetaInput = z.infer<
+  typeof GenerateWorkbookMetaInputSchema
+>;

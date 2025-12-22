@@ -23,6 +23,7 @@ import { getTokens } from "@/lib/ai/shared";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
+import { loadWorkbookMetaTools } from "@/lib/ai/tools/workbook/generate-workbook-meta-tools";
 import {
   READ_BLOCK_TOOL_NAME,
   readBlockTool,
@@ -110,6 +111,7 @@ export async function POST(req: Request) {
         stopWhen: stepCountIs(5),
         abortSignal: req.signal,
         tools: {
+          ...loadWorkbookMetaTools(),
           ...loadGenerateBlockTools(blockTypes as BlockType[]),
           [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
           ...(!serializeBlocks?.length
