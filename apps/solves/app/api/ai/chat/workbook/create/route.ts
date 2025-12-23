@@ -25,6 +25,10 @@ import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
 import { loadWorkbookMetaTools } from "@/lib/ai/tools/workbook/generate-workbook-meta-tools";
 import {
+  PROMPT_DIRECTOR_TOOL_NAME,
+  promptDirectorTool,
+} from "@/lib/ai/tools/workbook/prompt-director-tools";
+import {
   READ_BLOCK_TOOL_NAME,
   readBlockTool,
 } from "@/lib/ai/tools/workbook/read-block-tool";
@@ -117,6 +121,7 @@ export async function POST(req: Request) {
           ...(!serializeBlocks?.length
             ? {}
             : { [READ_BLOCK_TOOL_NAME]: readBlockTool }),
+          [PROMPT_DIRECTOR_TOOL_NAME]: promptDirectorTool,
         },
       });
 

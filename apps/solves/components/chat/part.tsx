@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import { PROMPT_DIRECTOR_TOOL_NAME } from "@/lib/ai/tools/workbook/prompt-director-tools";
 import { READ_BLOCK_TOOL_NAME } from "@/lib/ai/tools/workbook/read-block-tool";
 import {
   GEN_BLOCK_TOOL_NAMES,
@@ -38,6 +39,7 @@ import { normalizeMentions } from "../mention/shared";
 import JsonView from "../ui/json-view";
 import { AssistantMetadataToolTip } from "./assistant-metadata-tool-tip";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
+import { PromptDirectorToolPart } from "./tool-part/prompt-director-tool-part";
 import { ReadBlockToolPart } from "./tool-part/read-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
 import { WorkbookMetaToolPart } from "./tool-part/workbook-meta-tool-part";
@@ -321,6 +323,10 @@ export function ToolPart({
   }
   if (toolName === READ_BLOCK_TOOL_NAME) {
     return <ReadBlockToolPart part={part} addToolOutput={addToolOutput} />;
+  }
+
+  if (toolName === PROMPT_DIRECTOR_TOOL_NAME) {
+    return <PromptDirectorToolPart part={part} addToolOutput={addToolOutput} />;
   }
 
   return (
