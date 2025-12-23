@@ -7,6 +7,8 @@ import {
   RANKING_BLOCK_ITEM_MAX_LENGTH,
   RANKING_BLOCK_MAX_ITEMS,
   RANKING_BLOCK_MIN_ITEMS,
+  WORKBOOK_DESCRIPTION_MAX_LENGTH,
+  WORKBOOK_TITLE_MAX_LENGTH,
   WorkBookBlock,
 } from "@service/solves/shared";
 import { createIdGenerator, normalizeNewLine, shuffle } from "@workspace/util";
@@ -23,6 +25,10 @@ export enum GEN_BLOCK_TOOL_NAMES {
   SUBJECTIVE = "generateSubjective",
   RANKING = "generateRanking",
   OX = "generateOX",
+}
+
+export enum WORKBOOK_META_TOOL_NAMES {
+  META = "generateWorkbookMeta",
 }
 
 // 공통 입력 스키마
@@ -269,3 +275,33 @@ export type GenerateSubjectiveInput = z.infer<
 >;
 export type GenerateRankingInput = z.infer<typeof GenerateRankingInputSchema>;
 export type GenerateOxInput = z.infer<typeof GenerateOxInputSchema>;
+
+// Workbook 메타 (제목/설명) 생성
+export const GenerateWorkbookMetaInputSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "문제집 제목은 최소 1자 이상 입력하세요.")
+    .max(
+      WORKBOOK_TITLE_MAX_LENGTH,
+      `문제집 제목은 최대 ${WORKBOOK_TITLE_MAX_LENGTH}자 (UI 입력 제한) 입니다.`,
+    )
+    .describe(
+      `제목은 필수이고, 최대는 ${WORKBOOK_TITLE_MAX_LENGTH}자입니다. 줄바꿈 없이 한 줄로 작성하세요.`,
+    ),
+  description: z
+    .string()
+    .trim()
+    .min(1, "한줄 설명은 최소 1자이상 입력하세요.")
+    .max(
+      WORKBOOK_DESCRIPTION_MAX_LENGTH,
+      `한줄 설명은 최대 ${WORKBOOK_DESCRIPTION_MAX_LENGTH}자입니다.`,
+    )
+    .describe(
+      `설명은 필수이고, 최대는 ${WORKBOOK_DESCRIPTION_MAX_LENGTH}자입니다. 줄바꿈 없이 한 줄로 작성하세요.`,
+    ),
+});
+
+export type GenerateWorkbookMetaInput = z.infer<
+  typeof GenerateWorkbookMetaInputSchema
+>;
