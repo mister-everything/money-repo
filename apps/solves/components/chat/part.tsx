@@ -28,7 +28,10 @@ import {
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { READ_BLOCK_TOOL_NAME } from "@/lib/ai/tools/workbook/read-block-tool";
-import { GEN_BLOCK_TOOL_NAMES } from "@/lib/ai/tools/workbook/shared";
+import {
+  GEN_BLOCK_TOOL_NAMES,
+  WORKBOOK_META_TOOL_NAMES,
+} from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
 import { normalizeMentions } from "../mention/shared";
@@ -37,6 +40,7 @@ import { AssistantMetadataToolTip } from "./assistant-metadata-tool-tip";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { ReadBlockToolPart } from "./tool-part/read-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
+import { WorkbookMetaToolPart } from "./tool-part/workbook-meta-tool-part";
 
 interface UserMessagePartProps {
   part: TextUIPart;
@@ -291,6 +295,10 @@ export function ToolPart({
 
   const isGenerateBlockTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
     Object.values(GEN_BLOCK_TOOL_NAMES).includes(name as GEN_BLOCK_TOOL_NAMES);
+  const isWorkbookMetaTool = (name: string): name is WORKBOOK_META_TOOL_NAMES =>
+    Object.values(WORKBOOK_META_TOOL_NAMES).includes(
+      name as WORKBOOK_META_TOOL_NAMES,
+    );
 
   if (isGenerateBlockTool(toolName)) {
     return (
@@ -298,6 +306,10 @@ export function ToolPart({
         <GenerateBlockToolPart part={part} type={toolName} />
       </div>
     );
+  }
+
+  if (isWorkbookMetaTool(toolName)) {
+    return <WorkbookMetaToolPart part={part} type={toolName} />;
   }
 
   if (toolName === EXA_SEARCH_TOOL_NAME) {

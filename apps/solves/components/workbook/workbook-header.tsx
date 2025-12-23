@@ -1,6 +1,10 @@
 "use client";
 
-import { WorkBookWithoutBlocks } from "@service/solves/shared";
+import {
+  WORKBOOK_DESCRIPTION_MAX_LENGTH,
+  WORKBOOK_TITLE_MAX_LENGTH,
+  WorkBookWithoutBlocks,
+} from "@service/solves/shared";
 import { HashIcon, PencilIcon } from "lucide-react";
 import { ComponentProps, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +82,7 @@ export function WorkbookHeader({
               placeholder={placeholder}
               autoFocus
               className="text-xl!"
-              maxLength={20}
+              maxLength={WORKBOOK_TITLE_MAX_LENGTH}
               value={book.title}
               onChange={handleChangeTitle}
             />
@@ -108,7 +112,7 @@ export function WorkbookHeader({
           <Textarea
             placeholder="문제집 한줄 설명을 작성하세요"
             className="resize-none max-h-[100px]"
-            maxLength={25}
+            maxLength={WORKBOOK_DESCRIPTION_MAX_LENGTH}
             value={book.description || ""}
             onChange={handleChangeDescription}
           />

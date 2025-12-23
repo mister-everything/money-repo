@@ -44,3 +44,11 @@ export const MAX_TAG_COUNT = 10;
 export const MAX_CATEGORY_COUNT = 3;
 
 export const MAX_QUESTION_LENGTH = 2000;
+
+// ============================================
+// Workbook Meta
+// ============================================
+/** 문제집 제목 최대 글자수 */
+export const WORKBOOK_TITLE_MAX_LENGTH = 20;
+/** 문제집 한줄 설명 최대 글자수 */
+export const WORKBOOK_DESCRIPTION_MAX_LENGTH = 25;
