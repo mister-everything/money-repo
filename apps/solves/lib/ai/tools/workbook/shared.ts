@@ -7,6 +7,8 @@ import {
   RANKING_BLOCK_ITEM_MAX_LENGTH,
   RANKING_BLOCK_MAX_ITEMS,
   RANKING_BLOCK_MIN_ITEMS,
+  WORKBOOK_DESCRIPTION_MAX_LENGTH,
+  WORKBOOK_TITLE_MAX_LENGTH,
   WorkBookBlock,
 } from "@service/solves/shared";
 import { createIdGenerator, normalizeNewLine, shuffle } from "@workspace/util";
@@ -280,24 +282,24 @@ export const GenerateWorkbookMetaInputSchema = z.object({
     .string()
     .trim()
     .min(1, "문제집 제목은 최소 1자 이상 입력하세요.")
-    .max(20, "문제집 제목은 최대 20자 (UI 입력 제한) 입니다.")
+    .max(
+      WORKBOOK_TITLE_MAX_LENGTH,
+      `문제집 제목은 최대 ${WORKBOOK_TITLE_MAX_LENGTH}자 (UI 입력 제한) 입니다.`,
+    )
     .describe(
-      "제목은 필수이고, 최대는 20자입니다. 줄바꿈 없이 한 줄로 작성하세요.",
+      `제목은 필수이고, 최대는 ${WORKBOOK_TITLE_MAX_LENGTH}자입니다. 줄바꿈 없이 한 줄로 작성하세요.`,
     ),
   description: z
     .string()
     .trim()
     .min(1, "한줄 설명은 최소 1자이상 입력하세요.")
-    .max(25, "한줄 설명은 최대 25자입니다.")
+    .max(
+      WORKBOOK_DESCRIPTION_MAX_LENGTH,
+      `한줄 설명은 최대 ${WORKBOOK_DESCRIPTION_MAX_LENGTH}자입니다.`,
+    )
     .describe(
-      "설명은 필수이고, 최대는 25자입니다. 줄바꿈 없이 한 줄로 작성하세요.",
+      `설명은 필수이고, 최대는 ${WORKBOOK_DESCRIPTION_MAX_LENGTH}자입니다. 줄바꿈 없이 한 줄로 작성하세요.`,
     ),
-  note: z
-    .string()
-    .trim()
-    .max(120, "메모는 120자 이하로 작성하세요.")
-    .optional()
-    .describe("제목/설명에 반영한 컨셉, 대상, 난이도 메모"),
 });
 
 export type GenerateWorkbookMetaInput = z.infer<

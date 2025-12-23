@@ -1,3 +1,7 @@
+import {
+  WORKBOOK_DESCRIPTION_MAX_LENGTH,
+  WORKBOOK_TITLE_MAX_LENGTH,
+} from "@service/solves/shared";
 import { ToolUIPart } from "ai";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -41,8 +45,8 @@ export function WorkbookMetaToolPart({
     return {
       title: output?.title ?? input?.title ?? "",
       description: output?.description ?? input?.description ?? "",
-      maxTitle: 20,
-      maxDescription: 25,
+      maxTitle: WORKBOOK_TITLE_MAX_LENGTH,
+      maxDescription: WORKBOOK_DESCRIPTION_MAX_LENGTH,
     };
   }, [part.input, part.output]);
 
@@ -124,12 +128,8 @@ export function WorkbookMetaToolPart({
           >
             {isApplied ? "적용됨" : "제목·설명 적용"}
           </Button>
-          <Badge variant="outline" className="rounded-full text-2xs">
-            제목 20자 · 설명 25자
-          </Badge>
         </div>
       </div>
     </div>
   );
 }
-
