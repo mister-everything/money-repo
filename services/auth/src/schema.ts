@@ -1,5 +1,6 @@
 import {
   boolean,
+  jsonb,
   pgSchema,
   text,
   timestamp,
@@ -7,7 +8,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { SCHEMA_NAME } from "./const";
-import { ConsentType, NICKNAME_RULES } from "./shared";
+import { NICKNAME_RULES, PolicyAgreements, PolicyType } from "./shared";
 
 export const authSchema = pgSchema(SCHEMA_NAME);
 
@@ -31,6 +32,8 @@ export const userTable = authSchema.table("user", {
   deletedAt: timestamp("deleted_at"),
   isDeleted: boolean("is_deleted").default(false).notNull(),
   nickname: varchar("nickname", { length: NICKNAME_RULES.maxLength }),
+  /** 약관 동의 정보 */
+  policyAgreements: jsonb("policy_agreements").$type<PolicyAgreements>(),
 });
 
 export const sessionTable = authSchema.table("session", {
@@ -113,16 +116,18 @@ export const policyVersionTable = authSchema.table("policy_version", {
   title: text("title").notNull(),
   /** 약관 내용 (마크다운) */
   content: text("content").notNull(),
+  /** 필수 여부 */
+  isRequired: boolean("is_required").default(true).notNull(),
   /** 시행일 */
   effectiveAt: timestamp("effective_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 /**
- * 개인정보 동의 기록 테이블
+ * 약관 동의 기록 테이블
  * 법적 증빙을 위해 모든 동의 이력을 보관
  */
-export const privacyConsentTable = authSchema.table("privacy_consent", {
+export const policyConsentTable = authSchema.table("policy_consent", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -130,9 +135,11 @@ export const privacyConsentTable = authSchema.table("privacy_consent", {
   /** 동의한 약관 버전 (예: "1.0.0") */
   version: varchar("version", { length: 10 }).notNull(),
   /** 동의 유형: privacy (개인정보), terms (이용약관), marketing (마케팅) 등 */
-  consentType: varchar("consent_type", { length: 20 })
-    .$type<ConsentType>()
+  policyType: varchar("policy_type", { length: 20 })
+    .$type<PolicyType>()
     .notNull(),
+  /** 동의 여부 (true: 동의, false: 철회) */
+  isAgreed: boolean("is_agreed").default(true).notNull(),
   /** 동의 일시 */
   consentedAt: timestamp("consented_at").notNull().defaultNow(),
   /** 동의 시점 IP 주소 */

@@ -7,14 +7,45 @@ export enum Role {
 
 export const RoleSchema = z.enum(Object.values(Role));
 
-export type PolicyType = "privacy" | "terms";
+export type PolicyType = "privacy" | "terms" | "marketing";
 export type ConsentType = "privacy" | "terms" | "marketing";
+
+/** 약관 동의 정보 (userTable에 JSON으로 저장) */
+export type PolicyAgreements = {
+  terms?: string;
+  privacy?: string;
+  marketing?: string;
+};
+
+/** 필수 약관 동의 여부 확인 */
+export function hasRequiredPolicyAgreements(
+  agreements: PolicyAgreements | null | undefined,
+  requiredVersions: { terms: string; privacy: string },
+): boolean {
+  if (!agreements) return false;
+  return (
+    agreements.terms === requiredVersions.terms &&
+    agreements.privacy === requiredVersions.privacy
+  );
+}
+
+/** JSON 문자열을 PolicyAgreements로 파싱 */
+export function parsePolicyAgreements(
+  json: string | null | undefined,
+): PolicyAgreements | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as PolicyAgreements;
+  } catch {
+    return null;
+  }
+}
 
 /** 닉네임 유효성 검증 규칙 */
 export const NICKNAME_RULES = {
   minLength: 2,
   maxLength: 16,
-  pattern: /^[a-zA-Z0-9가-힣_]+$/,
+  pattern: /^[a-zA-Z0-9가-힣]+$/,
 } as const;
 
 /** 닉네임 유효성 검증 Zod 스키마 */
@@ -30,7 +61,7 @@ export const NicknameSchema = z
   )
   .regex(
     NICKNAME_RULES.pattern,
-    "닉네임은 한글, 영문, 숫자, 언더스코어(_)만 사용 가능합니다.",
+    "닉네임은 한글, 영문, 숫자 만 사용 가능합니다.",
   );
 
 export type Invitation = {

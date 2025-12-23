@@ -4,13 +4,13 @@ import { and, count, desc, eq, gte, ilike, isNull, or, sql } from "drizzle-orm";
 import { pgDb } from "./db";
 import {
   invitationTable,
+  policyConsentTable,
   policyVersionTable,
-  privacyConsentTable,
   sessionTable,
   userTable,
 } from "./schema";
 
-import { ConsentType, PolicyType, Role, validateNickname } from "./shared";
+import { PolicyAgreements, PolicyType, Role, validateNickname } from "./shared";
 
 /** 동의 기록 옵션 */
 export type ConsentRecordOptions = {
@@ -44,33 +44,8 @@ export const userService = {
       .where(eq(userTable.isDeleted, false));
     return users;
   },
-  deleteUser: async (id: string) => {
-    await pgDb
-      .update(userTable)
-      .set({ deletedAt: new Date(), isDeleted: true })
-      .where(eq(userTable.id, id));
-  },
-  getEnableUsers: async () => {
-    const users = await pgDb
-      .select({
-        id: userTable.id,
-        name: userTable.name,
-        email: userTable.email,
-        image: userTable.image,
-        createdAt: userTable.createdAt,
-        updatedAt: userTable.updatedAt,
-        role: userTable.role,
-      })
-      .from(userTable)
-      .where(
-        and(
-          or(eq(userTable.banned, false), eq(userTable.isAnonymous, false)),
-          eq(userTable.isDeleted, false),
-        ),
-      );
-    return users;
-  },
-  updateUserRole: async (id: string, role: string) => {
+
+  updateUserRole: async (id: string, role: Role) => {
     await pgDb
       .update(userTable)
       .set({ role })
@@ -353,11 +328,11 @@ export const userService = {
         .where(and(eq(userTable.id, userId), eq(userTable.isDeleted, false)));
 
       // 동의 이력 테이블에 기록 (법적 증빙용)
-      await tx.insert(privacyConsentTable).values({
+      await tx.insert(policyConsentTable).values({
         id: randomBytes(16).toString("hex"),
         userId,
         version: privacyVersion,
-        consentType: "privacy",
+        policyType: "privacy",
         consentedAt: now,
         ipAddress: options.ipAddress ?? null,
         userAgent: options.userAgent ?? null,
@@ -414,23 +389,23 @@ export const userService = {
    */
   hasConsentForType: async (
     userId: string,
-    consentType: ConsentType,
+    policyType: PolicyType,
     minVersion?: string,
   ): Promise<boolean> => {
     const conditions = [
-      eq(privacyConsentTable.userId, userId),
-      eq(privacyConsentTable.consentType, consentType),
+      eq(policyConsentTable.userId, userId),
+      eq(policyConsentTable.policyType, policyType),
     ];
 
     if (minVersion) {
-      conditions.push(gte(privacyConsentTable.version, minVersion));
+      conditions.push(gte(policyConsentTable.version, minVersion));
     }
 
     const [consent] = await pgDb
-      .select({ id: privacyConsentTable.id })
-      .from(privacyConsentTable)
+      .select({ id: policyConsentTable.id })
+      .from(policyConsentTable)
       .where(and(...conditions))
-      .orderBy(desc(privacyConsentTable.consentedAt))
+      .orderBy(desc(policyConsentTable.consentedAt))
       .limit(1);
 
     return !!consent;
@@ -498,5 +473,54 @@ export const userService = {
       .returning();
 
     return policy;
+  },
+
+  /**
+   * 약관 동의 업데이트 (userTable + policyConsentTable 동시 기록)
+   * 세션에 포함되는 policyAgreements 필드를 업데이트하고, 법적 증빙용 이력도 남김
+   */
+  updatePolicyAgreements: async (
+    userId: string,
+    agreements: PolicyAgreements,
+    options: ConsentRecordOptions = {},
+  ): Promise<void> => {
+    const now = new Date();
+
+    await pgDb.transaction(async (tx) => {
+      // 1. userTable의 policyAgreements 업데이트
+      await tx
+        .update(userTable)
+        .set({ policyAgreements: agreements })
+        .where(eq(userTable.id, userId));
+
+      // 2. policyConsentTable에 이력 기록 (법적 증빙용)
+      for (const [type, version] of Object.entries(agreements)) {
+        if (version) {
+          await tx.insert(policyConsentTable).values({
+            id: randomBytes(16).toString("hex"),
+            userId,
+            version,
+            policyType: type as PolicyType,
+            consentedAt: now,
+            ipAddress: options.ipAddress ?? null,
+            userAgent: options.userAgent ?? null,
+          });
+        }
+      }
+    });
+  },
+
+  /**
+   * 사용자의 현재 약관 동의 정보 조회
+   */
+  getPolicyAgreements: async (
+    userId: string,
+  ): Promise<PolicyAgreements | null> => {
+    const [user] = await pgDb
+      .select({ policyAgreements: userTable.policyAgreements })
+      .from(userTable)
+      .where(eq(userTable.id, userId));
+
+    return user?.policyAgreements ?? null;
   },
 };

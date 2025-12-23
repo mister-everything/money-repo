@@ -88,6 +88,12 @@ export const solvesBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
         defaultValue: null,
         input: false,
       },
+      policyAgreements: {
+        type: "json",
+        required: false,
+        defaultValue: null,
+        input: false,
+      },
     },
   },
   session: {
