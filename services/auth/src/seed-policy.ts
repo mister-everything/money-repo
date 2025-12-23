@@ -2,7 +2,6 @@ import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { pgDb } from "./db";
 import { policyVersionTable } from "./schema";
-import { CURRENT_PRIVACY_VERSION } from "./shared";
 
 const PRIVACY_POLICY_CONTENT = `
 Solves(이하 "회사")는 이용자의 개인정보를 중요시하며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 개인정보 처리방침은 회사가 제공하는 문제집 제작 및 공유 서비스(이하 "서비스")에 적용됩니다.
@@ -122,7 +121,7 @@ export async function seedPolicyVersions() {
   // 개인정보 처리방침 시드
   await pgDb.insert(policyVersionTable).values({
     id: randomBytes(16).toString("hex"),
-    version: CURRENT_PRIVACY_VERSION,
+    version: "1.0.0",
     type: "privacy",
     title: "개인정보 처리방침",
     content: PRIVACY_POLICY_CONTENT,
@@ -141,4 +140,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       process.exit(1);
     });
 }
-

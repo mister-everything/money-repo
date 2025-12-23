@@ -1,10 +1,19 @@
-import { boolean, pgSchema, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgSchema,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { SCHEMA_NAME } from "./const";
+import { ConsentType, NICKNAME_RULES } from "./shared";
 
 export const authSchema = pgSchema(SCHEMA_NAME);
 
 export const userTable = authSchema.table("user", {
   id: text("id").primaryKey(),
+  publicId: uuid("public_id").notNull().unique().defaultRandom(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
@@ -21,8 +30,7 @@ export const userTable = authSchema.table("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date()),
   deletedAt: timestamp("deleted_at"),
   isDeleted: boolean("is_deleted").default(false).notNull(),
-  nickname: text("nickname"),
-  anonymizedAt: timestamp("anonymized_at"),
+  nickname: varchar("nickname", { length: NICKNAME_RULES.maxLength }),
 });
 
 export const sessionTable = authSchema.table("session", {
@@ -120,14 +128,16 @@ export const privacyConsentTable = authSchema.table("privacy_consent", {
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
   /** 동의한 약관 버전 (예: "1.0.0") */
-  version: text("version").notNull(),
+  version: varchar("version", { length: 10 }).notNull(),
   /** 동의 유형: privacy (개인정보), terms (이용약관), marketing (마케팅) 등 */
-  consentType: text("consent_type").notNull(),
+  consentType: varchar("consent_type", { length: 20 })
+    .$type<ConsentType>()
+    .notNull(),
   /** 동의 일시 */
   consentedAt: timestamp("consented_at").notNull().defaultNow(),
   /** 동의 시점 IP 주소 */
   ipAddress: text("ip_address"),
   /** 브라우저/디바이스 정보 */
-  userAgent: text("user_agent"),
+  userAgent: varchar("user_agent", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

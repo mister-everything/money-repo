@@ -1,5 +1,5 @@
-import { userService } from "@service/auth/user.service";
 import { CURRENT_PRIVACY_VERSION, NicknameSchema } from "@service/auth/shared";
+import { userService } from "@service/auth/user.service";
 import { headers } from "next/headers";
 import z from "zod";
 

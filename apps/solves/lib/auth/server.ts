@@ -5,16 +5,20 @@ import {
   userTable,
   verificationTable,
 } from "@service/auth";
-import { userService } from "@service/auth/user.service";
+import { Role } from "@service/auth/shared";
+import { isNull } from "@workspace/util";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-
 import { nextCookies } from "better-auth/next-js";
-import { anonymous, customSession } from "better-auth/plugins";
+import { anonymous } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { logger } from "@/lib/logger";
+import { createLogger } from "@/lib/logger";
 import { AUTH_COOKIE_PREFIX } from "../const";
+import { sharedCache } from "../server-cache";
+
+const logger = createLogger("AUTH", "bgWhite");
+
 export const getSession = async () => {
   "use server";
   const session = await solvesBetterAuth.api
@@ -64,6 +68,28 @@ export const solvesBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
         : process.env.NODE_ENV === "production",
     cookiePrefix: AUTH_COOKIE_PREFIX,
   },
+  user: {
+    additionalFields: {
+      role: {
+        type: Object.values(Role),
+        required: false,
+        defaultValue: Role.USER,
+        input: false,
+      },
+      nickname: {
+        type: "string",
+        required: false,
+        defaultValue: null,
+        input: true,
+      },
+      publicId: {
+        type: "string",
+        required: false,
+        defaultValue: null,
+        input: false,
+      },
+    },
+  },
   session: {
     cookieCache: {
       enabled: true,
@@ -77,6 +103,17 @@ export const solvesBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
       trustedProviders: ["google"],
     },
   },
+  secondaryStorage: {
+    delete: (key) => sharedCache.del(key),
+    get: async (key) => {
+      const value = await sharedCache.get(key);
+      if (isNull(value)) return undefined;
+      return JSON.parse(value);
+    },
+    set: (key, value, ttl) => {
+      return sharedCache.set(key, value, ttl);
+    },
+  },
   socialProviders: {
     google: {
       prompt: "select_account",
@@ -84,23 +121,5 @@ export const solvesBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
-  plugins: [
-    customSession(async ({ session, user }) => {
-      // DB에서 확장 정보 조회
-      const [extendedData, hasPrivacyConsent] = await Promise.all([
-        userService.getUserExtendedData(user.id),
-        userService.hasPrivacyConsent(user.id),
-      ]);
-      return {
-        session,
-        user: {
-          ...user,
-          nickname: extendedData?.nickname ?? null,
-          hasPrivacyConsent,
-        },
-      };
-    }),
-    anonymous(),
-    nextCookies(),
-  ],
+  plugins: [anonymous(), nextCookies()],
 });
