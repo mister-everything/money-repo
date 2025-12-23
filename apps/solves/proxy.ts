@@ -31,6 +31,9 @@ export async function proxy(request: NextRequest) {
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
+  if (!session.user.consentedAt) {
+    return NextResponse.redirect("/about-you");
+  }
   return NextResponse.next();
 }
 

@@ -7,6 +7,7 @@ import {
   LoaderIcon,
   LogOutIcon,
   MoonIcon,
+  SettingsIcon,
   SparkleIcon,
   SunIcon,
   WalletIcon,
@@ -61,6 +62,11 @@ export const NavUser = memo(function NavUser() {
     return !isPending && !data && !isRefetching;
   }, [data, isPending, isRefetching]);
 
+  const displayName = useMemo(() => {
+    if (!data?.user) return "";
+    return (data.user as any).nickname ?? data.user.name ?? "";
+  }, [data]);
+
   const trigger = useMemo(() => {
     if (state == "expanded") {
       return (
@@ -75,9 +81,9 @@ export const NavUser = memo(function NavUser() {
               <AvatarImage
                 className="object-cover"
                 src={data?.user.image ?? ""}
-                alt={`${data?.user.name} 프로필 사진`}
+                alt={`${displayName} 프로필 사진`}
               />
-              <AvatarFallback>{data?.user.name.at(0)}</AvatarFallback>
+              <AvatarFallback>{displayName.at(0)}</AvatarFallback>
             </Avatar>
           )}
           <div className="flex flex-col items-start">
@@ -89,7 +95,7 @@ export const NavUser = memo(function NavUser() {
             ) : (
               <>
                 <span className="truncate" data-testid="sidebar-user-email">
-                  {data?.user.name}
+                  {displayName}
                 </span>
                 <span className="text-xs text-muted-foreground">Free</span>
               </>
@@ -114,13 +120,13 @@ export const NavUser = memo(function NavUser() {
           <AvatarImage
             className="object-cover"
             src={data?.user.image ?? ""}
-            alt={`${data?.user.name} 프로필 사진`}
+            alt={`${displayName} 프로필 사진`}
           />
-          <AvatarFallback>{data?.user.name.at(0)}</AvatarFallback>
+          <AvatarFallback>{displayName.at(0)}</AvatarFallback>
         </Avatar>
       </Button>
     );
-  }, [state, isPending, data]);
+  }, [state, isPending, data, displayName]);
 
   if (isAnonymous) return null;
 
@@ -143,10 +149,11 @@ export const NavUser = memo(function NavUser() {
             <AvatarImage
               className="object-cover"
               src={data?.user.image ?? ""}
-              alt={`${data?.user.name} 프로필 사진`}
+              alt={`${displayName} 프로필 사진`}
             />
-            <AvatarFallback>{data?.user.name.at(0)}</AvatarFallback>
+            <AvatarFallback>{displayName.at(0)}</AvatarFallback>
           </Avatar>
+          <span className="text-sm font-medium">{displayName}</span>
         </div>
 
         <DropdownMenuItem
@@ -185,6 +192,12 @@ export const NavUser = memo(function NavUser() {
         <DropdownMenuItem>
           <SparkleIcon />
           <Link href={"/pricing"}>플랜 업그레이드</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings">
+            <SettingsIcon />
+            계정 설정
+          </Link>
         </DropdownMenuItem>
         <div className="px-2">
           <DropdownMenuSeparator />

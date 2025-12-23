@@ -1,9 +1,11 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { PublicError } from "@workspace/error";
 import { and, count, desc, eq, gte, ilike, isNull, or, sql } from "drizzle-orm";
 import { pgDb } from "./db";
 import { invitationTable, sessionTable, userTable } from "./schema";
-import { Role } from "./shared";
+
+import { Role, validateNickname } from "./shared";
+
 export const userService = {
   isSessionValid: async (session: string, userId: string) => {
     const [sessionData] = await pgDb
@@ -31,33 +33,8 @@ export const userService = {
       .where(eq(userTable.isDeleted, false));
     return users;
   },
-  deleteUser: async (id: string) => {
-    await pgDb
-      .update(userTable)
-      .set({ deletedAt: new Date(), isDeleted: true })
-      .where(eq(userTable.id, id));
-  },
-  getEnableUsers: async () => {
-    const users = await pgDb
-      .select({
-        id: userTable.id,
-        name: userTable.name,
-        email: userTable.email,
-        image: userTable.image,
-        createdAt: userTable.createdAt,
-        updatedAt: userTable.updatedAt,
-        role: userTable.role,
-      })
-      .from(userTable)
-      .where(
-        and(
-          or(eq(userTable.banned, false), eq(userTable.isAnonymous, false)),
-          eq(userTable.isDeleted, false),
-        ),
-      );
-    return users;
-  },
-  updateUserRole: async (id: string, role: string) => {
+
+  updateUserRole: async (id: string, role: Role) => {
     await pgDb
       .update(userTable)
       .set({ role })
@@ -274,5 +251,83 @@ export const userService = {
       .orderBy(sql`${invitationTable.createdAt} desc`);
 
     return invitations;
+  },
+
+  /**
+   * 닉네임 중복 체크
+   */
+  isNicknameAvailable: async (nickname: string): Promise<boolean> => {
+    const [existing] = await pgDb
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.nickname, nickname))
+      .limit(1);
+    return !existing;
+  },
+
+  /**
+   * 닉네임 업데이트
+   */
+  updateNickname: async (userId: string, nickname: string): Promise<void> => {
+    // 유효성 검증
+    const validation = validateNickname(nickname);
+    if (!validation.valid) {
+      throw new PublicError(validation.error!);
+    }
+
+    // 중복 체크
+    const isAvailable = await userService.isNicknameAvailable(nickname);
+    if (!isAvailable) {
+      throw new PublicError("이미 사용 중인 닉네임입니다.");
+    }
+
+    await pgDb
+      .update(userTable)
+      .set({ nickname })
+      .where(and(eq(userTable.id, userId), eq(userTable.isDeleted, false)));
+  },
+
+  /**
+   * 계정 익명화 처리 (계정 삭제 요청 시)
+   * 개인정보를 익명화하고 isDeleted를 true로 설정
+   */
+  anonymizeUser: async (userId: string): Promise<void> => {
+    // 사용자 조회
+    const [user] = await pgDb
+      .select({ email: userTable.email })
+      .from(userTable)
+      .where(and(eq(userTable.id, userId), eq(userTable.isDeleted, false)));
+
+    if (!user) {
+      throw new PublicError("사용자를 찾을 수 없습니다.");
+    }
+
+    // 해시 생성
+    const userIdHash = createHash("sha256")
+      .update(userId)
+      .digest("hex")
+      .slice(0, 6);
+    const emailHash = createHash("sha256")
+      .update(userId + user.email)
+      .digest("hex")
+      .slice(0, 12);
+    return await pgDb.transaction(async (tx) => {
+      await tx
+        .update(userTable)
+        .set({
+          name: `User_${userIdHash}`,
+          email: `${emailHash}@anonymized.local`,
+          nickname: "탈퇴한 사용자",
+          image: null,
+          isDeleted: true,
+          deletedAt: new Date(),
+          banned: true,
+          banReason: "계정 삭제 요청",
+        })
+        .where(eq(userTable.id, userId));
+
+      // 모든 세션 삭제
+      await tx.delete(sessionTable).where(eq(sessionTable.userId, userId));
+    });
   },
 };
