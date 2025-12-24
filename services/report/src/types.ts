@@ -17,7 +17,10 @@ export enum ReportCategoryDetail {
   ERROR_TYPO = "ERROR_TYPO", // 오타 에러
   ERROR_EXPLANATION = "ERROR_EXPLANATION", // 설명 에러
   VIOL_GUIDELINE = "VIOL_GUIDELINE", // 가이드라인 위반
+  VIOL_SPAM = "VIOL_SPAM", // 도배 및 스팸
+  VIOL_TITLE = "VIOL_TITLE", // 연령과 주제 위반
   VIOL_COPYRIGHT = "VIOL_COPYRIGHT", // 저작권 위반
+  VIOL_PERSONAL_DATA = "VIOL_PERSONAL_DATA", // 개인정보 유출
   OTHER_SYSTEM = "OTHER_SYSTEM", // 시스템 에러
   OTHER_FREE = "OTHER_FREE", // 기타
 }

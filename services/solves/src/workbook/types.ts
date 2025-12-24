@@ -1,4 +1,9 @@
 import {
+  type CreateReportInput,
+  ReportCategoryDetail,
+  ReportCategoryMain,
+} from "@service/report/types";
+import {
   BlockAnswer,
   BlockAnswerSubmit,
   BlockContent,
@@ -133,3 +138,77 @@ export enum WorkBookDifficultyLevel {
   HARD = "hard", // 36점 이상
   VERY_HARD = "very_hard", // 36점 미만
 }
+
+/**
+ * 신고 다이얼로그에서 사용되는 블록 타입 (요약)
+ * 위치 확인 필요함
+ */
+export type ReportBlock = Pick<WorkBookBlock, "id" | "order" | "question">;
+
+export type ReportDraft = Omit<CreateReportInput, "reporterUserId">;
+
+export const REPORT_REASON_SECTIONS = [
+  {
+    main: ReportCategoryMain.ERROR,
+    heading: "오류 (Error)",
+    reasons: [
+      { detail: ReportCategoryDetail.ERROR_ANSWER, label: "정답이 틀렸어요" },
+      {
+        detail: ReportCategoryDetail.ERROR_TYPO,
+        label: "문제 또는 보기에 오탈자가 있어요",
+      },
+      {
+        detail: ReportCategoryDetail.ERROR_EXPLANATION,
+        label: "해설이 부정확하거나 부적절해요",
+      },
+    ],
+  },
+  {
+    main: ReportCategoryMain.VIOLATION,
+    heading: "위반 (Violation)",
+    reasons: [
+      {
+        detail: ReportCategoryDetail.VIOL_GUIDELINE,
+        label: "가이드라인을 위반했어요",
+      },
+      {
+        detail: ReportCategoryDetail.VIOL_SPAM,
+        label: "도배 및 스팸 내용이 있어요",
+      },
+      {
+        detail: ReportCategoryDetail.VIOL_TITLE,
+        label: "연령과 주제를 위반했어요",
+      },
+      {
+        detail: ReportCategoryDetail.VIOL_COPYRIGHT,
+        label: "저작권을 침해했어요",
+      },
+      {
+        detail: ReportCategoryDetail.VIOL_PERSONAL_DATA,
+        label: "개인정보를 유출했어요",
+      },
+    ],
+  },
+  {
+    main: ReportCategoryMain.OTHER,
+    heading: "기타 (Other)",
+    reasons: [
+      {
+        detail: ReportCategoryDetail.OTHER_SYSTEM,
+        label: "기타 시스템 오류를 발견했어요",
+      },
+      { detail: ReportCategoryDetail.OTHER_FREE, label: "자율 작성" },
+    ],
+  },
+] as const;
+
+export const BLOCK_SELECTABLE_REASONS = new Set<ReportCategoryDetail>([
+  ReportCategoryDetail.ERROR_ANSWER,
+  ReportCategoryDetail.ERROR_TYPO,
+  ReportCategoryDetail.ERROR_EXPLANATION,
+  ReportCategoryDetail.VIOL_GUIDELINE,
+  ReportCategoryDetail.VIOL_SPAM,
+  ReportCategoryDetail.VIOL_TITLE,
+  ReportCategoryDetail.VIOL_COPYRIGHT,
+  ReportCategoryDetail.VIOL_PERSONAL_DATA,
+]);

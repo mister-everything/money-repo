@@ -85,7 +85,7 @@ importers:
         version: 5.9.3
       vite-tsconfig-paths:
         specifier: ^5.1.4
-        version: 5.1.4(typescript@5.9.3)(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+        version: 5.1.4(typescript@5.9.3)(vite@5.4.21(@types/node@24.10.4)(lightningcss@1.30.2))
       vitest:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@24.10.4)(lightningcss@1.30.2)
@@ -512,6 +512,9 @@ importers:
       '@service/auth':
         specifier: workspace:*
         version: link:../../services/auth
+      '@service/report':
+        specifier: workspace:*
+        version: link:../../services/report
       '@service/solves':
         specifier: workspace:*
         version: link:../../services/solves
@@ -873,6 +876,9 @@ importers:
       '@service/auth':
         specifier: workspace:*
         version: link:../auth
+      '@service/report':
+        specifier: workspace:*
+        version: link:../report
       '@workspace/cache':
         specifier: workspace:*
         version: link:../../packages/cache
@@ -13430,6 +13436,17 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  vite-tsconfig-paths@5.1.4(typescript@5.9.3)(vite@5.4.21(@types/node@24.10.4)(lightningcss@1.30.2)):
+    dependencies:
+      debug: 4.4.3
+      globrex: 0.1.2
+      tsconfck: 3.1.6(typescript@5.9.3)
+    optionalDependencies:
+      vite: 5.4.21(@types/node@24.10.4)(lightningcss@1.30.2)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
 
   vite-tsconfig-paths@5.1.4(typescript@5.9.3)(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)):
     dependencies:
