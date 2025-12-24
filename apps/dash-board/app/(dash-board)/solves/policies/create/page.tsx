@@ -1,7 +1,6 @@
 "use client";
 
 import { PolicyForm } from "@/components/solves/policy-form";
-import { createPolicyAction } from "../actions";
 
 export default function CreatePolicyPage() {
   return (
@@ -14,9 +13,8 @@ export default function CreatePolicyPage() {
           </p>
         </div>
 
-        <PolicyForm action={createPolicyAction} />
+        <PolicyForm />
       </div>
     </main>
   );
 }
-

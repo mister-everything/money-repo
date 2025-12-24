@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "auth"."policy_consent" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
-	"policy_version_id" text NOT NULL,
+	"policy_version_id" uuid NOT NULL,
 	"is_agreed" boolean DEFAULT true NOT NULL,
 	"consented_at" timestamp DEFAULT now() NOT NULL,
 	"ip_address" text,

@@ -1,7 +1,7 @@
 import { AppSidebar } from "@/components/layouts/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
-export default function DashBoardLayout({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;

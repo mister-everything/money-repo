@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-
+import "@workspace/env";
 import { pgDb } from "./db";
 import { policyVersionTable } from "./schema";
 
@@ -230,7 +230,7 @@ Solves(이하 "회사")는 이용자의 개인정보를 중요시하며, 「개�
 ## 10. 개인정보 보호책임자
 
 - **담당부서**: 개인정보보호팀
-- **이메일**: privacy@solves.app
+- **이메일**: neo.cgoing@gmail.com
 
 ---
 
@@ -310,7 +310,7 @@ Solves는 모든 이용자가 안전하고 건전하게 학습할 수 있는 환
 
 제재 조치에 이의가 있는 경우:
 1. 제재 통지일로부터 7일 이내에 이의 신청 가능
-2. **support@solves.app**으로 이의 신청서 제출
+2. **neo.cgoing@gmail.com**으로 이의 신청서 제출
 3. 운영팀 검토 후 7일 이내 결과 회신
 
 ---
@@ -326,7 +326,7 @@ Solves는 모든 이용자가 안전하고 건전하게 학습할 수 있는 환
 
 ## 6. 문의
 
-가이드라인 관련 문의사항은 **support@solves.app**으로 연락해주세요.
+가이드라인 관련 문의사항은 **neo.cgoing@gmail.com**으로 연락해주세요.
 `.trim();
 
 /**
@@ -364,7 +364,7 @@ Solves의 새로운 기능, 이벤트, 혜택 등 다양한 소식을 받아보�
 마케팅 수신 동의는 언제든지 철회할 수 있습니다:
 - **설정 > 알림 설정**에서 직접 해제
 - 수신한 이메일 하단의 **수신거부** 링크 클릭
-- **support@solves.app**으로 철회 요청
+- **neo.cgoing@gmail.com**으로 철회 요청
 
 ---
 

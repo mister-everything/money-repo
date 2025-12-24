@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lte } from "drizzle-orm";
 import { pgDb } from "./db";
 import { policyConsentTable, policyVersionTable, userTable } from "./schema";
 import { PolicyType, PolicyVersionSchema } from "./shared";
@@ -18,6 +18,20 @@ export const policyService = {
     return policy || null;
   },
 
+  getLatestPolicyVersion: async (type: PolicyType) => {
+    const [policy] = await pgDb
+      .select()
+      .from(policyVersionTable)
+      .where(
+        and(
+          eq(policyVersionTable.type, type),
+          lte(policyVersionTable.effectiveAt, new Date()),
+        ),
+      )
+      .orderBy(desc(policyVersionTable.effectiveAt))
+      .limit(1);
+    return policy || null;
+  },
   /**
    * 모든 약관 버전 조회 (관리자용)
    */
@@ -65,7 +79,12 @@ export const policyService = {
         version: policyVersionTable.version,
       })
       .from(policyVersionTable)
-      .where(eq(policyVersionTable.isRequired, true))
+      .where(
+        and(
+          eq(policyVersionTable.isRequired, true),
+          lte(policyVersionTable.effectiveAt, new Date()),
+        ),
+      )
       .orderBy(desc(policyVersionTable.effectiveAt));
 
     return allRequiredPolicies;

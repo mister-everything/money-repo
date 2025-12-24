@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import type { CreatePolicyInput } from "@/app/(dash-board)/solves/policies/actions";
+import {
+  type CreatePolicyInput,
+  createPolicyAction,
+} from "@/app/(dash-board)/solves/policies/actions";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -19,12 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { SafeFunction } from "@/lib/protocol/interface";
-import { useSafeAction } from "@/lib/protocol/use-safe-action";
 
-interface PolicyFormProps {
-  action: SafeFunction<CreatePolicyInput, any>;
-}
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
 
 const policyTypes = [
   { value: "terms", label: "서비스 이용약관" },
@@ -33,7 +32,7 @@ const policyTypes = [
   { value: "marketing", label: "마케팅 정보 수신 동의" },
 ] as const;
 
-export function PolicyForm({ action }: PolicyFormProps) {
+export function PolicyForm() {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string[]> | null>(null);
 
@@ -45,12 +44,11 @@ export function PolicyForm({ action }: PolicyFormProps) {
   const [isRequired, setIsRequired] = useState(true);
   const [effectiveAt, setEffectiveAt] = useState<Date>(new Date());
 
-  const [, executeAction, isPending] = useSafeAction(action, {
+  const [, executeAction, isPending] = useSafeAction(createPolicyAction, {
     onSuccess: () => {
       toast.success("정책이 생성되었습니다.");
       setErrors(null);
-      router.push("/solves/policies");
-      router.refresh();
+      location.href = "/solves/policies";
     },
     onError: (error) => {
       toast.error(error.message || "저장에 실패했습니다.");

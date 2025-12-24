@@ -1,6 +1,7 @@
 "use client";
 
 import { Policy } from "@service/auth/shared";
+import { Streamdown } from "streamdown";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -31,7 +32,7 @@ export function PolicyDialog({
 }: PolicyDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl! max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <span>{policy.title}</span>
@@ -51,9 +52,7 @@ export function PolicyDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto border rounded-md p-4 bg-muted/30">
-          <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-            {policy.content}
-          </div>
+          <Streamdown mode="static">{policy.content}</Streamdown>
         </div>
       </DialogContent>
     </Dialog>

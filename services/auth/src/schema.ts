@@ -142,7 +142,7 @@ export const policyConsentTable = authSchema.table(
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
-    policyVersionId: text("policy_version_id")
+    policyVersionId: uuid("policy_version_id")
       .notNull()
       .references(() => policyVersionTable.id, { onDelete: "cascade" }),
     /** 동의 여부 (true: 동의, false: 철회) */

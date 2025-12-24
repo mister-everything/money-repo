@@ -95,12 +95,8 @@
           "tableFrom": "account",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -173,12 +169,8 @@
           "tableFrom": "invitation",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -187,12 +179,8 @@
           "tableFrom": "invitation",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "used_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["used_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -202,9 +190,7 @@
         "invitation_token_unique": {
           "name": "invitation_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -230,7 +216,7 @@
         },
         "policy_version_id": {
           "name": "policy_version_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -275,12 +261,8 @@
           "tableFrom": "policy_consent",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -289,12 +271,8 @@
           "tableFrom": "policy_consent",
           "tableTo": "policy_version",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "policy_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["policy_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -304,10 +282,7 @@
         "uniq_policy_consent_user_id_policy_version_id": {
           "name": "uniq_policy_consent_user_id_policy_version_id",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "policy_version_id"
-          ]
+          "columns": ["user_id", "policy_version_id"]
         }
       },
       "policies": {},
@@ -389,12 +364,8 @@
           "tableFrom": "policy_version",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -404,10 +375,7 @@
         "uniq_policy_version_type_version": {
           "name": "uniq_policy_version_type_version",
           "nullsNotDistinct": false,
-          "columns": [
-            "type",
-            "version"
-          ]
+          "columns": ["type", "version"]
         }
       },
       "policies": {},
@@ -481,12 +449,8 @@
           "tableFrom": "session",
           "tableTo": "user",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -496,9 +460,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -631,16 +593,12 @@
         "user_public_id_unique": {
           "name": "user_public_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "public_id"
-          ]
+          "columns": ["public_id"]
         },
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},

@@ -31,14 +31,14 @@ export async function proxy(request: NextRequest) {
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
-  if (!session.user.consentedAt) {
-    return NextResponse.redirect("/about-you");
-  }
+  // if (!session.user.consentedAt) {
+  //   return NextResponse.redirect("/about-you");
+  // }
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/auth|sign-in).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/auth|sign-in|policies).*)",
   ],
 };
