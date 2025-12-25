@@ -27,13 +27,9 @@ export async function proxy(request: NextRequest) {
   if (!session) {
     logger.warn(`proxy ${pathname} without session`);
     const signInUrl = new URL("/sign-in", request.url);
-    // 원래 가려던 URL을 callbackUrl로 저장
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
-  // if (!session.user.consentedAt) {
-  //   return NextResponse.redirect("/about-you");
-  // }
   return NextResponse.next();
 }
 
