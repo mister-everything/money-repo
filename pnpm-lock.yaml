@@ -85,7 +85,7 @@ importers:
         version: 5.9.3
       vite-tsconfig-paths:
         specifier: ^5.1.4
-        version: 5.1.4(typescript@5.9.3)(vite@5.4.21(@types/node@24.10.4)(lightningcss@1.30.2))
+        version: 5.1.4(typescript@5.9.3)(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       vitest:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@24.10.4)(lightningcss@1.30.2)
@@ -572,6 +572,9 @@ importers:
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(kysely@0.28.9)(pg@8.16.3)
+      emoji-picker-react:
+        specifier: ^4.16.1
+        version: 4.16.1(react@19.2.3)
       framer-motion:
         specifier: ^12.23.26
         version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -681,6 +684,21 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.8.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.0
+        version: 22.19.3
+      '@workspace/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.19.3)(lightningcss@1.30.2)
+
+  packages/crypto:
     devDependencies:
       '@types/node':
         specifier: ^22.13.0
@@ -4606,6 +4624,12 @@ packages:
   electron-to-chromium@1.5.267:
     resolution: {integrity: sha512-0Drusm6MVRXSOJpGbaSVgcQsuB4hEkMpHXaVstcPmhu5LIedxs1xNK/nIxmQIU/RPC0+1/o0AVZfBTkTNJOdUw==}
 
+  emoji-picker-react@4.16.1:
+    resolution: {integrity: sha512-MrPX0tOCfRL3uYI4of/2GRZ7S6qS7YlacKiF78uFH84/C62vcuHE2DZyv5b4ZJMk0e06es1jjB4e31Bb+YSM8w==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>=16'
+
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
 
@@ -4797,6 +4821,9 @@ packages:
 
   fix-dts-default-cjs-exports@1.0.1:
     resolution: {integrity: sha512-pVIECanWFC61Hzl2+oOCtoJ3F17kglZC/6N94eRWycFgBH35hHx0Li604ZIzhseh97mf2p0cv7vVrOZGoqhlEg==}
+
+  flairup@1.0.0:
+    resolution: {integrity: sha512-IKlE+pNvL2R+kVL1kEhUYqRxVqeFnjiIvHWDMLFXNaqyUdFXQM2wte44EfMYJNHkW16X991t2Zg8apKkhv7OBA==}
 
   flatted@3.3.3:
     resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
@@ -10537,6 +10564,11 @@ snapshots:
 
   electron-to-chromium@1.5.267: {}
 
+  emoji-picker-react@4.16.1(react@19.2.3):
+    dependencies:
+      flairup: 1.0.0
+      react: 19.2.3
+
   emoji-regex@8.0.0: {}
 
   emoji-regex@9.2.2: {}
@@ -10836,6 +10868,8 @@ snapshots:
       magic-string: 0.30.21
       mlly: 1.8.0
       rollup: 4.53.5
+
+  flairup@1.0.0: {}
 
   flatted@3.3.3: {}
 
@@ -13436,17 +13470,6 @@ snapshots:
       - terser
       - tsx
       - yaml
-
-  vite-tsconfig-paths@5.1.4(typescript@5.9.3)(vite@5.4.21(@types/node@24.10.4)(lightningcss@1.30.2)):
-    dependencies:
-      debug: 4.4.3
-      globrex: 0.1.2
-      tsconfck: 3.1.6(typescript@5.9.3)
-    optionalDependencies:
-      vite: 5.4.21(@types/node@24.10.4)(lightningcss@1.30.2)
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
 
   vite-tsconfig-paths@5.1.4(typescript@5.9.3)(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)):
     dependencies:

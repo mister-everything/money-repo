@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/crypto",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome lint . --write",
+    "check-types": "tsc --noEmit",
+    "check": "pnpm run lint && pnpm run check-types && pnpm run test"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@workspace/typescript-config": "workspace:*",
+    "@types/node": "^22.13.0",
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.1"
+  }
+}
+

@@ -7,7 +7,7 @@ import {
   verificationTable,
 } from "@service/auth";
 import { Role } from "@service/auth/shared";
-import { isNull } from "@workspace/util";
+import { generateUUID, isNull } from "@workspace/util";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -86,7 +86,7 @@ export const solvesBetterAuth = betterAuth({
       publicId: {
         type: "string",
         required: false,
-        defaultValue: null,
+        defaultValue: () => generateUUID(),
         input: false,
       },
       consentedAt: {
