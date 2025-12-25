@@ -90,20 +90,11 @@ export const policyService = {
     return allRequiredPolicies;
   },
 
-  /**
-   * 사용자의 필수 동의 여부 체크 및 consentedAt 업데이트
-   * @returns true if all required consents are valid, false otherwise
-   */
-  checkAndUpdateConsent: async (userId: string): Promise<boolean> => {
-    // 1. 필수 정책들의 최신 버전 조회
+  hasRequiredPolicyConsent: async (userId: string): Promise<boolean> => {
     const requiredPolicies = await policyService.getRequiredPolicyVersions();
 
-    if (requiredPolicies.length === 0) {
-      // 필수 정책이 없으면 동의 완료로 처리
-      return true;
-    }
+    if (requiredPolicies.length === 0) return true;
 
-    // 2. 사용자의 동의 기록 조회 (최신 것만)
     const userConsents = await pgDb
       .select({
         id: policyConsentTable.id,
@@ -121,7 +112,15 @@ export const policyService = {
       )
       .orderBy(desc(policyConsentTable.consentedAt));
 
-    const isAllConsented = userConsents.length === requiredPolicies.length;
+    return userConsents.length === requiredPolicies.length;
+  },
+
+  /**
+   * 사용자의 필수 동의 여부 체크 및 consentedAt 업데이트
+   * @returns true if all required consents are valid, false otherwise
+   */
+  checkAndUpdateConsent: async (userId: string): Promise<boolean> => {
+    const isAllConsented = await policyService.hasRequiredPolicyConsent(userId);
 
     // 3. 미동의 항목이 있으면 consentedAt를 null로 업데이트
     if (!isAllConsented) {
