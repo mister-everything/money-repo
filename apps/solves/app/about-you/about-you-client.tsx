@@ -28,13 +28,16 @@ export function AboutYouClient({
 
   const handleOnComplete = useCallback(async () => {
     await refetch();
-    console.log(`router:`);
     router.push(callbackUrl || "/");
     router.refresh();
   }, [callbackUrl, router, refetch]);
 
   return (
-    <div className="w-full h-screen flex items-center justify-center">
+    <div className="w-full h-screen flex items-center justify-center relative">
+      <h1 className="absolute top-0 left-0 text-lg p-4 font-bold">
+        Solves
+        <span className="text-lg text-primary">.</span>
+      </h1>
       <Onboarding
         steps={steps}
         policies={policies}

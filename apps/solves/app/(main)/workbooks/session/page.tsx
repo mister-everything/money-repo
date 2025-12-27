@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
+import { authClient } from "@/lib/auth/client";
 
 const sortOptions = [
   { label: "최신순", value: "latest" },
@@ -25,6 +26,7 @@ const sortOptions = [
 ] as const;
 
 export default function Page() {
+  const { data: userSession } = authClient.useSession();
   // @TODO 마무리 검색 구현
   const [searchParams, setSearchParams] = useState<
     z.infer<typeof SearchCompletedWorkbooksRequest>
@@ -104,7 +106,11 @@ export default function Page() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ">
           {workBookSessions.map(({ workBook, session }) => (
             <Link href={`/workbooks/${workBook.id}/preview`} key={workBook.id}>
-              <WorkbookCard workBook={workBook} session={session} />
+              <WorkbookCard
+                isOwner={userSession?.user?.publicId === workBook.ownerPublicId}
+                workBook={workBook}
+                session={session}
+              />
             </Link>
           ))}
         </div>

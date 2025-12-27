@@ -25,7 +25,7 @@ interface OnboardingProps {
   policies?: PolicyVersion[];
   steps?: Step[];
   initialStep?: Step;
-  onComplete?: () => void;
+  onComplete?: () => void | Promise<void>;
 }
 
 export function Onboarding({
@@ -124,7 +124,7 @@ export function Onboarding({
   const next = useCallback(async () => {
     const nextStep = steps[steps.indexOf(currentStep) + 1];
     if (!nextStep) {
-      onComplete?.();
+      await onComplete?.();
       setComplated(true);
       return;
     }

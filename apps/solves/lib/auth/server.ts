@@ -91,7 +91,7 @@ export const solvesBetterAuth = betterAuth({
         type: "date",
         required: false,
         defaultValue: null,
-        input: false,
+        input: true,
       },
       referralSource: {
         type: "string",
@@ -137,13 +137,18 @@ export const solvesBetterAuth = betterAuth({
     },
   },
   secondaryStorage: {
-    delete: (key) => sharedCache.del(key),
+    delete: (key) => {
+      logger.debug(`delete secondary storage: ${key}`);
+      return sharedCache.del(key);
+    },
     get: async (key) => {
       const value = await sharedCache.get(key);
+      logger.debug(`get secondary storage: ${key}`);
       if (isNull(value)) return undefined;
       return JSON.parse(value);
     },
     set: (key, value, ttl) => {
+      logger.debug(`set secondary storage: ${key}, ttl: ${ttl}`);
       return sharedCache.set(key, value, ttl);
     },
   },

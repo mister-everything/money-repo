@@ -33,6 +33,7 @@ export async function proxy(request: NextRequest) {
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
+
   const hasNickname = Boolean(session.user.nickname);
   const hasImage = Boolean(session.user.image);
   const hasConsentedAt = Boolean(session.user.consentedAt);
@@ -53,6 +54,9 @@ export async function proxy(request: NextRequest) {
       steps.push(Step.THEME, Step.SURVEY);
     !hasConsentedAt && steps.push(Step.POLICY);
     aboutYouUrl.searchParams.set("steps", steps.join(","));
+    logger.debug(
+      `redirect to about you: ${session.user.email}, steps: ${steps.join(",")}`,
+    );
     aboutYouUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(aboutYouUrl);
   }

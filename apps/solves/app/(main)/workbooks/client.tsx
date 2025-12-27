@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { CategoryMultipleSelector } from "@/components/workbook/category-selector";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { useCategories } from "@/hooks/query/use-categories";
+import { authClient } from "@/lib/auth/client";
 
 const sortOptions = [
   { label: "인기순", value: "popular" },
@@ -39,6 +40,8 @@ export function WorkbooksClient({
 }) {
   const { data: categories = [], isLoading: isCategoriesLoading } =
     useCategories();
+
+  const { data: session } = authClient.useSession();
 
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
 
@@ -57,7 +60,9 @@ export function WorkbooksClient({
     [categories],
   );
 
-  const { data: workBooks, isValidating } = useSWR(
+  const { data: workBooks = [], isValidating } = useSWR<
+    WorkBookWithoutBlocks[]
+  >(
     // `/api/workbooks?${new URLSearchParams(JSON.stringify(searchParams)).toString()}`,
     `/api/workbooks`,
     {
@@ -106,7 +111,7 @@ export function WorkbooksClient({
         />
       </div>
 
-      <div className="flex flex-col gap-2 bg-secondary/40 border-t p-6 pt-4! lg:p-10 flex-1">
+      <div className="flex flex-col gap-2 bg-secondary/40 dark:bg-transparent border-t p-6 pt-4! lg:p-10 flex-1">
         <div className="flex flex-wrap gap-2 items-center">
           {selectedCategories.map((c) => {
             return (
@@ -167,7 +172,10 @@ export function WorkbooksClient({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ">
             {workBooks.map((book) => (
               <Link href={`/workbooks/${book.id}/preview`} key={book.id}>
-                <WorkbookCard workBook={book} />
+                <WorkbookCard
+                  isOwner={session?.user.publicId === book.ownerPublicId}
+                  workBook={book}
+                />
               </Link>
             ))}
           </div>

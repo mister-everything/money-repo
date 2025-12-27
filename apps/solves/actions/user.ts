@@ -43,6 +43,14 @@ export const recordConsentAction = safeAction(
     });
 
     // 동의 상태 업데이트
-    await policyService.checkAndUpdateConsent(session.user.id);
+    const isConsented = await policyService.hasRequiredPolicyConsent(
+      session.user.id,
+    );
+    await solvesBetterAuth.api.updateUser({
+      headers: await headers(),
+      body: {
+        consentedAt: isConsented ? new Date() : null,
+      },
+    });
   },
 );

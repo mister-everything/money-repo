@@ -222,20 +222,20 @@ export function WorkbookCard({
         <div className="flex items-center gap-2 mt-auto">
           {workBook.publishedAt && (
             <span className="text-xs text-muted-foreground shrink-0">
-              발행 일자: {format(new Date(workBook.publishedAt!), "yyyy.MM.dd")}
+              {format(new Date(workBook.publishedAt!), "yyyy.MM.dd")}
             </span>
           )}
           <div className="text-xs text-muted-foreground mt-auto ml-auto flex items-center gap-1">
             <Avatar className="size-3.5">
               <AvatarImage
-                alt={workBook.ownerName ?? "알수없는사용자"}
+                alt={workBook.ownerName ?? "-"}
                 src={workBook.ownerProfile ?? ""}
               />
               <AvatarFallback className="text-3xs">
                 {workBook.ownerName?.charAt(0) ?? "?"}
               </AvatarFallback>
             </Avatar>
-            {workBook.ownerName ?? "알수없는사용자"}
+            {workBook.ownerName ?? "-"}
           </div>
         </div>
       </CardContent>

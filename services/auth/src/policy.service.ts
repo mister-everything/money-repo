@@ -164,7 +164,6 @@ export const policyService = {
         .set({ consentedAt: new Date() })
         .where(eq(userTable.id, userId));
     }
-
     return true;
   },
 
