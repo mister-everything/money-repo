@@ -50,7 +50,7 @@ export const PolicyVersionSchema = z
 
 /** 닉네임 유효성 검증 규칙 */
 export const NICKNAME_RULES = {
-  minLength: 2,
+  minLength: 3,
   maxLength: 16,
   pattern: /^[a-zA-Z0-9가-힣]+$/,
 } as const;

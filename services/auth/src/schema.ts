@@ -1,6 +1,7 @@
 import {
   boolean,
   pgSchema,
+  serial,
   text,
   timestamp,
   unique,
@@ -14,7 +15,7 @@ export const authSchema = pgSchema(SCHEMA_NAME);
 
 export const userTable = authSchema.table("user", {
   id: text("id").primaryKey(),
-  publicId: uuid("public_id").notNull().unique().defaultRandom(),
+  publicId: serial("public_id").notNull().unique(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),

@@ -20,9 +20,7 @@ export const authClient = createAuthClient({
           input: true,
         },
         publicId: {
-          type: "string",
-          required: false,
-          defaultValue: null,
+          type: "number",
           input: false,
         },
         consentedAt: {

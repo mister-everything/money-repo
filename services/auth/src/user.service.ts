@@ -253,16 +253,4 @@ export const userService = {
 
     return invitations;
   },
-
-  /**
-   * 닉네임 중복 체크
-   */
-  isNicknameAvailable: async (nickname: string): Promise<boolean> => {
-    const [existing] = await pgDb
-      .select({ id: userTable.id })
-      .from(userTable)
-      .where(eq(userTable.nickname, nickname))
-      .limit(1);
-    return !existing;
-  },
 };

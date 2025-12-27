@@ -1,5 +1,4 @@
 "use server";
-import { userService } from "@service/auth";
 import { validateNickname } from "@service/auth/shared";
 import { headers } from "next/headers";
 import { solvesBetterAuth } from "@/lib/auth/server";
@@ -15,13 +14,6 @@ export const updateProfileAction = safeAction(
     if (profile.nickname) {
       const validation = validateNickname(profile.nickname);
       if (!validation.valid) return fail(validation.error!);
-
-      const isAvailable = await userService.isNicknameAvailable(
-        profile.nickname,
-      );
-      if (!isAvailable) {
-        return fail("이미 사용 중인 닉네임입니다.");
-      }
     }
 
     await solvesBetterAuth.api.updateUser({

@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { safeGetSession } from "./lib/auth/server";
 
+const ABOUT_YOU_URL = "/about-you";
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -29,6 +31,15 @@ export async function proxy(request: NextRequest) {
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
+  }
+  if (
+    !session.user.nickname ||
+    !session.user.image ||
+    !pathname.startsWith(ABOUT_YOU_URL)
+  ) {
+    const aboutYouUrl = new URL(ABOUT_YOU_URL, request.url);
+    aboutYouUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(aboutYouUrl);
   }
   return NextResponse.next();
 }

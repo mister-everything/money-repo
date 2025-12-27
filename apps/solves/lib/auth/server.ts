@@ -84,9 +84,7 @@ export const solvesBetterAuth = betterAuth({
         input: true,
       },
       publicId: {
-        type: "string",
-        required: false,
-        defaultValue: () => generateUUID(),
+        type: "number",
         input: false,
       },
       consentedAt: {

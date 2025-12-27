@@ -41,7 +41,8 @@
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
+  /* --background: oklch(0.141 0.005 285.823); */
+  --background: #121316;
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
   --card-foreground: oklch(0.985 0 0);
@@ -160,5 +161,19 @@
 
   .wiggle {
     animation: wiggle 2.5s ease-in-out infinite;
+  }
+
+  @keyframes gentle-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  .gentle-bounce {
+    animation: gentle-bounce 3s ease-in-out infinite;
   }
 }
