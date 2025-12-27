@@ -3,29 +3,31 @@ import { NICKNAME_RULES, validateNickname } from "@service/auth/shared";
 
 import { LoaderIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-
+import { recordConsentAction, updateProfileAction } from "@/actions/user";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { SetupImage } from "./setup-image";
 import { SetupNickname } from "./setup-nickname";
+import { PolicyVersion, SetupPolicy } from "./setup-policy";
 import { SetupTheme } from "./setup-theme";
 
 type Step = "nickname" | "image" | "theme" | "policy";
 
 interface OnboardingProps {
   initialUserData?: { nickname?: string; image?: string };
+  policies?: PolicyVersion[];
   steps?: Step[];
   initialStep?: Step;
   onComplete?: () => void;
-  isLoading?: boolean;
 }
 
 export function Onboarding({
   initialUserData,
+  policies = [],
   steps = ["nickname", "image", "theme", "policy"],
   initialStep,
   onComplete,
-  isLoading = false,
 }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState<Step>(
     initialStep ?? steps[0] ?? "nickname",
@@ -36,11 +38,43 @@ export function Onboarding({
     image?: string;
   }>(initialUserData ?? {});
 
+  const [policyConsents, setPolicyConsents] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  const [, updateUserData, isUpdatingUserData] = useSafeAction(
+    updateProfileAction,
+    {
+      onSuccess: () => {
+        next();
+      },
+    },
+  );
+
+  const [, recordConsent, isRecordingConsent] = useSafeAction(
+    recordConsentAction,
+    {
+      onSuccess: () => {
+        next();
+      },
+    },
+  );
+
   const nicknameFeedback = useMemo(() => {
     const validation = validateNickname(userData.nickname || "");
     if (!validation.valid) return validation.error;
     return null;
   }, [userData.nickname]);
+
+  const requiredPolicies = useMemo(
+    () => policies.filter((p) => p.isRequired),
+    [policies],
+  );
+
+  const allRequiredPoliciesChecked = useMemo(
+    () => requiredPolicies.every((p) => policyConsents[p.id]),
+    [requiredPolicies, policyConsents],
+  );
 
   const canNext = useMemo(() => {
     if (currentStep === "nickname") {
@@ -53,17 +87,68 @@ export function Onboarding({
     if (currentStep === "image") {
       return userData.image?.length && userData.image.length > 0;
     }
+    if (currentStep === "policy") {
+      return allRequiredPoliciesChecked;
+    }
     return true;
-  }, [currentStep, userData.nickname, userData.image, nicknameFeedback]);
+  }, [
+    currentStep,
+    userData.nickname,
+    userData.image,
+    nicknameFeedback,
+    allRequiredPoliciesChecked,
+  ]);
 
-  const handleNext = useCallback(async () => {
+  const isLoading = useMemo(() => {
+    return isUpdatingUserData || isRecordingConsent;
+  }, [isUpdatingUserData, isRecordingConsent]);
+
+  const next = useCallback(async () => {
     const nextStep = steps[steps.indexOf(currentStep) + 1];
     if (!nextStep) {
       onComplete?.();
       return;
     }
     setCurrentStep(nextStep);
-  }, [currentStep, steps, userData.nickname, nicknameFeedback]);
+  }, [currentStep, steps, onComplete]);
+
+  const handleNextStep = useCallback(() => {
+    if (
+      currentStep == "nickname" &&
+      userData.nickname !== initialUserData?.nickname
+    ) {
+      return updateUserData({ nickname: userData.nickname });
+    } else if (
+      currentStep == "image" &&
+      userData.image !== initialUserData?.image
+    ) {
+      return updateUserData({ image: userData.image });
+    } else if (currentStep === "policy") {
+      // 동의한 정책들만 기록
+      const consentsToRecord = Object.entries(policyConsents)
+        .filter(([, isAgreed]) => isAgreed)
+        .map(([policyVersionId]) => ({
+          policyVersionId,
+          isAgreed: true,
+        }));
+
+      if (consentsToRecord.length > 0) {
+        return recordConsent(consentsToRecord);
+      }
+    }
+
+    next();
+  }, [
+    next,
+    currentStep,
+    userData.nickname,
+    userData.image,
+    initialUserData?.nickname,
+    initialUserData?.image,
+    policyConsents,
+    updateUserData,
+    recordConsent,
+  ]);
 
   return (
     <div className="flex flex-col gap-4 justify-center items-center">
@@ -88,12 +173,18 @@ export function Onboarding({
         />
       ) : currentStep === "theme" ? (
         <SetupTheme />
+      ) : currentStep === "policy" ? (
+        <SetupPolicy
+          policies={policies}
+          consents={policyConsents}
+          onConsentChange={setPolicyConsents}
+        />
       ) : null}
       <Button
-        disabled={!canNext}
+        disabled={!canNext || isLoading}
         variant={canNext ? "default" : "secondary"}
         className="w-full max-w-sm"
-        onClick={handleNext}
+        onClick={handleNextStep}
       >
         {isLoading ? (
           <LoaderIcon className="animate-spin" />

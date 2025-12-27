@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, lte } from "drizzle-orm";
 import { pgDb } from "./db";
 import { policyConsentTable, policyVersionTable, userTable } from "./schema";
-import { PolicyType, PolicyVersionSchema } from "./shared";
+import { PolicyType, PolicyVersion, PolicyVersionSchema } from "./shared";
 
 export const policyService = {
   getPolicyVersion: async (type: PolicyType, version: string) => {
@@ -90,6 +90,28 @@ export const policyService = {
     return allRequiredPolicies;
   },
 
+  /**
+   * 온보딩용 - 최신 정책 버전들 (title, content 포함)
+   * DISTINCT ON으로 type별 최신 버전만 DB에서 직접 조회
+   */
+  getLatestPoliciesForOnboarding: async (): Promise<PolicyVersion[]> => {
+    const policies = await pgDb
+      .selectDistinctOn([policyVersionTable.type], {
+        id: policyVersionTable.id,
+        type: policyVersionTable.type,
+        version: policyVersionTable.version,
+        title: policyVersionTable.title,
+        content: policyVersionTable.content,
+        isRequired: policyVersionTable.isRequired,
+        effectiveAt: policyVersionTable.effectiveAt,
+      })
+      .from(policyVersionTable)
+      .where(lte(policyVersionTable.effectiveAt, new Date()))
+      .orderBy(policyVersionTable.type, desc(policyVersionTable.effectiveAt));
+
+    return policies;
+  },
+
   hasRequiredPolicyConsent: async (userId: string): Promise<boolean> => {
     const requiredPolicies = await policyService.getRequiredPolicyVersions();
 
@@ -150,6 +172,7 @@ export const policyService = {
 
   /**
    * 여러 약관에 대해 한번에 동의 처리 (온보딩용)
+   * 이미 동의한 약관이 있으면 업데이트 (upsert)
    */
   recordConsent: async (
     userId: string,
@@ -160,14 +183,28 @@ export const policyService = {
 
     await pgDb.transaction(async (tx) => {
       for (const consent of consents) {
-        await tx.insert(policyConsentTable).values({
-          userId,
-          policyVersionId: consent.policyVersionId,
-          isAgreed: consent.isAgreed,
-          consentedAt: now,
-          ipAddress: options.ipAddress ?? null,
-          userAgent: options.userAgent ?? null,
-        });
+        await tx
+          .insert(policyConsentTable)
+          .values({
+            userId,
+            policyVersionId: consent.policyVersionId,
+            isAgreed: consent.isAgreed,
+            consentedAt: now,
+            ipAddress: options.ipAddress ?? null,
+            userAgent: options.userAgent ?? null,
+          })
+          .onConflictDoUpdate({
+            target: [
+              policyConsentTable.userId,
+              policyConsentTable.policyVersionId,
+            ],
+            set: {
+              isAgreed: consent.isAgreed,
+              consentedAt: now,
+              ipAddress: options.ipAddress ?? null,
+              userAgent: options.userAgent ?? null,
+            },
+          });
       }
     });
   },

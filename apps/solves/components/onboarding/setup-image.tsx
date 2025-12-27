@@ -53,10 +53,10 @@ export function SetupImage({
               이모지 선택
             </div>
           </PopoverTrigger>
-          <PopoverContent className="sm:w-sm sm:max-w-sm" side="left">
+          <PopoverContent className="p-0! border-none!" side="left">
             <EmojiPicker
               lazyLoadEmojis
-              className="fade-300 border-none!"
+              className="fade-300"
               theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT}
               onEmojiClick={(emoji) => {
                 onChangeImage(emoji.imageUrl ?? "");

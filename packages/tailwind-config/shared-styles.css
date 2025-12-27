@@ -146,6 +146,12 @@
   .fade-300 {
     @apply fade-in animate-in duration-300;
   }
+  .fade-500 {
+    @apply fade-in animate-in duration-500;
+  }
+  .fade-1000 {
+    @apply fade-in animate-in duration-1000;
+  }
   @keyframes wiggle {
     0%,
     100% {

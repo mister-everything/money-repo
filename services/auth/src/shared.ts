@@ -21,6 +21,16 @@ export type Invitation = {
   } | null;
 };
 
+export interface PolicyVersion {
+  id: string;
+  type: string;
+  version: string;
+  title: string;
+  content: string;
+  isRequired: boolean;
+  effectiveAt: Date;
+}
+
 export const Policy = [
   {
     value: "privacy",
