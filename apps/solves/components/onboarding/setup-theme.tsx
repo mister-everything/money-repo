@@ -20,7 +20,7 @@ export function SetupTheme() {
       </Label>
 
       <RadioGroup
-        className="flex flex-col gap-2"
+        className="flex flex-col gap-2 fade-1000"
         value={resolvedTheme}
         onValueChange={setTheme}
       >

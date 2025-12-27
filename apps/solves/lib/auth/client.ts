@@ -29,6 +29,18 @@ export const authClient = createAuthClient({
           defaultValue: null,
           input: false,
         },
+        referralSource: {
+          type: "string",
+          required: false,
+          defaultValue: null,
+          input: true,
+        },
+        occupation: {
+          type: "string",
+          required: false,
+          defaultValue: null,
+          input: true,
+        },
       },
     }),
   ],

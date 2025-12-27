@@ -11,7 +11,12 @@ export const deleteUserAction = safeAction(async () => {
 });
 
 export const updateProfileAction = safeAction(
-  async (profile: { nickname?: string; image?: string }) => {
+  async (profile: {
+    nickname?: string;
+    image?: string;
+    referralSource?: string;
+    occupation?: string;
+  }) => {
     const session = await getSession();
     if (profile.nickname && session.user.nickname === profile.nickname) return;
     if (profile.image && session.user.image === profile.image) return;

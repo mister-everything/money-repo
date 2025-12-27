@@ -1,4 +1,4 @@
-import { policyService, userTable } from "@service/auth";
+import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
 import {
   and,
@@ -53,8 +53,9 @@ const WorkBookColumnsForList = {
   title: workBooksTable.title,
   description: workBooksTable.description,
   isPublic: workBooksTable.isPublic,
-  ownerName: userTable.name,
+  ownerName: userTable.nickname,
   ownerProfile: userTable.image,
+  ownerPublicId: userTable.publicId,
   publishedAt: workBooksTable.publishedAt,
   tags: sql<
     { id: number; name: string }[]
@@ -228,9 +229,6 @@ export const workBookService = {
     userId: string;
     tags?: string[];
   }) => {
-    const isContentsCreateAbility =
-      await policyService.hasRequiredPolicyConsent(userId);
-    if (!isContentsCreateAbility) throw new PublicError("정책에 동의해주세요.");
     await workBookService.checkEditPermission(workBookId, userId);
     const book = await workBookService.getWorkBookWithBlocks(workBookId);
     if (book?.title.trim() === "")

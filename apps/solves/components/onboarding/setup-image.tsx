@@ -29,14 +29,23 @@ export function SetupImage({
 }) {
   const { resolvedTheme } = useTheme();
   const [openEmojiPicker, setOpenEmojiPicker] = useState(false);
+  const [openEmojiPickerMobile, setOpenEmojiPickerMobile] = useState(false);
   return (
-    <div className="flex flex-col gap-4 justify-center items-center">
-      <Avatar className="size-24 flex items-center justify-center bg-secondary">
+    <div className="flex flex-col gap-4 justify-center items-center fade-1000">
+      <Avatar className="gentle-bounce size-24 flex items-center justify-center bg-secondary overflow-visible relative">
+        <Avatar className="absolute size-24 flex items-center fade-5000 justify-center bg-secondary blur-3xl -z-10">
+          <AvatarImage
+            src={image ?? ""}
+            fetchPriority="low"
+            alt={`${nickname} 프로필 이미지`}
+            className="object-cover size-16 rounded-full"
+          />
+        </Avatar>
         <AvatarImage
           fetchPriority="high"
           src={image}
           alt={`${nickname} 프로필 이미지`}
-          className="object-cover size-16"
+          className="object-cover size-16 rounded-full"
         />
         <AvatarFallback className="text-4xl">
           {nickname?.charAt(0) || "?"}
@@ -45,8 +54,8 @@ export function SetupImage({
       <Label className="text-2xl font-semibold px-2">
         <GradualSpacingText text="프로필 이미지를 선택해주세요." />
       </Label>
-      <div className="hidden sm:flex gap-2 text-xs text-muted-foreground">
-        <Popover>
+      <div className="hidden sm:flex gap-2 text-xs text-muted-foreground fade-1000">
+        <Popover open={openEmojiPicker} onOpenChange={setOpenEmojiPicker}>
           <PopoverTrigger>
             <div className="hover:bg-primary/5 hover:text-primary hover:border-primary gap-3 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center size-36 rounded-3xl border">
               <SmileIcon className="size-6" />
@@ -60,6 +69,7 @@ export function SetupImage({
               theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT}
               onEmojiClick={(emoji) => {
                 onChangeImage(emoji.imageUrl ?? "");
+                setOpenEmojiPicker(false);
               }}
             />
           </PopoverContent>
@@ -87,7 +97,7 @@ export function SetupImage({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setOpenEmojiPicker(true)}>
+            <DropdownMenuItem onClick={() => setOpenEmojiPickerMobile(true)}>
               <SmileIcon className="mr-2 size-4 text-muted-foreground" />
               <span className="mr-4">이모지 선택</span>
             </DropdownMenuItem>
@@ -106,7 +116,10 @@ export function SetupImage({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <Dialog open={openEmojiPicker} onOpenChange={setOpenEmojiPicker}>
+      <Dialog
+        open={openEmojiPickerMobile}
+        onOpenChange={setOpenEmojiPickerMobile}
+      >
         <DialogContent className="p-0! border-none!" showCloseButton={false}>
           <DialogTitle className="sr-only">이모지 선택</DialogTitle>
           <EmojiPicker
@@ -116,7 +129,7 @@ export function SetupImage({
             theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT}
             onEmojiClick={(emoji) => {
               onChangeImage(emoji.imageUrl ?? "");
-              setOpenEmojiPicker(false);
+              setOpenEmojiPickerMobile(false);
             }}
           />
         </DialogContent>

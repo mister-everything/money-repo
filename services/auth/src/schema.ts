@@ -35,6 +35,10 @@ export const userTable = authSchema.table("user", {
   phoneNumber: text("phone_number"),
   nickname: varchar("nickname", { length: NICKNAME_RULES.maxLength }),
   consentedAt: timestamp("consented_at"),
+  /** 유입 경로 */
+  referralSource: text("referral_source"),
+  /** 직업 */
+  occupation: text("occupation"),
 });
 
 export const sessionTable = authSchema.table("session", {

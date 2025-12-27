@@ -100,7 +100,7 @@ export function SetupNickname({
         </motion.button>
       </div>
 
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm fade-1000">
         <Tooltip open={!!feedback}>
           <TooltipTrigger asChild>
             <div className="relative">

@@ -4,28 +4,30 @@ import { PublicError } from "@workspace/error";
 import { and, count, desc, eq, gte, ilike, isNull, or, sql } from "drizzle-orm";
 import { pgDb } from "./db";
 
-import { invitationTable, sessionTable, userTable } from "./schema";
+import { invitationTable, userTable } from "./schema";
 import { Role } from "./shared";
 
 export const userService = {
-  isSessionValid: async (session: string, userId: string) => {
-    const [sessionData] = await pgDb
-      .select({ id: sessionTable.id })
-      .from(sessionTable)
-      .where(
-        and(
-          eq(sessionTable.id, session),
-          eq(sessionTable.userId, userId),
-          gte(sessionTable.expiresAt, sql`now()`),
-        ),
-      );
-    if (!sessionData) {
-      return false;
-    }
-    return true;
+  exists: async (userId: string) => {
+    const [user] = await pgDb
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.id, userId));
+    return user !== null;
   },
-  createUser: async (user: typeof userTable.$inferInsert) => {
-    return await pgDb.insert(userTable).values(user).returning();
+  createUserForSeed: async (user: typeof userTable.$inferInsert) => {
+    return await pgDb
+      .insert(userTable)
+      .values(user)
+      .onConflictDoUpdate({
+        target: [userTable.email],
+        set: {
+          name: user.name,
+          image: user.image,
+          role: user.role,
+        },
+      })
+      .returning();
   },
   getAllUsers: async () => {
     const users = await pgDb

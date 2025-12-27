@@ -65,13 +65,15 @@ export function SettingsPopup({
               </TabsTrigger>
             </TabsList>
           </div>
-          <div className="flex-1 bg-secondary p-6 h-full overflow-y-auto">
-            <p className="border-b pb-2 mb-2">
+          <div className="flex-1 border-l h-full overflow-y-auto">
+            <p className="border-b px-6 py-4">
               {tabValue === "account" ? "계정" : ""}
             </p>
-            <TabsContent value="account">
-              <Account />
-            </TabsContent>
+            <div className="p-6">
+              <TabsContent value="account">
+                <Account />
+              </TabsContent>
+            </div>
           </div>
         </Tabs>
       </DialogContent>

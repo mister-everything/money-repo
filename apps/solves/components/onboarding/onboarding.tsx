@@ -1,5 +1,11 @@
 "use client";
-import { NICKNAME_RULES, validateNickname } from "@service/auth/shared";
+import {
+  NICKNAME_RULES,
+  OccupationType,
+  PolicyVersion,
+  ReferralSourceType,
+  validateNickname,
+} from "@service/auth/shared";
 
 import { LoaderIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -9,10 +15,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { SetupImage } from "./setup-image";
 import { SetupNickname } from "./setup-nickname";
-import { PolicyVersion, SetupPolicy } from "./setup-policy";
+import { SetupPolicy } from "./setup-policy";
+import { SetupSurvey } from "./setup-survey";
 import { SetupTheme } from "./setup-theme";
-
-type Step = "nickname" | "image" | "theme" | "policy";
+import { Step } from "./types";
 
 interface OnboardingProps {
   initialUserData?: { nickname?: string; image?: string };
@@ -25,18 +31,25 @@ interface OnboardingProps {
 export function Onboarding({
   initialUserData,
   policies = [],
-  steps = ["nickname", "image", "theme", "policy"],
+  steps = [Step.NICKNAME, Step.IMAGE, Step.THEME, Step.SURVEY, Step.POLICY],
   initialStep,
   onComplete,
 }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState<Step>(
-    initialStep ?? steps[0] ?? "nickname",
+    initialStep ?? steps[0] ?? Step.NICKNAME,
   );
+
+  const [complated, setComplated] = useState(false);
 
   const [userData, setUserData] = useState<{
     nickname?: string;
     image?: string;
   }>(initialUserData ?? {});
+
+  const [surveyData, setSurveyData] = useState<{
+    referralSource?: ReferralSourceType;
+    occupation?: OccupationType;
+  }>({});
 
   const [policyConsents, setPolicyConsents] = useState<Record<string, boolean>>(
     {},
@@ -87,6 +100,9 @@ export function Onboarding({
     if (currentStep === "image") {
       return userData.image?.length && userData.image.length > 0;
     }
+    if (currentStep === "survey") {
+      return surveyData.referralSource && surveyData.occupation;
+    }
     if (currentStep === "policy") {
       return allRequiredPoliciesChecked;
     }
@@ -96,6 +112,8 @@ export function Onboarding({
     userData.nickname,
     userData.image,
     nicknameFeedback,
+    surveyData.referralSource,
+    surveyData.occupation,
     allRequiredPoliciesChecked,
   ]);
 
@@ -107,6 +125,7 @@ export function Onboarding({
     const nextStep = steps[steps.indexOf(currentStep) + 1];
     if (!nextStep) {
       onComplete?.();
+      setComplated(true);
       return;
     }
     setCurrentStep(nextStep);
@@ -114,16 +133,24 @@ export function Onboarding({
 
   const handleNextStep = useCallback(() => {
     if (
-      currentStep == "nickname" &&
+      currentStep == Step.NICKNAME &&
       userData.nickname !== initialUserData?.nickname
     ) {
       return updateUserData({ nickname: userData.nickname });
     } else if (
-      currentStep == "image" &&
+      currentStep == Step.IMAGE &&
       userData.image !== initialUserData?.image
     ) {
       return updateUserData({ image: userData.image });
-    } else if (currentStep === "policy") {
+    } else if (currentStep === Step.SURVEY) {
+      // 설문 데이터 저장
+      if (surveyData.referralSource || surveyData.occupation) {
+        return updateUserData({
+          referralSource: surveyData.referralSource,
+          occupation: surveyData.occupation,
+        });
+      }
+    } else if (currentStep === Step.POLICY) {
       // 동의한 정책들만 기록
       const consentsToRecord = Object.entries(policyConsents)
         .filter(([, isAgreed]) => isAgreed)
@@ -145,6 +172,8 @@ export function Onboarding({
     userData.image,
     initialUserData?.nickname,
     initialUserData?.image,
+    surveyData.referralSource,
+    surveyData.occupation,
     policyConsents,
     updateUserData,
     recordConsent,
@@ -152,7 +181,7 @@ export function Onboarding({
 
   return (
     <div className="flex flex-col gap-4 justify-center items-center">
-      {currentStep === "nickname" ? (
+      {currentStep === Step.NICKNAME ? (
         <SetupNickname
           nickname={userData.nickname}
           feedback={
@@ -165,15 +194,26 @@ export function Onboarding({
             setUserData({ ...userData, nickname })
           }
         />
-      ) : currentStep === "image" ? (
+      ) : currentStep === Step.IMAGE ? (
         <SetupImage
           image={userData.image}
           nickname={userData.nickname}
           onChangeImage={(image) => setUserData({ ...userData, image })}
         />
-      ) : currentStep === "theme" ? (
+      ) : currentStep === Step.THEME ? (
         <SetupTheme />
-      ) : currentStep === "policy" ? (
+      ) : currentStep === Step.SURVEY ? (
+        <SetupSurvey
+          referralSource={surveyData.referralSource}
+          occupation={surveyData.occupation}
+          onChangeReferralSource={(referralSource) =>
+            setSurveyData({ ...surveyData, referralSource })
+          }
+          onChangeOccupation={(occupation) =>
+            setSurveyData({ ...surveyData, occupation })
+          }
+        />
+      ) : currentStep === Step.POLICY ? (
         <SetupPolicy
           policies={policies}
           consents={policyConsents}
@@ -181,31 +221,37 @@ export function Onboarding({
         />
       ) : null}
       <Button
-        disabled={!canNext || isLoading}
+        disabled={!canNext || isLoading || complated}
         variant={canNext ? "default" : "secondary"}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm fade-1000"
         onClick={handleNextStep}
       >
         {isLoading ? (
           <LoaderIcon className="animate-spin" />
         ) : steps.indexOf(currentStep) === steps.length - 1 ? (
-          "시작하기"
+          currentStep === Step.POLICY ? (
+            "시작 하기"
+          ) : (
+            "완료"
+          )
         ) : (
           "다음"
         )}
       </Button>
-      <div className="flex gap-2">
-        {steps.map((step) => (
-          <div
-            className={cn(
-              "w-8 h-2 rounded-full bg-input transition-all duration-300",
-              currentStep === step ? "bg-primary" : "",
-            )}
-            onClick={() => setCurrentStep(step)}
-            key={step}
-          />
-        ))}
-      </div>
+      {steps.length > 1 && (
+        <div className="flex gap-2 fade-1000">
+          {steps.map((step) => (
+            <div
+              className={cn(
+                "w-8 h-2 rounded-full bg-input transition-all duration-300",
+                currentStep === step ? "bg-primary" : "",
+              )}
+              onClick={() => setCurrentStep(step)}
+              key={step}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

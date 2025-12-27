@@ -7,7 +7,7 @@ import {
   verificationTable,
 } from "@service/auth";
 import { Role } from "@service/auth/shared";
-import { generateUUID, isNull } from "@workspace/util";
+import { isNull } from "@workspace/util";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -93,6 +93,18 @@ export const solvesBetterAuth = betterAuth({
         defaultValue: null,
         input: false,
       },
+      referralSource: {
+        type: "string",
+        required: false,
+        defaultValue: null,
+        input: true,
+      },
+      occupation: {
+        type: "string",
+        required: false,
+        defaultValue: null,
+        input: true,
+      },
     },
   },
   databaseHooks: {
@@ -100,6 +112,7 @@ export const solvesBetterAuth = betterAuth({
       create: {
         async before(session) {
           try {
+            logger.debug("Checking consent for user:", session.userId);
             await policyService.checkAndUpdateConsent(session.userId);
           } catch (error) {
             logger.error("Failed to check consent:", error);

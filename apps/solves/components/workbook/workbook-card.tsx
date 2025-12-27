@@ -28,6 +28,7 @@ interface WorkbookCardProps {
   onDelete?: () => void;
   onTogglePublic?: () => void;
   onCopy?: () => void;
+  isOwner?: boolean;
   isPendingDelete?: boolean;
   isPendingTogglePublic?: boolean;
   isPendingCopy?: boolean;
@@ -39,6 +40,7 @@ export function WorkbookCard({
   onDelete,
   onTogglePublic,
   onCopy,
+  isOwner,
   isPendingCopy,
   isPendingDelete,
   isPendingTogglePublic,
@@ -170,7 +172,7 @@ export function WorkbookCard({
           ) : session?.status === "in-progress" ? (
             <Badge
               variant="secondary"
-              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+              className="w-fit bg-blue-50 dark:bg-blue-950 text-blue-500 dark:text-blue-100 rounded-full py-1"
             >
               풀이 중
             </Badge>
@@ -179,11 +181,19 @@ export function WorkbookCard({
           ) : !published ? (
             <Badge
               variant="secondary"
-              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+              className="w-fit  bg-blue-50 dark:bg-blue-950 text-blue-500 :dark:text-blue-100 rounded-full py-1"
             >
               제작중
             </Badge>
           ) : null}
+          {isOwner && (
+            <Badge
+              variant="secondary"
+              className="w-fit bg-point/10 text-point rounded-full py-1"
+            >
+              내가 만든 문제집
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
@@ -218,14 +228,14 @@ export function WorkbookCard({
           <div className="text-xs text-muted-foreground mt-auto ml-auto flex items-center gap-1">
             <Avatar className="size-3.5">
               <AvatarImage
-                alt={workBook.ownerName}
+                alt={workBook.ownerName ?? "알수없는사용자"}
                 src={workBook.ownerProfile ?? ""}
               />
               <AvatarFallback className="text-3xs">
-                {workBook.ownerName.charAt(0)}
+                {workBook.ownerName?.charAt(0) ?? "?"}
               </AvatarFallback>
             </Avatar>
-            {workBook.ownerName}
+            {workBook.ownerName ?? "알수없는사용자"}
           </div>
         </div>
       </CardContent>

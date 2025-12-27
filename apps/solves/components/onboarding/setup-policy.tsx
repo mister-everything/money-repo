@@ -82,7 +82,7 @@ export function SetupPolicy({
         </p>
       </div>
 
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-md space-y-4 fade-1000">
         {/* 전체 동의 */}
         <div
           className={cn(

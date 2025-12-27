@@ -1,42 +1,39 @@
 "use client";
 
-import { generateUniqueNicknames } from "@workspace/util";
-import EmojiPicker, { Theme } from "emoji-picker-react";
-import { CameraIcon, SmileIcon } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { updateProfileAction } from "@/actions/user";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { authClient } from "@/lib/auth/client";
-import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { Step } from "../onboarding/types";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { GradualSpacingText } from "../ui/gradual-spacing-text";
 import { notify } from "../ui/notify";
 
 export function Account() {
-  const { resolvedTheme } = useTheme();
-  const { data: session, refetch } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
 
-  const [state, setState] = useState({
-    nickname: "",
-    image: "",
-  });
+  const router = useRouter();
 
-  const [, update, isUpdating] = useSafeAction(updateProfileAction, {
-    failMessage: "프로필 정보 업데이트에 실패했습니다.",
-    onSuccess: () => {
-      refetch();
-    },
-  });
+  const handleSignOut = useCallback(async () => {
+    const answer = await notify.confirm({
+      title: "로그아웃",
+      description: "로그아웃하시겠습니까?",
+      okText: "로그아웃",
+      cancelText: "취소",
+    });
+    if (answer) {
+      authClient.signOut().finally(() => {
+        router.push("/sign-in");
+      });
+    }
+  }, [router]);
+
+  const handleEditProfile = useCallback(() => {
+    const steps: string[] = [Step.NICKNAME, Step.IMAGE];
+    router.push(`/about-you?steps=${steps.join(",")}`);
+  }, [router]);
 
   const handleDeleteUser = useCallback(async () => {
     notify.alert({
@@ -47,40 +44,7 @@ export function Account() {
     });
   }, []);
 
-  const handleEmojiSelect = (emoji: string) => {
-    setState({
-      ...state,
-      image: emoji,
-    });
-  };
-
-  const isDiff = useMemo(() => {
-    return (
-      (state.nickname || "") !== (session?.user.nickname || "") ||
-      (state.image || "") !== (session?.user.image || "")
-    );
-  }, [
-    state.nickname,
-    state.image,
-    session?.user.nickname,
-    session?.user.image,
-  ]);
-
-  const randomNickNames = useMemo(() => {
-    if (Boolean(state.nickname)) return [];
-    return generateUniqueNicknames(3);
-  }, [Boolean(state.nickname)]);
-
-  useEffect(() => {
-    if (session) {
-      setState({
-        nickname: session.user.nickname || "",
-        image: session.user?.image ?? "",
-      });
-    }
-  }, [session]);
-
-  if (!session) {
+  if (!session && !isPending) {
     return (
       <div className="text-center text-sm text-muted-foreground py-12">
         로그인이 필요합니다.
@@ -90,85 +54,57 @@ export function Account() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="w-full h-full flex mt-14 items-center justify-center">
-        <div className="relative">
-          <Avatar className="size-24 border">
-            <AvatarImage src={state.image} alt={state.nickname} />
-            <AvatarFallback>{state.nickname.charAt(0)}</AvatarFallback>
+      <div className="w-full h-full fade-1000 flex flex-col gap-4 my-14 items-center justify-center">
+        <Avatar className="gentle-bounce size-24 flex items-center overflow-visible justify-center bg-secondary relative">
+          <Avatar className="absolute size-24 flex items-center fade-5000 justify-center bg-secondary blur-3xl -z-10">
+            <AvatarImage
+              src={session?.user.image ?? ""}
+              fetchPriority="low"
+              alt={`${session?.user.nickname} 프로필 이미지`}
+              className="object-cover size-16 rounded-full"
+            />
           </Avatar>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="absolute bottom-0 right-0 rounded-full shadow-none bg-input"
-              >
-                <CameraIcon className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <SmileIcon className="mr-2 size-4 text-muted-foreground" />
-                  <span className="mr-4">이모지 선택</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <EmojiPicker
-                    lazyLoadEmojis
-                    open
-                    className="fade-300"
-                    theme={resolvedTheme === "dark" ? Theme.DARK : Theme.LIGHT}
-                    onEmojiClick={(emoji) => handleEmojiSelect(emoji.imageUrl)}
-                  />
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <Label className="text-muted-foreground text-xs" htmlFor="nickname">
-            닉네임
-          </Label>
-          <Input
-            id="nickname"
-            value={state.nickname}
-            onChange={(e) => setState({ ...state, nickname: e.target.value })}
-            placeholder="닉네임을 입력하세요"
+          <AvatarImage
+            fetchPriority="high"
+            src={session?.user.image ?? ""}
+            alt={`${session?.user.nickname} 프로필 이미지`}
+            className="object-cover size-16 rounded-full"
           />
-          {randomNickNames.length > 0 && (
-            <div className="flex flex-col gap-1 my-2">
-              <span className="text-muted-foreground text-xs mt-2">
-                이런 닉네임도 있어요!
-              </span>
-              <div className="text-muted-foreground flex fade-300 gap-1 items-center text-xs">
-                {randomNickNames.map((nickname) => (
-                  <Button
-                    key={nickname}
-                    onClick={() => setState({ ...state, nickname: nickname })}
-                    variant="secondary"
-                    size="sm"
-                    className="text-xs bg-input"
-                  >
-                    {nickname}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          <AvatarFallback className="text-4xl">
+            {session?.user.nickname?.charAt(0) || "?"}
+          </AvatarFallback>
+        </Avatar>
+
+        <p className="flex items-center text-2xl font-semibold">
+          {session?.user.nickname ?? ""}
+        </p>
+        {session?.user && (
+          <div className="text-xs text-muted-foreground">
+            <GradualSpacingText
+              text={`가입한지 ${formatDistanceToNow(session.user.createdAt, { locale: ko })} 이 되었습니다.`}
+            />
+          </div>
+        )}
       </div>
-      <Button
-        onClick={() => update(state)}
-        disabled={isUpdating || !isDiff || !state.nickname}
-        size={"sm"}
-      >
-        프로필 정보 저장
-      </Button>
+      <div className="w-full gap-2 flex justify-end items-center">
+        <Button
+          variant="secondary"
+          className="text-muted-foreground"
+          onClick={handleEditProfile}
+        >
+          프로필 변경
+        </Button>
+        <Button
+          variant="ghost"
+          className="text-muted-foreground"
+          onClick={handleSignOut}
+        >
+          로그아웃
+        </Button>
+      </div>
 
       <div className="flex items-center justify-between border-t pt-2 mt-2">
-        <span>계정 삭제하기</span>
+        <span className="text-sm text-muted-foreground">계정 삭제하기</span>
         <Button
           className="rounded-full hover:bg-destructive hover:text-background text-muted-foreground"
           variant="ghost"

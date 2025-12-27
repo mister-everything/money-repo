@@ -1,3 +1,4 @@
+import { PublicError } from "@workspace/error";
 import { errorToString } from "@workspace/util";
 import { IS_PROD } from "@workspace/util/const";
 import z, { ZodAny, ZodType } from "zod";
@@ -86,7 +87,15 @@ export const createActionFactory = (ctx: MiddlewareConfig) => {
         }
         let base: SafeFailResponse = isSafeFail(error)
           ? error
-          : fail(errorToString(error), undefined, error);
+          : error instanceof PublicError
+            ? fail(error.message, undefined, error)
+            : IS_PROD
+              ? fail(
+                  "서버 오류가 발생했습니다. 관리자에게 문의해주세요.",
+                  undefined,
+                  error,
+                )
+              : fail(errorToString(error), undefined, error);
 
         if (ctx.middleware?.after?.length) {
           for (const mw of ctx.middleware.after) {

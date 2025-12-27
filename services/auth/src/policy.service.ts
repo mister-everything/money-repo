@@ -144,7 +144,6 @@ export const policyService = {
   checkAndUpdateConsent: async (userId: string): Promise<boolean> => {
     const isAllConsented = await policyService.hasRequiredPolicyConsent(userId);
 
-    // 3. 미동의 항목이 있으면 consentedAt를 null로 업데이트
     if (!isAllConsented) {
       await pgDb
         .update(userTable)
@@ -154,7 +153,6 @@ export const policyService = {
       return false;
     }
 
-    // 5. 모든 필수 동의 완료 - consentedAt가 null이면 현재 시간으로 설정
     const [user] = await pgDb
       .select({ consentedAt: userTable.consentedAt })
       .from(userTable)

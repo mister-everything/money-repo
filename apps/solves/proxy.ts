@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import { Step } from "./components/onboarding/types";
 import { safeGetSession } from "./lib/auth/server";
 
 const ABOUT_YOU_URL = "/about-you";
@@ -32,12 +33,26 @@ export async function proxy(request: NextRequest) {
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
-  if (
-    !session.user.nickname ||
-    !session.user.image ||
-    !pathname.startsWith(ABOUT_YOU_URL)
-  ) {
+  const hasNickname = Boolean(session.user.nickname);
+  const hasImage = Boolean(session.user.image);
+  const hasConsentedAt = Boolean(session.user.consentedAt);
+  const hasReferralSource = Boolean(session.user.referralSource);
+  const hasOccupation = Boolean(session.user.occupation);
+  const shouldRedirectToAboutYou =
+    !hasNickname ||
+    !hasImage ||
+    !hasConsentedAt ||
+    !hasReferralSource ||
+    !hasOccupation;
+
+  if (shouldRedirectToAboutYou && !pathname.startsWith(ABOUT_YOU_URL)) {
     const aboutYouUrl = new URL(ABOUT_YOU_URL, request.url);
+    const steps: string[] = [];
+    (!hasNickname || !hasImage) && steps.push(Step.NICKNAME, Step.IMAGE);
+    (!hasReferralSource || !hasOccupation) &&
+      steps.push(Step.THEME, Step.SURVEY);
+    !hasConsentedAt && steps.push(Step.POLICY);
+    aboutYouUrl.searchParams.set("steps", steps.join(","));
     aboutYouUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(aboutYouUrl);
   }
