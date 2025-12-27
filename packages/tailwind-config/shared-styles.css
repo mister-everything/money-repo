@@ -149,6 +149,9 @@
   .duration-5000 {
     transition-duration: 5000ms;
   }
+  .duration-10000 {
+    transition-duration: 10000ms;
+  }
   .fade-300 {
     @apply fade-in animate-in duration-300;
   }

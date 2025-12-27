@@ -6,9 +6,10 @@ import {
   ReferralSourceType,
   validateNickname,
 } from "@service/auth/shared";
-
+import { wait } from "@workspace/util";
+import confetti from "canvas-confetti";
 import { LoaderIcon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { recordConsentAction, updateProfileAction } from "@/actions/user";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ export function Onboarding({
   );
 
   const [complated, setComplated] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const [userData, setUserData] = useState<{
     nickname?: string;
@@ -121,9 +123,28 @@ export function Onboarding({
     return isUpdatingUserData || isRecordingConsent;
   }, [isUpdatingUserData, isRecordingConsent]);
 
+  const triggerConfetti = useCallback(async () => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const x = (rect.left + rect.width / 2) / window.innerWidth;
+    const y = (rect.top + rect.height / 2) / window.innerHeight;
+    const colors = ["#ff6b9d", "#c084fc", "#60a5fa", "#34d399", "#fbbf24"];
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { x, y },
+      colors,
+      scalar: 0.8,
+      gravity: 0.8,
+      ticks: 500,
+    });
+    await wait(2000);
+  }, []);
+
   const next = useCallback(async () => {
     const nextStep = steps[steps.indexOf(currentStep) + 1];
     if (!nextStep) {
+      await triggerConfetti();
       await onComplete?.();
       setComplated(true);
       return;
@@ -221,6 +242,7 @@ export function Onboarding({
         />
       ) : null}
       <Button
+        ref={buttonRef}
         disabled={!canNext || isLoading || complated}
         variant={canNext ? "default" : "secondary"}
         className="w-full max-w-sm fade-1000"

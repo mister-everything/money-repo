@@ -33,7 +33,7 @@ export function SetupImage({
   return (
     <div className="flex flex-col gap-4 justify-center items-center fade-1000">
       <Avatar className="gentle-bounce size-24 flex items-center justify-center bg-secondary overflow-visible relative">
-        <Avatar className="absolute size-24 flex items-center fade-5000 justify-center bg-secondary blur-3xl -z-10">
+        <Avatar className="absolute size-24 flex items-center fade-5000 justify-center bg-secondary blur-2xl -z-10">
           <AvatarImage
             src={image ?? ""}
             fetchPriority="low"
