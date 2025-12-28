@@ -23,11 +23,12 @@ import { getTokens } from "@/lib/ai/shared";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
-import { loadWorkbookMetaTools } from "@/lib/ai/tools/workbook/generate-workbook-meta-tools";
+import { generateWorkbookMetaTool } from "@/lib/ai/tools/workbook/generate-workbook-meta-tools";
 import {
   READ_BLOCK_TOOL_NAME,
   readBlockTool,
 } from "@/lib/ai/tools/workbook/read-block-tool";
+import { WORKBOOK_META_TOOL_NAME } from "@/lib/ai/tools/workbook/shared";
 import { getSession } from "@/lib/auth/server";
 import { createLogger } from "@/lib/logger";
 import {
@@ -48,6 +49,8 @@ export async function POST(req: Request) {
     workbookId,
     blockTypes,
     situation,
+    title,
+    description,
     ageGroup,
     serializeBlocks,
     category: categoryId,
@@ -74,6 +77,8 @@ export async function POST(req: Request) {
     situation: situation ?? "",
     ageGroup: ageGroup ?? "",
     userName: session.user.name,
+    title: title ?? "",
+    description: description ?? "",
     serializeBlocks,
   });
   logger.debug(`model: ${model.provider}/${model.model}`);
@@ -102,6 +107,17 @@ export async function POST(req: Request) {
         );
       }
 
+      const tools = {
+        ...loadGenerateBlockTools(blockTypes as BlockType[]),
+        [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
+        [WORKBOOK_META_TOOL_NAME]: generateWorkbookMetaTool,
+      };
+      // 생성한 문제집이있는지
+      const hasBlocks = serializeBlocks?.length;
+      if (hasBlocks) {
+        tools[READ_BLOCK_TOOL_NAME] = readBlockTool;
+      }
+
       const result = streamText({
         model: getChatModel(model),
         messages: convertToModelMessages(messages),
@@ -110,14 +126,7 @@ export async function POST(req: Request) {
         maxRetries: 1,
         stopWhen: stepCountIs(5),
         abortSignal: req.signal,
-        tools: {
-          ...loadWorkbookMetaTools(),
-          ...loadGenerateBlockTools(blockTypes as BlockType[]),
-          [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
-          ...(!serializeBlocks?.length
-            ? {}
-            : { [READ_BLOCK_TOOL_NAME]: readBlockTool }),
-        },
+        tools,
       });
 
       result.consumeStream();

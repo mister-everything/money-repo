@@ -1,135 +1,133 @@
-import {
-  WORKBOOK_DESCRIPTION_MAX_LENGTH,
-  WORKBOOK_TITLE_MAX_LENGTH,
-} from "@service/solves/shared";
-import { ToolUIPart } from "ai";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { UseChatHelpers } from "@ai-sdk/react";
+
+import { getToolName, ToolUIPart, UIMessage } from "ai";
+import { CheckIcon, XIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  GenerateWorkbookMetaInput,
-  WORKBOOK_META_TOOL_NAMES,
-} from "@/lib/ai/tools/workbook/shared";
+
+import { TextShimmer } from "@/components/ui/text-shimmer";
+
+import { DeepPartial } from "@/global";
+import { WorkbookMetaInput } from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 
-type MetaCandidate = {
-  title: string;
-  description: string;
-  maxTitle: number;
-  maxDescription: number;
-};
+enum ToolOutput {
+  approved = "approved",
+  rejected = "rejected",
+}
 
 export function WorkbookMetaToolPart({
   part,
+  addToolOutput,
 }: {
   part: ToolUIPart;
-  type: WORKBOOK_META_TOOL_NAMES;
+  addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
 }) {
-  const workBook = useWorkbookEditStore((state) => state.workBook);
-  const setWorkBook = useWorkbookEditStore((state) => state.setWorkBook);
+  const input = part.input as DeepPartial<WorkbookMetaInput> | undefined;
 
-  const isPending = useMemo(
-    () => part.state.startsWith("input-"),
+  const isStreaming = useMemo(
+    () => part.state == "input-streaming",
     [part.state],
   );
 
-  const candidate = useMemo<MetaCandidate>(() => {
-    const input = part.input as Partial<GenerateWorkbookMetaInput> | undefined;
-    const output = part.output as
-      | { title?: string; description?: string; note?: string }
-      | undefined;
-    return {
-      title: output?.title ?? input?.title ?? "",
-      description: output?.description ?? input?.description ?? "",
-      maxTitle: WORKBOOK_TITLE_MAX_LENGTH,
-      maxDescription: WORKBOOK_DESCRIPTION_MAX_LENGTH,
-    };
-  }, [part.input, part.output]);
+  const isPending = useMemo(
+    () => part.state == "input-available",
+    [part.state],
+  );
 
-  const [title, setTitle] = useState(candidate.title);
-  const [description, setDescription] = useState(candidate.description);
+  const output = part.output as ToolOutput | undefined;
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
-    setTitle(candidate.title);
-    setDescription(candidate.description);
-  }, [candidate.title, candidate.description]);
+    setTitle(input?.title ?? "");
+    setDescription(input?.description ?? "");
+  }, [input?.title, input?.description]);
 
-  const isApplied = useMemo(() => {
-    if (!workBook) return false;
-    return (
-      workBook.title === title && (workBook.description ?? "") === description
-    );
-  }, [title, description, workBook]);
-
-  const handleApply = () => {
-    if (!workBook) {
-      toast.error("문제집 정보를 불러오지 못했어요.");
-      return;
-    }
-    if (!title.trim() || !description.trim()) {
-      toast.error("제목과 설명을 모두 입력하세요.");
-      return;
-    }
-    setWorkBook((prev) => {
-      if (!prev) return prev;
-      return { ...prev, title, description };
-    });
-    toast.success("문제집 정보에 적용했어요.");
-  };
+  const handleApply = useCallback(
+    (isApproved: boolean) => {
+      if (isApproved) {
+        useWorkbookEditStore.getState().setWorkBook((prev) => ({
+          ...prev,
+          title: title.trim(),
+          description: description.trim(),
+        }));
+      }
+      addToolOutput?.({
+        state: "output-available",
+        tool: getToolName(part),
+        toolCallId: part.toolCallId,
+        output: isApproved ? ToolOutput.approved : ToolOutput.rejected,
+      });
+    },
+    [title, description],
+  );
 
   return (
-    <div className="p-4">
-      <div
-        className={cn(
-          "rounded-lg border bg-background p-4 space-y-3 fade-300",
-          isPending && "border-muted text-muted-foreground animate-pulse",
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="rounded-full">
-            문제집 제목 · 설명 제안
-          </Badge>
-        </div>
-
-        <div className="space-y-2">
-          <Input
-            value={title}
-            maxLength={candidate.maxTitle}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={isPending || !workBook}
-            placeholder="제목 (최대 20자)"
-          />
-          <Textarea
-            value={description}
-            maxLength={candidate.maxDescription}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={isPending || !workBook}
-            placeholder="한줄 설명 (최대 25자)"
-            className="resize-none"
-            rows={2}
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            disabled={
-              isPending ||
-              !title.trim() ||
-              !description.trim() ||
-              !workBook ||
-              isApplied
-            }
-            onClick={handleApply}
+    <div className="flex flex-col text-sm group select-none text-muted-foreground">
+      {part.errorText ? (
+        <p className="fade-300">제목·설명 생성을 실패하였습니다.</p>
+      ) : (
+        <>
+          {isStreaming ? (
+            <TextShimmer>{`제목·설명 생성중...`}</TextShimmer>
+          ) : (
+            <p className="fade-300">
+              {isPending
+                ? "이런 제목·설명은 어떨까요?"
+                : output == ToolOutput.approved
+                  ? "제목·설명 적용되었어요."
+                  : output == ToolOutput.rejected
+                    ? "제목·설명 거절되었어요."
+                    : "제목·설명 생성함"}
+            </p>
+          )}
+        </>
+      )}
+      {part.state != "output-error" && (
+        <div
+          className={cn(
+            "px-2 mt-3 fade-1000",
+            isStreaming && "border-muted text-muted-foreground animate-pulse",
+          )}
+        >
+          <div
+            className={cn(
+              "space-y-2 border rounded-lg p-3 bg-background",
+              isPending && "animate-pulse",
+              output == ToolOutput.rejected && "bg-muted",
+            )}
           >
-            {isApplied ? "적용됨" : "제목·설명 적용"}
-          </Button>
+            <p className="text-foreground border-none font-semibold">{title}</p>
+            <p className="text-muted-foreground text-xs">{description}</p>
+          </div>
+
+          {isPending && (
+            <div className="flex justify-end items-center gap-2 mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => handleApply(false)}
+              >
+                <XIcon className="size-3 stroke-3" />
+                취소
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className=" text-xs"
+                onClick={() => handleApply(true)}
+              >
+                <CheckIcon className="size-3 stroke-3" />
+                적용
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

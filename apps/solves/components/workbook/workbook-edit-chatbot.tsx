@@ -14,6 +14,7 @@ import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
 import {
   ChatOnFinishCallback,
   DefaultChatTransport,
+  isToolUIPart,
   lastAssistantMessageIsCompleteWithToolCalls,
   UIMessage,
 } from "ai";
@@ -273,6 +274,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     return isMessagesLoading || isThreadValidating || isChatPending;
   }, [isMessagesLoading, isThreadValidating, isChatPending]);
 
+  const isToolPending = useMemo(() => {
+    const lastMessage = messages.at(-1);
+    if (lastMessage?.role != "assistant") return false;
+    return lastMessage.parts.some(
+      (part) => isToolUIPart(part) && part.state.startsWith("input-"),
+    );
+  }, [messages.at(-1)]);
+
   const overContextSize = useMemo(() => {
     return threadContextPercent >= 90;
   }, [threadContextPercent]);
@@ -309,7 +318,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         status != "ready" ||
         !threadId ||
         Boolean(error) ||
-        !text?.trim()
+        !text?.trim() ||
+        isToolPending
       )
         return;
       sendMessage({
@@ -318,7 +328,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       });
       nextTick().then(() => editorRef.current?.commands.setContent(""));
     },
-    [input, status, threadId, error, overContextSize],
+    [input, status, threadId, error, overContextSize, isToolPending],
   );
 
   const addNewThread = useCallback(() => {
@@ -566,7 +576,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         )}
       </div>
       <div className={cn("p-2 absolute bottom-0 left-0 right-0")}>
-        <div className="bg-background border rounded-2xl p-2 flex flex-col gap-1">
+        <div
+          className={cn(
+            "bg-background border rounded-2xl p-2 flex flex-col gap-1 transition-colors",
+          )}
+        >
           <div className="flex flex-wrap gap-2 items-center">
             {mentionWithBlock.length ? (
               mentionWithBlock.map((mention) => (
@@ -701,7 +715,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
               (!isChatPending && isPending) ||
               !threadId ||
               Boolean(error) ||
-              overContextSize
+              overContextSize ||
+              isToolPending
             }
             chatModel={chatModel}
             onChatModelChange={setChatModel}

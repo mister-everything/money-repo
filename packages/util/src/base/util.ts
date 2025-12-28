@@ -347,3 +347,12 @@ export const createIdGenerator = (options?: {
 export const normalizeNewLine = (text: string) => {
   return text.replace(/\\n/g, "\n");
 };
+
+export function getModKeyLabel(): "⌘" | "Ctrl" {
+  if (typeof navigator === "undefined") return "Ctrl";
+
+  const platform = (navigator as any).userAgentData?.platform ?? "";
+
+  const isApple = /Mac|iPhone|iPad|iPod/i.test(platform);
+  return isApple ? "⌘" : "Ctrl";
+}
