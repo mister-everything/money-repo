@@ -1,28 +1,33 @@
 import { randomBytes } from "node:crypto";
 import { PublicError } from "@workspace/error";
+
 import { and, count, desc, eq, gte, ilike, isNull, or, sql } from "drizzle-orm";
 import { pgDb } from "./db";
-import { invitationTable, sessionTable, userTable } from "./schema";
+
+import { invitationTable, userTable } from "./schema";
 import { Role } from "./shared";
+
 export const userService = {
-  isSessionValid: async (session: string, userId: string) => {
-    const [sessionData] = await pgDb
-      .select({ id: sessionTable.id })
-      .from(sessionTable)
-      .where(
-        and(
-          eq(sessionTable.id, session),
-          eq(sessionTable.userId, userId),
-          gte(sessionTable.expiresAt, sql`now()`),
-        ),
-      );
-    if (!sessionData) {
-      return false;
-    }
-    return true;
+  exists: async (userId: string) => {
+    const [user] = await pgDb
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.id, userId));
+    return user !== null;
   },
-  createUser: async (user: typeof userTable.$inferInsert) => {
-    return await pgDb.insert(userTable).values(user).returning();
+  createUserForSeed: async (user: typeof userTable.$inferInsert) => {
+    return await pgDb
+      .insert(userTable)
+      .values(user)
+      .onConflictDoUpdate({
+        target: [userTable.email],
+        set: {
+          name: user.name,
+          image: user.image,
+          role: user.role,
+        },
+      })
+      .returning();
   },
   getAllUsers: async () => {
     const users = await pgDb
@@ -31,33 +36,8 @@ export const userService = {
       .where(eq(userTable.isDeleted, false));
     return users;
   },
-  deleteUser: async (id: string) => {
-    await pgDb
-      .update(userTable)
-      .set({ deletedAt: new Date(), isDeleted: true })
-      .where(eq(userTable.id, id));
-  },
-  getEnableUsers: async () => {
-    const users = await pgDb
-      .select({
-        id: userTable.id,
-        name: userTable.name,
-        email: userTable.email,
-        image: userTable.image,
-        createdAt: userTable.createdAt,
-        updatedAt: userTable.updatedAt,
-        role: userTable.role,
-      })
-      .from(userTable)
-      .where(
-        and(
-          or(eq(userTable.banned, false), eq(userTable.isAnonymous, false)),
-          eq(userTable.isDeleted, false),
-        ),
-      );
-    return users;
-  },
-  updateUserRole: async (id: string, role: string) => {
+
+  updateUserRole: async (id: string, role: Role) => {
     await pgDb
       .update(userTable)
       .set({ role })

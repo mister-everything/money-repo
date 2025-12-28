@@ -57,6 +57,7 @@ import {
 import { useCategories } from "@/hooks/query/use-categories";
 import { useToRef } from "@/hooks/use-to-ref";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
+import { handleErrorToast } from "@/lib/handle-toast";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
@@ -171,7 +172,7 @@ export function WorkbookEdit({
   );
 
   const [, publish, isPublishing] = useSafeAction(publishWorkbookAction, {
-    failMessage: "배포에 실패했습니다.",
+    onError: handleErrorToast,
     successMessage: "발행이 완료되었어요. 화면 이동중",
     onSuccess: () => {
       router.push(`/workbooks/${workBook.id}/report`);

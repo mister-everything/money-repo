@@ -26,7 +26,8 @@ export async function generateMetadata({
 
   const title = `${book.title} - Solves 문제집`;
   const description =
-    book.description || `${book.ownerName}님이 만든 문제집입니다.`;
+    book.description ||
+    `${book.ownerName ?? "알수없는사용자"}님이 만든 문제집입니다.`;
 
   return {
     title,
@@ -35,7 +36,7 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
-      authors: [book.ownerName],
+      authors: [book.ownerName ?? "알수없는사용자"],
       publishedTime: book.publishedAt?.toISOString(),
       tags: book.tags.map((tag) => tag.name),
     },

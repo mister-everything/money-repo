@@ -41,19 +41,20 @@
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
+  /* --background: oklch(0.141 0.005 285.823); */
+  --background: #121316;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
+  --card: #1a1b1f;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
+  --popover: #1a1b1f;
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.648 0.2 131.684);
   --primary-foreground: oklch(0.986 0.031 120.757);
-  --secondary: oklch(0.274 0.006 286.033);
+  --secondary: #27282d;
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
+  --muted: #27282d;
   --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
+  --accent: #27282d;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: #ff5f57;
   --border: oklch(1 0 0 / 10%);
@@ -64,11 +65,11 @@
   --chart-3: oklch(0.627 0.194 149.214);
   --chart-4: oklch(0.527 0.154 150.069);
   --chart-5: oklch(0.448 0.119 151.328);
-  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar: #121316;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.768 0.233 130.85);
   --sidebar-primary-foreground: oklch(0.986 0.031 120.757);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent: #27282d;
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.405 0.101 131.063);
@@ -142,8 +143,29 @@
   .p-3 {
     @apply p-3;
   }
+  .duration-3000 {
+    transition-duration: 3000ms;
+  }
+  .duration-5000 {
+    transition-duration: 5000ms;
+  }
+  .duration-10000 {
+    transition-duration: 10000ms;
+  }
   .fade-300 {
     @apply fade-in animate-in duration-300;
+  }
+  .fade-500 {
+    @apply fade-in animate-in duration-500;
+  }
+  .fade-1000 {
+    @apply fade-in animate-in duration-1000;
+  }
+  .fade-3000 {
+    @apply fade-in animate-in duration-3000;
+  }
+  .fade-5000 {
+    @apply fade-in animate-in duration-5000;
   }
   @keyframes wiggle {
     0%,
@@ -160,5 +182,19 @@
 
   .wiggle {
     animation: wiggle 2.5s ease-in-out infinite;
+  }
+
+  @keyframes gentle-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  .gentle-bounce {
+    animation: gentle-bounce 3s ease-in-out infinite;
   }
 }

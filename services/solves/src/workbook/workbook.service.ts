@@ -53,8 +53,9 @@ const WorkBookColumnsForList = {
   title: workBooksTable.title,
   description: workBooksTable.description,
   isPublic: workBooksTable.isPublic,
-  ownerName: userTable.name,
+  ownerName: userTable.nickname,
   ownerProfile: userTable.image,
+  ownerPublicId: userTable.publicId,
   publishedAt: workBooksTable.publishedAt,
   tags: sql<
     { id: number; name: string }[]

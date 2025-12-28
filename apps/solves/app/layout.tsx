@@ -1,8 +1,10 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { IS_PROD } from "@workspace/util/const";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "sonner";
+import { AuthCheck } from "@/components/layouts/auth-check";
 import { SwrProvider } from "@/components/swr-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -26,13 +28,14 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           themes={["light", "dark"]}
           disableTransitionOnChange
         >
           <Toaster />
           <SwrProvider>
             <div id="root">{children}</div>
+            {!IS_PROD && <AuthCheck />}
           </SwrProvider>
         </ThemeProvider>
       </body>
