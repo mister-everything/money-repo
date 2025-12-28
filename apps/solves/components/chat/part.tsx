@@ -30,7 +30,7 @@ import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { READ_BLOCK_TOOL_NAME } from "@/lib/ai/tools/workbook/read-block-tool";
 import {
   GEN_BLOCK_TOOL_NAMES,
-  WORKBOOK_META_TOOL_NAMES,
+  WORKBOOK_META_TOOL_NAME,
 } from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { MentionItem } from "../mention/mention-item";
@@ -224,7 +224,7 @@ export function ReasoningPart({
 
   return (
     <div
-      className="flex flex-col cursor-pointer text-sm group select-none"
+      className="flex flex-col cursor-pointer text-sm group select-none group"
       onClick={() => {
         setIsExpanded(!isExpanded);
       }}
@@ -243,7 +243,7 @@ export function ReasoningPart({
         <button
           data-testid="message-reasoning-toggle"
           type="button"
-          className="cursor-pointer"
+          className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         >
           <ChevronDownIcon
             className={cn("size-3.5", isExpanded ? "rotate-180" : "")}
@@ -295,10 +295,6 @@ export function ToolPart({
 
   const isGenerateBlockTool = (name: string): name is GEN_BLOCK_TOOL_NAMES =>
     Object.values(GEN_BLOCK_TOOL_NAMES).includes(name as GEN_BLOCK_TOOL_NAMES);
-  const isWorkbookMetaTool = (name: string): name is WORKBOOK_META_TOOL_NAMES =>
-    Object.values(WORKBOOK_META_TOOL_NAMES).includes(
-      name as WORKBOOK_META_TOOL_NAMES,
-    );
 
   if (isGenerateBlockTool(toolName)) {
     return (
@@ -308,8 +304,8 @@ export function ToolPart({
     );
   }
 
-  if (isWorkbookMetaTool(toolName)) {
-    return <WorkbookMetaToolPart part={part} type={toolName} />;
+  if (toolName === WORKBOOK_META_TOOL_NAME) {
+    return <WorkbookMetaToolPart part={part} addToolOutput={addToolOutput} />;
   }
 
   if (toolName === EXA_SEARCH_TOOL_NAME) {

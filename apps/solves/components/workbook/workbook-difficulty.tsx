@@ -68,7 +68,7 @@ export function WorkbookDifficulty({
           ))}
         </div>
       )}
-      ㄷ<span>{difficulty.label}</span>
+      <span>{difficulty.label}</span>
       <span className="text-[10px] text-muted-foreground truncate">
         {`(${difficulty.detail})`}
       </span>

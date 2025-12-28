@@ -432,22 +432,6 @@ export const workBookService = {
         );
       }
 
-      const tags = await tx
-        .select({
-          tagId: workBookTagsTable.tagId,
-        })
-        .from(workBookTagsTable)
-        .where(eq(workBookTagsTable.workBookId, workBookId));
-
-      if (tags.length > 0) {
-        await tx.insert(workBookTagsTable).values(
-          tags.map((t) => ({
-            workBookId: newWorkBookId,
-            tagId: t.tagId,
-          })),
-        );
-      }
-
       return { id: newWorkBookId };
     });
   },
