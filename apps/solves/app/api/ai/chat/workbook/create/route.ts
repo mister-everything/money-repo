@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     blockTypes,
     situation: situation ?? "",
     ageGroup: ageGroup ?? "",
-    userName: session.user.name,
+    userName: session.user.nickname || session.user.name,
     title: title ?? "",
     description: description ?? "",
     serializeBlocks,

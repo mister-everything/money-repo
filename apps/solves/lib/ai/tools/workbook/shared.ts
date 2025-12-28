@@ -276,25 +276,19 @@ export type GenerateOxInput = z.infer<typeof GenerateOxInputSchema>;
 
 // Workbook 메타 (제목/설명) 생성
 export const WorkbookMetaInputSchema = z.object({
-  title: z
-    .string()
-    .min(1, "문제집 제목은 최소 1자 이상 입력하세요.")
-    .max(
-      WORKBOOK_TITLE_MAX_LENGTH,
-      `문제집 제목은 최대 ${WORKBOOK_TITLE_MAX_LENGTH}자 입니다.`,
-    )
+  titles: z
+    .array(z.string().min(1, "문제집 제목은 최소 1자 이상 입력하세요."))
+    .min(1)
+    .max(5)
     .describe(
-      `문제집의 제목을 입력하세요. 최대 ${WORKBOOK_TITLE_MAX_LENGTH}자 입니다.`,
+      `문제집의 제목 후보 3~5개를 입력하세요. 각 제목은 최대 ${WORKBOOK_TITLE_MAX_LENGTH}자 입니다.`,
     ),
-  description: z
-    .string()
-    .min(1, "한줄 설명은 최소 1자이상 입력하세요.")
-    .max(
-      WORKBOOK_DESCRIPTION_MAX_LENGTH,
-      `한줄 설명은 최대 ${WORKBOOK_DESCRIPTION_MAX_LENGTH}자 입니다.`,
-    )
+  descriptions: z
+    .array(z.string().min(1, "한줄 설명은 최소 1자이상 입력하세요."))
+    .min(1)
+    .max(5)
     .describe(
-      `문제집의 설명을 입력하세요. 최대 ${WORKBOOK_DESCRIPTION_MAX_LENGTH}자 입니다.`,
+      `문제집의 설명 후보 3~5개를 입력하세요. 각 설명은 ${WORKBOOK_DESCRIPTION_MAX_LENGTH - 5}~${WORKBOOK_DESCRIPTION_MAX_LENGTH}자 로 제한해주세요.`,
     ),
 });
 
