@@ -88,11 +88,11 @@ function SignInContent() {
         ))}
       </CardContent>
       <CardFooter className="flex items-center justify-center gap-2 text-sm">
-        <Link className="hover:underline" href="/terms">
+        <Link className="hover:underline" href="/policies/terms">
           이용약관
         </Link>
         <Separator className="h-2 w-4" orientation="vertical" />
-        <Link className="hover:underline" href="/privacy">
+        <Link className="hover:underline" href="/policies/privacy">
           개인정보 보호 정책
         </Link>
       </CardFooter>

@@ -72,7 +72,7 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
         {result?.results?.length && (
           <p className="text-xs ml-1 flex items-center gap-1">
             {query?.length ? (
-              <span className="font-semibold">{`"${truncateString(query, 40)}" 관련 `}</span>
+              <span className="font-semibold">{`${truncateString(query, 40)}`}</span>
             ) : (
               ""
             )}

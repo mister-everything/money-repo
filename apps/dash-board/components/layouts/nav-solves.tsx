@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  FileTextIcon,
   FolderTreeIcon,
   SquareChartGanttIcon,
   TrendingUpDownIcon,
@@ -30,6 +31,11 @@ const menuItems = [
     title: "소재 관리",
     url: "/solves/categories",
     icon: FolderTreeIcon,
+  },
+  {
+    title: "정책 관리",
+    url: "/solves/policies",
+    icon: FileTextIcon,
   },
 ];
 
