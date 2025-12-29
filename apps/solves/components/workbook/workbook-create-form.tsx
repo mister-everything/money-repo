@@ -6,7 +6,7 @@ import {
   MAX_INPROGRESS_WORKBOOK_CREATE_COUNT,
 } from "@service/solves/shared";
 import { errorToString, isNull } from "@workspace/util";
-import { Loader, TriangleAlertIcon } from "lucide-react";
+import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { createWorkbookAction } from "@/actions/workbook";
