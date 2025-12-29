@@ -10,6 +10,7 @@ import { wait } from "@workspace/util";
 import confetti from "canvas-confetti";
 import { LoaderIcon } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { safe } from "ts-safe";
 import { recordConsentAction, updateProfileAction } from "@/actions/user";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
@@ -144,9 +145,11 @@ export function Onboarding({
   const next = useCallback(async () => {
     const nextStep = steps[steps.indexOf(currentStep) + 1];
     if (!nextStep) {
-      await triggerConfetti();
-      await onComplete?.();
-      setComplated(true);
+      safe(async () => {
+        setComplated(true);
+        await triggerConfetti();
+        await onComplete?.();
+      }).ifFail(() => setComplated(false));
       return;
     }
     setCurrentStep(nextStep);
@@ -248,7 +251,7 @@ export function Onboarding({
         className="w-full max-w-sm fade-1000"
         onClick={handleNextStep}
       >
-        {isLoading ? (
+        {isLoading || complated ? (
           <LoaderIcon className="animate-spin" />
         ) : steps.indexOf(currentStep) === steps.length - 1 ? (
           currentStep === Step.POLICY ? (

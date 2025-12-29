@@ -13,7 +13,11 @@ import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useCategories } from "@/hooks/query/use-categories";
-import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
+import {
+  MAX_BLOCK_COUNT,
+  WorkBookAgeGroup,
+  WorkBookSituation,
+} from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
@@ -70,8 +74,6 @@ export function WorkbookCreateForm({
     }
     const confirm = await notify.confirm({
       title: "문제집을 생성해볼까요?",
-      description:
-        "소재는 문제집 생성 후 변경할 수 없으니 신중하게 선택해주세요.",
       okText: "이대로 진행하기",
       cancelText: "다시 선택하기",
     });
@@ -96,7 +98,7 @@ export function WorkbookCreateForm({
         </h1>
         {!isMaxInprogressWorkbookCreateCount && (
           <p className="text-xs text-point">
-            (* 한 문제집은 총 10개의 문제로 구성돼요)
+            (* 한 문제집은 총 {MAX_BLOCK_COUNT}개의 문제로 구성돼요)
           </p>
         )}
       </div>
@@ -105,15 +107,6 @@ export function WorkbookCreateForm({
         <div className="space-y-3">
           <div className="flex items-center gap-1">
             <label className="text-sm font-bold text-foreground">소재</label>
-
-            {!isMaxInprogressWorkbookCreateCount && (
-              <>
-                <TriangleAlertIcon className="size-2.5 text-background fill-point ml-2" />
-                <span className="text-point text-xs">
-                  소재는 문제집 생성 후 변경할 수 없으니 신중하게 선택해주세요
-                </span>
-              </>
-            )}
           </div>
           <CategorySelector
             categories={categories}
