@@ -567,31 +567,40 @@ export function WorkbookEdit({
 
           {isCategoriesLoading ? (
             <Skeleton className="w-24 h-9 rounded-full " />
-          ) : isNull(workBook.categoryId) ? (
-            <>
-              <WorkBookCategoryUpdatePopup
-                workBookId={workBook.id}
-                onSavedCategory={(categoryId) => {
-                  setWorkBook((prev) => ({ ...prev, categoryId }));
-                }}
-              >
-                <Button className="rounded-full text-xs">소재 선택</Button>
-              </WorkBookCategoryUpdatePopup>
-            </>
           ) : (
-            selectedCategory.length > 0 && (
-              <Button className="rounded-full text-xs">
-                {selectedCategory.map((c, i) => {
-                  if (i == 0) return <Fragment key={i}>{c.name}</Fragment>;
-                  return (
-                    <Fragment key={i}>
-                      <ChevronRightIcon className="size-3.5" />
-                      {c.name}
-                    </Fragment>
-                  );
-                })}
-              </Button>
-            )
+            <WorkBookCategoryUpdatePopup
+              workBookId={workBook.id}
+              onSavedCategory={(categoryId) => {
+                setWorkBook((prev) => ({ ...prev, categoryId }));
+              }}
+            >
+              {isNull(workBook.categoryId) ? (
+                <>
+                  <WorkBookCategoryUpdatePopup
+                    workBookId={workBook.id}
+                    onSavedCategory={(categoryId) => {
+                      setWorkBook((prev) => ({ ...prev, categoryId }));
+                    }}
+                  >
+                    <Button className="rounded-full text-xs">소재 선택</Button>
+                  </WorkBookCategoryUpdatePopup>
+                </>
+              ) : (
+                selectedCategory.length > 0 && (
+                  <Button className="rounded-full text-xs">
+                    {selectedCategory.map((c, i) => {
+                      if (i == 0) return <Fragment key={i}>{c.name}</Fragment>;
+                      return (
+                        <Fragment key={i}>
+                          <ChevronRightIcon className="size-3.5" />
+                          {c.name}
+                        </Fragment>
+                      );
+                    })}
+                  </Button>
+                )
+              )}
+            </WorkBookCategoryUpdatePopup>
           )}
         </div>
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
