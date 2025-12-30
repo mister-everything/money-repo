@@ -1,13 +1,12 @@
 "use client";
 
 import {
+  REPORT_REASON_SECTIONS,
   ReportCategoryDetail,
   ReportCategoryMain,
+  ReportDraft,
 } from "@service/report/shared";
-import {
-  REPORT_REASON_SECTIONS,
-  type ReportDraft,
-} from "@service/solves/shared";
+
 import { Flag } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
