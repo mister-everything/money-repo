@@ -16,6 +16,17 @@ export const reportService = {
         categoryDetail: input.categoryDetail,
         detailText: input.detailText,
       })
+      .onConflictDoUpdate({
+        target: [
+          contentReportsTable.reporterUserId,
+          contentReportsTable.targetType,
+          contentReportsTable.targetId,
+          contentReportsTable.categoryDetail,
+        ],
+        set: {
+          detailText: input.detailText,
+        },
+      })
       .returning();
 
     return inserted;

@@ -6,7 +6,7 @@ import {
   ReportCategoryMain,
   ReportTargetType,
 } from "@service/report/shared";
-import { Flag } from "lucide-react";
+import { Flag, Loader } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createReportAction } from "@/actions/report";
 import { Button } from "@/components/ui/button";
@@ -158,8 +158,11 @@ export const WorkbookReportDialog = ({
           </RadioGroup>
 
           {/* 상세 설명 입력 */}
-          <div className="space-y-2 pt-2 border-t">
-            <label className="text-sm text-muted-foreground">
+        </div>
+
+        <DialogFooter className="pt-4 border-t">
+          <div className="w-full flex flex-col gap-2">
+            <label className="text-sm text-muted-foreground mb-2">
               자세한 내용을 적어주세요 (빠른 피드백을 드릴 수 있어요)
             </label>
             <Textarea
@@ -168,17 +171,19 @@ export const WorkbookReportDialog = ({
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-[80px] resize-none"
             />
-          </div>
-        </div>
 
-        <DialogFooter className="pt-4 border-t">
-          <Button
-            disabled={!canSubmit || isPending}
-            onClick={handleSubmit}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            신고하기
-          </Button>
+            <Button
+              disabled={!canSubmit || isPending}
+              onClick={handleSubmit}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isPending ? (
+                <Loader className="size-4 animate-spin" />
+              ) : (
+                "신고하기"
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
