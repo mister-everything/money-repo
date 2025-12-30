@@ -57,7 +57,7 @@ export const createReportSchema = z.object({
   detailText: z.string().nullish(),
 });
 
-export type CreateReportDto = z.infer<typeof createReportSchema>;
+
 
 export type ReportDraft = Omit<CreateReportInput, "reporterUserId">;
 

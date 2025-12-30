@@ -1,10 +1,11 @@
+import z from "zod";
 import { pgDb } from "./db";
 import { contentReportsTable } from "./schema";
-import { CreateReportDto } from "./types";
+import { createReportSchema } from "./types";
 
 export const reportService = {
-  // 사용자가 문제를 신고
-  async createReport(input: CreateReportDto) {
+  //사용자가 문제를 신고
+  async createReport(input: z.infer<typeof createReportSchema>) {
     const [inserted] = await pgDb
       .insert(contentReportsTable)
       .values({
