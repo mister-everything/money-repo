@@ -75,6 +75,7 @@ export const publishWorkbookAction = safeAction(
   }),
   async ({ workBookId, tags }) => {
     const session = await getSession();
+
     await workBookService.publishWorkbook({
       workBookId,
       userId: session.user.id,

@@ -48,7 +48,8 @@ export type WorkBook = {
   blocks: WorkBookBlock[];
   tags: { id: number; name: string }[];
   isPublic: boolean;
-  ownerName: string;
+  ownerName?: string | null;
+  ownerPublicId: number;
   ownerProfile?: string | null;
   createdAt: Date;
   publishedAt?: Date | null;

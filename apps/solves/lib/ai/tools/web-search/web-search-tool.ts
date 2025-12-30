@@ -41,7 +41,7 @@ const fetchExa = async (endpoint: string, body: any): Promise<any> => {
 export const exaSearchTool: Tool = createTool({
   name: EXA_SEARCH_TOOL_NAME,
   description:
-    "웹을 검색하세요. 검색 기능으로 실시간 웹 검색을 수행합니다. 전체 콘텐츠를 추출해 고품질의 관련 결과를 반환합니다.",
+    "웹을 검색하세요. 검색 기능으로 실시간 웹 검색을 수행합니다. 검색을 통해 정확한 정보를 얻어 답변을 제공합니다.",
   inputSchema: exaSearchSimpleInputSchema,
   execute: async (params) => {
     const searchRequest: ExaSearchRequest = {

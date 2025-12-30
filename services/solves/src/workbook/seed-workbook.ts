@@ -10,8 +10,8 @@ export const seedWorkbook = async () => {
   logger.info("🌱 Seeding Prob data...");
 
   // 랜덤 테스트 유저 생성
-  const randomEmail = `test${Math.random().toString(36).substring(2, 10)}@test.com`;
-  const testUser = await userService.createUser({
+  const randomEmail = `test@test.com`;
+  const testUser = await userService.createUserForSeed({
     email: randomEmail,
     name: "최성근",
     role: Role.USER,

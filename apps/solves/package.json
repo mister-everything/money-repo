@@ -63,6 +63,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^16.6.1",
     "drizzle-orm": "^0.44.7",
+    "emoji-picker-react": "^4.16.1",
     "framer-motion": "^12.23.26",
     "ioredis": "^5.8.2",
     "lucide-react": "^0.475.0",

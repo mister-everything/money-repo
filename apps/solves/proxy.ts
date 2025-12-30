@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
+import { Step } from "./components/onboarding/types";
 import { safeGetSession } from "./lib/auth/server";
+
+const ABOUT_YOU_URL = "/about-you";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,15 +30,41 @@ export async function proxy(request: NextRequest) {
   if (!session) {
     logger.warn(`proxy ${pathname} without session`);
     const signInUrl = new URL("/sign-in", request.url);
-    // 원래 가려던 URL을 callbackUrl로 저장
     signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
+  }
+
+  const hasNickname = Boolean(session.user.nickname);
+  const hasImage = Boolean(session.user.image);
+  const hasConsentedAt = Boolean(session.user.consentedAt);
+  const hasReferralSource = Boolean(session.user.referralSource);
+  const hasOccupation = Boolean(session.user.occupation);
+  const shouldRedirectToAboutYou =
+    !hasNickname ||
+    !hasImage ||
+    !hasConsentedAt ||
+    !hasReferralSource ||
+    !hasOccupation;
+
+  if (shouldRedirectToAboutYou && !pathname.startsWith(ABOUT_YOU_URL)) {
+    const aboutYouUrl = new URL(ABOUT_YOU_URL, request.url);
+    const steps: string[] = [];
+    (!hasNickname || !hasImage) && steps.push(Step.NICKNAME, Step.IMAGE);
+    (!hasReferralSource || !hasOccupation) &&
+      steps.push(Step.THEME, Step.SURVEY);
+    !hasConsentedAt && steps.push(Step.POLICY);
+    aboutYouUrl.searchParams.set("steps", steps.join(","));
+    logger.debug(
+      `redirect to about you: ${session.user.email}, steps: ${steps.join(",")}`,
+    );
+    aboutYouUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(aboutYouUrl);
   }
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/auth|sign-in).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/auth|sign-in|policies).*)",
   ],
 };

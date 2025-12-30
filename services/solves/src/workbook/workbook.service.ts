@@ -53,8 +53,9 @@ const WorkBookColumnsForList = {
   title: workBooksTable.title,
   description: workBooksTable.description,
   isPublic: workBooksTable.isPublic,
-  ownerName: userTable.name,
+  ownerName: userTable.nickname,
   ownerProfile: userTable.image,
+  ownerPublicId: userTable.publicId,
   publishedAt: workBooksTable.publishedAt,
   tags: sql<
     { id: number; name: string }[]
@@ -427,22 +428,6 @@ export const workBookService = {
             question: b.question,
             content: b.content,
             answer: b.answer,
-          })),
-        );
-      }
-
-      const tags = await tx
-        .select({
-          tagId: workBookTagsTable.tagId,
-        })
-        .from(workBookTagsTable)
-        .where(eq(workBookTagsTable.workBookId, workBookId));
-
-      if (tags.length > 0) {
-        await tx.insert(workBookTagsTable).values(
-          tags.map((t) => ({
-            workBookId: newWorkBookId,
-            tagId: t.tagId,
           })),
         );
       }

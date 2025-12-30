@@ -10,6 +10,7 @@ import z from "zod";
 import { useShallow } from "zustand/shallow";
 import { Badge } from "@/components/ui/badge";
 import { TextShimmer } from "@/components/ui/text-shimmer";
+import { DeepPartial } from "@/global";
 import { useToRef } from "@/hooks/use-to-ref";
 import { ReadBlockInputSchema } from "@/lib/ai/tools/workbook/read-block-tool";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,9 @@ export function ReadBlockToolPart({
   part: ToolUIPart;
   addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
 }) {
-  const input = part.input as z.infer<typeof ReadBlockInputSchema>;
+  const input = part.input as
+    | DeepPartial<z.infer<typeof ReadBlockInputSchema>>
+    | undefined;
 
   const [expanded, setExpanded] = useState(false);
 

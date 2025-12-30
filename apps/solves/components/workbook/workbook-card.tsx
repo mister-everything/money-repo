@@ -30,6 +30,7 @@ interface WorkbookCardProps {
   onTogglePublic?: () => void;
   onCopy?: () => void;
   onReport?: () => void;
+  isOwner?: boolean;
   isPendingDelete?: boolean;
   isPendingTogglePublic?: boolean;
   isPendingCopy?: boolean;
@@ -44,6 +45,7 @@ export function WorkbookCard({
   onTogglePublic,
   onCopy,
   onReport,
+  isOwner,
   isPendingCopy,
   isPendingDelete,
   isPendingTogglePublic,
@@ -199,7 +201,7 @@ export function WorkbookCard({
           ) : session?.status === "in-progress" ? (
             <Badge
               variant="secondary"
-              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+              className="w-fit bg-blue-50 dark:bg-blue-950 text-blue-500 dark:text-blue-100 rounded-full py-1"
             >
               풀이 중
             </Badge>
@@ -208,11 +210,19 @@ export function WorkbookCard({
           ) : !published ? (
             <Badge
               variant="secondary"
-              className="w-fit bg-blue-50 text-blue-500 rounded-full py-1"
+              className="w-fit  bg-blue-50 dark:bg-blue-950 text-blue-500 :dark:text-blue-100 rounded-full py-1"
             >
               제작중
             </Badge>
           ) : null}
+          {isOwner && (
+            <Badge
+              variant="secondary"
+              className="w-fit bg-point/10 text-point rounded-full py-1"
+            >
+              내가 만든 문제집
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
@@ -241,20 +251,20 @@ export function WorkbookCard({
         <div className="flex items-center gap-2 mt-auto">
           {workBook.publishedAt && (
             <span className="text-xs text-muted-foreground shrink-0">
-              발행 일자: {format(new Date(workBook.publishedAt!), "yyyy.MM.dd")}
+              {format(new Date(workBook.publishedAt!), "yyyy.MM.dd")}
             </span>
           )}
           <div className="text-xs text-muted-foreground mt-auto ml-auto flex items-center gap-1">
             <Avatar className="size-3.5">
               <AvatarImage
-                alt={workBook.ownerName}
+                alt={workBook.ownerName ?? "-"}
                 src={workBook.ownerProfile ?? ""}
               />
               <AvatarFallback className="text-3xs">
-                {workBook.ownerName.charAt(0)}
+                {workBook.ownerName?.charAt(0) ?? "?"}
               </AvatarFallback>
             </Avatar>
-            {workBook.ownerName}
+            {workBook.ownerName ?? "-"}
           </div>
         </div>
       </CardContent>

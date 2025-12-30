@@ -34,8 +34,8 @@ export const uiPartToSavePart = (
   ]) as UIMessagePart<any, any>;
 };
 
-export function extractInProgressToolPart(message: UIMessage): ToolUIPart[] {
-  if (message.role != "assistant") return [];
+export function extractInProgressToolPart(message?: UIMessage): ToolUIPart[] {
+  if (message?.role != "assistant") return [];
   return message.parts.filter(
     (part) => isToolUIPart(part) && part.state.startsWith("input-"),
   ) as ToolUIPart[];
