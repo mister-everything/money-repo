@@ -3,6 +3,7 @@
 import { PolicyVersion } from "@service/auth/shared";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { toast } from "sonner";
 import { Onboarding } from "@/components/onboarding/onboarding";
 import { Step } from "@/components/onboarding/types";
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
@@ -28,6 +29,7 @@ export function AboutYouClient({
   const { refetch } = authClient.useSession();
 
   const handleOnComplete = useCallback(async () => {
+    toast("메인 화면으로 이동합니다.");
     await refetch();
     router.push(callbackUrl || "/");
     router.refresh();
