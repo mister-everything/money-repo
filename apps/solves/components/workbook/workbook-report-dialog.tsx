@@ -4,11 +4,11 @@ import {
   REPORT_REASON_SECTIONS,
   ReportCategoryDetail,
   ReportCategoryMain,
-  ReportDraft,
+  ReportTargetType,
 } from "@service/report/shared";
-
 import { Flag } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { createReportAction } from "@/actions/report";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 
 interface WorkbookReportDialogProps {
@@ -31,7 +32,6 @@ interface WorkbookReportDialogProps {
   onOpenChange?: (open: boolean) => void;
   /** 문제집 ID */
   workbookId?: string;
-  onSubmit?: (drafts: ReportDraft[]) => void | Promise<void>;
 }
 
 export const WorkbookReportDialog = ({
@@ -39,7 +39,6 @@ export const WorkbookReportDialog = ({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   workbookId,
-  onSubmit,
 }: WorkbookReportDialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -74,6 +73,29 @@ export const WorkbookReportDialog = ({
       setDescription("");
     }
   }, [open]);
+
+  // createWorkbookAction 참고함
+  const [_, createReport, isPending] = useSafeAction(createReportAction, {
+    successMessage: "신고가 접수되었습니다. 감사합니다.",
+    failMessage: "신고 접수에 실패했습니다. 잠시 후 다시 시도해주세요.",
+    onSuccess: () => {
+      setOpen(false);
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!canSubmit || !selectedCategoryMain || !selectedReason || !workbookId)
+      return;
+
+    createReport({
+      targetType: ReportTargetType.WORKBOOK, // 에러 타입
+      targetId: workbookId, // 문제집 ID
+      categoryMain: selectedCategoryMain, // 대분류 에러
+      categoryDetail: selectedReason, // 세부 에러
+      detailText: description, // 상세 설명
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {/* 제어 컴포넌트가 아닐 때만 트리거 표시 */}
@@ -151,17 +173,8 @@ export const WorkbookReportDialog = ({
 
         <DialogFooter className="pt-4 border-t">
           <Button
-            disabled={!canSubmit}
-            onClick={() => {
-              if (!canSubmit) return;
-              // TODO: 실제 신고 제출 로직 구현
-              console.log("문제집 신고:", {
-                workbookId,
-                reason: selectedReason,
-                categoryMain: selectedCategoryMain,
-                description,
-              });
-            }}
+            disabled={!canSubmit || isPending}
+            onClick={handleSubmit}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             신고하기
