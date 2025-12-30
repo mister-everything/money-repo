@@ -518,6 +518,9 @@ importers:
       '@service/auth':
         specifier: workspace:*
         version: link:../../services/auth
+      '@service/report':
+        specifier: workspace:*
+        version: link:../../services/report
       '@service/solves':
         specifier: workspace:*
         version: link:../../services/solves

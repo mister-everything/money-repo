@@ -7,7 +7,7 @@ import {
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
 import { format } from "date-fns";
-import { LoaderIcon, MoreVerticalIcon } from "lucide-react";
+import { LoaderIcon, MoreVerticalIcon, Siren } from "lucide-react";
 import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ interface WorkbookCardProps {
   onDelete?: () => void;
   onTogglePublic?: () => void;
   onCopy?: () => void;
+  onReport?: () => void;
   isOwner?: boolean;
   isPendingDelete?: boolean;
   isPendingTogglePublic?: boolean;
@@ -40,23 +41,24 @@ export function WorkbookCard({
   onDelete,
   onTogglePublic,
   onCopy,
+  onReport,
   isOwner,
   isPendingCopy,
   isPendingDelete,
   isPendingTogglePublic,
 }: WorkbookCardProps) {
-  const isPending = useMemo(
-    () => isPendingTogglePublic || isPendingDelete,
-    [isPendingDelete, isPendingTogglePublic],
-  );
-
-  const hasAction = useMemo(() => {
-    return Boolean(onDelete || onTogglePublic || onCopy);
-  }, [onDelete, onTogglePublic, onCopy]);
-
   const published = useMemo(() => {
     return isPublished(workBook);
   }, [workBook.publishedAt]);
+
+  const isPending = useMemo(
+    () => isPendingTogglePublic || isPendingDelete,
+    [isPendingDelete, isPendingTogglePublic]
+  );
+
+  const hasAction = useMemo(() => {
+    return Boolean(onDelete || onTogglePublic || onCopy || onReport);
+  }, [onDelete, onTogglePublic, onCopy, onReport]);
 
   return (
     <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-md h-full flex flex-col">
@@ -84,6 +86,17 @@ export function WorkbookCard({
                   e.stopPropagation();
                 }}
               >
+                {onReport && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onReport();
+                    }}
+                  >
+                    <Siren className="size-4" />
+                    신고하기
+                  </DropdownMenuItem>
+                )}
                 {onDelete && (
                   <DropdownMenuItem disabled={isPending} onClick={onDelete}>
                     {isPendingDelete ? (
