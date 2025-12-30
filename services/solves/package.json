@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@service/auth": "workspace:*",
-    "@service/report": "workspace:*",
     "@workspace/cache": "workspace:*",
     "@workspace/error": "workspace:*",
     "@workspace/util": "workspace:*",

@@ -2,7 +2,7 @@ import {
   type CreateReportInput,
   ReportCategoryDetail,
   ReportCategoryMain,
-} from "@service/report/types";
+} from "@service/report/shared";
 import {
   BlockAnswer,
   BlockAnswerSubmit,
@@ -140,12 +140,6 @@ export enum WorkBookDifficultyLevel {
   VERY_HARD = "very_hard", // 36점 미만
 }
 
-/**
- * 신고 다이얼로그에서 사용되는 블록 타입 (요약)
- * 위치 확인 필요함
- */
-export type ReportBlock = Pick<WorkBookBlock, "id" | "order" | "question">;
-
 export type ReportDraft = Omit<CreateReportInput, "reporterUserId">;
 
 export const REPORT_REASON_SECTIONS = [
@@ -202,14 +196,3 @@ export const REPORT_REASON_SECTIONS = [
     ],
   },
 ] as const;
-
-export const BLOCK_SELECTABLE_REASONS = new Set<ReportCategoryDetail>([
-  ReportCategoryDetail.ERROR_ANSWER,
-  ReportCategoryDetail.ERROR_TYPO,
-  ReportCategoryDetail.ERROR_EXPLANATION,
-  ReportCategoryDetail.VIOL_GUIDELINE,
-  ReportCategoryDetail.VIOL_SPAM,
-  ReportCategoryDetail.VIOL_TITLE,
-  ReportCategoryDetail.VIOL_COPYRIGHT,
-  ReportCategoryDetail.VIOL_PERSONAL_DATA,
-]);

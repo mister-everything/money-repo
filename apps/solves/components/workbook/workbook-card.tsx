@@ -8,7 +8,7 @@ import {
 } from "@service/solves/shared";
 import { format } from "date-fns";
 import { LoaderIcon, MoreVerticalIcon, Siren } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,6 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { WorkbookDifficulty } from "./workbook-difficulty";
-import { WorkbookReportDialog } from "./workbook-report-dialog";
 
 interface WorkbookCardProps {
   workBook: WorkBookWithoutBlocks;
@@ -34,8 +33,6 @@ interface WorkbookCardProps {
   isPendingDelete?: boolean;
   isPendingTogglePublic?: boolean;
   isPendingCopy?: boolean;
-  // 신고하기 기능 표시 여부 (기본값: true, 공개된 문제집에서만 표시)
-  showReport?: boolean;
 }
 
 export function WorkbookCard({
@@ -49,10 +46,7 @@ export function WorkbookCard({
   isPendingCopy,
   isPendingDelete,
   isPendingTogglePublic,
-  showReport = true,
 }: WorkbookCardProps) {
-  const [reportDialogOpen, setReportDialogOpen] = useState(false);
-
   const published = useMemo(() => {
     return isPublished(workBook);
   }, [workBook.publishedAt]);
@@ -63,14 +57,8 @@ export function WorkbookCard({
   );
 
   const hasAction = useMemo(() => {
-    return Boolean(
-      onDelete ||
-        onTogglePublic ||
-        onCopy ||
-        onReport ||
-        (showReport && published)
-    );
-  }, [onDelete, onTogglePublic, onCopy, onReport, showReport, published]);
+    return Boolean(onDelete || onTogglePublic || onCopy || onReport);
+  }, [onDelete, onTogglePublic, onCopy, onReport]);
 
   return (
     <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-md h-full flex flex-col">
@@ -98,15 +86,11 @@ export function WorkbookCard({
                   e.stopPropagation();
                 }}
               >
-                {showReport && published && (
+                {onReport && (
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.preventDefault();
-                      if (onReport) {
-                        onReport();
-                      } else {
-                        setReportDialogOpen(true);
-                      }
+                      onReport();
                     }}
                   >
                     <Siren className="size-4" />
@@ -268,13 +252,6 @@ export function WorkbookCard({
           </div>
         </div>
       </CardContent>
-
-      {/* 신고하기 다이얼로그 */}
-      <WorkbookReportDialog
-        open={reportDialogOpen}
-        onOpenChange={setReportDialogOpen}
-        workbookId={workBook.id}
-      />
     </Card>
   );
 }
