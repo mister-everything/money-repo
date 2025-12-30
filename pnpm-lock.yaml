@@ -900,9 +900,6 @@ importers:
       '@service/auth':
         specifier: workspace:*
         version: link:../auth
-      '@service/report':
-        specifier: workspace:*
-        version: link:../report
       '@workspace/cache':
         specifier: workspace:*
         version: link:../../packages/cache
