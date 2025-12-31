@@ -10,12 +10,18 @@ import {
   serializeSummaryBlock,
 } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
-import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
+import {
+  arrayToObject,
+  deduplicateByKey,
+  generateUUID,
+  nextTick,
+} from "@workspace/util";
 import {
   ChatOnFinishCallback,
   DefaultChatTransport,
   isToolUIPart,
   lastAssistantMessageIsCompleteWithToolCalls,
+  ToolUIPart,
   UIMessage,
 } from "ai";
 import { BookPlusIcon, LoaderIcon, PlusIcon, XIcon } from "lucide-react";
@@ -25,7 +31,10 @@ import useSWR from "swr";
 import z from "zod";
 import { useShallow } from "zustand/shallow";
 import { deleteThreadAction } from "@/actions/chat";
-import { WorkbookCreateChatRequest } from "@/app/api/ai/shared";
+import {
+  extractInProgressToolPart,
+  WorkbookCreateChatRequest,
+} from "@/app/api/ai/shared";
 import { ChatErrorMessage, Message } from "@/components/chat/message";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
@@ -274,14 +283,6 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     return isMessagesLoading || isThreadValidating || isChatPending;
   }, [isMessagesLoading, isThreadValidating, isChatPending]);
 
-  const isToolPending = useMemo(() => {
-    const lastMessage = messages.at(-1);
-    if (lastMessage?.role != "assistant") return false;
-    return lastMessage.parts.some(
-      (part) => isToolUIPart(part) && part.state.startsWith("input-"),
-    );
-  }, [messages.at(-1)]);
-
   const overContextSize = useMemo(() => {
     return threadContextPercent >= 90;
   }, [threadContextPercent]);
@@ -311,24 +312,65 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     }
   }, []);
 
+  const checkInProgressToolPart = useCallback(
+    async (message: UIMessage) => {
+      const parts = extractInProgressToolPart(message);
+      if (!parts.length) return;
+
+      const availableMessage = {
+        ...message,
+        parts: message.parts.map((p) => {
+          if (!parts.includes(p as ToolUIPart)) return p;
+          return {
+            ...p,
+            output: {
+              message: "사용자가 도구 사용을 cancel 하였습니다.",
+            },
+            state: "output-available",
+          };
+        }),
+      };
+      await fetcher(`/api/ai/chat/${threadId}/${message.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          message: availableMessage,
+        }),
+      });
+      return availableMessage;
+    },
+    [threadId],
+  );
+
   const send = useCallback(
-    (text: string = input) => {
+    async (text: string = input) => {
       if (
         overContextSize ||
         status != "ready" ||
         !threadId ||
         Boolean(error) ||
-        !text?.trim() ||
-        isToolPending
+        !text?.trim()
       )
         return;
+      const upatedsMessages = await Promise.all(
+        messages.map(checkInProgressToolPart),
+      ).then((result) => result.map(Boolean));
+
+      if (upatedsMessages.length) {
+        const upatedsMessageById = arrayToObject(upatedsMessages, (v) => v?.id);
+        setMessages((prev) => {
+          return prev.map((message) => {
+            return message;
+          });
+        });
+      }
+
       sendMessage({
         role: "user",
         parts: [{ type: "text", text }],
       });
       nextTick().then(() => editorRef.current?.commands.setContent(""));
     },
-    [input, status, threadId, error, overContextSize, isToolPending],
+    [input, status, threadId, error, overContextSize, messages],
   );
 
   const addNewThread = useCallback(() => {
@@ -715,8 +757,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
               (!isChatPending && isPending) ||
               !threadId ||
               Boolean(error) ||
-              overContextSize ||
-              isToolPending
+              overContextSize
             }
             chatModel={chatModel}
             onChatModelChange={setChatModel}
