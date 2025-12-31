@@ -27,6 +27,14 @@ export enum GEN_BLOCK_TOOL_NAMES {
   OX = "generateOX",
 }
 
+export enum EDIT_BLOCK_TOOL_NAMES {
+  MCQ = "editMcq",
+  MCQ_MULTIPLE = "editMcqMultiple",
+  SUBJECTIVE = "editSubjective",
+  RANKING = "editRanking",
+  OX = "editOx",
+}
+
 export const WORKBOOK_META_TOOL_NAME = "updateWorkbookMeta";
 
 // 공통 입력 스키마
@@ -263,6 +271,60 @@ export const oxToolInputToBlock = ({
 
   return block;
 };
+
+export const EditMcqInputSchema = BASE.extend({
+  options: z
+    .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+    .min(MCQ_BLOCK_MIN_OPTIONS)
+    .max(MCQ_BLOCK_MAX_OPTIONS)
+    .describe("보기를 입력하세요."),
+  correctOptionIndex: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("options 배열에서 정답 인덱스를 입력하세요."),
+});
+
+export const EditMcqMultipleInputSchema = BASE.extend({
+  options: z
+    .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+    .min(MCQ_BLOCK_MIN_OPTIONS)
+    .max(MCQ_BLOCK_MAX_OPTIONS)
+    .describe("보기를 입력하세요."),
+  correctOptionIndexes: z
+    .array(z.number().int().nonnegative())
+    .min(1)
+    .max(MCQ_BLOCK_MAX_OPTIONS)
+    .describe("정답인 보기의 인덱스 배열을 입력하세요."),
+});
+
+export const EditSubjectiveInputSchema = BASE.extend({
+  answers: z
+    .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
+    .min(1)
+    .max(DEFAULT_BLOCK_MAX_ANSWERS)
+    .describe("정답 단어를 입력하세요."),
+});
+
+export const EditRankingInputSchema = BASE.extend({
+  items: z
+    .array(z.string().min(1).max(RANKING_BLOCK_ITEM_MAX_LENGTH))
+    .min(RANKING_BLOCK_MIN_ITEMS)
+    .max(RANKING_BLOCK_MAX_ITEMS)
+    .describe("순위를 매길 항목을 입력하세요."),
+});
+
+export const EditOxInputSchema = BASE.extend({
+  answer: z
+    .boolean()
+    .describe("정답이 참이면 true, 거짓이면 false로 입력하세요."),
+});
+
+export type EditMcqInput = z.infer<typeof EditMcqInputSchema>;
+export type EditMcqMultipleInput = z.infer<typeof EditMcqMultipleInputSchema>;
+export type EditSubjectiveInput = z.infer<typeof EditSubjectiveInputSchema>;
+export type EditRankingInput = z.infer<typeof EditRankingInputSchema>;
+export type EditOxInput = z.infer<typeof EditOxInputSchema>;
 
 export type GenerateMcqInput = z.infer<typeof GenerateMcqInputSchema>;
 export type GenerateMcqMultipleInput = z.infer<

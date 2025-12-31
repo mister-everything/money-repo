@@ -8,7 +8,13 @@ import {
   getBlockDisplayName,
 } from "@service/solves/shared";
 import { equal, exclude, StateUpdate } from "@workspace/util";
-import { CircleIcon, PencilIcon, TrashIcon, XIcon } from "lucide-react";
+import {
+  CircleIcon,
+  PencilIcon,
+  Sparkle,
+  TrashIcon,
+  XIcon,
+} from "lucide-react";
 import { memo, Ref, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +38,7 @@ import {
   OXBlockContent,
   RankingBlockContent,
 } from "./block-content";
+import { BlockEditAgent } from "./block-edit-agent";
 import { BlockEditCheckButton } from "./block-edit-check-button";
 import { BlockQuestion } from "./block-question";
 import { BlockSolution } from "./block-solution";
@@ -77,6 +84,8 @@ function PureBlock<T extends BlockType = BlockType>({
   ref,
   ...props
 }: BlockProps<T>) {
+
+  
   const blockErrorMessage = useMemo(() => {
     if (props.mode != "edit") return;
     const result = blockValidate({
@@ -146,6 +155,19 @@ function PureBlock<T extends BlockType = BlockType>({
                 <span>문제 삭제</span>
               </TooltipContent>
             </Tooltip>
+          )}
+
+          {props.mode === "edit" && (
+            <BlockEditAgent
+              type={props.type}
+              question={props.question}
+              content={props.content ?? ({} as BlockContent<T>)}
+              answer={props.answer ?? ({} as BlockAnswer<T>)}
+            >
+              <Button>
+                <Sparkle />
+              </Button>
+            </BlockEditAgent>
           )}
 
           {props.mode === "edit" && (

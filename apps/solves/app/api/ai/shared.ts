@@ -11,6 +11,15 @@ export const DefaultChatRequest = z.object({
   }),
 });
 
+export const WorkbookEditChatRequest = DefaultChatRequest.extend(
+  z.object({
+    type: z.string(),
+    question: z.string(),
+    content: z.any(),
+    answer: z.any(),
+  }).shape,
+);
+
 export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
   z.object({
     threadId: z.string(),
