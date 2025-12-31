@@ -22,12 +22,12 @@ import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
 import { getTokens } from "@/lib/ai/shared";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
+import {
+  ASK_BACK_TOOL_NAME,
+  askBackTool,
+} from "@/lib/ai/tools/workbook/ask-back-tools";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
 import { generateWorkbookMetaTool } from "@/lib/ai/tools/workbook/generate-workbook-meta-tools";
-import {
-  PROMPT_DIRECTOR_TOOL_NAME,
-  promptDirectorTool,
-} from "@/lib/ai/tools/workbook/prompt-director-tools";
 import {
   READ_BLOCK_TOOL_NAME,
   readBlockTool,
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
         ...loadGenerateBlockTools(blockTypes as BlockType[]),
         [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         [WORKBOOK_META_TOOL_NAME]: generateWorkbookMetaTool,
-        [PROMPT_DIRECTOR_TOOL_NAME]: promptDirectorTool,
+        [ASK_BACK_TOOL_NAME]: askBackTool,
       };
       // 생성한 문제집이있는지
       const hasBlocks = serializeBlocks?.length;
