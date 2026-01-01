@@ -117,6 +117,7 @@ export function WorkbookEdit({
     blocks = initialBlocks,
     workBook = initialWorkbook,
     focusBlockId,
+    scrollTrigger,
     setFocusBlockId,
     appendBlock,
     setBlocks,
@@ -554,6 +555,11 @@ export function WorkbookEdit({
   useEffect(() => {
     setBlocks(initialBlocks);
   }, [initialBlocks]);
+  useEffect(() => {
+    if (scrollTrigger > 0) {
+      ref.current?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [scrollTrigger]);
 
   return (
     <div className="h-full relative">
