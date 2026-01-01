@@ -27,7 +27,7 @@ export enum GEN_BLOCK_TOOL_NAMES {
   OX = "generateOX",
 }
 
-export const WORKBOOK_META_TOOL_NAME = "updateWorkbookMeta";
+export const WORKBOOK_META_TOOL_NAME = "updateWorkbookMetaData";
 
 // 공통 입력 스키마
 const BASE = z.object({
