@@ -485,7 +485,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       const handleScroll = () => {
         const el = messagesContainerRef.current!;
         const isAtBottom =
-          el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+          el.scrollHeight - el.scrollTop - el.clientHeight < 40;
         if (!isAtBottom) {
           autoScrollRef.current = false;
         }
