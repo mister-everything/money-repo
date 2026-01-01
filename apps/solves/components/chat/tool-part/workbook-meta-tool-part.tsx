@@ -65,9 +65,10 @@ export function WorkbookMetaToolPart({
   );
 
   useEffect(() => {
+    if (part.state == "output-available") return;
     setSelectedTitleIndex("");
     setSelectedDescriptionIndex("");
-  }, [titles.length, descriptions.length]);
+  }, [titles.length, descriptions.length, part.state]);
 
   const handleApply = useCallback(
     (isApproved: boolean) => {
