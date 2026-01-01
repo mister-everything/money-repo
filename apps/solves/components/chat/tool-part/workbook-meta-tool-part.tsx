@@ -12,10 +12,15 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { DeepPartial } from "@/global";
-import { ToolApprovedMessage, ToolCanceledMessage } from "@/lib/ai/shared";
+import { ToolCanceledMessage } from "@/lib/ai/shared";
 import { WorkbookMetaInput } from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
+
+type OkOutput = {
+  title?: string;
+  description?: string;
+};
 
 export function WorkbookMetaToolPart({
   part,
@@ -36,7 +41,12 @@ export function WorkbookMetaToolPart({
     [part.state],
   );
 
-  const output = part.output as string | undefined;
+  const output = part.output as string | undefined | OkOutput;
+  const outputStatus = useMemo(() => {
+    if (isPending) return "pending";
+    if (output == ToolCanceledMessage) return "rejected";
+    return "approved";
+  }, [output]);
 
   const titles = useMemo(
     () => input?.titles?.filter?.(Boolean) ?? [],
@@ -47,8 +57,12 @@ export function WorkbookMetaToolPart({
     [input?.descriptions],
   );
 
-  const [selectedTitleIndex, setSelectedTitleIndex] = useState("");
-  const [selectedDescriptionIndex, setSelectedDescriptionIndex] = useState("");
+  const [selectedTitleIndex, setSelectedTitleIndex] = useState(
+    (output as OkOutput)?.title ?? "",
+  );
+  const [selectedDescriptionIndex, setSelectedDescriptionIndex] = useState(
+    (output as OkOutput)?.description ?? "",
+  );
 
   useEffect(() => {
     setSelectedTitleIndex("");
@@ -75,7 +89,12 @@ export function WorkbookMetaToolPart({
         state: "output-available",
         tool: getToolName(part),
         toolCallId: part.toolCallId,
-        output: isApproved ? ToolApprovedMessage : ToolCanceledMessage,
+        output: isApproved
+          ? {
+              title: selectedTitleIndex,
+              description: selectedDescriptionIndex,
+            }
+          : ToolCanceledMessage,
       });
     },
     [
@@ -103,9 +122,9 @@ export function WorkbookMetaToolPart({
                 text={
                   isPending
                     ? "마음에 드는 제목과 설명을 선택해주세요."
-                    : output == ToolApprovedMessage
+                    : outputStatus == "approved"
                       ? "제목·설명 적용되었어요."
-                      : output == ToolCanceledMessage
+                      : outputStatus == "rejected"
                         ? "제목·설명 거절되었어요."
                         : "제목·설명 생성함"
                 }
@@ -153,7 +172,7 @@ export function WorkbookMetaToolPart({
                           "flex items-center gap-2 border rounded-lg p-4 bg-background cursor-pointer transition-colors",
                           selectedTitleIndex === String(index) &&
                             "border-primary bg-primary/5",
-                          output == ToolCanceledMessage && "bg-muted!",
+                          outputStatus == "rejected" && "bg-muted!",
                         )}
                       >
                         <RadioGroupItem value={String(index)} />
@@ -200,7 +219,7 @@ export function WorkbookMetaToolPart({
                           "flex items-center gap-2 border rounded-lg p-4 bg-background cursor-pointer transition-colors",
                           selectedDescriptionIndex === String(index) &&
                             "border-primary bg-primary/5",
-                          output == ToolCanceledMessage && "bg-muted!",
+                          outputStatus == "rejected" && "bg-muted!",
                         )}
                       >
                         <RadioGroupItem value={String(index)} />
