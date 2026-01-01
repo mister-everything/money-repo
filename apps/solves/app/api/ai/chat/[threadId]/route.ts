@@ -7,10 +7,10 @@ import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 export async function GET(
   _: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ threadId: string }> },
 ) {
   try {
-    const { id: threadId } = await params;
+    const { threadId } = await params;
     const session = await getSession();
 
     const isOwner = await chatService.hasThreadPermission(

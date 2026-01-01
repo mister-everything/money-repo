@@ -10,12 +10,18 @@ import {
   serializeSummaryBlock,
 } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
-import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
+import { PublicError } from "@workspace/error";
+import {
+  arrayToObject,
+  deduplicateByKey,
+  generateUUID,
+  nextTick,
+} from "@workspace/util";
 import {
   ChatOnFinishCallback,
   DefaultChatTransport,
-  isToolUIPart,
   lastAssistantMessageIsCompleteWithToolCalls,
+  ToolUIPart,
   UIMessage,
 } from "ai";
 import { BookPlusIcon, LoaderIcon, PlusIcon, XIcon } from "lucide-react";
@@ -24,8 +30,11 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import z from "zod";
 import { useShallow } from "zustand/shallow";
-import { deleteThreadAction } from "@/actions/chat";
-import { WorkbookCreateChatRequest } from "@/app/api/ai/shared";
+import { deleteThreadAction, updateMessageAction } from "@/actions/chat";
+import {
+  extractInProgressToolPart,
+  WorkbookCreateChatRequest,
+} from "@/app/api/ai/shared";
 import { ChatErrorMessage, Message } from "@/components/chat/message";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
@@ -36,10 +45,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useChatModelList } from "@/hooks/query/use-chat-model-list";
+import { usePending } from "@/hooks/use-pending";
 import { useToRef } from "@/hooks/use-to-ref";
+import { ToolCanceledMessage } from "@/lib/ai/shared";
 import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
+import { isSafeOk } from "@/lib/protocol/interface";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useAiStore } from "@/store/ai-store";
@@ -63,6 +75,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const [threadId, setThreadId] = useState<string>();
 
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
+
+  const [isChatUpdating, startChatUpdating] = usePending();
 
   const [
     workbookOption,
@@ -274,14 +288,6 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     return isMessagesLoading || isThreadValidating || isChatPending;
   }, [isMessagesLoading, isThreadValidating, isChatPending]);
 
-  const isToolPending = useMemo(() => {
-    const lastMessage = messages.at(-1);
-    if (lastMessage?.role != "assistant") return false;
-    return lastMessage.parts.some(
-      (part) => isToolUIPart(part) && part.state.startsWith("input-"),
-    );
-  }, [messages.at(-1)]);
-
   const overContextSize = useMemo(() => {
     return threadContextPercent >= 90;
   }, [threadContextPercent]);
@@ -311,24 +317,76 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     }
   }, []);
 
+  const checkInProgressToolPart = useCallback(
+    async (message: UIMessage) => {
+      const parts = extractInProgressToolPart(message);
+      if (!parts.length) return;
+
+      const availableMessage: UIMessage = {
+        ...message,
+        parts: message.parts.map((p) => {
+          if (!parts.includes(p as ToolUIPart)) return p;
+          return {
+            ...p,
+            output: ToolCanceledMessage,
+            state: "output-available",
+          } as ToolUIPart;
+        }),
+      };
+      const stop = startChatUpdating();
+      const response = await updateMessageAction({
+        threadId: threadId!,
+        messageId: message.id,
+        message: availableMessage,
+      });
+      stop();
+      if (!isSafeOk(response)) throw new PublicError("잘못된 요청입니다.");
+
+      return availableMessage;
+    },
+    [threadId],
+  );
+
   const send = useCallback(
-    (text: string = input) => {
+    async (text: string = input) => {
       if (
         overContextSize ||
         status != "ready" ||
         !threadId ||
         Boolean(error) ||
         !text?.trim() ||
-        isToolPending
+        isChatUpdating
       )
         return;
+      const upatedsMessages = (await Promise.all(
+        messages.map(checkInProgressToolPart),
+      ).then((result) => result.filter(Boolean))) as UIMessage[];
+
+      if (upatedsMessages.length) {
+        const upatedsMessageById = arrayToObject(upatedsMessages, (v) => v?.id);
+        setMessages((prev) => {
+          return prev.map((message) => {
+            return upatedsMessageById[message.id] ?? message;
+          });
+        });
+      }
+
       sendMessage({
         role: "user",
         parts: [{ type: "text", text }],
       });
       nextTick().then(() => editorRef.current?.commands.setContent(""));
     },
-    [input, status, threadId, error, overContextSize, isToolPending],
+    [
+      input,
+      status,
+      threadId,
+      error,
+      overContextSize,
+      messages,
+      isChatUpdating,
+      checkInProgressToolPart,
+    ],
   );
 
   const addNewThread = useCallback(() => {
@@ -427,7 +485,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       const handleScroll = () => {
         const el = messagesContainerRef.current!;
         const isAtBottom =
-          el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+          el.scrollHeight - el.scrollTop - el.clientHeight < 40;
         if (!isAtBottom) {
           autoScrollRef.current = false;
         }
@@ -716,7 +774,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
               !threadId ||
               Boolean(error) ||
               overContextSize ||
-              isToolPending
+              isChatUpdating
             }
             chatModel={chatModel}
             onChatModelChange={setChatModel}
