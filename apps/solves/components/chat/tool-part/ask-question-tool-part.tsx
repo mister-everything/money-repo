@@ -287,7 +287,7 @@ export function AskQuestionInteraction({
             {total > 1 && <span className="opacity-60">/{total}</span>}
           </Badge>
           <div className="flex-1 min-w-0">
-            <span className="text font-semibold truncate block">
+            <span className="text font-semibold block">
               <GradualSpacingText key={step} text={question?.prompt ?? ""} />
             </span>
           </div>
