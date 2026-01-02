@@ -10,7 +10,7 @@ import {
   MessageSquareWarningIcon,
   RefreshCcwIcon,
 } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { Think } from "@/components/ui/think";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
@@ -31,21 +31,29 @@ function isStreamingMessage(
 export interface MessageProps {
   message: UIMessage;
   isLastMessage?: boolean;
+  isDeleting?: boolean;
   status?: ChatStatus;
   className?: string;
   addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
+  onDeleteMessage?: (messageId: string) => void;
 }
 
 const PurePreviewMessage = ({
   message,
   status,
   isLastMessage,
+  isDeleting,
   className,
   addToolOutput,
+  onDeleteMessage,
 }: MessageProps) => {
   if (message.role == "system") {
     return null; // system message 는 표기하지 않음
   }
+
+  const handleDeleteMessage = useCallback(() => {
+    onDeleteMessage?.(message.id);
+  }, [onDeleteMessage, message.id]);
 
   const showThink = useMemo(() => {
     if (!isLastMessage) return false;
@@ -61,6 +69,7 @@ const PurePreviewMessage = ({
       className={cn(
         "w-full mx-auto max-w-3xl px-2 group/message fade-300",
         className,
+        isDeleting && "animate-pulse pointer-events-none",
       )}
     >
       <div className="flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl">
@@ -81,6 +90,8 @@ const PurePreviewMessage = ({
                     part={part}
                     key={key}
                     streaming={isStreaming}
+                    onDeleteMessage={handleDeleteMessage}
+                    isDeleting={isDeleting}
                   />
                 );
               else
@@ -94,19 +105,31 @@ const PurePreviewMessage = ({
                     }
                     streaming={isStreaming}
                     key={key}
+                    onDeleteMessage={handleDeleteMessage}
+                    isDeleting={isDeleting}
                   />
                 );
             }
 
             if (part.type === "reasoning") {
               return (
-                <ReasoningPart part={part} key={key} streaming={isStreaming} />
+                <ReasoningPart
+                  part={part}
+                  key={key}
+                  streaming={isStreaming}
+                  onDeleteMessage={handleDeleteMessage}
+                />
               );
             }
 
             if (isToolUIPart(part)) {
               return (
-                <ToolPart key={key} part={part} addToolOutput={addToolOutput} />
+                <ToolPart
+                  key={key}
+                  part={part}
+                  addToolOutput={addToolOutput}
+                  onDeleteMessage={handleDeleteMessage}
+                />
               );
             }
             if (part.type === "step-start") {
@@ -132,6 +155,8 @@ export const Message = memo(
       return false;
 
     if (prevProps.message.id !== nextProps.message.id) return false;
+    if (prevProps.isDeleting !== nextProps.isDeleting) return false;
+
     if (prevProps.isLastMessage !== nextProps.isLastMessage) return false;
 
     if (!equal(prevProps.message.metadata, nextProps.message.metadata))

@@ -22,6 +22,21 @@ export const deleteThreadAction = safeAction(async (threadId: string) => {
   return ok();
 });
 
+export const deleteMessageAction = safeAction(
+  async ({ threadId, messageId }: { threadId: string; messageId: string }) => {
+    const session = await getSession();
+    const isOwner = await chatService.hasThreadPermission(
+      threadId,
+      session.user.id,
+    );
+    if (!isOwner) {
+      throw new PublicError("권한이 없습니다.");
+    }
+    await chatService.deleteMessage(threadId, messageId);
+    return ok();
+  },
+);
+
 export const updateMessageAction = safeAction(
   async ({
     threadId,
