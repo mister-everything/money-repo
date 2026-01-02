@@ -15,6 +15,8 @@ import {
   ChevronUpIcon,
   CopyIcon,
   EllipsisIcon,
+  LoaderIcon,
+  TrashIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -47,11 +49,17 @@ import { WorkbookMetaToolPart } from "./tool-part/workbook-meta-tool-part";
 interface UserMessagePartProps {
   part: TextUIPart;
   streaming?: boolean;
+  onDeleteMessage?: () => void;
+  isDeleting?: boolean;
 }
 
 const MAX_TEXT_LENGTH = 600;
 
-export function UserMessagePart({ part }: UserMessagePartProps) {
+export function UserMessagePart({
+  part,
+  onDeleteMessage,
+  isDeleting,
+}: UserMessagePartProps) {
   const [copied, copy] = useCopy();
 
   const [expanded, setExpanded] = useState(false);
@@ -112,6 +120,26 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
         )}
       </div>
       <div className="flex w-full justify-end opacity-0 group-hover/message:opacity-100 transition-opacity duration-300">
+        {onDeleteMessage && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-testid="message-delete-button"
+                variant="ghost"
+                size="icon"
+                className={cn("size-3! p-4! hover:text-destructive")}
+                onClick={onDeleteMessage}
+              >
+                {isDeleting ? (
+                  <LoaderIcon className="animate-spin" />
+                ) : (
+                  <TrashIcon />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">삭제</TooltipContent>
+          </Tooltip>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -135,11 +163,15 @@ interface AssistantMessagePartProps {
   part: TextUIPart;
   streaming?: boolean;
   metadata?: AssistantMessageMetadata;
+  onDeleteMessage?: () => void;
+  isDeleting?: boolean;
 }
 export function AssistantTextPart({
   part,
   streaming,
   metadata,
+  onDeleteMessage,
+  isDeleting,
 }: AssistantMessagePartProps) {
   const [copied, copy] = useCopy();
   return (
@@ -164,6 +196,26 @@ export function AssistantTextPart({
               </TooltipTrigger>
               <TooltipContent>복사하기</TooltipContent>
             </Tooltip>
+            {onDeleteMessage && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="message-delete-button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn("size-3! p-4! hover:text-destructive")}
+                    onClick={onDeleteMessage}
+                  >
+                    {isDeleting ? (
+                      <LoaderIcon className="animate-spin" />
+                    ) : (
+                      <TrashIcon />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">삭제</TooltipContent>
+              </Tooltip>
+            )}
             {metadata && (
               <AssistantMetadataToolTip metadata={metadata}>
                 <Button
@@ -200,6 +252,7 @@ const variants = {
 interface ReasoningPartProps {
   part: ReasoningUIPart;
   streaming?: boolean;
+  onDeleteMessage?: () => void;
   defaultExpanded?: boolean;
 }
 
@@ -285,6 +338,7 @@ export function ToolPart({
   addToolOutput,
 }: {
   part: ToolUIPart;
+  onDeleteMessage?: () => void;
   addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);

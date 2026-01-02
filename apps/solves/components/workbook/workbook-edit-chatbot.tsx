@@ -32,7 +32,11 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import z from "zod";
 import { useShallow } from "zustand/shallow";
-import { deleteThreadAction, updateMessageAction } from "@/actions/chat";
+import {
+  deleteMessageAction,
+  deleteThreadAction,
+  updateMessageAction,
+} from "@/actions/chat";
 import {
   extractInProgressToolPart,
   WorkbookCreateChatRequest,
@@ -107,7 +111,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     [workbookId, _setWorkbookOption],
   );
 
-  const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+  const [deletingThreadIds, setDeletingThreadIds] = useState<string[]>([]);
+  const [deletingMessageIds, setDeletingMessageIds] = useState<string[]>([]);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const autoScrollRef = useRef(false);
@@ -115,12 +120,11 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const [, deleteAction] = useSafeAction(deleteThreadAction, {
     failMessage: "채팅 삭제에 실패했습니다. 다시 시도해주세요.",
     onBefore: (threadId) => {
-      setDeletingThreadId(threadId);
+      setDeletingThreadIds((prev) => [...prev, threadId]);
       return threadId;
     },
     onFinish: () => {
       refreshThread();
-      setDeletingThreadId(null);
     },
   });
 
@@ -133,6 +137,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     onError: handleErrorToast,
     fallbackData: [],
     onSuccess: (data) => {
+      const threadIds = data.map((t) => t.id);
+      setDeletingThreadIds((v) => v.filter((v) => !threadIds.includes(v)));
       if (latest.current.threadId) return;
       if (data.length > 0) setThreadId(data.at(0)?.id);
       else addNewThread();
@@ -289,8 +295,18 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   }, [messages.at(-1)?.metadata, isChatPending]);
 
   const isPending = useMemo(() => {
-    return isMessagesLoading || isThreadValidating || isChatPending;
-  }, [isMessagesLoading, isThreadValidating, isChatPending]);
+    return (
+      isMessagesLoading ||
+      isThreadValidating ||
+      isChatPending ||
+      deletingMessageIds.length > 0
+    );
+  }, [
+    isMessagesLoading,
+    isThreadValidating,
+    isChatPending,
+    deletingMessageIds,
+  ]);
 
   const overContextSize = useMemo(() => {
     return threadContextPercent >= 90;
@@ -372,7 +388,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         !threadId ||
         Boolean(error) ||
         !text?.trim() ||
-        isChatUpdating
+        isChatUpdating ||
+        deletingMessageIds.length > 0
       )
         return;
       const upatedsMessages = (await Promise.all(
@@ -399,6 +416,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       status,
       threadId,
       error,
+      deletingMessageIds,
       overContextSize,
       messages,
       isChatUpdating,
@@ -453,6 +471,32 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       focusTempThread();
     },
     [tempThreadList, savedThreadList, isPending],
+  );
+  const handleDeleteMessage = useCallback(
+    async (messageId: string) => {
+      const isConfirmed = await notify.confirm({
+        title: "메시지 삭제",
+        description: "정말 삭제하시겠습니까?",
+        okText: "삭제",
+        cancelText: "취소",
+      });
+      if (!isConfirmed) return;
+
+      setDeletingMessageIds((prev) => [...prev, messageId]);
+      const response = await deleteMessageAction({
+        threadId: threadId!,
+        messageId,
+      });
+      if (isSafeOk(response)) {
+        setMessages((prev) =>
+          prev.filter((message) => message.id !== messageId),
+        );
+        setDeletingMessageIds((prev) => prev.filter((id) => id !== messageId));
+        return;
+      }
+      toast.error("메시지 삭제에 실패했습니다. 다시 시도해주세요.");
+    },
+    [threadId],
   );
 
   const handleClearError = useCallback(() => {
@@ -572,7 +616,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                   {thread.title || "새로운 채팅"}
                 </span>
 
-                {deletingThreadId == thread.id ? (
+                {deletingThreadIds.includes(thread.id) ? (
                   <LoaderIcon className="size-3 animate-spin" />
                 ) : (
                   <span
@@ -617,13 +661,16 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           <>
             {messages.map((message, index) => {
               const isLastMessage = index === messages.length - 1;
+              const isDeleting = deletingMessageIds.includes(message.id);
               return (
                 <Message
                   key={index}
                   message={message}
                   isLastMessage={isLastMessage}
                   status={status}
+                  isDeleting={isDeleting}
                   addToolOutput={addToolOutput}
+                  onDeleteMessage={handleDeleteMessage}
                   className={
                     !isLastMessage || error || overContextSize
                       ? undefined
