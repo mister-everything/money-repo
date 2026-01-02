@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import { ASK_QUESTION_TOOL_NAME } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { READ_BLOCK_TOOL_NAME } from "@/lib/ai/tools/workbook/read-block-tool";
 import {
   GEN_BLOCK_TOOL_NAMES,
@@ -37,6 +38,7 @@ import { MentionItem } from "../mention/mention-item";
 import { normalizeMentions } from "../mention/shared";
 import JsonView from "../ui/json-view";
 import { AssistantMetadataToolTip } from "./assistant-metadata-tool-tip";
+import { AskQuestionToolPart } from "./tool-part/ask-question-tool-part";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { ReadBlockToolPart } from "./tool-part/read-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
@@ -317,6 +319,10 @@ export function ToolPart({
   }
   if (toolName === READ_BLOCK_TOOL_NAME) {
     return <ReadBlockToolPart part={part} addToolOutput={addToolOutput} />;
+  }
+
+  if (toolName === ASK_QUESTION_TOOL_NAME) {
+    return <AskQuestionToolPart part={part} />;
   }
 
   return (
