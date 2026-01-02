@@ -40,7 +40,7 @@ export function SidebarSolveMenuItem({
           onClick={() => setOpenMobile(false)}
         >
           <BookOpen />
-          문제 풀기
+          {state === "expanded" && <span className="fade-300">문제 풀기</span>}
         </Link>
       </SidebarMenuButton>
 
@@ -54,7 +54,11 @@ export function SidebarSolveMenuItem({
         <SidebarMenuSub>
           <SidebarMenuSubItem>
             <SidebarMenuSubButton asChild isActive={path === solveSessionsHref}>
-              <Link href={solveSessionsHref}>내가 푼 문제집</Link>
+              {state === "expanded" && (
+                <Link href={solveSessionsHref}>
+                  <span className="fade-300">내가 푼 문제집</span>
+                </Link>
+              )}
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         </SidebarMenuSub>

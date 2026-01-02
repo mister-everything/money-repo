@@ -36,7 +36,7 @@ export function SidebarEditMenuItem({
       <SidebarMenuButton isActive={path === rootHref} asChild>
         <Link href={rootHref} onClick={() => setOpenMobile(false)}>
           <Pencil />
-          문제 생성
+          {state === "expanded" && <span className="fade-300">문제 생성</span>}
         </Link>
       </SidebarMenuButton>
 
@@ -50,7 +50,11 @@ export function SidebarEditMenuItem({
         <SidebarMenuSub>
           <SidebarMenuSubItem>
             <SidebarMenuSubButton asChild isActive={path === myWorkbooksHref}>
-              <Link href={myWorkbooksHref}>내가 만든 문제집</Link>
+              {state === "expanded" && (
+                <Link href={myWorkbooksHref}>
+                  <span className="fade-300">내가 만든 문제집</span>
+                </Link>
+              )}
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         </SidebarMenuSub>
