@@ -10,6 +10,7 @@ interface WorkbookEditStoreState {
   workbookOptions: Record<string, WorkbookOptions & { updatedAt: Date }>;
   workBook?: WorkBookWithoutBlocks;
   focusBlockId?: string;
+  scrollTrigger: number;
   blocks: WorkBookBlock[];
   mentions: SolvesMentionItem[];
 }
@@ -20,6 +21,7 @@ interface WorkbookEditStoreDispatch {
   setWorkBook: (workBook: SetStateAction<WorkBookWithoutBlocks>) => void;
   setBlocks: (blocks: SetStateAction<WorkBookBlock[]>) => void;
   setFocusBlockId: (id: string) => void;
+  triggerScrollToTop: () => void;
   appendBlock: (block: WorkBookBlock) => void;
 }
 
@@ -30,6 +32,7 @@ const initialState: WorkbookEditStoreState = {
   blocks: [],
   workBook: undefined,
   mentions: [],
+  scrollTrigger: 0,
 };
 
 export const useWorkbookEditStore = create<
@@ -42,6 +45,11 @@ export const useWorkbookEditStore = create<
         set({
           focusBlockId: id,
         });
+      },
+      triggerScrollToTop: () => {
+        set((prev) => ({
+          scrollTrigger: prev.scrollTrigger + 1,
+        }));
       },
       appendBlock: (block) => {
         set((prev) => {
@@ -99,6 +107,7 @@ export const useWorkbookEditStore = create<
           ...state,
           mentions: [],
           focusBlockId: undefined,
+          scrollTrigger: 0,
           workBook: undefined,
           blocks: [],
         };

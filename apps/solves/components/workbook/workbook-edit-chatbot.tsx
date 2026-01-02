@@ -10,12 +10,20 @@ import {
   serializeSummaryBlock,
 } from "@service/solves/shared";
 import { Editor } from "@tiptap/react";
-import { deduplicateByKey, generateUUID, nextTick } from "@workspace/util";
+import { PublicError } from "@workspace/error";
+import {
+  arrayToObject,
+  deduplicateByKey,
+  generateUUID,
+  nextTick,
+} from "@workspace/util";
 import {
   ChatOnFinishCallback,
   DefaultChatTransport,
+  getToolName,
   isToolUIPart,
   lastAssistantMessageIsCompleteWithToolCalls,
+  ToolUIPart,
   UIMessage,
 } from "ai";
 import { BookPlusIcon, LoaderIcon, PlusIcon, XIcon } from "lucide-react";
@@ -24,8 +32,11 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import z from "zod";
 import { useShallow } from "zustand/shallow";
-import { deleteThreadAction } from "@/actions/chat";
-import { WorkbookCreateChatRequest } from "@/app/api/ai/shared";
+import { deleteThreadAction, updateMessageAction } from "@/actions/chat";
+import {
+  extractInProgressToolPart,
+  WorkbookCreateChatRequest,
+} from "@/app/api/ai/shared";
 import { ChatErrorMessage, Message } from "@/components/chat/message";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
@@ -36,16 +47,21 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useChatModelList } from "@/hooks/query/use-chat-model-list";
+import { usePending } from "@/hooks/use-pending";
 import { useToRef } from "@/hooks/use-to-ref";
+import { ToolCanceledMessage } from "@/lib/ai/shared";
+import { ASK_QUESTION_TOOL_NAME } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { fetcher } from "@/lib/protocol/fetcher";
+import { isSafeOk } from "@/lib/protocol/interface";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useAiStore } from "@/store/ai-store";
 import { WorkbookOptions } from "@/store/types";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import PromptInput from "../chat/prompt-input";
+import { AskQuestionInteraction } from "../chat/tool-part/ask-question-tool-part";
 import { toBlockMention } from "../mention/shared";
 import { SolvesMentionItem } from "../mention/types";
 import { Badge } from "../ui/badge";
@@ -63,6 +79,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const [threadId, setThreadId] = useState<string>();
 
   const [tempThreadList, setTempThreadList] = useState<ChatThread[]>([]);
+
+  const [isChatUpdating, startChatUpdating] = usePending();
 
   const [
     workbookOption,
@@ -274,14 +292,6 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     return isMessagesLoading || isThreadValidating || isChatPending;
   }, [isMessagesLoading, isThreadValidating, isChatPending]);
 
-  const isToolPending = useMemo(() => {
-    const lastMessage = messages.at(-1);
-    if (lastMessage?.role != "assistant") return false;
-    return lastMessage.parts.some(
-      (part) => isToolUIPart(part) && part.state.startsWith("input-"),
-    );
-  }, [messages.at(-1)]);
-
   const overContextSize = useMemo(() => {
     return threadContextPercent >= 90;
   }, [threadContextPercent]);
@@ -298,6 +308,19 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     });
   }, [mentions]);
 
+  // ask_question 도구가 input-available 상태인지 확인
+  const activeAskQuestionPart = useMemo(() => {
+    const lastMessage = messages.at(-1);
+
+    if (lastMessage?.role !== "assistant") return;
+    return lastMessage.parts.find(
+      (part) =>
+        isToolUIPart(part) &&
+        getToolName(part) === ASK_QUESTION_TOOL_NAME &&
+        part.state === "input-available",
+    );
+  }, [messages.at(-1)]);
+
   const fetchThreadMessages = useCallback(async (threadId: string) => {
     try {
       setIsMessagesLoading(true);
@@ -311,24 +334,76 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     }
   }, []);
 
+  const checkInProgressToolPart = useCallback(
+    async (message: UIMessage) => {
+      const parts = extractInProgressToolPart(message);
+      if (!parts.length) return;
+
+      const availableMessage: UIMessage = {
+        ...message,
+        parts: message.parts.map((p) => {
+          if (!parts.includes(p as ToolUIPart)) return p;
+          return {
+            ...p,
+            output: ToolCanceledMessage,
+            state: "output-available",
+          } as ToolUIPart;
+        }),
+      };
+      const stop = startChatUpdating();
+      const response = await updateMessageAction({
+        threadId: threadId!,
+        messageId: message.id,
+        message: availableMessage,
+      });
+      stop();
+      if (!isSafeOk(response)) throw new PublicError("잘못된 요청입니다.");
+
+      return availableMessage;
+    },
+    [threadId],
+  );
+
   const send = useCallback(
-    (text: string = input) => {
+    async (text: string = input) => {
       if (
         overContextSize ||
         status != "ready" ||
         !threadId ||
         Boolean(error) ||
         !text?.trim() ||
-        isToolPending
+        isChatUpdating
       )
         return;
+      const upatedsMessages = (await Promise.all(
+        messages.map(checkInProgressToolPart),
+      ).then((result) => result.filter(Boolean))) as UIMessage[];
+
+      if (upatedsMessages.length) {
+        const upatedsMessageById = arrayToObject(upatedsMessages, (v) => v?.id);
+        setMessages((prev) => {
+          return prev.map((message) => {
+            return upatedsMessageById[message.id] ?? message;
+          });
+        });
+      }
+
       sendMessage({
         role: "user",
         parts: [{ type: "text", text }],
       });
       nextTick().then(() => editorRef.current?.commands.setContent(""));
     },
-    [input, status, threadId, error, overContextSize, isToolPending],
+    [
+      input,
+      status,
+      threadId,
+      error,
+      overContextSize,
+      messages,
+      isChatUpdating,
+      checkInProgressToolPart,
+    ],
   );
 
   const addNewThread = useCallback(() => {
@@ -427,7 +502,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       const handleScroll = () => {
         const el = messagesContainerRef.current!;
         const isAtBottom =
-          el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+          el.scrollHeight - el.scrollTop - el.clientHeight < 40;
         if (!isAtBottom) {
           autoScrollRef.current = false;
         }
@@ -535,6 +610,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         className={cn(
           "flex-1 overflow-y-auto px-4 py-4 pb-40 relative",
           isMessagesLoading && "bg-background/20",
+          activeAskQuestionPart && "pb-80",
         )}
       >
         {!isMessagesLoading && (
@@ -581,126 +657,134 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             "bg-background border rounded-2xl p-2 flex flex-col gap-1 transition-colors",
           )}
         >
-          <div className="flex flex-wrap gap-2 items-center">
-            {mentionWithBlock.length ? (
-              mentionWithBlock.map((mention) => (
-                <Tooltip key={mention.id} delayDuration={500}>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Badge
-                        variant={"secondary"}
-                        onClick={() => handleRemoveMention(mention.id)}
-                        className="fade-300 ring ring-primary bg-primary/10 text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground"
-                      >
-                        <BookPlusIcon className="size-3 text-primary" />
-                        {`문제 ${mention.order}`}
-                        <span className="text-3xs max-w-24 truncate text-muted-foreground">
-                          {mention.block?.question}
-                        </span>
-                        <XIcon className="size-3" />
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    문제가 AI에 참고 됩니다. 문제를 제거하려면 클릭해주세요.
-                  </TooltipContent>
-                </Tooltip>
-              ))
-            ) : (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <WorkbookOptionSituation
-                        value={workbookOption?.situation}
-                        onChange={(value) =>
-                          setWorkbookOption({
-                            ...workbookOption!,
-                            situation: value,
-                          })
-                        }
-                        align="start"
-                        side="top"
-                      >
+          {activeAskQuestionPart ? (
+            <AskQuestionInteraction
+              part={activeAskQuestionPart as ToolUIPart}
+              addToolOutput={addToolOutput}
+            />
+          ) : (
+            <div className="flex flex-wrap gap-2 items-center">
+              {mentionWithBlock.length ? (
+                mentionWithBlock.map((mention) => (
+                  <Tooltip key={mention.id} delayDuration={500}>
+                    <TooltipTrigger asChild>
+                      <div>
                         <Badge
                           variant={"secondary"}
-                          className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                          onClick={() => handleRemoveMention(mention.id)}
+                          className="fade-300 ring ring-primary bg-primary/10 text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground"
                         >
-                          {WorkBookSituation.find(
-                            (value) =>
-                              value.value === workbookOption?.situation,
-                          )?.label || "상황"}
+                          <BookPlusIcon className="size-3 text-primary" />
+                          {`문제 ${mention.order}`}
+                          <span className="text-3xs max-w-24 truncate text-muted-foreground">
+                            {mention.block?.question}
+                          </span>
+                          <XIcon className="size-3" />
                         </Badge>
-                      </WorkbookOptionSituation>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>상황</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <WorkbookOptionAgeGroup
-                        value={workbookOption?.ageGroup}
-                        onChange={(value) =>
-                          setWorkbookOption({
-                            ...workbookOption!,
-                            ageGroup: value,
-                          })
-                        }
-                        align="start"
-                        side="top"
-                      >
-                        <Badge
-                          variant={"secondary"}
-                          className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      문제가 AI에 참고 됩니다. 문제를 제거하려면 클릭해주세요.
+                    </TooltipContent>
+                  </Tooltip>
+                ))
+              ) : (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <WorkbookOptionSituation
+                          value={workbookOption?.situation}
+                          onChange={(value) =>
+                            setWorkbookOption({
+                              ...workbookOption!,
+                              situation: value,
+                            })
+                          }
+                          align="start"
+                          side="top"
                         >
-                          {WorkBookAgeGroup.find(
-                            (value) => value.value === workbookOption?.ageGroup,
-                          )?.label || "연령대"}
-                        </Badge>
-                      </WorkbookOptionAgeGroup>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>연령대</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <WorkbookOptionBlockTypes
-                        value={workbookOption?.blockTypes}
-                        onChange={(value) =>
-                          setWorkbookOption({
-                            ...workbookOption,
-                            blockTypes: value,
-                          })
-                        }
-                        align="start"
-                        side="top"
-                      >
-                        <Badge
-                          variant={"secondary"}
-                          className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer"
+                          <Badge
+                            variant={"secondary"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                          >
+                            {WorkBookSituation.find(
+                              (value) =>
+                                value.value === workbookOption?.situation,
+                            )?.label || "상황"}
+                          </Badge>
+                        </WorkbookOptionSituation>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>상황</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <WorkbookOptionAgeGroup
+                          value={workbookOption?.ageGroup}
+                          onChange={(value) =>
+                            setWorkbookOption({
+                              ...workbookOption!,
+                              ageGroup: value,
+                            })
+                          }
+                          align="start"
+                          side="top"
                         >
-                          {workbookOption?.blockTypes?.length ==
-                          Object.keys(blockDisplayNames).length
-                            ? "모든 유형"
-                            : workbookOption?.blockTypes
-                                ?.map((value) => blockDisplayNames[value])
-                                .join(", ") || "문제 유형"}
-                        </Badge>
-                      </WorkbookOptionBlockTypes>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>문제 유형</TooltipContent>
-                </Tooltip>
-              </>
-            )}
-            {threadContextPercent >= 20 && (
-              <span className="ml-auto text-2xs text-muted-foreground">
-                {threadContextPercent}%
-              </span>
-            )}
-          </div>
+                          <Badge
+                            variant={"secondary"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                          >
+                            {WorkBookAgeGroup.find(
+                              (value) =>
+                                value.value === workbookOption?.ageGroup,
+                            )?.label || "연령대"}
+                          </Badge>
+                        </WorkbookOptionAgeGroup>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>연령대</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <WorkbookOptionBlockTypes
+                          value={workbookOption?.blockTypes}
+                          onChange={(value) =>
+                            setWorkbookOption({
+                              ...workbookOption,
+                              blockTypes: value,
+                            })
+                          }
+                          align="start"
+                          side="top"
+                        >
+                          <Badge
+                            variant={"secondary"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer"
+                          >
+                            {workbookOption?.blockTypes?.length ==
+                            Object.keys(blockDisplayNames).length
+                              ? "모든 유형"
+                              : workbookOption?.blockTypes
+                                  ?.map((value) => blockDisplayNames[value])
+                                  .join(", ") || "문제 유형"}
+                          </Badge>
+                        </WorkbookOptionBlockTypes>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>문제 유형</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+              {threadContextPercent >= 20 && (
+                <span className="ml-auto text-2xs text-muted-foreground">
+                  {threadContextPercent}%
+                </span>
+              )}
+            </div>
+          )}
           <PromptInput
             className="bg-transition border-none p-0"
             input={input}
@@ -716,7 +800,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
               !threadId ||
               Boolean(error) ||
               overContextSize ||
-              isToolPending
+              isChatUpdating
             }
             chatModel={chatModel}
             onChatModelChange={setChatModel}

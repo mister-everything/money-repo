@@ -22,6 +22,10 @@ import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
 import { getTokens } from "@/lib/ai/shared";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
+import {
+  ASK_QUESTION_TOOL_NAME,
+  askQuestionTool,
+} from "@/lib/ai/tools/workbook/ask-question-tools";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
 import { generateWorkbookMetaTool } from "@/lib/ai/tools/workbook/generate-workbook-meta-tools";
 import {
@@ -31,11 +35,7 @@ import {
 import { WORKBOOK_META_TOOL_NAME } from "@/lib/ai/tools/workbook/shared";
 import { getSession } from "@/lib/auth/server";
 import { createLogger } from "@/lib/logger";
-import {
-  extractInProgressToolPart,
-  uiPartToSavePart,
-  WorkbookCreateChatRequest,
-} from "../../../shared";
+import { uiPartToSavePart, WorkbookCreateChatRequest } from "../../../shared";
 
 export const maxDuration = 300;
 
@@ -92,25 +92,11 @@ export async function POST(req: Request) {
 
   const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer: dataStream }) => {
-      const inProgressToolParts = extractInProgressToolPart(lastMessage);
-      if (inProgressToolParts.length) {
-        await Promise.all(
-          inProgressToolParts.map(async (part) => {
-            const output = "사용자가 도구 사용을 cancel 하였습니다.";
-            part.output = output;
-            dataStream.write({
-              type: "tool-output-available",
-              toolCallId: part.toolCallId,
-              output,
-            });
-          }),
-        );
-      }
-
       const tools = {
         ...loadGenerateBlockTools(blockTypes as BlockType[]),
         [EXA_SEARCH_TOOL_NAME]: exaSearchTool,
         [WORKBOOK_META_TOOL_NAME]: generateWorkbookMetaTool,
+        [ASK_QUESTION_TOOL_NAME]: askQuestionTool,
       };
       // 생성한 문제집이있는지
       const hasBlocks = serializeBlocks?.length;

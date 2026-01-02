@@ -28,10 +28,7 @@ export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
 export const uiPartToSavePart = (
   part: UIMessagePart<any, any>,
 ): UIMessagePart<any, any> => {
-  return exclude(part as any, [
-    "providerMetadata",
-    "callProviderMetadata",
-  ]) as UIMessagePart<any, any>;
+  return exclude(part as any, ["providerMetadata"]) as UIMessagePart<any, any>;
 };
 
 export function extractInProgressToolPart(message?: UIMessage): ToolUIPart[] {
