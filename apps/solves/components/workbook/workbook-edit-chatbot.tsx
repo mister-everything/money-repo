@@ -474,6 +474,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   );
   const handleDeleteMessage = useCallback(
     async (messageId: string) => {
+      const isConfirmed = await notify.confirm({
+        title: "메시지 삭제",
+        description: "정말 삭제하시겠습니까?",
+        okText: "삭제",
+        cancelText: "취소",
+      });
+      if (!isConfirmed) return;
+
       setDeletingMessageIds((prev) => [...prev, messageId]);
       const response = await deleteMessageAction({
         threadId: threadId!,
