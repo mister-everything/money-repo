@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
-import { ASK_BACK_TOOL_NAME } from "@/lib/ai/tools/workbook/ask-back-tools";
+import { ASK_QUESTION_TOOL_NAME } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { READ_BLOCK_TOOL_NAME } from "@/lib/ai/tools/workbook/read-block-tool";
 import {
   GEN_BLOCK_TOOL_NAMES,
@@ -38,7 +38,7 @@ import { MentionItem } from "../mention/mention-item";
 import { normalizeMentions } from "../mention/shared";
 import JsonView from "../ui/json-view";
 import { AssistantMetadataToolTip } from "./assistant-metadata-tool-tip";
-import { AskBackToolPart } from "./tool-part/ask-back-tool-part";
+import { AskQuestionToolPart } from "./tool-part/ask-question-tool-part";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { ReadBlockToolPart } from "./tool-part/read-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
@@ -62,7 +62,7 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
 
   const isLongText = useMemo(
     () => part.text.length > MAX_TEXT_LENGTH,
-    [part.text]
+    [part.text],
   );
 
   return (
@@ -77,7 +77,7 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
         <div
           className={cn(
             "whitespace-pre-wrap text-sm wrap-break-word flex flex-wrap",
-            isLongText && !expanded ? "max-h-40 overflow-hidden" : ""
+            isLongText && !expanded ? "max-h-40 overflow-hidden" : "",
           )}
         >
           {normalizedText.map((segment, idx) => {
@@ -321,8 +321,8 @@ export function ToolPart({
     return <ReadBlockToolPart part={part} addToolOutput={addToolOutput} />;
   }
 
-  if (toolName === ASK_BACK_TOOL_NAME) {
-    return <AskBackToolPart part={part} addToolOutput={addToolOutput} />;
+  if (toolName === ASK_QUESTION_TOOL_NAME) {
+    return <AskQuestionToolPart part={part} />;
   }
 
   return (

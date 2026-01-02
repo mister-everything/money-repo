@@ -1,6 +1,6 @@
 import { blockDisplayNames, Category } from "@service/solves/shared";
 import { MAX_BLOCK_COUNT, WorkBookAgeGroup, WorkBookSituation } from "../const";
-import { ASK_BACK_TOOL_NAME } from "./tools/workbook/ask-back-tools";
+import { ASK_QUESTION_TOOL_NAME } from "./tools/workbook/ask-question-tools";
 import { WORKBOOK_META_TOOL_NAME } from "./tools/workbook/shared";
 
 export const WorkBookCreatePrompt = ({
@@ -57,7 +57,7 @@ export const WorkBookCreatePrompt = ({
 - 문제 생성 도구 사용시, question 필드에는 markdown 형식으로 입력해도 됩니다. 질문의 중요 부분은 bold,code 형식으로 강조 표시를 해주세요. 도구사용에 실패하면 적절히 실패한 이유를 사용자에게 설명한 후 보안하여 생성 하세요
 - 문제집에 모든 문제 생성이 완료 됐다고 판단되면 \`${WORKBOOK_META_TOOL_NAME}\` 도구를 사용하여 문제집의 제목과 설명을 추천해주세요. 이미 문제집의 제목과 설명이 있으면, 사용하지 않아도 됩니다. 이 도구를 한번에 여러번 호출 하지 마세요.
 - 필요시 웹검색 도구를 통해 최신 정보 혹은 정확한(fact checking) 정보를 얻어 문제를 생성 및 수정하세요.
-- 사용자의 의도가 불명확하거나 '주어'가 없을 때,  선택지를 텍스트로 직접 나열하지 말고, 반드시 \`${ASK_BACK_TOOL_NAME}\` 도구를 사용해 방향성을 제시하세요.
+- 사용자가 문제집 생성에 대해 요청을 했지만 구체적인 핵심 조건(주제, 난이도, 문제 유형, 개수 등 당신이 판단 했을때 필요한 정보)이 불명확할 때 \`${ASK_QUESTION_TOOL_NAME}\` 도구를 사용하세요. 단순한 인사나 잡담에는 사용하지 마세요. 이 도구는 객관식 질문을 제공하며, \`id\`와 \`label\`을 적절히 부여하고 다중 선택이 필요하면 \`allow_multiple: true\`로 설정하세요.
 - 도구 이름을 직접 노출하지 마세요.
 
 # 현재 생성된 문제집 내용
