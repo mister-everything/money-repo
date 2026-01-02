@@ -310,20 +310,16 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   // ask_question 도구가 input-available 상태인지 확인
   const activeAskQuestionPart = useMemo(() => {
-    for (const message of messages) {
-      if (message.role !== "assistant") continue;
-      for (const part of message.parts) {
-        if (
-          isToolUIPart(part) &&
-          getToolName(part) === ASK_QUESTION_TOOL_NAME &&
-          part.state === "input-available"
-        ) {
-          return part;
-        }
-      }
-    }
-    return null;
-  }, [messages]);
+    const lastMessage = messages.at(-1);
+
+    if (lastMessage?.role !== "assistant") return;
+    return lastMessage.parts.find(
+      (part) =>
+        isToolUIPart(part) &&
+        getToolName(part) === ASK_QUESTION_TOOL_NAME &&
+        part.state === "input-available",
+    );
+  }, [messages.at(-1)]);
 
   const fetchThreadMessages = useCallback(async (threadId: string) => {
     try {
@@ -614,6 +610,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         className={cn(
           "flex-1 overflow-y-auto px-4 py-4 pb-40 relative",
           isMessagesLoading && "bg-background/20",
+          activeAskQuestionPart && "pb-80",
         )}
       >
         {!isMessagesLoading && (
@@ -662,7 +659,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
         >
           {activeAskQuestionPart ? (
             <AskQuestionInteraction
-              part={activeAskQuestionPart}
+              part={activeAskQuestionPart as ToolUIPart}
               addToolOutput={addToolOutput}
             />
           ) : (

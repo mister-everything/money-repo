@@ -6,13 +6,14 @@ import {
   ChevronRightIcon,
   CircleDotIcon,
   CornerDownLeftIcon,
-  SendIcon,
   XCircleIcon,
   XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import z from "zod";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { DeepPartial } from "@/global";
 import { ToolCanceledMessage } from "@/lib/ai/shared";
@@ -25,13 +26,13 @@ export type AskQuestionOutput = Array<{
   selectedOptionIds: string[];
 }>;
 
-interface Props {
+interface AskQuestionToolPartProps {
   part: ToolUIPart;
 }
 
 const getOptionLabel = (index: number) => String.fromCharCode(65 + index);
 
-export function AskQuestionToolPart({ part }: Props) {
+export function AskQuestionToolPart({ part }: AskQuestionToolPartProps) {
   const input = part.input as DeepPartial<AskQuestionInput> | undefined;
   const questions = useMemo(
     () => (input?.questions ?? []).filter(Boolean),
@@ -103,12 +104,12 @@ export function AskQuestionToolPart({ part }: Props) {
   };
 
   return (
-    <div className="text-sm space-y-3">
+    <div className="text-sm space-y-3 ">
       <StatusHeader />
 
       {/* 질문 목록 - 항상 표시 */}
       {questions.length > 0 && (
-        <div className="space-y-2 pl-6">
+        <div className="space-y-2 pl-6 mb-8">
           {questions.map((q, qIdx) => {
             const qId = q?.id ?? "";
             const options = (q?.options ?? []).filter(Boolean);
@@ -138,7 +139,7 @@ export function AskQuestionToolPart({ part }: Props) {
                 </div>
 
                 {/* 옵션들 */}
-                <div className="flex flex-col gap-1.5 pl-8">
+                <div className="flex flex-wrap gap-1.5 pl-8">
                   {options.map((opt, oIdx) => {
                     const oId = opt?.id ?? "";
                     const isSelected = selectedIds.includes(oId);
@@ -187,17 +188,17 @@ export function AskQuestionToolPart({ part }: Props) {
   );
 }
 
-import { Button } from "@/components/ui/button";
-import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
-
 type SelectionMap = Record<string, string[]>;
 
-interface Props {
+interface AskQuestionInteractionProps {
   part: ToolUIPart;
   addToolOutput: UseChatHelpers<UIMessage>["addToolOutput"];
 }
 
-export function AskQuestionInteraction({ part, addToolOutput }: Props) {
+export function AskQuestionInteraction({
+  part,
+  addToolOutput,
+}: AskQuestionInteractionProps) {
   const input = part.input as DeepPartial<AskQuestionInput> | undefined;
   const questions = useMemo(
     () => (input?.questions ?? []).filter(Boolean),
@@ -277,14 +278,19 @@ export function AskQuestionInteraction({ part, addToolOutput }: Props) {
   const isLast = step === total - 1;
 
   return (
-    <div className="space-y-3 p-3 bg-muted/50 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="fade-2000 space-y-3 p-3 bg-muted/50 rounded-xl slide-in-from-bottom-2">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 w-full">
-          <Badge className="rounded-full">Q{step + 1}</Badge>
-          <span className="text font-semibold truncate">
-            <GradualSpacingText key={step} text={question?.prompt ?? ""} />
-          </span>
+          <Badge className="rounded-full">
+            Q{step + 1}
+            {total > 1 && <span className="opacity-60">/{total}</span>}
+          </Badge>
+          <div className="flex-1 min-w-0">
+            <span className="text font-semibold truncate block">
+              <GradualSpacingText key={step} text={question?.prompt ?? ""} />
+            </span>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -296,6 +302,16 @@ export function AskQuestionInteraction({ part, addToolOutput }: Props) {
           </Button>
         </div>
       </div>
+
+      {/* Progress Bar - 2개 이상일 때만 표시 */}
+      {total > 1 && (
+        <div className="h-1 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${((step + 1) / total) * 100}%` }}
+          />
+        </div>
+      )}
 
       {/* Options */}
       <div className="flex flex-col gap-2 max-h-[30vh] overflow-y-auto">
@@ -330,6 +346,11 @@ export function AskQuestionInteraction({ part, addToolOutput }: Props) {
             </button>
           );
         })}
+        {isMultiple && (
+          <span className="text-xs text-muted-foreground w-full text-center">
+            다중 선택 가능
+          </span>
+        )}
       </div>
 
       {/* Navigation */}
