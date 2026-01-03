@@ -21,10 +21,13 @@ import { askQuestionInputSchema } from "@/lib/ai/tools/workbook/ask-question-too
 import { cn } from "@/lib/utils";
 
 export type AskQuestionInput = z.infer<typeof askQuestionInputSchema>;
-export type AskQuestionOutput = Array<{
-  questionId: string;
-  selectedOptionIds: string[];
-}>;
+export type AskQuestionOutput = {
+  answers: Array<{
+    questionId: string;
+    selectedOptionIds: string[];
+  }>;
+  additionalMessage?: string;
+};
 
 interface AskQuestionToolPartProps {
   part: ToolUIPart;
@@ -48,12 +51,20 @@ export function AskQuestionToolPart({ part }: AskQuestionToolPartProps) {
 
   // output에서 선택된 optionIds 추출
   const selectedMap = useMemo(() => {
-    if (!isDone || isSkipped || !Array.isArray(output)) return {};
+    if (!isDone || isSkipped || typeof output === "string" || !output)
+      return {};
     const map: Record<string, string[]> = {};
-    for (const item of output) {
+    for (const item of output?.answers ?? []) {
       map[item.questionId] = item.selectedOptionIds;
     }
     return map;
+  }, [isDone, isSkipped, output]);
+
+  // additionalMessage 추출
+  const additionalMessageFromOutput = useMemo(() => {
+    if (!isDone || isSkipped || typeof output === "string" || !output)
+      return "";
+    return output.additionalMessage ?? "";
   }, [isDone, isSkipped, output]);
 
   if (part.errorText) {
@@ -184,6 +195,13 @@ export function AskQuestionToolPart({ part }: AskQuestionToolPartProps) {
           })}
         </div>
       )}
+
+      {/* 추가 메시지 - 완료 상태에서만 표시 */}
+      {isDone && !isSkipped && additionalMessageFromOutput && (
+        <div className="pl-6 text-muted-foreground text-xs italic">
+          "{additionalMessageFromOutput}"
+        </div>
+      )}
     </div>
   );
 }
@@ -193,11 +211,13 @@ type SelectionMap = Record<string, string[]>;
 interface AskQuestionInteractionProps {
   part: ToolUIPart;
   addToolOutput: UseChatHelpers<UIMessage>["addToolOutput"];
+  cancelTool: () => void;
 }
 
 export function AskQuestionInteraction({
   part,
   addToolOutput,
+  cancelTool,
 }: AskQuestionInteractionProps) {
   const input = part.input as DeepPartial<AskQuestionInput> | undefined;
   const questions = useMemo(
@@ -209,6 +229,7 @@ export function AskQuestionInteraction({
 
   const [step, setStep] = useState(0);
   const [selections, setSelections] = useState<SelectionMap>({});
+  const [additionalMessage, setAdditionalMessage] = useState("");
 
   const total = questions.length;
   const question = questions[step];
@@ -249,28 +270,20 @@ export function AskQuestionInteraction({
   );
 
   const handleSubmit = useCallback(() => {
-    const output = Object.entries(selections).map(
-      ([questionId, optionIds]) => ({
+    const output: AskQuestionOutput = {
+      answers: Object.entries(selections).map(([questionId, optionIds]) => ({
         questionId,
         selectedOptionIds: optionIds,
-      }),
-    );
+      })),
+      additionalMessage: additionalMessage.trim() || undefined,
+    };
     addToolOutput({
       toolCallId: part.toolCallId,
       tool: toolName,
       state: "output-available",
       output,
     });
-  }, [addToolOutput, part.toolCallId, selections, toolName]);
-
-  const handleSkip = useCallback(() => {
-    addToolOutput({
-      toolCallId: part.toolCallId,
-      tool: toolName,
-      state: "output-available",
-      output: ToolCanceledMessage,
-    });
-  }, [addToolOutput, part.toolCallId, toolName]);
+  }, [addToolOutput, part.toolCallId, selections, toolName, additionalMessage]);
 
   if (total === 0) return null;
 
@@ -295,7 +308,7 @@ export function AskQuestionInteraction({
             variant="ghost"
             size="icon"
             className="shrink-0 ml-auto"
-            onClick={handleSkip}
+            onClick={cancelTool}
             title="건너뛰기"
           >
             <XIcon className="size-4" />
@@ -352,6 +365,19 @@ export function AskQuestionInteraction({
           </span>
         )}
       </div>
+
+      {/* 추가 메시지 입력 - 마지막 스텝에서만 표시 */}
+      {isLast && (
+        <div className="pt-2">
+          <textarea
+            value={additionalMessage}
+            onChange={(e) => setAdditionalMessage(e.target.value)}
+            placeholder="추가로 전달할 내용이 있다면 입력해주세요 (선택)"
+            className="w-full text-sm bg-background border rounded-lg px-3 py-2 resize-none placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+            rows={2}
+          />
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex items-center gap-2">

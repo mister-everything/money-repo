@@ -350,7 +350,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     }
   }, []);
 
-  const checkInProgressToolPart = useCallback(
+  const cancelInProgressToolPart = useCallback(
     async (message: UIMessage) => {
       const parts = extractInProgressToolPart(message);
       if (!parts.length) return;
@@ -393,7 +393,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       )
         return;
       const upatedsMessages = (await Promise.all(
-        messages.map(checkInProgressToolPart),
+        messages.map(cancelInProgressToolPart),
       ).then((result) => result.filter(Boolean))) as UIMessage[];
 
       if (upatedsMessages.length) {
@@ -420,7 +420,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       overContextSize,
       messages,
       isChatUpdating,
-      checkInProgressToolPart,
+      cancelInProgressToolPart,
     ],
   );
 
@@ -707,6 +707,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
           {activeAskQuestionPart ? (
             <AskQuestionInteraction
               part={activeAskQuestionPart as ToolUIPart}
+              cancelTool={() => cancelInProgressToolPart(messages.at(-1)!)}
               addToolOutput={addToolOutput}
             />
           ) : (
