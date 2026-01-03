@@ -25,8 +25,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -42,6 +40,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import { notify } from "@/components/ui/notify";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -217,6 +221,26 @@ function OverviewTab({
       .slice(0, 5);
   }, [blockStats]);
 
+  // 점수 분포 차트 데이터 및 설정
+  const scoreChartData = useMemo(() => {
+    const rangeKeys = ["range1", "range2", "range3", "range4", "range5"];
+    return scoreDistribution.map((item, index) => ({
+      range: item.range,
+      rangeKey: rangeKeys[index],
+      count: item.count,
+      fill: `var(--color-${rangeKeys[index]})`,
+    }));
+  }, [scoreDistribution]);
+
+  const scoreChartConfig = {
+    count: { label: "인원" },
+    range1: { label: "0-20점", color: "var(--chart-1)" },
+    range2: { label: "21-40점", color: "var(--chart-2)" },
+    range3: { label: "41-60점", color: "var(--chart-3)" },
+    range4: { label: "61-80점", color: "var(--chart-4)" },
+    range5: { label: "81-100점", color: "var(--chart-5)" },
+  } satisfies ChartConfig;
+
   return (
     <div className="space-y-6 fade-300">
       {/* 요약 카드 */}
@@ -313,8 +337,8 @@ function OverviewTab({
                                 locale: ko,
                               })}
                             </span>
-                            <span className="font-bold">
-                              {data.count}명 풀이
+                            <span className="font-semibold text-sm">
+                              {data.count}명
                             </span>
                           </div>
                         </div>
@@ -344,69 +368,32 @@ function OverviewTab({
             <CardDescription>참여자들의 점수 분포입니다.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={scoreDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="range"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${value}`}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "transparent" }}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="rounded-lg border bg-background p-2 shadow-sm">
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="flex flex-col">
-                                <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                  점수 구간
-                                </span>
-                                <span className="font-bold text-muted-foreground">
-                                  {payload[0].payload.range}점
-                                </span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                  인원
-                                </span>
-                                <span className="font-bold">
-                                  {payload[0].value}명
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                    {scoreDistribution.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={`var(--chart-${index + 1})`}
-                      />
-                    ))}
-                    <LabelList
-                      dataKey="count"
-                      position="top"
-                      className="fill-foreground text-xs font-bold"
-                      formatter={(value: number) => (value > 0 ? value : "")}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={scoreChartConfig}>
+              <BarChart
+                accessibilityLayer
+                data={scoreChartData}
+                layout="vertical"
+                margin={{ left: 0 }}
+              >
+                <YAxis
+                  dataKey="rangeKey"
+                  type="category"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) =>
+                    scoreChartConfig[value as keyof typeof scoreChartConfig]
+                      ?.label as string
+                  }
+                />
+                <XAxis dataKey="count" type="number" hide />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Bar dataKey="count" layout="vertical" radius={5} />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
