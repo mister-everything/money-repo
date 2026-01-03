@@ -1,4 +1,4 @@
-import { SystemPrompt } from "@service/solves/shared";
+import { BlockAnswer, BlockContent, SystemPrompt } from "@service/solves/shared";
 import { exclude } from "@workspace/util";
 import { isToolUIPart, ToolUIPart, UIMessage, UIMessagePart } from "ai";
 import z from "zod";
@@ -11,12 +11,20 @@ export const DefaultChatRequest = z.object({
   }),
 });
 
+export enum EditFields {
+  QUESTION = "question",
+  CONTENT = "content",
+  ANSWER = "answer",
+  SOLUTION = "solution",
+}
+
 export const WorkbookEditChatRequest = DefaultChatRequest.extend(
   z.object({
     type: z.string(),
     question: z.string(),
-    content: z.any(),
-    answer: z.any(),
+    content: z.any() as z.ZodType<BlockContent>,
+    answer: z.any() as z.ZodType<BlockAnswer>,
+    editFields: z.array(z.enum(EditFields)).optional(),
   }).shape,
 );
 

@@ -9,7 +9,7 @@ import { BlockAnswer, BlockContent, BlockType } from "@service/solves/shared";
 import { DefaultChatTransport } from "ai";
 import { ReactNode } from "react";
 import z from "zod";
-import { WorkbookEditChatRequest } from "@/app/api/ai/shared";
+import { EditFields, WorkbookEditChatRequest } from "@/app/api/ai/shared";
 import { Button } from "@/components/ui/button";
 import JsonView from "@/components/ui/json-view";
 import { handleErrorToast } from "@/lib/handle-toast";
@@ -42,6 +42,7 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
             question,
             content,
             answer,
+            editFields: [EditFields.QUESTION, EditFields.CONTENT, EditFields.ANSWER, EditFields.SOLUTION],
           });
         return {
           body,

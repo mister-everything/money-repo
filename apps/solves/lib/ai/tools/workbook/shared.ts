@@ -1,5 +1,6 @@
 import {
   BLOCK_OPTION_TEXT_MAX_LENGTH,
+  BlockType,
   DEFAULT_BLOCK_ANSWER_MAX_LENGTH,
   DEFAULT_BLOCK_MAX_ANSWERS,
   MCQ_BLOCK_MAX_OPTIONS,
@@ -30,9 +31,16 @@ export enum GEN_BLOCK_TOOL_NAMES {
 export enum EDIT_BLOCK_TOOL_NAMES {
   MCQ = "editMcq",
   MCQ_MULTIPLE = "editMcqMultiple",
-  SUBJECTIVE = "editSubjective",
+  DEFAULT = "editDefault",
   RANKING = "editRanking",
   OX = "editOx",
+}
+
+export enum EDIT_FIELD_TOOL_NAMES {
+  QUESTION = "editQuestion",
+  CONTENT = "editContent",
+  ANSWER = "editAnswer",
+  SOLUTION = "editSolution",
 }
 
 export const WORKBOOK_META_TOOL_NAME = "updateWorkbookMeta";
@@ -298,7 +306,7 @@ export const EditMcqMultipleInputSchema = BASE.extend({
     .describe("정답인 보기의 인덱스 배열을 입력하세요."),
 });
 
-export const EditSubjectiveInputSchema = BASE.extend({
+export const EditDefaultInputSchema = BASE.extend({
   answers: z
     .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
     .min(1)
@@ -320,9 +328,77 @@ export const EditOxInputSchema = BASE.extend({
     .describe("정답이 참이면 true, 거짓이면 false로 입력하세요."),
 });
 
+export const EditQuestionInputSchema = z.object({
+  question: z.string(),
+});
+
+export const SolutionInputSchema = z.object({
+  solution: z.string(),
+});
+export const ContentSchemas: Record<BlockType, z.ZodObject<any>> = {
+  mcq: z.object({
+    options: z
+      .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+      .min(MCQ_BLOCK_MIN_OPTIONS)
+      .max(MCQ_BLOCK_MAX_OPTIONS)
+      .describe("수정된 보기 목록"),
+  }),
+  "mcq-multiple": z.object({
+    options: z
+      .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+      .min(MCQ_BLOCK_MIN_OPTIONS)
+      .max(MCQ_BLOCK_MAX_OPTIONS)
+      .describe("수정된 보기 목록"),
+  }),
+  ranking: z.object({
+    items: z
+      .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+      .min(RANKING_BLOCK_MIN_ITEMS)
+      .max(RANKING_BLOCK_MAX_ITEMS)
+      .describe("수정된 순위 항목 목록"),
+  }),
+  default: z.object({}), // 주관식은 content 없음
+  ox: z.object({}), // OX도 content 없음
+};
+
+export const AnswerSchemas: Record<BlockType, z.ZodObject<any>> = {
+  mcq: z.object({
+    correctOptionIndex: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe("정답 인덱스 (0부터 시작)"),
+  }),
+  "mcq-multiple": z.object({
+    correctOptionIndexes: z
+      .array(z.number().int().nonnegative())
+      .min(1)
+      .describe("정답 인덱스 배열"),
+  }),
+  ranking: z.object({
+    correctOrderIndexes: z
+      .array(z.number().int().nonnegative())
+      .min(RANKING_BLOCK_MIN_ITEMS)
+      .describe("올바른 순서의 인덱스 배열"),
+  }),
+  default: z.object({
+    answers: z
+      .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
+      .min(1)
+      .max(DEFAULT_BLOCK_MAX_ANSWERS)
+      .describe("정답 후보 목록"),
+  }),
+  ox: z.object({
+    answer: z.boolean().describe("정답 (true: O, false: X)"),
+  }),
+};
+
+export type EditQuestionInput = z.infer<typeof EditQuestionInputSchema>;
+export type SolutionInput = z.infer<typeof SolutionInputSchema>;
+
 export type EditMcqInput = z.infer<typeof EditMcqInputSchema>;
 export type EditMcqMultipleInput = z.infer<typeof EditMcqMultipleInputSchema>;
-export type EditSubjectiveInput = z.infer<typeof EditSubjectiveInputSchema>;
+export type EditDefaultInput = z.infer<typeof EditDefaultInputSchema>;
 export type EditRankingInput = z.infer<typeof EditRankingInputSchema>;
 export type EditOxInput = z.infer<typeof EditOxInputSchema>;
 
