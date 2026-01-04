@@ -42,7 +42,12 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
             question,
             content,
             answer,
-            editFields: [EditFields.QUESTION, EditFields.CONTENT, EditFields.ANSWER, EditFields.SOLUTION],
+            editFields: [
+              EditFields.QUESTION,
+              EditFields.CONTENT,
+              EditFields.ANSWER,
+              EditFields.SOLUTION,
+            ],
           });
         return {
           body,

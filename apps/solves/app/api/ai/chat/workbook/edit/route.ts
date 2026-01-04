@@ -1,8 +1,14 @@
+import { BlockType } from "@service/solves/shared";
 import { convertToModelMessages, streamText, Tool } from "ai";
 import { getChatModel } from "@/lib/ai/model";
-import { EditFields, WorkbookEditChatRequest } from "../../../shared";
+import {
+  createEditAnswerTool,
+  createEditContentTool,
+  editQuestionTool,
+  editSolutionTool,
+} from "@/lib/ai/tools/workbook/edit-block-tools";
 import { EDIT_FIELD_TOOL_NAMES } from "@/lib/ai/tools/workbook/shared";
-import { editQuestionTool } from "@/lib/ai/tools/workbook/edit-block-tools";
+import { EditFields, WorkbookEditChatRequest } from "../../../shared";
 
 export const maxDuration = 300;
 
@@ -78,19 +84,28 @@ export async function POST(req: Request) {
   return result.toUIMessageStreamResponse();
 }
 
-function loadEditTools({ blockType, editFields }: LoadEditToolsParams) {
+function loadEditTools({
+  type,
+  editFields,
+}: {
+  type: BlockType;
+  editFields?: EditFields[];
+}) {
   const tools: Record<string, Tool> = {};
+  if (!editFields) {
+    return tools;
+  }
 
-  if (editFields.includes("question")) {
+  if (editFields.includes(EditFields.QUESTION)) {
     tools[EDIT_FIELD_TOOL_NAMES.QUESTION] = editQuestionTool;
   }
-  if (editFields.includes("content")) {
-    tools[EDIT_FIELD_TOOL_NAMES.CONTENT] = createEditContentTool(blockType);
+  if (editFields.includes(EditFields.CONTENT)) {
+    tools[EDIT_FIELD_TOOL_NAMES.CONTENT] = createEditContentTool(type);
   }
-  if (editFields.includes("answer")) {
-    tools[EDIT_FIELD_TOOL_NAMES.ANSWER] = createEditAnswerTool(blockType);
+  if (editFields.includes(EditFields.ANSWER)) {
+    tools[EDIT_FIELD_TOOL_NAMES.ANSWER] = createEditAnswerTool(type);
   }
-  if (editFields.includes("solution")) {
+  if (editFields.includes(EditFields.SOLUTION)) {
     tools[EDIT_FIELD_TOOL_NAMES.SOLUTION] = editSolutionTool;
   }
 
