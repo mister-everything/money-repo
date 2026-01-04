@@ -28,18 +28,15 @@ const oauthProviders: {
     provider: "google",
     icon: GoogleIcon,
   },
-
-  {
-    name: "Kakao",
-    provider: "kakao",
-    icon: KakaoIcon,
-    disabled: true,
-  },
-
   {
     name: "Naver",
     provider: "naver",
     icon: NaverIcon,
+  },
+  {
+    name: "Kakao",
+    provider: "kakao",
+    icon: KakaoIcon,
     disabled: true,
   },
 ];

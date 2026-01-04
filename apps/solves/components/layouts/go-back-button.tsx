@@ -3,6 +3,7 @@
 import { ChevronLeftIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function GoBackButton({
   className,
@@ -12,11 +13,19 @@ export function GoBackButton({
   children?: React.ReactNode;
 }) {
   const router = useRouter();
+
+  const isMobile = useIsMobile();
+
+  const onBack = () => {
+    if (window.history.length > 1) router.back();
+    else router.replace("/");
+  };
+
   return (
     <Button
-      variant="ghost"
+      variant={isMobile ? "secondary" : "ghost"}
       size={children ? "default" : "icon"}
-      onClick={() => router.back()}
+      onClick={onBack}
       className={className}
     >
       <ChevronLeftIcon className="size-4!" />
