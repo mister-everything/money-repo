@@ -161,6 +161,9 @@
   .fade-1000 {
     @apply fade-in animate-in duration-1000;
   }
+  .fade-2000 {
+    @apply fade-in animate-in duration-2000;
+  }
   .fade-3000 {
     @apply fade-in animate-in duration-3000;
   }

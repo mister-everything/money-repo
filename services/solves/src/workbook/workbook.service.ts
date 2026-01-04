@@ -1262,4 +1262,54 @@ export const workBookService = {
       dailySolves,
     };
   },
+
+  /**
+   * 추천 문제집 조회
+   * 우선순위: 1. 풀지 않은 문제집 2. 같은 카테고리 3. 최근 배포
+   * @param options excludeWorkBookId, userId, categoryId
+   * @returns 추천 문제집 목록 (최대 3개)
+   */
+  getRecommendedWorkBooks: async (options: {
+    excludeWorkBookId: string;
+    userId: string;
+    categoryId?: number | null;
+  }): Promise<WorkBookWithoutBlocks[]> => {
+    const { excludeWorkBookId, userId, categoryId } = options;
+
+    const rows = await pgDb
+      .select({
+        ...WorkBookColumnsForList,
+        isSolved: sql<boolean>`CASE WHEN ${workBookUserFirstScoresTable.workBookId} IS NOT NULL THEN true ELSE false END`,
+        isSameCategory: sql<boolean>`CASE WHEN ${workBooksTable.categoryId} = ${categoryId ?? null} THEN true ELSE false END`,
+      })
+      .from(workBooksTable)
+      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
+      .leftJoin(
+        workBookUserFirstScoresTable,
+        and(
+          eq(workBooksTable.id, workBookUserFirstScoresTable.workBookId),
+          eq(workBookUserFirstScoresTable.ownerId, userId),
+        ),
+      )
+      .where(
+        and(
+          eq(workBooksTable.isPublic, true),
+          isNotNull(workBooksTable.publishedAt),
+          isNull(workBooksTable.deletedAt),
+          sql`${workBooksTable.id} != ${excludeWorkBookId}`,
+        ),
+      )
+      .orderBy(
+        // 1. 풀지 않은 문제집 우선
+        sql`CASE WHEN ${workBookUserFirstScoresTable.workBookId} IS NULL THEN 0 ELSE 1 END`,
+        // 2. 같은 카테고리 우선
+        sql`CASE WHEN ${workBooksTable.categoryId} = ${categoryId ?? null} THEN 0 ELSE 1 END`,
+        // 3. 최근 배포순
+        desc(workBooksTable.publishedAt),
+      )
+      .limit(3);
+
+    // isSolved, isSameCategory 필드 제거하고 반환
+    return rows.map(({ isSolved, isSameCategory, ...workBook }) => workBook);
+  },
 };
