@@ -84,8 +84,6 @@ function PureBlock<T extends BlockType = BlockType>({
   ref,
   ...props
 }: BlockProps<T>) {
-
-  
   const blockErrorMessage = useMemo(() => {
     if (props.mode != "edit") return;
     const result = blockValidate({
@@ -163,6 +161,10 @@ function PureBlock<T extends BlockType = BlockType>({
               question={props.question}
               content={props.content ?? ({} as BlockContent<T>)}
               answer={props.answer ?? ({} as BlockAnswer<T>)}
+              onUpdateQuestion={props.onUpdateQuestion}
+              onUpdateContent={props.onUpdateContent}
+              onUpdateAnswer={props.onUpdateAnswer}
+              onUpdateSolution={props.onUpdateSolution}
             >
               <Button>
                 <Sparkle />

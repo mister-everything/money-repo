@@ -12,7 +12,7 @@ import {
   EditOxInputSchema,
   EditQuestionInputSchema,
   EditRankingInputSchema,
-  SolutionInputSchema,
+  EditSolutionInputSchema,
 } from "./shared";
 
 // 1. Question Tool
@@ -46,7 +46,7 @@ export function createEditAnswerTool(blockType: BlockType): Tool {
 export const editSolutionTool: Tool = createTool({
   name: EDIT_FIELD_TOOL_NAMES.SOLUTION,
   description: "문제의 해설을 수정합니다.",
-  inputSchema: SolutionInputSchema,
+  inputSchema: EditSolutionInputSchema,
 });
 
 /**

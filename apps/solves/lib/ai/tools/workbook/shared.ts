@@ -307,7 +307,7 @@ export const EditMcqMultipleInputSchema = BASE.extend({
 });
 
 export const EditDefaultInputSchema = BASE.extend({
-  answers: z
+  answer: z
     .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
     .min(1)
     .max(DEFAULT_BLOCK_MAX_ANSWERS)
@@ -332,7 +332,7 @@ export const EditQuestionInputSchema = z.object({
   question: z.string(),
 });
 
-export const SolutionInputSchema = z.object({
+export const EditSolutionInputSchema = z.object({
   solution: z.string(),
 });
 export const ContentSchemas: Record<BlockType, z.ZodObject<any>> = {
@@ -382,7 +382,7 @@ export const AnswerSchemas: Record<BlockType, z.ZodObject<any>> = {
       .describe("올바른 순서의 인덱스 배열"),
   }),
   default: z.object({
-    answers: z
+    answer: z
       .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
       .min(1)
       .max(DEFAULT_BLOCK_MAX_ANSWERS)
@@ -394,7 +394,7 @@ export const AnswerSchemas: Record<BlockType, z.ZodObject<any>> = {
 };
 
 export type EditQuestionInput = z.infer<typeof EditQuestionInputSchema>;
-export type SolutionInput = z.infer<typeof SolutionInputSchema>;
+export type EditSolutionInput = z.infer<typeof EditSolutionInputSchema>;
 
 export type EditMcqInput = z.infer<typeof EditMcqInputSchema>;
 export type EditMcqMultipleInput = z.infer<typeof EditMcqMultipleInputSchema>;
