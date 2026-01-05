@@ -37,6 +37,7 @@ interface MentionInputProps {
   onAppendMention?: (mention: SolvesMentionItem) => void;
   onEnter?: () => void;
   placeholder?: string;
+  autofocus?: boolean;
   suggestionChar?: string;
   className?: string;
   editorRef?: RefObject<Editor | null>;
@@ -55,6 +56,7 @@ export default function MentionInput({
   suggestionChar = "@",
   items,
   className,
+  autofocus,
   editorRef,
   onFocus,
   onBlur,
@@ -145,7 +147,7 @@ export default function MentionInput({
           },
         }),
       ],
-      autofocus: true,
+      autofocus: autofocus,
       onUpdate: ({ editor }) => {
         const json = editor.getJSON() as TipTapMentionJsonContent;
         const text = editor.getText();
@@ -196,6 +198,7 @@ export default function MentionInput({
     defaultContent,
     onChange,
     onFocus,
+
     onBlur,
     fullWidthSuggestion,
   ]);
