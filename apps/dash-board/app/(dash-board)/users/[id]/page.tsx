@@ -189,7 +189,9 @@ export default async function UserDetailPage(props: { params: Params }) {
             />
           </CardContent>
 
-          <Separator />
+          <div className="px-6">
+            <Separator />
+          </div>
 
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
