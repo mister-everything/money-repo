@@ -2,14 +2,18 @@ import { workBookService } from "@service/solves";
 import {
   Bot,
   BrainIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
   GlobeIcon,
   Library,
+  LoaderIcon,
   MessageCircleQuestion,
   PlayCircleIcon,
   Share2Icon,
   TrophyIcon,
   Users,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { PolicyFooter } from "@/components/layouts/policy-footer";
 import { Button } from "@/components/ui/button";
@@ -22,11 +26,51 @@ import {
 } from "@/components/ui/card";
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
 import { WorkbookCarousel } from "@/components/workbook/workbook-carousel";
-import { MockAiSolver } from "./_components/mock-ai-solver";
-import { MockAskInteraction } from "./_components/mock-ask-interaction";
-import { MockSimulation } from "./_components/mock-simulation";
-import { MockUserSolver } from "./_components/mock-user-solver";
 import * as Motion from "./_components/motion-wrapper";
+
+// Lazy load heavy simulation components
+const MockSimulation = dynamic(
+  () =>
+    import("./_components/mock-simulation").then((mod) => mod.MockSimulation),
+  {
+    loading: () => <SimulationSkeleton />,
+    ssr: true,
+  },
+);
+
+const MockAiSolver = dynamic(
+  () => import("./_components/mock-ai-solver").then((mod) => mod.MockAiSolver),
+  {
+    loading: () => <SolverSkeleton />,
+    ssr: true,
+  },
+);
+
+const MockUserSolver = dynamic(
+  () =>
+    import("./_components/mock-user-solver").then((mod) => mod.MockUserSolver),
+  {
+    loading: () => <SolverSkeleton />,
+    ssr: true,
+  },
+);
+
+// Skeleton components for loading states
+function SimulationSkeleton() {
+  return (
+    <div className="w-full h-[600px] rounded-2xl border bg-muted/20 animate-pulse flex items-center justify-center">
+      <LoaderIcon className="size-8 text-muted-foreground/50 animate-spin" />
+    </div>
+  );
+}
+
+function SolverSkeleton() {
+  return (
+    <div className="w-full lg:w-lg h-[500px] rounded-2xl border bg-muted/20 animate-pulse flex items-center justify-center">
+      <LoaderIcon className="size-8 text-muted-foreground/50 animate-spin" />
+    </div>
+  );
+}
 
 export default async function Page() {
   const workBooks = await workBookService.searchWorkBooks({
@@ -35,9 +79,9 @@ export default async function Page() {
   });
 
   return (
-    <div className="flex flex-col w-full gap-0 pb-20 overflow-x-hidden">
+    <div className="flex flex-col w-full gap-0 overflow-x-hidden">
       {/* Hero Section */}
-      <section className="relative h-[85vh] w-full flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative h-[60vh] w-full flex flex-col items-center justify-center overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-8 p-4 mt-10 max-w-4xl mx-auto">
           <Motion.FadeIn>
             <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-2">
@@ -89,6 +133,55 @@ export default async function Page() {
         </div>
       </section>
 
+      {/* Scroll Indicator */}
+      <Motion.FadeIn delay={1.2}>
+        <div className="flex flex-col items-center gap-2 pb-12">
+          <span className="text-xs text-muted-foreground/50 tracking-widest uppercase">
+            스크롤을 내려 더 많은 기능을 확인하세요.
+          </span>
+          <div className="relative flex flex-col items-center">
+            <ChevronDownIcon className="size-5 text-muted-foreground/50 animate-bounce mt-1" />
+          </div>
+        </div>
+      </Motion.FadeIn>
+
+      {/* Carousel Section */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="container mx-auto px-6 relative">
+          <Motion.FadeIn>
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center rounded-full bg-rose-500/10 px-4 py-1.5 text-sm font-medium text-rose-600 w-fit">
+                    <TrophyIcon className="mr-2 size-4" />
+                    Trending Now
+                  </div>
+                  <h3 className="text-3xl md:text-4xl font-bold">
+                    지금 뜨는{" "}
+                    <span className="text-transparent bg-clip-text bg-linear-to-r from-rose-500 to-orange-500">
+                      문제집
+                    </span>{" "}
+                    🔥
+                  </h3>
+                  <p className="text-muted-foreground text-lg">
+                    다른 사용자들이 만든 문제집을 풀어보세요.
+                    <br className="hidden sm:block" />
+                    다양한 주제의 퀴즈가 기다리고 있어요.
+                  </p>
+                </div>
+                <Link
+                  href="/workbooks"
+                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors shrink-0 flex items-center gap-2 group"
+                >
+                  전체보기{" "}
+                  <ChevronRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+              <WorkbookCarousel workBooks={workBooks} />
+            </div>
+          </Motion.FadeIn>
+        </div>
+      </section>
       {/* Interactive Simulation Section (Maker) */}
       <section className="py-24 container mx-auto px-6">
         <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
@@ -149,140 +242,12 @@ export default async function Page() {
             direction="right"
             className="flex-1 w-full flex justify-center xl:justify-end"
           >
-            <div className="relative w-full max-w-[500px]">
+            <div className="relative w-full">
               {/* Decorative Elements */}
               <div className="absolute -top-10 -right-10 size-32 bg-primary/20 rounded-full blur-3xl opacity-50" />
               <div className="absolute -bottom-10 -left-10 size-32 bg-purple-500/20 rounded-full blur-3xl opacity-50" />
 
               <MockSimulation />
-            </div>
-          </Motion.SlideIn>
-        </div>
-      </section>
-
-      {/* Ask Interaction Section - AI Asks Questions */}
-      <section className="py-24 w-full">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col xl:flex-row-reverse items-center justify-between gap-12 xl:gap-24">
-            {/* Text Content */}
-            <Motion.SlideIn
-              direction="right"
-              className="flex-1 space-y-6 xl:text-left text-center max-w-xl"
-            >
-              <div className="inline-flex items-center rounded-full bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-500 w-fit mx-auto xl:mx-0">
-                <MessageCircleQuestion className="mr-2 size-4" />
-                Smart Question Flow
-              </div>
-              <h3 className="text-3xl md:text-5xl font-bold leading-tight">
-                AI가 물어봐요
-                <br />
-                <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-500 to-cyan-500">
-                  정확한 문제 제작
-                </span>
-              </h3>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                "과학 문제 만들어줘"처럼 넓은 주제를 말해도 괜찮아요.
-                <br />
-                AI가{" "}
-                <span className="text-foreground font-medium">
-                  분야, 난이도, 문제 유형
-                </span>
-                을 차례로 물어보며
-                <br />
-                당신이 원하는 정확한 문제를 만들어드립니다.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center xl:justify-start pt-2">
-                <span className="px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-600 text-xs font-medium">
-                  🎯 맞춤형 질문
-                </span>
-                <span className="px-3 py-1.5 rounded-full bg-cyan-500/10 text-cyan-600 text-xs font-medium">
-                  ⚡ 빠른 조건 설정
-                </span>
-                <span className="px-3 py-1.5 rounded-full bg-violet-500/10 text-violet-600 text-xs font-medium">
-                  🧠 스마트 추천
-                </span>
-              </div>
-            </Motion.SlideIn>
-
-            {/* Simulation Component */}
-            <Motion.SlideIn
-              direction="left"
-              className="flex-1 w-full flex justify-center xl:justify-start"
-            >
-              <div className="relative w-full max-w-sm">
-                <div className="absolute -inset-2 bg-linear-to-r from-blue-500 to-cyan-500 rounded-3xl blur-xl opacity-20" />
-                <MockAskInteraction />
-              </div>
-            </Motion.SlideIn>
-          </div>
-        </div>
-      </section>
-
-      {/* User Solver Section - User Solves Problems */}
-      <section className="py-24 container mx-auto px-6">
-        <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
-          {/* Text Content */}
-          <Motion.SlideIn
-            direction="left"
-            className="flex-1 space-y-6 xl:text-left text-center max-w-xl"
-          >
-            <div className="inline-flex items-center rounded-full bg-green-500/10 px-4 py-1.5 text-sm font-medium text-green-600 w-fit mx-auto xl:mx-0">
-              <PlayCircleIcon className="mr-2 size-4" />
-              Interactive Learning
-            </div>
-            <h3 className="text-3xl md:text-5xl font-bold leading-tight">
-              직접 풀어보세요
-              <br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-green-500 to-emerald-500">
-                인터랙티브 학습
-              </span>
-            </h3>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              책상 위의 문제집은 잊으세요.
-              <br />
-              클릭 한 번으로 정답을 확인하고,{" "}
-              <span className="text-foreground font-medium">
-                즉각적인 피드백
-              </span>
-              을 받으세요.
-              <br />
-              게임처럼 재미있게 학습할 수 있습니다.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
-                <div className="size-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <TrophyIcon className="size-4 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">점수 & 랭킹</p>
-                  <p className="text-xs text-muted-foreground">
-                    풀이 결과를 점수로 확인
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
-                <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <Share2Icon className="size-4 text-emerald-600" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">결과 공유</p>
-                  <p className="text-xs text-muted-foreground">
-                    친구들과 점수를 비교
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Motion.SlideIn>
-
-          {/* Simulation Component */}
-          <Motion.SlideIn
-            direction="right"
-            className="flex-1 w-full flex justify-center xl:justify-end"
-          >
-            <div className="relative">
-              <div className="absolute -top-10 -right-10 size-32 bg-green-500/20 rounded-full blur-3xl opacity-50" />
-              <div className="absolute -bottom-10 -left-10 size-32 bg-emerald-500/20 rounded-full blur-3xl opacity-50" />
-              <MockUserSolver />
             </div>
           </Motion.SlideIn>
         </div>
@@ -359,35 +324,78 @@ export default async function Page() {
         </div>
       </section>
 
-      {/* Carousel Section */}
+      {/* User Solver Section - User Solves Problems */}
       <section className="py-24 container mx-auto px-6">
-        <Motion.FadeIn>
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <div className="space-y-2">
-                <h3 className="text-3xl font-bold flex items-center gap-2">
-                  지금 뜨는 문제집{" "}
-                  <span className="text-primary animate-pulse">🔥</span>
-                </h3>
-                <p className="text-muted-foreground">
-                  다른 사용자들이 만든 문제집을 풀어보세요. 다양한 주제의 퀴즈가
-                  기다리고 있어요.
-                </p>
-              </div>
-              <Link
-                href="/workbooks"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors shrink-0"
-              >
-                더보기 &rarr;
-              </Link>
+        <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
+          {/* Text Content */}
+          <Motion.SlideIn
+            direction="left"
+            className="flex-1 space-y-6 xl:text-left text-center max-w-xl"
+          >
+            <div className="inline-flex items-center rounded-full bg-green-500/10 px-4 py-1.5 text-sm font-medium text-green-600 w-fit mx-auto xl:mx-0">
+              <PlayCircleIcon className="mr-2 size-4" />
+              Interactive Learning
             </div>
-            <WorkbookCarousel workBooks={workBooks} />
-          </div>
-        </Motion.FadeIn>
+            <h3 className="text-3xl md:text-5xl font-bold leading-tight">
+              직접 풀어보세요
+              <br />
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-green-500 to-emerald-500">
+                인터랙티브 학습
+              </span>
+            </h3>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              책상 위의 문제집은 잊으세요.
+              <br />
+              클릭 한 번으로 정답을 확인하고,{" "}
+              <span className="text-foreground font-medium">
+                즉각적인 피드백
+              </span>
+              을 받으세요.
+              <br />
+              게임처럼 재미있게 학습할 수 있습니다.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                <div className="size-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <TrophyIcon className="size-4 text-green-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">점수 & 랭킹</p>
+                  <p className="text-xs text-muted-foreground">
+                    풀이 결과를 점수로 확인
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Share2Icon className="size-4 text-emerald-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">결과 공유</p>
+                  <p className="text-xs text-muted-foreground">
+                    친구들과 점수를 비교
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Motion.SlideIn>
+
+          {/* Simulation Component */}
+          <Motion.SlideIn
+            direction="right"
+            className="flex-1 w-full flex justify-center xl:justify-end"
+          >
+            <div className="relative w-full flex justify-end">
+              <div className="absolute -top-10 -right-10 size-32 bg-green-500/20 rounded-full blur-3xl opacity-50" />
+              <div className="absolute -bottom-10 -left-10 size-32 bg-emerald-500/20 rounded-full blur-3xl opacity-50" />
+              <MockUserSolver />
+            </div>
+          </Motion.SlideIn>
+        </div>
       </section>
 
       {/* Grid Features */}
-      <section className="py-24 container mx-auto px-6 border-t">
+      <section className="py-24 container mx-auto px-6">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
           <Motion.FadeIn>
             <h3 className="text-3xl md:text-4xl font-bold">
@@ -440,7 +448,7 @@ export default async function Page() {
         </div>
       </section>
 
-      <div className="container mx-auto px-6 py-12">
+      <div className="container mx-auto px-6 py-24">
         <PolicyFooter />
       </div>
     </div>

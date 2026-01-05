@@ -2,16 +2,20 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BotIcon,
   BrainIcon,
   CheckCircle2Icon,
   ExternalLinkIcon,
   GlobeIcon,
   MousePointer2Icon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+// Button IDs for cursor targeting
+const BUTTON_IDS = {
+  optionB: "mock-ai-option-b",
+} as const;
 
 type Step =
   | "idle"
@@ -90,6 +94,7 @@ export function MockAiSolver() {
   const [thinkingIndex, setThinkingIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const runSimulation = async () => {
@@ -163,7 +168,7 @@ export function MockAiSolver() {
   const isSearching = step === "web-searching";
 
   return (
-    <div className="w-full max-w-md relative select-none">
+    <div ref={containerRef} className="w-full max-w-md relative select-none">
       {/* Problem Card with Focus Effect */}
       <motion.div
         animate={{
@@ -219,6 +224,7 @@ export function MockAiSolver() {
               return (
                 <motion.div
                   key={opt.id}
+                  id={opt.id === "B" ? BUTTON_IDS.optionB : undefined}
                   animate={{
                     scale: isSelected ? 1.02 : 1,
                   }}
@@ -366,7 +372,7 @@ export function MockAiSolver() {
       </AnimatePresence>
 
       {/* Cursor */}
-      <SolverCursor step={step} />
+      <SolverCursor step={step} containerRef={containerRef} />
     </div>
   );
 }
@@ -445,20 +451,48 @@ function ThinkingStepItem({
   );
 }
 
-function SolverCursor({ step }: { step: Step }) {
-  const [pos, setPos] = useState({ x: 400, y: 300 });
+function SolverCursor({
+  step,
+  containerRef,
+}: {
+  step: Step;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [pos, setPos] = useState({ x: 350, y: 250 });
   const [click, setClick] = useState(false);
+
+  // Get element position relative to container
+  const getElementPosition = (elementId: string) => {
+    const element = document.getElementById(elementId);
+    const container = containerRef.current;
+    if (!element || !container) return null;
+
+    const elementRect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    return {
+      x: elementRect.left - containerRect.left + elementRect.width / 2,
+      y: elementRect.top - containerRect.top + elementRect.height / 2,
+    };
+  };
 
   useEffect(() => {
     if (step === "cursor-move-to-answer") {
-      setPos({ x: 200, y: 210 }); // Option B position
+      requestAnimationFrame(() => {
+        const pos = getElementPosition(BUTTON_IDS.optionB);
+        if (pos) setPos(pos);
+      });
     } else if (step === "cursor-click-answer") {
       setClick(true);
       setTimeout(() => setClick(false), 200);
     } else if (step === "idle" || step === "complete") {
-      setPos({ x: 400, y: 300 });
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        setPos({ x: rect.width - 50, y: rect.height - 50 });
+      }
     }
-  }, [step]);
+  }, [step, containerRef]);
 
   return (
     <motion.div

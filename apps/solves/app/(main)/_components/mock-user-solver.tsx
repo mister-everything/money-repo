@@ -1,5 +1,6 @@
 "use client";
 
+import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckCircle2Icon,
@@ -7,13 +8,18 @@ import {
   MousePointer2Icon,
   SparklesIcon,
   TrophyIcon,
-  UserIcon,
   XCircleIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+// Button IDs for cursor targeting
+const BUTTON_IDS = {
+  optionB: "mock-user-option-b",
+  nextButton: "mock-user-next-btn",
+} as const;
 
 type Step =
   | "idle"
@@ -64,6 +70,8 @@ export function MockUserSolver() {
     null,
   );
   const [score, setScore] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const runSimulation = async () => {
@@ -136,6 +144,28 @@ export function MockUserSolver() {
       }
 
       if (step === "show-final-score") {
+        // Confetti within the component canvas
+        setTimeout(() => {
+          if (canvasRef.current && containerRef.current) {
+            const canvas = canvasRef.current;
+            const container = containerRef.current;
+
+            // Set canvas internal resolution to match container size
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+
+            const myConfetti = confetti.create(canvas, {
+              resize: true,
+              useWorker: true,
+            });
+            myConfetti({
+              particleCount: 80,
+              spread: 70,
+              origin: { x: 0.5, y: 0.35 },
+              colors: ["#fbbf24", "#f59e0b", "#d97706", "#fcd34d"],
+            });
+          }
+        }, 300);
         await new Promise((r) => setTimeout(r, 3500));
         setStep("complete");
       }
@@ -154,39 +184,19 @@ export function MockUserSolver() {
   }, [step]);
 
   const question = questions[currentQ];
-  const progress = ((currentQ + 1) / questions.length) * 100;
 
   return (
-    <div className="w-full h-[600px] flex flex-col rounded-2xl border bg-background/95 backdrop-blur shadow-2xl overflow-hidden relative cursor-none select-none">
+    <div
+      ref={containerRef}
+      className="w-full lg:w-lg h-[600px] flex flex-col rounded-2xl border bg-background/95 backdrop-blur shadow-2xl overflow-hidden relative cursor-none select-none"
+    >
       {/* Header */}
-      <div className="h-14 border-b flex items-center px-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 gap-3 shrink-0">
+      <div className="h-14 border-b flex items-center px-4 bg-liner-to-r from-green-500/10 to-emerald-500/10 gap-3 shrink-0">
         <div className="flex gap-1.5">
           <div className="size-3 rounded-full bg-red-400/80" />
           <div className="size-3 rounded-full bg-amber-400/80" />
           <div className="size-3 rounded-full bg-green-400/80" />
         </div>
-        <div className="h-6 w-[1px] bg-border mx-2" />
-        <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-          <UserIcon className="size-3.5" />
-          문제 풀이
-        </div>
-        <Badge className="rounded-full bg-green-500 hover:bg-green-500 ml-auto">
-          Q{currentQ + 1}/{questions.length}
-        </Badge>
-        <div className="flex items-center gap-1.5 text-sm">
-          <TrophyIcon className="size-4 text-amber-500" />
-          <span className="font-bold">{score}</span>
-          <span className="text-muted-foreground">/ {questions.length}</span>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="h-1.5 w-full bg-muted shrink-0">
-        <motion.div
-          className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.3 }}
-        />
       </div>
 
       {/* Question Area */}
@@ -221,6 +231,7 @@ export function MockUserSolver() {
                 return (
                   <motion.div
                     key={opt.id}
+                    id={opt.id === "B" ? BUTTON_IDS.optionB : undefined}
                     animate={{
                       scale: isSelected ? 1.02 : 1,
                     }}
@@ -294,7 +305,7 @@ export function MockUserSolver() {
 
             {/* Navigation */}
             <div className="flex justify-end">
-              <Button size="lg" className="gap-2">
+              <Button id={BUTTON_IDS.nextButton} size="lg" className="gap-2">
                 다음 문제
                 <ChevronRightIcon className="size-5" />
               </Button>
@@ -347,36 +358,71 @@ export function MockUserSolver() {
         )}
       </AnimatePresence>
 
+      {/* Confetti Canvas - full component area */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-20"
+      />
+
       {/* Cursor */}
-      <UserSolverCursor step={step} />
+      <UserSolverCursor step={step} containerRef={containerRef} />
     </div>
   );
 }
 
-function UserSolverCursor({ step }: { step: Step }) {
-  const [pos, setPos] = useState({ x: 500, y: 600 });
+function UserSolverCursor({
+  step,
+  containerRef,
+}: {
+  step: Step;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const [pos, setPos] = useState({ x: 350, y: 500 });
   const [click, setClick] = useState(false);
 
+  // Get element position relative to container
+  const getElementPosition = (elementId: string) => {
+    const element = document.getElementById(elementId);
+    const container = containerRef.current;
+    if (!element || !container) return null;
+
+    const elementRect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    return {
+      x: elementRect.left - containerRect.left + elementRect.width / 2,
+      y: elementRect.top - containerRect.top + elementRect.height / 2,
+    };
+  };
+
   useEffect(() => {
-    if (step === "cursor-move-to-option") {
-      setPos({ x: 280, y: 260 }); // Option B (서울)
-    } else if (step === "cursor-click-option") {
+    if (step === "cursor-move-to-option" || step === "cursor-move-to-wrong") {
+      requestAnimationFrame(() => {
+        const pos = getElementPosition(BUTTON_IDS.optionB);
+        if (pos) setPos(pos);
+      });
+    } else if (
+      step === "cursor-click-option" ||
+      step === "cursor-click-wrong"
+    ) {
       setClick(true);
       setTimeout(() => setClick(false), 200);
     } else if (step === "cursor-move-to-next") {
-      setPos({ x: 450, y: 540 }); // Next button
+      requestAnimationFrame(() => {
+        const pos = getElementPosition(BUTTON_IDS.nextButton);
+        if (pos) setPos(pos);
+      });
     } else if (step === "cursor-click-next") {
       setClick(true);
       setTimeout(() => setClick(false), 200);
-    } else if (step === "cursor-move-to-wrong") {
-      setPos({ x: 280, y: 260 }); // Option B (wrong)
-    } else if (step === "cursor-click-wrong") {
-      setClick(true);
-      setTimeout(() => setClick(false), 200);
     } else if (step === "idle" || step === "complete") {
-      setPos({ x: 500, y: 600 });
+      const container = containerRef.current;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        setPos({ x: rect.width - 50, y: rect.height - 50 });
+      }
     }
-  }, [step]);
+  }, [step, containerRef]);
 
   return (
     <motion.div
