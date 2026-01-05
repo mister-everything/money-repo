@@ -11,7 +11,13 @@ import { LoaderIcon, MoreVerticalIcon, Siren } from "lucide-react";
 import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import {
@@ -262,12 +268,39 @@ export function WorkbookCardSimple({
   workBook: WorkBookWithoutBlocks;
 }) {
   return (
-    <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-md h-full flex flex-col">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold truncate">
+    <Card className="w-full hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-md h-full flex flex-col">
+      <CardHeader>
+        <CardTitle className="text-sm! font-bold truncate">
           {workBook.title || "제목이 없습니다."}
         </CardTitle>
+        <CardDescription className="truncate text-xs!">
+          {workBook.description || "설명이 없습니다."}
+        </CardDescription>
       </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col text-xs">
+        <div className="flex flex-wrap gap-2 mb-4">
+          {workBook.tags?.slice(0, 8).map((tag) => (
+            <span
+              key={tag.id}
+              className="bg-secondary text-secondary-foreground text-2xs px-1 py-0.5 rounded-md font-medium"
+            >
+              # {tag.name}
+            </span>
+          ))}
+          {workBook.tags && workBook.tags.length > 4 && (
+            <span className="bg-secondary text-secondary-foreground text-2xs px-1 py-0.5 rounded-md font-medium">
+              +{workBook.tags.length - 4}
+            </span>
+          )}
+        </div>
+        <div className="mt-auto">
+          <WorkbookDifficulty
+            count={workBook.firstSolverCount ?? 0}
+            sum={workBook.firstScoreSum ?? 0}
+          />
+        </div>
+      </CardContent>
     </Card>
   );
 }

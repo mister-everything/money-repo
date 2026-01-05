@@ -1,27 +1,29 @@
 import { workBookService } from "@service/solves";
 import { ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
+import { PolicyFooter } from "@/components/layouts/policy-footer";
 import { Button } from "@/components/ui/button";
-import { InDevelopment } from "@/components/ui/in-development";
-import { QuickWorkbookCreator } from "@/components/workbook/quick-workbook-creator";
-import { WorkbookCardSimple } from "@/components/workbook/workbook-card";
+import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
+import { WorkbookCarousel } from "@/components/workbook/workbook-carousel";
 
 export default async function Page() {
   const workBooks = await workBookService.searchWorkBooks({
     isPublished: true,
-    limit: 3,
+    limit: 5,
   });
 
   return (
     <div className="p-6 lg:p-10 w-full flex flex-col gap-8">
-      <header className="font-semibold text-foreground flex flex-col items-center w-full mt-32">
-        <h1 className="mb-4 text-5xl">호기심이 문제가 되는 순간,</h1>
-        <h2 className="text-4xl font-bold ">
-          Solves<span className="text-5xl text-primary">.</span>
+      <header className="font-semibold text-foreground flex flex-col items-center w-full mt-20">
+        <h1 className="mb-4 text-4xl">
+          <GradualSpacingText text="호기심이 문제가 되는 순간," />
+        </h1>
+        <h2 className="text-3xl font-bold fade-3000">
+          Solves<span className="text-4xl text-primary">.</span>
         </h2>
       </header>
 
-      <div className="max-w-4xl w-full mx-auto">
+      <div className="max-w-4xl w-full mx-auto fade-3000">
         <div className="flex items-center justify-end">
           <Link href="/workbooks">
             <Button variant="ghost">
@@ -31,28 +33,12 @@ export default async function Page() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, index) => {
-            const workBook = workBooks[index];
-            if (!workBook)
-              return (
-                <InDevelopment className="w-full h-full" key={index}>
-                  아직 없네요 🤔
-                </InDevelopment>
-              );
-
-            return (
-              <Link
-                href={`/workbooks/${workBook.id}/preview`}
-                key={workBook.id}
-              >
-                <WorkbookCardSimple workBook={workBook} />
-              </Link>
-            );
-          })}
-        </div>
+        <WorkbookCarousel workBooks={workBooks} />
       </div>
-      <QuickWorkbookCreator />
+
+      <div className="py-12">
+        <PolicyFooter />
+      </div>
     </div>
   );
 }
