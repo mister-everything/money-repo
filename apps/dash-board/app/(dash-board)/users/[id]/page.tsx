@@ -4,10 +4,12 @@ import {
   ArrowLeft,
   Calendar,
   Mail,
+  RefreshCcw,
   Shield,
   ShieldAlert,
   ShieldCheck,
   User,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -37,6 +39,10 @@ export default async function UserDetailPage(props: { params: Params }) {
   if (!user) {
     notFound();
   }
+
+  const balanceValue = user.balance ?? null;
+  const balanceError =
+    balanceValue === null ? "잔액을 불러오지 못했습니다." : null;
 
   const isBanned = user.banned;
   const isBanActive =
@@ -176,11 +182,34 @@ export default async function UserDetailPage(props: { params: Params }) {
               사용자의 권한을 변경할 수 있습니다.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <RoleUpdateForm
               userId={user.id}
               currentRole={user.role || "user"}
             />
+          </CardContent>
+
+          <Separator />
+
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              지갑 잔액
+            </CardTitle>
+            <CardDescription>사용자의 현재 크레딧 잔액입니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="text-xl font-bold">
+              {balanceValue !== null
+                ? `${balanceValue.toLocaleString("ko-KR")} Balance`
+                : "잔액을 불러오지 못했습니다."}
+            </div>
+            {balanceError && (
+              <p className="text-sm text-destructive">{balanceError}</p>
+            )}
+            <Button variant="secondary" size="sm" disabled>
+              지갑 충전
+            </Button>
           </CardContent>
         </Card>
 
