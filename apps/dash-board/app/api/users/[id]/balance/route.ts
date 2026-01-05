@@ -8,18 +8,19 @@ export async function GET(
   _: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // 관리자일 경우에만 접근 가능
-  const session = await getSession();
-  const isAdminCheck = await userService.isAdmin(session.user.id);
-  if (!isAdminCheck) {
-    return nextFail("Forbidden", 403);
-  }
+  try {
+    const session = await getSession();
+    const isAdminCheck = await userService.isAdmin(session.user.id);
+    const { id } = await params;
+    const wallet = await walletService.getWalletByUserId(id);
 
-  const { id } = await params;
-  const wallet = await walletService.getWalletByUserId(id);
-  console.dir(wallet, { depth: null });
-  if (!wallet) {
-    return nextOk("not wallet");
+    // 관리자일 경우에만 접근 가능
+    if (!isAdminCheck) return nextFail("Forbidden", 403);
+    // 지갑이 없을 경우 (없을경우 생성하는 로직으로 변경할수도있음)
+    if (!wallet) return nextFail("not wallet", 404);
+
+    return nextOk(Number(wallet.balance));
+  } catch (error) {
+    return nextFail(error);
   }
-  return nextOk(Number(wallet.balance));
 }
