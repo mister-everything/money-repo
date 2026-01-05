@@ -4,7 +4,7 @@ import { WorkBookWithoutBlocks } from "@service/solves/shared";
 import { motion, useAnimationFrame, useMotionValue } from "framer-motion";
 import Link from "next/link";
 import { InDevelopment } from "../ui/in-development";
-import { WorkbookCardSimple } from "./workbook-card";
+import { WorkbookCard } from "./workbook-card";
 
 interface WorkbookCarouselProps {
   workBooks: WorkBookWithoutBlocks[];
@@ -66,7 +66,7 @@ export function WorkbookCarousel({ workBooks }: WorkbookCarouselProps) {
             >
               {item ? (
                 <Link href={`/workbooks/${item.id}/preview`}>
-                  <WorkbookCardSimple workBook={item} />
+                  <WorkbookCard workBook={item} />
                 </Link>
               ) : (
                 <InDevelopment className="w-full h-44">
