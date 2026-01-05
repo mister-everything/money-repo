@@ -29,6 +29,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@service/auth": "workspace:*",
+    "@service/report": "workspace:*",
     "@service/solves": "workspace:*",
     "@workspace/env": "workspace:*",
     "@workspace/error": "workspace:*",
