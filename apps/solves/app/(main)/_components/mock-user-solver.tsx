@@ -1,6 +1,5 @@
 "use client";
 
-import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckCircle2Icon,
@@ -71,7 +70,6 @@ export function MockUserSolver() {
   );
   const [score, setScore] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const runSimulation = async () => {
@@ -144,28 +142,6 @@ export function MockUserSolver() {
       }
 
       if (step === "show-final-score") {
-        // Confetti within the component canvas
-        setTimeout(() => {
-          if (canvasRef.current && containerRef.current) {
-            const canvas = canvasRef.current;
-            const container = containerRef.current;
-
-            // Set canvas internal resolution to match container size
-            canvas.width = container.offsetWidth;
-            canvas.height = container.offsetHeight;
-
-            const myConfetti = confetti.create(canvas, {
-              resize: true,
-              useWorker: true,
-            });
-            myConfetti({
-              particleCount: 80,
-              spread: 70,
-              origin: { x: 0.5, y: 0.35 },
-              colors: ["#fbbf24", "#f59e0b", "#d97706", "#fcd34d"],
-            });
-          }
-        }, 300);
         await new Promise((r) => setTimeout(r, 3500));
         setStep("complete");
       }
@@ -357,12 +333,6 @@ export function MockUserSolver() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Confetti Canvas - full component area */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none z-20"
-      />
 
       {/* Cursor */}
       <UserSolverCursor step={step} containerRef={containerRef} />

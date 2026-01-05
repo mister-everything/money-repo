@@ -49,8 +49,6 @@ export function MockSimulation() {
 
   // Simulation Sequence
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-
     const runSimulation = async () => {
       // 1. Start: AI asks what to create
       if (step === "idle") {
@@ -167,8 +165,6 @@ export function MockSimulation() {
     };
 
     runSimulation();
-
-    return () => clearTimeout(timeout);
   }, [step]);
 
   return (

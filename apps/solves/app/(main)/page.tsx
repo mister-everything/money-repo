@@ -81,7 +81,7 @@ export default async function Page() {
   return (
     <div className="flex flex-col w-full gap-0 overflow-x-hidden">
       {/* Hero Section */}
-      <section className="relative h-[60vh] w-full flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative h-[70vh] w-full flex flex-col items-center justify-center overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-8 p-4 mt-10 max-w-4xl mx-auto">
           <Motion.FadeIn>
             <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-2">
