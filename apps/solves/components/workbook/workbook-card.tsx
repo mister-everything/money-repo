@@ -53,7 +53,7 @@ export function WorkbookCard({
 
   const isPending = useMemo(
     () => isPendingTogglePublic || isPendingDelete,
-    [isPendingDelete, isPendingTogglePublic]
+    [isPendingDelete, isPendingTogglePublic],
   );
 
   const hasAction = useMemo(() => {
@@ -252,6 +252,22 @@ export function WorkbookCard({
           </div>
         </div>
       </CardContent>
+    </Card>
+  );
+}
+
+export function WorkbookCardSimple({
+  workBook,
+}: {
+  workBook: WorkBookWithoutBlocks;
+}) {
+  return (
+    <Card className="w-full min-h-72 hover:border-primary cursor-pointer hover:shadow-lg transition-shadow shadow-none rounded-md h-full flex flex-col">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-bold truncate">
+          {workBook.title || "제목이 없습니다."}
+        </CardTitle>
+      </CardHeader>
     </Card>
   );
 }

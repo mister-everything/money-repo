@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { InDevelopment } from "@/components/ui/in-development";
 import { QuickWorkbookCreator } from "@/components/workbook/quick-workbook-creator";
-import { WorkbookCard } from "@/components/workbook/workbook-card";
+import { WorkbookCardSimple } from "@/components/workbook/workbook-card";
 
 export default async function Page() {
   const workBooks = await workBookService.searchWorkBooks({
@@ -14,16 +14,15 @@ export default async function Page() {
 
   return (
     <div className="p-6 lg:p-10 w-full flex flex-col gap-8">
-      <div className="text-3xl font-bold text-foreground">
-        <h1 className="mb-2">다양한 상황에 따라</h1>
-        <h1>원하는 문제를 출제하고 활용해보세요</h1>
-      </div>
+      <header className="font-semibold text-foreground flex flex-col items-center w-full mt-32">
+        <h1 className="mb-4 text-5xl">호기심이 문제가 되는 순간,</h1>
+        <h2 className="text-4xl font-bold ">
+          Solves<span className="text-5xl text-primary">.</span>
+        </h2>
+      </header>
 
-      <div>
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-foreground mb-4">
-            전체 베스트
-          </h2>
+      <div className="max-w-4xl w-full mx-auto">
+        <div className="flex items-center justify-end">
           <Link href="/workbooks">
             <Button variant="ghost">
               더 많은 문제집
@@ -47,7 +46,7 @@ export default async function Page() {
                 href={`/workbooks/${workBook.id}/preview`}
                 key={workBook.id}
               >
-                <WorkbookCard workBook={workBook} />
+                <WorkbookCardSimple workBook={workBook} />
               </Link>
             );
           })}
