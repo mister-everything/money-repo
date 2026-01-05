@@ -29,7 +29,7 @@ export default async function ReviewPage({
   return (
     <div className="flex w-full flex-col">
       <div className="p-4 sticky top-0 z-10">
-        <GoBackButton>뒤로가기</GoBackButton>
+        <GoBackButton href="/workbooks">다른 문제집 보기</GoBackButton>
       </div>
       <WorkBookReview session={reviewSession} />
       <div className="px-4 max-w-6xl mx-auto w-full">

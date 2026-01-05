@@ -8,16 +8,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export function GoBackButton({
   className,
   children,
+  href,
 }: {
   className?: string;
   children?: React.ReactNode;
+  href?: string;
 }) {
   const router = useRouter();
 
   const isMobile = useIsMobile();
 
   const onBack = () => {
-    if (window.history.length > 1) router.back();
+    if (href) router.push(href);
+    else if (window.history.length > 1) router.back();
     else router.replace("/");
   };
 
