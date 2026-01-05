@@ -1,19 +1,9 @@
 import { tool as createTool, Tool } from "ai";
-import {
-  GenerateWorkbookMetaInputSchema,
-  WORKBOOK_META_TOOL_NAMES,
-} from "./shared";
+import { WORKBOOK_META_TOOL_NAME, WorkbookMetaInputSchema } from "./shared";
 
 export const generateWorkbookMetaTool: Tool = createTool({
-  name: WORKBOOK_META_TOOL_NAMES.META,
+  name: WORKBOOK_META_TOOL_NAME,
   description:
-    "문제집 제목과 한줄 설명을 한 번에 생성합니다. 제목은 20자, 설명은 25자 이하로만 반환하세요.",
-  inputSchema: GenerateWorkbookMetaInputSchema,
-  execute: async ({ title, description }) => {
-    return { title, description };
-  },
-});
-
-export const loadWorkbookMetaTools = (): Record<string, Tool> => ({
-  [WORKBOOK_META_TOOL_NAMES.META]: generateWorkbookMetaTool,
+    "문제집의 제목과 설명 후보를 각각 3~5개씩 추천합니다. 1~2개 제목에는 이모지를 포함해주세요.",
+  inputSchema: WorkbookMetaInputSchema,
 });

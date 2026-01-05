@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { safeFail, safeOk } from "./interface";
 
-export function nextOk(data: any) {
+export function nextOk(data?: any) {
   return NextResponse.json(safeOk(data), {
     status: 200,
   });

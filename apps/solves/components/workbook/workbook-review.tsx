@@ -7,8 +7,11 @@ import { CheckIcon, Share2Icon } from "lucide-react";
 import { useCallback } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
+import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { GradualSpacingText } from "../ui/gradual-spacing-text";
 import { Block } from "./block/block";
+import { WorkbookHeader } from "./workbook-header";
 import { WorkBookLikeButton } from "./workbook-like-button";
 
 interface WorkBookReviewProps {
@@ -36,7 +39,7 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
 
   return (
     <div className="w-full px-4">
-      <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
+      <div className="sticky top-0 z-10 backdrop-blur-sm flex items-center gap-2">
         <div className="ml-auto lg:hidden">
           <WorkBookLikeButton
             workBookId={session.workBook.id}
@@ -49,21 +52,21 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
       <div className="w-full lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,56rem)_minmax(0,1fr)] lg:gap-x-6">
         <div className="hidden lg:block" />
         <div className="mx-auto flex flex-col w-full max-w-4xl pb-24 lg:mx-0">
-          <Card className="mb-8 border-none shadow-none">
+          <Card className="border-none shadow-none">
             <CardHeader>
               <div className="flex items-center justify-center">
                 <div className="space-y-2 text-center">
                   <h3 className="text-3xl font-bold text-foreground">
-                    문제 풀이 결과
+                    <GradualSpacingText text="문제 풀이 결과" />
                   </h3>
-                  <p className="text-base text-muted-foreground">
+                  <p className="text-base text-muted-foreground fade-1000">
                     총{" "}
-                    <span className="font-bold text-primary">
+                    <span className="font-semibold text-primary">
                       {session.session.totalBlocks ||
                         session.workBook.blocks.length}
                     </span>{" "}
                     문제 중{" "}
-                    <span className="font-bold text-primary">
+                    <span className="font-semibold text-primary">
                       {session.session.correctBlocks || 0}
                     </span>{" "}
                     문제 정답입니다.
@@ -72,6 +75,11 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
               </div>
             </CardHeader>
           </Card>
+          <WorkbookHeader
+            book={session.workBook}
+            mode="review"
+            className="mb-6 fade-1000"
+          />
           {/* 문제들 */}
           <div className="space-y-6">
             {session.workBook.blocks.map((problem, index) => {
@@ -79,11 +87,12 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
 
               return (
                 <Block
-                  className={
+                  className={cn(
+                    "fade-2000",
                     !submitAnswerByBlockId[problem.id]?.isCorrect
                       ? "bg-muted-foreground/5"
-                      : ""
-                  }
+                      : "",
+                  )}
                   index={index}
                   key={problem.id}
                   id={problem.id}

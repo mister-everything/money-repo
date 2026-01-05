@@ -1,135 +1,256 @@
+import { UseChatHelpers } from "@ai-sdk/react";
 import {
   WORKBOOK_DESCRIPTION_MAX_LENGTH,
   WORKBOOK_TITLE_MAX_LENGTH,
 } from "@service/solves/shared";
-import { ToolUIPart } from "ai";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { getToolName, ToolUIPart, UIMessage } from "ai";
+import { CheckIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  GenerateWorkbookMetaInput,
-  WORKBOOK_META_TOOL_NAMES,
-} from "@/lib/ai/tools/workbook/shared";
+import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { TextShimmer } from "@/components/ui/text-shimmer";
+import { DeepPartial } from "@/global";
+import { ToolCanceledMessage } from "@/lib/ai/shared";
+import { WorkbookMetaInput } from "@/lib/ai/tools/workbook/shared";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 
-type MetaCandidate = {
-  title: string;
-  description: string;
-  maxTitle: number;
-  maxDescription: number;
+type OkOutput = {
+  title?: string;
+  description?: string;
 };
 
 export function WorkbookMetaToolPart({
   part,
+  addToolOutput,
 }: {
   part: ToolUIPart;
-  type: WORKBOOK_META_TOOL_NAMES;
+  addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
 }) {
-  const workBook = useWorkbookEditStore((state) => state.workBook);
-  const setWorkBook = useWorkbookEditStore((state) => state.setWorkBook);
+  const input = part.input as DeepPartial<WorkbookMetaInput> | undefined;
 
-  const isPending = useMemo(
-    () => part.state.startsWith("input-"),
+  const isStreaming = useMemo(
+    () => part.state == "input-streaming",
     [part.state],
   );
 
-  const candidate = useMemo<MetaCandidate>(() => {
-    const input = part.input as Partial<GenerateWorkbookMetaInput> | undefined;
-    const output = part.output as
-      | { title?: string; description?: string; note?: string }
-      | undefined;
-    return {
-      title: output?.title ?? input?.title ?? "",
-      description: output?.description ?? input?.description ?? "",
-      maxTitle: WORKBOOK_TITLE_MAX_LENGTH,
-      maxDescription: WORKBOOK_DESCRIPTION_MAX_LENGTH,
-    };
-  }, [part.input, part.output]);
+  const isPending = useMemo(
+    () => part.state == "input-available",
+    [part.state],
+  );
 
-  const [title, setTitle] = useState(candidate.title);
-  const [description, setDescription] = useState(candidate.description);
+  const output = part.output as string | undefined | OkOutput;
+  const outputStatus = useMemo(() => {
+    if (isPending) return "pending";
+    if (output == ToolCanceledMessage) return "rejected";
+    return "approved";
+  }, [output]);
+
+  const titles = useMemo(
+    () => input?.titles?.filter?.(Boolean) ?? [],
+    [input?.titles],
+  );
+  const descriptions = useMemo(
+    () => input?.descriptions?.filter?.(Boolean) ?? [],
+    [input?.descriptions],
+  );
+
+  const [selectedTitleIndex, setSelectedTitleIndex] = useState(
+    (output as OkOutput)?.title ?? "",
+  );
+  const [selectedDescriptionIndex, setSelectedDescriptionIndex] = useState(
+    (output as OkOutput)?.description ?? "",
+  );
 
   useEffect(() => {
-    setTitle(candidate.title);
-    setDescription(candidate.description);
-  }, [candidate.title, candidate.description]);
+    if (part.state == "output-available") return;
+    setSelectedTitleIndex("");
+    setSelectedDescriptionIndex("");
+  }, [titles.length, descriptions.length, part.state]);
 
-  const isApplied = useMemo(() => {
-    if (!workBook) return false;
-    return (
-      workBook.title === title && (workBook.description ?? "") === description
-    );
-  }, [title, description, workBook]);
-
-  const handleApply = () => {
-    if (!workBook) {
-      toast.error("문제집 정보를 불러오지 못했어요.");
-      return;
-    }
-    if (!title.trim() || !description.trim()) {
-      toast.error("제목과 설명을 모두 입력하세요.");
-      return;
-    }
-    setWorkBook((prev) => {
-      if (!prev) return prev;
-      return { ...prev, title, description };
-    });
-    toast.success("문제집 정보에 적용했어요.");
-  };
+  const handleApply = useCallback(
+    (isApproved: boolean) => {
+      if (isApproved) {
+        const selectedTitle = titles[Number(selectedTitleIndex)] ?? "";
+        const selectedDescription =
+          descriptions[Number(selectedDescriptionIndex)] ?? "";
+        const store = useWorkbookEditStore.getState();
+        store.setWorkBook((prev) => ({
+          ...prev,
+          title: selectedTitle.trim().slice(0, WORKBOOK_TITLE_MAX_LENGTH),
+          description: selectedDescription
+            .trim()
+            .slice(0, WORKBOOK_DESCRIPTION_MAX_LENGTH),
+        }));
+        store.triggerScrollToTop();
+      }
+      addToolOutput?.({
+        state: "output-available",
+        tool: getToolName(part),
+        toolCallId: part.toolCallId,
+        output: isApproved
+          ? {
+              title: selectedTitleIndex,
+              description: selectedDescriptionIndex,
+            }
+          : ToolCanceledMessage,
+      });
+    },
+    [
+      titles,
+      descriptions,
+      selectedTitleIndex,
+      selectedDescriptionIndex,
+      addToolOutput,
+      part,
+    ],
+  );
 
   return (
-    <div className="p-4">
-      <div
-        className={cn(
-          "rounded-lg border bg-background p-4 space-y-3 fade-300",
-          isPending && "border-muted text-muted-foreground animate-pulse",
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="rounded-full">
-            문제집 제목 · 설명 제안
-          </Badge>
-        </div>
+    <div className="flex flex-col text-sm group select-none text-muted-foreground">
+      {part.errorText ? (
+        <p className="fade-300">제목·설명 생성을 실패하였습니다.</p>
+      ) : (
+        <>
+          {isStreaming ? (
+            <TextShimmer>{`제목·설명 생성중...`}</TextShimmer>
+          ) : (
+            <p>
+              <GradualSpacingText
+                key={part.state}
+                text={
+                  isPending
+                    ? "마음에 드는 제목과 설명을 선택해주세요."
+                    : outputStatus == "approved"
+                      ? "제목·설명 적용되었어요."
+                      : outputStatus == "rejected"
+                        ? "제목·설명 거절되었어요."
+                        : "제목·설명 생성함"
+                }
+              />
+            </p>
+          )}
+        </>
+      )}
+      {part.state != "output-error" && (
+        <div
+          className={cn(
+            "p-4 mt-3",
+            isStreaming && "border-muted text-muted-foreground animate-pulse",
+          )}
+        >
+          <div className="space-y-4">
+            {/* 제목 선택 */}
+            {titles.length > 0 && (
+              <div className="space-y-2">
+                <p
+                  className={cn(
+                    "text-muted-foreground",
+                    isPending && "animate-pulse",
+                  )}
+                >
+                  <GradualSpacingText
+                    text={`문제집 제목 ${titles.length}개 추천`}
+                  />
+                </p>
+                <RadioGroup
+                  value={selectedTitleIndex}
+                  onValueChange={setSelectedTitleIndex}
+                  disabled={!isPending}
+                  className="gap-2"
+                >
+                  {titles.map((title, index) => {
+                    const key = `title-${index}`;
+                    return (
+                      <Label
+                        key={key}
+                        onClick={() =>
+                          isPending && setSelectedTitleIndex(String(index))
+                        }
+                        className={cn(
+                          "flex items-center gap-2 border rounded-lg p-4 bg-background cursor-pointer transition-colors",
+                          selectedTitleIndex === String(index) &&
+                            "border-primary bg-primary/5",
+                          outputStatus == "rejected" && "bg-muted!",
+                        )}
+                      >
+                        <RadioGroupItem value={String(index)} />
+                        <span className="text-foreground cursor-pointer flex-1">
+                          {title}
+                        </span>
+                      </Label>
+                    );
+                  })}
+                </RadioGroup>
+              </div>
+            )}
 
-        <div className="space-y-2">
-          <Input
-            value={title}
-            maxLength={candidate.maxTitle}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={isPending || !workBook}
-            placeholder="제목 (최대 20자)"
-          />
-          <Textarea
-            value={description}
-            maxLength={candidate.maxDescription}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={isPending || !workBook}
-            placeholder="한줄 설명 (최대 25자)"
-            className="resize-none"
-            rows={2}
-          />
-        </div>
+            {/* 설명 선택 */}
+            {descriptions.length > 0 && (
+              <div className="space-y-2">
+                <p
+                  className={cn(
+                    "text-muted-foreground",
+                    isPending && "animate-pulse",
+                  )}
+                >
+                  <GradualSpacingText
+                    text={`문제집 설명 ${descriptions.length}개 추천`}
+                  />
+                </p>
+                <RadioGroup
+                  value={selectedDescriptionIndex}
+                  onValueChange={setSelectedDescriptionIndex}
+                  className="gap-2"
+                  disabled={!isPending}
+                >
+                  {descriptions.map((desc, index) => {
+                    const key = `desc-${index}`;
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            disabled={
-              isPending ||
-              !title.trim() ||
-              !description.trim() ||
-              !workBook ||
-              isApplied
-            }
-            onClick={handleApply}
-          >
-            {isApplied ? "적용됨" : "제목·설명 적용"}
-          </Button>
+                    return (
+                      <Label
+                        key={key}
+                        onClick={() =>
+                          isPending &&
+                          setSelectedDescriptionIndex(String(index))
+                        }
+                        className={cn(
+                          "flex items-center gap-2 border rounded-lg p-4 bg-background cursor-pointer transition-colors",
+                          selectedDescriptionIndex === String(index) &&
+                            "border-primary bg-primary/5",
+                          outputStatus == "rejected" && "bg-muted!",
+                        )}
+                      >
+                        <RadioGroupItem value={String(index)} />
+                        <span className="text-foreground cursor-pointer flex-1">
+                          {desc}
+                        </span>
+                      </Label>
+                    );
+                  })}
+                </RadioGroup>
+              </div>
+            )}
+
+            {isPending ? (
+              <div className="fade-1000 flex justify-end items-center gap-2 mt-2">
+                <Button
+                  variant="default"
+                  disabled={!selectedTitleIndex && !selectedDescriptionIndex}
+                  onClick={() => handleApply(true)}
+                >
+                  <CheckIcon className="size-3 stroke-3" />
+                  적용
+                </Button>
+              </div>
+            ) : (
+              <div className="h-2" />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

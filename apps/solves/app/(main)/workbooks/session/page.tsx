@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
+import { WorkbookReportDialog } from "@/components/workbook/workbook-report-dialog";
 import { authClient } from "@/lib/auth/client";
 
 const sortOptions = [
@@ -36,6 +37,7 @@ export default function Page() {
     sort: "latest",
     search: "",
   });
+  const [reportWorkbookId, setReportWorkbookId] = useState<string | null>(null);
   const {
     data: workBookSessions,
     isLoading,
@@ -46,7 +48,7 @@ export default function Page() {
     {
       fallbackData: [],
       revalidateOnFocus: false,
-    },
+    }
   );
 
   return (
@@ -110,6 +112,7 @@ export default function Page() {
                 isOwner={userSession?.user?.publicId === workBook.ownerPublicId}
                 workBook={workBook}
                 session={session}
+                onReport={() => setReportWorkbookId(workBook.id)}
               />
             </Link>
           ))}
@@ -122,6 +125,13 @@ export default function Page() {
           <p className="text-muted-foreground">문제집을 풀어보세요!</p>
         </div>
       )}
+      <WorkbookReportDialog
+        open={reportWorkbookId !== null}
+        onOpenChange={(open) => {
+          if (!open) setReportWorkbookId(null);
+        }}
+        workbookId={reportWorkbookId ?? undefined}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { isPublished, WorkBookWithoutBlocks } from "@service/solves/shared";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   deleteWorkbookAction,
@@ -17,6 +18,7 @@ interface LatestWorkbooksProps {
 }
 
 export function LatestWorkbooks({ initialWorkBooks }: LatestWorkbooksProps) {
+  const router = useRouter();
   const [workbooks, setWorkbooks] =
     useState<WorkBookWithoutBlocks[]>(initialWorkBooks);
 
@@ -27,6 +29,7 @@ export function LatestWorkbooks({ initialWorkBooks }: LatestWorkbooksProps) {
         setWorkbooks((prev) =>
           prev.filter((book) => book.id !== result.deletedWorkBookId),
         );
+        router.refresh();
       },
     },
   );
