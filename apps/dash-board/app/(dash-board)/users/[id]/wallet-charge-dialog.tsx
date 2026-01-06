@@ -66,7 +66,7 @@ export function WalletChargeDialog({
       });
 
       toast.success(`충전 완료`);
-      setOpen(false);
+      onOpenChange(false);
       setAmount("");
       setReason("");
       router.refresh();
