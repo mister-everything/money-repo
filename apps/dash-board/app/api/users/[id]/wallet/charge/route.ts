@@ -1,34 +1,26 @@
 import { creditService } from "@service/solves";
-import { PublicError } from "@workspace/error";
-import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getUser } from "@/lib/auth/server";
-import { nextFail } from "@/lib/protocol/next-route-helper";
+import { checkAdmin, getUser } from "@/lib/auth/server";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
-const bodySchema = z.object({
+const requestSchema = z.object({
   amount: z.number(),
   reason: z.string().optional(),
   idempotencyKey: z.string().optional(),
 });
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: Request) {
   try {
-    await getUser(); // 어드민 세션 보장
+    const { id: userId } = await getUser(); // 어드민 세션 보장
 
-    const { id } = await params;
-    if (!id) {
-      return nextFail("사용자 ID가 필요합니다.");
-    }
+    if (!(await checkAdmin(userId))) return nextFail("권한이 없습니다.");
 
-    const { amount, reason, idempotencyKey } = bodySchema.parse(
+    const { amount, reason, idempotencyKey } = requestSchema.parse(
       await request.json(),
     );
 
     const { newBalance, ledgerId } = await creditService.grantCredit({
-      userId: id,
+      userId,
       amount,
       reason,
       idempotencyKey,

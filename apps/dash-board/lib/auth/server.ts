@@ -14,8 +14,8 @@ import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE_PREFIX } from "../const";
 import { logger } from "@/lib/logger";
+import { AUTH_COOKIE_PREFIX } from "../const";
 
 export const getSession = async () => {
   "use server";
@@ -122,7 +122,7 @@ export const adminBetterAuth: ReturnType<typeof betterAuth> = betterAuth({
   plugins: [admin(), nextCookies()],
 });
 
-const checkAdmin = async (id?: string) => {
+export const checkAdmin = async (id?: string) => {
   if (!id) {
     logger.error("User is not admin");
     return false;
