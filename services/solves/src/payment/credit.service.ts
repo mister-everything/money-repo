@@ -1,3 +1,4 @@
+import { userService } from "@service/auth";
 import { PublicError } from "@workspace/error";
 import { eq, sql } from "drizzle-orm";
 import { CacheKeys, CacheTTL } from "../cache-keys";
@@ -150,7 +151,7 @@ export const creditService = {
   grantCredit: async (params: {
     userId: string;
     amount: number;
-    reason?: string;
+    reason: string;
     idempotencyKey?: string;
     kind?: TxnKind;
   }) => {
@@ -169,7 +170,8 @@ export const creditService = {
     const wallet = await walletService.getOrCreateWallet(userId);
 
     const finalIdempotencyKey =
-      idempotencyKey || `admin_grant_charge_${userId}_${Date.now()}_${amount}`;
+      idempotencyKey ||
+      `admin_grant_charge_${userId}_${Math.floor(Date.now() / 1000)}`;
 
     const { newBalance, ledgerId } = await pgDb.transaction(async (tx) => {
       const queryResult = await tx.execute<{
@@ -196,7 +198,7 @@ export const creditService = {
           kind,
           delta: toDecimal(amount),
           runningBalance: toDecimal(nextBalance),
-          reason: reason ?? "admin_grant_charge",
+          reason,
           idempotencyKey: finalIdempotencyKey,
         })
         .returning({ id: CreditLedgerTable.id });

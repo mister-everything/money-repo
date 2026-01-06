@@ -11,7 +11,7 @@ const requestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const { id: userId } = await getUser(); // 어드민 세션 보장
+    const { id: userId, name: userName } = await getUser(); // 어드민 세션 보장
 
     if (!(await checkAdmin(userId))) return nextFail("권한이 없습니다.");
 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const { newBalance, ledgerId } = await creditService.grantCredit({
       userId,
       amount,
-      reason,
+      reason: `${userName}:${userId}:` + (reason ?? "admin_grant_charge"),
       idempotencyKey,
     });
 
