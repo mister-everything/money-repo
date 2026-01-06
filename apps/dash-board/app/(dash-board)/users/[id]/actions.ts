@@ -2,6 +2,7 @@
 
 import { userService } from "@service/auth";
 import { Role } from "@service/auth/shared";
+import { walletService } from "@service/solves";
 import { revalidatePath } from "next/cache";
 import z from "zod";
 import { getUser } from "@/lib/auth/server";
@@ -65,7 +66,9 @@ export async function getUserDetail(userId: string) {
   await getUser(); // Check if user is authenticated
 
   const user = await userService.getUserById(userId);
+  const wallet = await walletService.getOrCreateWallet(userId);
 
+  // TEST 후 어드민 권한 추가 예정
   if (!user) {
     return null;
   }
@@ -75,5 +78,6 @@ export async function getUserDetail(userId: string) {
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
     banExpires: user.banExpires?.toISOString() || null,
+    balance: Number(wallet.balance ?? 0),
   };
 }
