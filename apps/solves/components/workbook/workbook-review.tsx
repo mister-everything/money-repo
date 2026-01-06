@@ -52,7 +52,7 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
       <div className="w-full lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,56rem)_minmax(0,1fr)] lg:gap-x-6">
         <div className="hidden lg:block" />
         <div className="mx-auto flex flex-col w-full max-w-4xl pb-24 lg:mx-0">
-          <Card className="border-none shadow-none">
+          <Card className="border-none shadow-none bg-transparent">
             <CardHeader>
               <div className="flex items-center justify-center">
                 <div className="space-y-2 text-center">

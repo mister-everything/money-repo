@@ -34,7 +34,7 @@ export default async function WorkbookReportPage({
       <div className="absolute left-0 bottom-0 w-full bg-linear-to-b from-transparent to-primary/10 h-1/3" />
       <div className="flex-1">
         <div className="w-full p-4 sticky top-0 z-10">
-          <GoBackButton>뒤로가기</GoBackButton>
+          <GoBackButton href="/workbooks/creator">뒤로가기</GoBackButton>
         </div>
         <WorkbookReport
           book={book}
