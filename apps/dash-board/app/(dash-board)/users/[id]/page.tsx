@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Calendar,
   Mail,
-  RefreshCcw,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -27,6 +26,7 @@ import { getUserDetail } from "./actions";
 import { BanUserForm } from "./ban-user-form";
 import { RoleUpdateForm } from "./role-update-form";
 import { UnbanUserButton } from "./unban-user-button";
+import { WalletChargeButton } from "./wallet-charge-button";
 
 export const dynamic = "force-dynamic";
 
@@ -193,6 +193,7 @@ export default async function UserDetailPage(props: { params: Params }) {
             <Separator />
           </div>
 
+          {/* 지갑 현황 및 충전  */}
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
@@ -203,15 +204,16 @@ export default async function UserDetailPage(props: { params: Params }) {
           <CardContent className="space-y-5">
             <div className="text-xl font-bold">
               {balanceValue !== null
-                ? `${balanceValue.toLocaleString("ko-KR")} Balance`
-                : "잔액을 불러오지 못했습니다."}
+                ? `${balanceValue.toLocaleString("ko-KR")} Credit`
+                : "크레딧을 불러오지 못했습니다."}
             </div>
             {balanceError && (
               <p className="text-sm text-destructive">{balanceError}</p>
             )}
-            <Button variant="secondary" size="sm" disabled>
-              지갑 충전
-            </Button>
+            <WalletChargeButton
+              userId={user.id}
+              currentBalance={balanceValue}
+            />
           </CardContent>
         </Card>
 
