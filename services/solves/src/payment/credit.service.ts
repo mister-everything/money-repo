@@ -1,4 +1,3 @@
-import { userService } from "@service/auth";
 import { PublicError } from "@workspace/error";
 import { eq, sql } from "drizzle-orm";
 import { CacheKeys, CacheTTL } from "../cache-keys";
