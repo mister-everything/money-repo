@@ -11,6 +11,7 @@ import {
 } from "./schema";
 import { calculateCost, toDecimal } from "./shared";
 import { AIPrice, TxnKind } from "./types";
+import { walletService } from "./wallet.service";
 
 const logger = createLogger("creadit", "bgCyanBright");
 
@@ -140,5 +141,89 @@ export const creditService = {
     );
 
     return response;
+  },
+
+  /**
+   * 관리자용 크레딧 충전
+   * - 원장 기록 후 잔액 업데이트 (append-only ledger → balance)
+   */
+  grantCredit: async (params: {
+    userId: string;
+    amount: number;
+    reason: string;
+    idempotencyKey?: string;
+    kind?: TxnKind;
+  }) => {
+    const {
+      userId,
+      amount,
+      reason,
+      idempotencyKey,
+      kind = TxnKind.grant,
+    } = params;
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new PublicError("충전 금액은 0보다 커야 합니다");
+    }
+    // 지갑 없으면 생성 - 여기서 만들지 좀더 고민
+    const wallet = await walletService.getOrCreateWallet(userId);
+
+    const finalIdempotencyKey =
+      idempotencyKey ||
+      `admin_grant_charge_${userId}_${Math.floor(Date.now() / 1000)}`;
+
+    const { newBalance, ledgerId } = await pgDb.transaction(async (tx) => {
+      const queryResult = await tx.execute<{
+        id: string;
+        balance: string;
+      }>(sql`
+          SELECT id, balance FROM ${CreditWalletTable}
+          WHERE id = ${wallet.id}
+          FOR UPDATE
+        `);
+
+      const lockedWallet = queryResult.rows[0];
+      if (!lockedWallet) throw new PublicError("지갑을 찾을 수 없습니다");
+
+      const currentBalance = Number(lockedWallet.balance);
+      const nextBalance = currentBalance + amount;
+
+      // 원장 먼저
+      const [ledger] = await tx
+        .insert(CreditLedgerTable)
+        .values({
+          walletId: wallet.id,
+          userId,
+          kind,
+          delta: toDecimal(amount),
+          runningBalance: toDecimal(nextBalance),
+          reason,
+          idempotencyKey: finalIdempotencyKey,
+        })
+        .returning({ id: CreditLedgerTable.id });
+
+      // 잔액 업데이트
+      await tx
+        .update(CreditWalletTable)
+        .set({
+          balance: toDecimal(nextBalance),
+          updatedAt: new Date(),
+        })
+        .where(eq(CreditWalletTable.id, wallet.id));
+
+      return { newBalance: toDecimal(nextBalance), ledgerId: ledger.id };
+    });
+
+    await sharedCache.setex(
+      CacheKeys.userWallet(userId),
+      CacheTTL.USER_WALLET,
+      JSON.stringify({
+        id: wallet.id,
+        userId,
+        balance: newBalance,
+      }),
+    );
+
+    return { newBalance, ledgerId };
   },
 };

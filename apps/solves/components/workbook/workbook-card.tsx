@@ -53,7 +53,7 @@ export function WorkbookCard({
 
   const isPending = useMemo(
     () => isPendingTogglePublic || isPendingDelete,
-    [isPendingDelete, isPendingTogglePublic]
+    [isPendingDelete, isPendingTogglePublic],
   );
 
   const hasAction = useMemo(() => {

@@ -839,6 +839,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             editorRef={editorRef}
             onChange={setInput}
             onEnter={send}
+            autofocus
             mentionItems={mentionItems}
             onAppendMention={handleAppendMention}
             placeholder="무엇이든 물어보세요"

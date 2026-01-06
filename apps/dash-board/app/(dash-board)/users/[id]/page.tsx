@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   User,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -25,6 +26,7 @@ import { getUserDetail } from "./actions";
 import { BanUserForm } from "./ban-user-form";
 import { RoleUpdateForm } from "./role-update-form";
 import { UnbanUserButton } from "./unban-user-button";
+import { WalletChargeButton } from "./wallet-charge-button";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,10 @@ export default async function UserDetailPage(props: { params: Params }) {
   if (!user) {
     notFound();
   }
+
+  const balanceValue = user.balance ?? null;
+  const balanceError =
+    balanceValue === null ? "잔액을 불러오지 못했습니다." : null;
 
   const isBanned = user.banned;
   const isBanActive =
@@ -176,10 +182,37 @@ export default async function UserDetailPage(props: { params: Params }) {
               사용자의 권한을 변경할 수 있습니다.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <RoleUpdateForm
               userId={user.id}
               currentRole={user.role || "user"}
+            />
+          </CardContent>
+
+          <div className="px-6">
+            <Separator />
+          </div>
+
+          {/* 지갑 현황 및 충전  */}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              지갑 잔액
+            </CardTitle>
+            <CardDescription>사용자의 현재 크레딧 잔액입니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="text-xl font-bold">
+              {balanceValue !== null
+                ? `${balanceValue.toLocaleString("ko-KR")} Credit`
+                : "크레딧을 불러오지 못했습니다."}
+            </div>
+            {balanceError && (
+              <p className="text-sm text-destructive">{balanceError}</p>
+            )}
+            <WalletChargeButton
+              userId={user.id}
+              currentBalance={balanceValue}
             />
           </CardContent>
         </Card>
