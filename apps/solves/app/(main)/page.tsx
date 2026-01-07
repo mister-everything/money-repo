@@ -125,7 +125,7 @@ export default async function Page() {
                   size="lg"
                   className="rounded-full text-lg h-14 px-10 backdrop-blur-sm bg-background/50 hover:bg-background/80"
                 >
-                  둘러보기
+                  문제 풀어보기
                 </Button>
               </Link>
             </div>
