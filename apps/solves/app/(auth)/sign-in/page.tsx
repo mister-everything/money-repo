@@ -76,7 +76,7 @@ function SignInContent() {
     <div className="w-full h-full relative">
       <div className="fixed inset-0 -z-10 w-full h-screen opacity-50">
         <FaultyTerminal
-          tint={resolvedTheme === "dark" ? "#d0d0d0" : "#030408"}
+          tint={resolvedTheme === "dark" ? "#d0d0d0" : "#050610"}
           mouseReact={false}
           brightness={resolvedTheme === "dark" ? 0.6 : 4}
         />
