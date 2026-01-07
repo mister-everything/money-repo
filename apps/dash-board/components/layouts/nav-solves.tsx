@@ -3,6 +3,7 @@
 import {
   FileTextIcon,
   FolderTreeIcon,
+  MessageSquareWarningIcon,
   SquareChartGanttIcon,
   TrendingUpDownIcon,
 } from "lucide-react";
@@ -36,6 +37,11 @@ const menuItems = [
     title: "정책 관리",
     url: "/solves/policies",
     icon: FileTextIcon,
+  },
+  {
+    title: "신고 관리",
+    url: "/solves/reports",
+    icon: MessageSquareWarningIcon,
   },
 ];
 
