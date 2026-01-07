@@ -21,7 +21,7 @@ export function ThemeToggle({
   className,
   variant = "ghost",
 }: ThemeToggleProps) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // 클라이언트에서만 렌더링되도록 보장
@@ -39,15 +39,15 @@ export function ThemeToggle({
 
   return (
     <Button
-      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
       variant={variant}
       size="icon"
       className={cn(className)}
     >
-      {theme === "light" ? (
+      {resolvedTheme === "light" ? (
         <Sun className="h-5 w-5" />
       ) : (
-        <Moon className="h-5 w-5" />
+        <Moon className="h-5 w-5 fill-foreground" />
       )}
     </Button>
   );
