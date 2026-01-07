@@ -21,14 +21,16 @@ export default async function Layout({
         defaultOpen={isDefaultOpen}
         style={
           {
-            "--sidebar-width": "calc(var(--spacing) * 62)",
+            "--sidebar-width": "calc(var(--spacing) * 60)",
             "--header-height": "calc(var(--spacing) * 12)",
           } as React.CSSProperties
         }
       >
         <AppSidebar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="@container/main">{children}</div>
+        <main className="flex-1 overflow-hidden w-full h-screen p-2">
+          <div className="@container/main border rounded-3xl h-full overflow-y-auto relative bg-card">
+            <div className="">{children}</div>
+          </div>
         </main>
       </SidebarProvider>
     </div>

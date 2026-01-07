@@ -17,7 +17,7 @@ import { SidebarSolveMenuItem } from "./sidebar-solve-menu-item";
 
 export function AppSidebar() {
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar collapsible="offcanvas" variant="inset">
       <SidebarRail />
       <SidebarHeader>
         <SidebarMenu>
