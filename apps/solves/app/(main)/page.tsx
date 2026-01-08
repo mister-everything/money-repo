@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { PolicyFooter } from "@/components/layouts/policy-footer";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,7 +80,8 @@ export default async function Page() {
   });
 
   return (
-    <div className="flex flex-col w-full gap-0 overflow-x-hidden">
+    <div className="flex flex-col w-full gap-0">
+      <HeaderWithSidebarToggle showBlur={false} />
       {/* Hero Section */}
       <section className="relative h-[70vh] w-full flex flex-col items-center justify-center overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-8 p-4 mt-10 max-w-4xl mx-auto">
@@ -147,7 +149,7 @@ export default async function Page() {
 
       {/* Carousel Section */}
       <section className="py-24 relative overflow-hidden">
-        <div className="container mx-auto px-6 relative">
+        <div className="mx-auto max-w-7xl px-6 md:px-10 relative">
           <Motion.FadeIn>
             <div className="flex flex-col gap-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -171,7 +173,7 @@ export default async function Page() {
                 </div>
                 <Link
                   href="/workbooks"
-                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors shrink-0 flex items-center gap-2 group"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0 flex items-center gap-2 group"
                 >
                   전체보기{" "}
                   <ChevronRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
@@ -183,7 +185,7 @@ export default async function Page() {
         </div>
       </section>
       {/* Interactive Simulation Section (Maker) */}
-      <section className="py-24 container mx-auto px-6">
+      <section className="py-24 mx-auto max-w-7xl px-6 md:px-10">
         <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
           {/* Text Content */}
           <Motion.SlideIn
@@ -255,7 +257,7 @@ export default async function Page() {
 
       {/* AI Solver Section - AI Solves Problems */}
       <section className="py-24 w-full">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto max-w-7xl px-6 md:px-10">
           <div className="flex flex-col xl:flex-row-reverse items-center gap-12 xl:gap-24">
             {/* Text Content */}
             <Motion.SlideIn
@@ -325,7 +327,7 @@ export default async function Page() {
       </section>
 
       {/* User Solver Section - User Solves Problems */}
-      <section className="py-24 container mx-auto px-6">
+      <section className="py-24 mx-auto max-w-7xl px-6 md:px-10">
         <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
           {/* Text Content */}
           <Motion.SlideIn
@@ -395,7 +397,7 @@ export default async function Page() {
       </section>
 
       {/* Grid Features */}
-      <section className="py-24 container mx-auto px-6">
+      <section className="py-24 mx-auto max-w-7xl px-6 md:px-10 ">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
           <Motion.FadeIn>
             <h3 className="text-3xl md:text-4xl font-bold">
@@ -448,7 +450,7 @@ export default async function Page() {
         </div>
       </section>
 
-      <div className="container mx-auto px-6 py-24">
+      <div className="mx-auto px-6 py-24">
         <PolicyFooter />
       </div>
     </div>

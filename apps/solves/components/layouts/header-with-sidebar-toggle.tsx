@@ -42,7 +42,7 @@ export function HeaderWithSidebarToggle({
           <Button
             data-sidebar="trigger"
             data-slot="sidebar-trigger"
-            variant="secondary"
+            variant="ghost"
             size="icon"
             className="shadow-none"
             onClick={toggleSidebar}

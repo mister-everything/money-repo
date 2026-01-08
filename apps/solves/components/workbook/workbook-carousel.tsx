@@ -47,12 +47,8 @@ export function WorkbookCarousel({ workBooks }: WorkbookCarouselProps) {
 
   return (
     <div className="relative w-full overflow-hidden py-8">
-      {/* 양 끝 그라디언트 오버레이 */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 md:w-48 bg-linear-to-r from-background via-background/90 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 md:w-48 bg-linear-to-l from-background via-background/90 to-transparent z-10 pointer-events-none" />
-
       {/* 캐러셀 컨테이너 */}
-      <div className="relative w-full overflow-hidden">
+      <div className="relative w-full overflow-hidden border py-2 rounded-xl">
         <motion.div
           className="flex gap-6"
           style={{
