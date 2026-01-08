@@ -54,9 +54,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <NavUser />
-          </SidebarMenuItem>
+          <NavUser />
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
