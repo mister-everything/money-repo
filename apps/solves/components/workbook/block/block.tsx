@@ -11,7 +11,7 @@ import { equal, exclude, StateUpdate } from "@workspace/util";
 import {
   CircleIcon,
   PencilIcon,
-  Sparkle,
+  SparklesIcon,
   TrashIcon,
   XIcon,
 } from "lucide-react";
@@ -166,8 +166,12 @@ function PureBlock<T extends BlockType = BlockType>({
               onUpdateAnswer={props.onUpdateAnswer}
               onUpdateSolution={props.onUpdateSolution}
             >
-              <Button>
-                <Sparkle />
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 px-3 py-2 w-fit border-orange-500 bg-orange-50 hover:bg-orange-100 hover:text-orange-600 text-orange-500 dark:border-orange-400 dark:bg-orange-950/20 dark:text-orange-400 dark:hover:bg-orange-950/60"
+              >
+                <SparklesIcon className="size-4" />
               </Button>
             </BlockEditAgent>
           )}
