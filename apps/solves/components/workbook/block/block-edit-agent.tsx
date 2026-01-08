@@ -6,12 +6,12 @@ import {
   PopoverTrigger,
 } from "@radix-ui/react-popover";
 import { BlockAnswer, BlockContent, BlockType } from "@service/solves/shared";
-import { DefaultChatTransport, isToolUIPart } from "ai";
-import { ReactNode, useMemo } from "react";
+import { DefaultChatTransport, isToolUIPart, UIDataTypes } from "ai";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import z from "zod";
 import { EditFields, WorkbookEditChatRequest } from "@/app/api/ai/shared";
 import { Button } from "@/components/ui/button";
-import JsonView from "@/components/ui/json-view";
+import PromptInputDynamicGrow from "@/components/ui/prompt-input-dynamic-grow";
 import {
   EDIT_FIELD_TOOL_NAMES,
   EditQuestionInput,
@@ -31,6 +31,20 @@ type Props<T extends BlockType = BlockType> = {
   onUpdateAnswer?: (answer: BlockAnswer<T>) => void;
   onUpdateSolution?: (solution: string) => void;
 };
+
+type BlockSnapshot<T extends BlockType = BlockType> = {
+  question: string;
+  content: BlockContent<T>;
+  answer: BlockAnswer<T>;
+};
+
+const MENU_OPTIONS: { label: string; value: EditFields }[] = [
+  { label: "문제", value: EditFields.QUESTION },
+  { label: "보기", value: EditFields.CONTENT },
+  { label: "정답", value: EditFields.ANSWER },
+  { label: "해설", value: EditFields.SOLUTION },
+];
+
 export function BlockEditAgent<T extends BlockType = BlockType>({
   children,
   type,
@@ -42,11 +56,19 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
   onUpdateAnswer,
   onUpdateSolution,
 }: Props<T>) {
-  const { messages, sendMessage } = useChat({
+  const [blockSnapshot, setBlockSnapshot] = useState<BlockSnapshot<T> | null>(
+    null,
+  );
+  const [selectedMenuOptions, setSelectedMenuOptions] = useState<string[]>([]);
+  const selectedMenuOptionsRef = useRef<string[]>([]);
+  useEffect(() => {
+    selectedMenuOptionsRef.current = selectedMenuOptions;
+  }, [selectedMenuOptions]);
+  const { sendMessage, setMessages, status } = useChat({
     onError: handleErrorToast,
     transport: new DefaultChatTransport({
       api: "/api/ai/chat/workbook/edit",
-      prepareSendMessagesRequest: ({ messages, id }) => {
+      prepareSendMessagesRequest: ({ messages }) => {
         const body: z.infer<typeof WorkbookEditChatRequest> =
           WorkbookEditChatRequest.parse({
             messages,
@@ -55,66 +77,141 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
             question,
             content,
             answer,
-            editFields: [
-              EditFields.QUESTION,
-              EditFields.CONTENT,
-              EditFields.ANSWER,
-              EditFields.SOLUTION,
-            ],
+            editFields: selectedMenuOptionsRef.current,
           });
         return {
           body,
         };
       },
     }),
+    onToolCall: ({ toolCall }) => {
+      setBlockSnapshot((prev) => prev ?? getCurrentSnapshot());
+
+      if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.QUESTION) {
+        const updatedQuestion = (toolCall.input as EditQuestionInput).question;
+        onUpdateQuestion?.(updatedQuestion);
+        return;
+      }
+      if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.CONTENT) {
+        const updatedContent = toolCall.input as BlockContent<T>;
+        onUpdateContent?.(updatedContent);
+        return;
+      }
+      if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.ANSWER) {
+        const updatedAnswer = toolCall.input as BlockAnswer<T>;
+        onUpdateAnswer?.(updatedAnswer);
+        return;
+      }
+      if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.SOLUTION) {
+        const updatedSolution = (toolCall.input as EditSolutionInput).solution;
+        onUpdateSolution?.(updatedSolution);
+      }
+    },
 
     onFinish: ({ messages }) => {
       const lastMessage = messages.at(-1);
       if (lastMessage?.role !== "assistant") return;
       const toolParts = lastMessage?.parts.filter(isToolUIPart);
-      console.log("toolParts", toolParts);
-      toolParts?.forEach((part) => {
-        if (part.type === `tool-${EDIT_FIELD_TOOL_NAMES.QUESTION}`) {
-          const toolResult = part.input;
-          onUpdateQuestion?.((toolResult as EditQuestionInput).question);
-        }
-        if (part.type === `tool-${EDIT_FIELD_TOOL_NAMES.CONTENT}`) {
-          const toolResult = part.input;
-          onUpdateContent?.(toolResult as BlockContent<T>);
-        }
-        if (part.type === `tool-${EDIT_FIELD_TOOL_NAMES.ANSWER}`) {
-          const toolResult = part.input;
-          onUpdateAnswer?.(toolResult as BlockAnswer<T>);
-        }
-        if (part.type === `tool-${EDIT_FIELD_TOOL_NAMES.SOLUTION}`) {
-          const toolResult = part.input;
-          onUpdateSolution?.((toolResult as EditSolutionInput).solution);
-        }
-      });
+      if (!toolParts?.length) {
+        clearBuffers();
+      }
     },
   });
+
+  const getCurrentSnapshot = useCallback(
+    (): BlockSnapshot<T> => ({
+      question,
+      content,
+      answer,
+    }),
+    [answer, content, question],
+  );
+
+  const isBusy = status === "submitted" || status === "streaming";
+
+  const clearBuffers = useCallback(() => {
+    setBlockSnapshot(null);
+  }, []);
+
+  const handleAccept = useCallback(() => {
+    clearBuffers();
+  }, [clearBuffers]);
+
+  const handleReject = useCallback(() => {
+    if (!blockSnapshot) return;
+    onUpdateQuestion?.(blockSnapshot.question);
+    onUpdateContent?.(blockSnapshot.content);
+    onUpdateAnswer?.(blockSnapshot.answer);
+    onUpdateSolution?.(blockSnapshot.answer?.solution ?? "");
+    clearBuffers();
+  }, [
+    clearBuffers,
+    onUpdateAnswer,
+    onUpdateContent,
+    onUpdateQuestion,
+    onUpdateSolution,
+    blockSnapshot,
+  ]);
+
+  const handleSendMessage = useCallback(
+    (value: string) => {
+      if (isBusy) return;
+      setBlockSnapshot(getCurrentSnapshot());
+      setMessages([]);
+      sendMessage({
+        role: "user",
+        parts: [{ type: "text", text: value }],
+        metadata: {
+          selectedMenuOptions,
+        } as UIDataTypes,
+      });
+    },
+    [getCurrentSnapshot, isBusy, selectedMenuOptions, sendMessage],
+  );
 
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent className="bg-background border-border shadow-md w-[320px]">
-          <div>
-            <h1>Block Edit Agent</h1>
-            <Button
-              onClick={() =>
-                sendMessage({
-                  role: "user",
-                  parts: [{ type: "text", text: "문제 수정해주세요." }],
-                })
-              }
-            >
-              Send Message
-            </Button>
-            <div>
-              <JsonView data={messages} />
+        <PopoverContent
+          side="left"
+          align="center"
+          sideOffset={12}
+          className="bg-none border-border shadow-md w-[320px]"
+        >
+          <PromptInputDynamicGrow
+            placeholder="AI로 문제를 수정하세요"
+            onSubmit={(value) => {
+              handleSendMessage(value);
+            }}
+            menuOptions={MENU_OPTIONS}
+            onOptionsChange={setSelectedMenuOptions}
+            showEffects={true}
+            expandOnFocus={true}
+          />
+          {blockSnapshot && (
+            <div className="border-t pt-3">
+              <div className="mt-3 flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={handleAccept}
+                  disabled={isBusy}
+                >
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 text-destructive hover:text-destructive"
+                  onClick={handleReject}
+                  disabled={isBusy || !blockSnapshot}
+                >
+                  Reject
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </PopoverContent>
       </PopoverPortal>
     </Popover>
