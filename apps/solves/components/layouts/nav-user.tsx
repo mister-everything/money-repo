@@ -70,7 +70,7 @@ export const NavUser = memo(function NavUser() {
       <Button
         data-testid="sidebar-user-button"
         variant="ghost"
-        className="data-[state=open]:bg-accent! flex items-center gap-2 p-2 rounded-lg text-sm"
+        className="data-[state=open]:bg-accent! flex items-center gap-2 p-2 rounded-full text-sm"
       >
         {isPending ? (
           <Skeleton className="rounded-full size-6" />

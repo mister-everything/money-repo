@@ -28,8 +28,8 @@ export default async function Layout({
       >
         <AppSidebar />
         <main className="flex-1 overflow-hidden w-full h-screen p-2">
-          <div className="@container/main border rounded-3xl h-full overflow-y-auto relative bg-card dark:bg-card/40">
-            <div className="">{children}</div>
+          <div className="@container/main border rounded-3xl h-full overflow-y-auto relative bg-secondary dark:bg-card/40">
+            {children}
           </div>
         </main>
       </SidebarProvider>

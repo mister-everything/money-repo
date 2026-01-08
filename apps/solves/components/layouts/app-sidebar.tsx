@@ -6,11 +6,11 @@ import {
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Button } from "../ui/button";
 import { NavUser } from "./nav-user";
 import { SidebarEditMenuItem } from "./sidebar-edit-menu-item";
 import { SidebarSolveMenuItem } from "./sidebar-solve-menu-item";
@@ -22,21 +22,18 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <div className="w-full group-data-[state=collapsed]:hidden items-center gap-4">
-                <Link href={"/"} className="font-bold flex-1">
+            <div className="w-full group-data-[state=collapsed]:hidden items-center gap-4 justify-between flex my-1">
+              <Link href={"/"} className="font-bold flex-1">
+                <Button
+                  variant="ghost"
+                  className="rounded-full font-bold gap-0 px-2!"
+                >
                   Solves
                   <span className="text-lg text-primary">.</span>
-                </Link>
-                <SidebarTrigger />
-              </div>
-            </SidebarMenuButton>
-            <SidebarMenuButton
-              className="font-bold hidden group-data-[state=collapsed]:block"
-              asChild
-            >
-              <SidebarTrigger />
-            </SidebarMenuButton>
+                </Button>
+              </Link>
+              <SidebarTrigger className="rounded-full" />
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
