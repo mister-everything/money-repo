@@ -173,8 +173,8 @@ export function WorkBookSolve({
   }, [mode]);
 
   return (
-    <div ref={ref} className="w-full h-full pb-24">
-      <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
+    <div ref={ref} className="w-full h-full pb-20">
+      <div className="py-4 sticky top-0 left-0 z-10 w-full">
         <GoBackButton>뒤로가기</GoBackButton>
       </div>
 

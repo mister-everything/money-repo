@@ -215,4 +215,8 @@
   .gentle-bounce {
     animation: gentle-bounce 3s ease-in-out infinite;
   }
+
+  .max-w-8xl {
+    max-width: 96rem; /* 1536px */
+  }
 }
