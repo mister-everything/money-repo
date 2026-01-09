@@ -26,7 +26,7 @@ export default async function WorkbookEditPage({
   const { blocks, ...workBook } = book;
 
   return (
-    <div className="flex w-full overflow-hidden h-full gap-4">
+    <div className="flex w-full overflow-hidden h-full gap-2">
       <SidebarController openMounted={false} openUnmounted={true} />
       <div className="flex-1 h-full relative pt-14">
         <HeaderWithSidebarToggle className="absolute h-fit" />

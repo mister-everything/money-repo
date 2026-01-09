@@ -524,7 +524,7 @@ export function WorkbookEdit({
   }, [scrollTrigger]);
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full px-4">
       <div ref={ref} className="h-full overflow-y-auto relative">
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
