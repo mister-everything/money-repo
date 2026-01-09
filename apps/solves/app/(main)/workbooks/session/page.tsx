@@ -54,7 +54,11 @@ export default function Page() {
 
   return (
     <div>
-      <HeaderWithSidebarToggle />
+      <HeaderWithSidebarToggle>
+        <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
+          내가 푼 문제집
+        </span>
+      </HeaderWithSidebarToggle>
       <div className="w-full flex flex-col p-6 gap-4 pt-0!">
         <div className="font-bold text-foreground flex items-center justify-between gap-4">
           <h1 className="text-xl shrink-0">문제집 검색</h1>

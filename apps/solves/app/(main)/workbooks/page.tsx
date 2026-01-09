@@ -9,7 +9,11 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col">
-      <HeaderWithSidebarToggle />
+      <HeaderWithSidebarToggle>
+        <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
+          문제 풀기
+        </span>
+      </HeaderWithSidebarToggle>
       <WorkbooksClient initialWorkBooks={workBooks} />
     </div>
   );

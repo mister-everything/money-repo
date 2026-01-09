@@ -55,13 +55,14 @@ export default async function WorkbookPreviewPage({ params }: PageProps) {
   const book = await workBookService.getWorkBookWithoutAnswer(id, {
     isPublished: true,
   });
+
   if (!book) notFound();
 
   return (
     <div className="flex w-full h-full relative">
       <div className="flex-1">
         <div className="p-4 absolute top-0 left-0 z-10 w-full">
-          <GoBackButton>뒤로가기</GoBackButton>
+          <GoBackButton>목록으로</GoBackButton>
         </div>
         <WorkbookPublicPreview book={book} />
       </div>

@@ -11,7 +11,8 @@ export function HeaderWithSidebarToggle({
   children,
   showBlur: showBlurProp,
   className,
-}: React.ComponentProps<"div"> & { showBlur?: boolean }) {
+  ...props
+}: React.ComponentProps<"header"> & { showBlur?: boolean }) {
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = useMemo(() => {
     return state === "collapsed";
@@ -21,11 +22,12 @@ export function HeaderWithSidebarToggle({
     return Boolean(isCollapsed || children);
   }, [isCollapsed || Boolean(children), showBlurProp]);
   return (
-    <div
+    <header
       className={cn(
         "w-full flex gap-2 items-center px-4 py-3 sticky inset-0 z-10",
         className,
       )}
+      {...props}
     >
       {showBlur && (
         <div
@@ -39,23 +41,22 @@ export function HeaderWithSidebarToggle({
         />
       )}
       <div className="relative z-10 flex gap-1 items-center w-full">
-        {isCollapsed && (
-          <Button
-            data-sidebar="trigger"
-            data-slot="sidebar-trigger"
-            variant="ghost"
-            size="icon"
-            className="shadow-none"
-            onClick={toggleSidebar}
-          >
-            <SidebarIcon />
-            <span className="sr-only">Toggle Sidebar</span>
-          </Button>
-        )}
+        <Button
+          data-sidebar="trigger"
+          data-slot="sidebar-trigger"
+          variant="ghost"
+          size="icon"
+          className="shadow-none"
+          onClick={toggleSidebar}
+        >
+          <SidebarIcon />
+          <span className="sr-only">Toggle Sidebar</span>
+        </Button>
+
         {isNull(children) ? null : (
           <div className="min-h-9 flex items-center px-2">{children}</div>
         )}
       </div>
-    </div>
+    </header>
   );
 }

@@ -6,7 +6,6 @@ import {
   BlockContent,
   BlockType,
   blockValidate,
-  CategoryTree,
   checkAnswer,
   initializeBlock,
   initialSubmitAnswer,
@@ -21,20 +20,13 @@ import {
   createDebounce,
   deduplicate,
   equal,
-  isNull,
   objectFlow,
   StateUpdate,
   TIME,
 } from "@workspace/util";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  GripVerticalIcon,
-  PlusIcon,
-} from "lucide-react";
+import { GripVerticalIcon, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, {
-  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -48,27 +40,21 @@ import {
   updateWorkbookAction,
 } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
-import { notify } from "@/components/ui/notify";
+
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useCategories } from "@/hooks/query/use-categories";
 import { useToRef } from "@/hooks/use-to-ref";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
-import { SidebarIcon } from "../ui/custom-icon";
-import { Separator } from "../ui/separator";
-import { useSidebar } from "../ui/sidebar";
-import { Skeleton } from "../ui/skeleton";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./block/types";
-import { WorkBookCategoryUpdatePopup } from "./workbook-category-update-popup";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
 import { WorkbookHeader } from "./workbook-header";
 import { WorkbookPublishPopup } from "./workbook-publish-popup";
@@ -129,8 +115,6 @@ export function WorkbookEdit({
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const { state: sidebarState, toggleSidebar } = useSidebar();
-
   const router = useRouter();
 
   const [isEditBook, setIsEditBook] = useState(false);
@@ -149,9 +133,6 @@ export function WorkbookEdit({
   const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
 
   const [isPublishPopupOpen, setIsPublishPopupOpen] = useState(false);
-
-  const { data: categories = [], isLoading: isCategoriesLoading } =
-    useCategories();
 
   const correctAnswerIds = useMemo<Record<string, boolean>>(() => {
     if (control !== "review") return {};
@@ -251,17 +232,6 @@ export function WorkbookEdit({
       updatedBlocks.length > 0
     );
   }, [blocksDiff]);
-
-  const selectedCategory = useMemo(() => {
-    const flatCategories = categories.flatMap((c) => [c, ...c.children]);
-    const category = flatCategories.find((c) => c.id === workBook.categoryId);
-    if (!category) return [];
-    if (category.parentId === null) return [category];
-    return [
-      flatCategories.find((c) => c.id === category.parentId),
-      category,
-    ].filter(Boolean) as CategoryTree[];
-  }, [categories, workBook.categoryId]);
 
   const handleChangeWorkbookMode = useCallback(
     (mode: WorkBookComponentMode) => {
@@ -468,19 +438,6 @@ export function WorkbookEdit({
     [],
   );
 
-  const handleGoBack = useCallback(async () => {
-    if (isWorkBookDiff || isBlocksDiff) {
-      const answer = await notify.confirm({
-        title: "저장되지 않은 변경사항이 있습니다.",
-        description: "저장하지 않고 이전 페이지로 이동하시겠습니까?",
-        okText: "뒤로가기",
-        cancelText: "취소",
-      });
-      if (!answer) return;
-    }
-    router.back();
-  }, [router, isWorkBookDiff, isBlocksDiff]);
-
   const handleChangeControl = useCallback(
     (mode: "edit" | "solve" | "review") => {
       if (mode !== "review") {
@@ -569,63 +526,6 @@ export function WorkbookEdit({
   return (
     <div className="relative h-full">
       <div ref={ref} className="h-full overflow-y-auto relative">
-        <div className="sticky top-0 z-10 py-4 backdrop-blur-sm flex items-center">
-          {sidebarState === "collapsed" && (
-            <>
-              <Button variant="ghost" onClick={toggleSidebar} size={"icon"}>
-                <SidebarIcon />
-              </Button>
-              <div className="h-4">
-                <Separator orientation="vertical" />
-              </div>
-            </>
-          )}
-          <Button variant="ghost" onClick={handleGoBack} disabled={isPending}>
-            {sidebarState === "expanded" && (
-              <ChevronLeftIcon className="size-4!" />
-            )}
-            뒤로가기
-          </Button>
-          <div className="flex-1" />
-
-          {isCategoriesLoading ? (
-            <Skeleton className="w-24 h-9 rounded-full " />
-          ) : (
-            <WorkBookCategoryUpdatePopup
-              workBookId={workBook.id}
-              onSavedCategory={(categoryId) => {
-                setWorkBook((prev) => ({ ...prev, categoryId }));
-              }}
-            >
-              {isNull(workBook.categoryId) ? (
-                <>
-                  <WorkBookCategoryUpdatePopup
-                    workBookId={workBook.id}
-                    onSavedCategory={(categoryId) => {
-                      setWorkBook((prev) => ({ ...prev, categoryId }));
-                    }}
-                  >
-                    <Button className="rounded-full text-xs">소재 선택</Button>
-                  </WorkBookCategoryUpdatePopup>
-                </>
-              ) : (
-                selectedCategory.length > 0 && (
-                  <Button className="rounded-full text-xs">
-                    {selectedCategory.map((c, i) => {
-                      if (i == 0) return <Fragment key={i}>{c.name}</Fragment>;
-                      return (
-                        <Fragment key={i}>
-                          <ChevronRightIcon className="size-3.5" />
-                          {c.name}
-                        </Fragment>
-                      );
-                    })}
-                  </Button>
-                )
-              )}
-            </WorkBookCategoryUpdatePopup>
-          )}
-        </div>
         <div className="flex flex-col gap-6 max-w-3xl mx-auto pb-24 pt-6">
           <WorkbookHeader
             className="shadow-none"
@@ -633,6 +533,9 @@ export function WorkbookEdit({
             onModeChange={handleChangeWorkbookMode}
             onChangeTitle={handleChangeTitle}
             onChangeDescription={handleChangeDescription}
+            onSavedCategory={(categoryId) => {
+              setWorkBook((prev) => ({ ...prev, categoryId }));
+            }}
             book={workBook}
           />
 

@@ -3,7 +3,6 @@ import { isPublished } from "@service/solves/shared";
 import { PublicError } from "@workspace/error";
 import { notFound, redirect } from "next/navigation";
 import z from "zod";
-import { GoBackButton } from "@/components/layouts/go-back-button";
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { WorkbookReport } from "@/components/workbook/workbook-report";
 import { getSession } from "@/lib/auth/server";
@@ -33,11 +32,8 @@ export default async function WorkbookReportPage({
   return (
     <div className="flex w-full h-full">
       <div className="flex-1">
-        <HeaderWithSidebarToggle>
-          <GoBackButton arrow={false} href="/workbooks/creator">
-            뒤로가기
-          </GoBackButton>
-        </HeaderWithSidebarToggle>
+        <HeaderWithSidebarToggle />
+
         <WorkbookReport
           book={book}
           blockStats={blockStats}

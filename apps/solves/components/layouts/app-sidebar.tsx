@@ -8,7 +8,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarRail,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "../ui/button";
 import { NavUser } from "./nav-user";
@@ -32,7 +31,6 @@ export function AppSidebar() {
                   <span className="text-lg text-primary">.</span>
                 </Button>
               </Link>
-              <SidebarTrigger className="rounded-full" />
             </div>
           </SidebarMenuItem>
         </SidebarMenu>

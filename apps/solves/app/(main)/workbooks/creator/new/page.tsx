@@ -40,7 +40,11 @@ export default async function WorkBookCreatePage({
 
   return (
     <div className="flex flex-col">
-      <HeaderWithSidebarToggle />
+      <HeaderWithSidebarToggle>
+        <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
+          문제집 생성
+        </span>
+      </HeaderWithSidebarToggle>
       <div className="w-max-3xl mx-auto flex flex-col w-full p-6 pt-0!">
         <WorkbookCreateForm
           isMaxInprogressWorkbookCreateCount={
