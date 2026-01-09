@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { SidebarIcon } from "../ui/custom-icon";
-import { Separator } from "../ui/separator";
 import { useSidebar } from "../ui/sidebar";
 
 export function HeaderWithSidebarToggle({
@@ -39,7 +38,7 @@ export function HeaderWithSidebarToggle({
           }}
         />
       )}
-      <div className="relative z-10 flex gap-2 items-center w-full">
+      <div className="relative z-10 flex gap-1 items-center w-full">
         {isCollapsed && (
           <Button
             data-sidebar="trigger"
@@ -54,14 +53,7 @@ export function HeaderWithSidebarToggle({
           </Button>
         )}
         {isNull(children) ? null : (
-          <>
-            {isCollapsed && (
-              <div className="h-4">
-                <Separator orientation="vertical" />
-              </div>
-            )}
-            <div className="min-h-9 flex items-center px-2">{children}</div>
-          </>
+          <div className="min-h-9 flex items-center px-2">{children}</div>
         )}
       </div>
     </div>

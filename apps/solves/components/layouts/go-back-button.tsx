@@ -9,9 +9,11 @@ export function GoBackButton({
   className,
   children,
   href,
+  arrow = true,
 }: {
   className?: string;
   children?: React.ReactNode;
+  arrow?: boolean;
   href?: string;
 }) {
   const router = useRouter();
@@ -31,7 +33,7 @@ export function GoBackButton({
       onClick={onBack}
       className={className}
     >
-      <ChevronLeftIcon className="size-4!" />
+      {arrow && <ChevronLeftIcon className="size-4!" />}
       {children}
     </Button>
   );

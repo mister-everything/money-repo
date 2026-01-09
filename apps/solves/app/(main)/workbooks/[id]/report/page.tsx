@@ -4,6 +4,7 @@ import { PublicError } from "@workspace/error";
 import { notFound, redirect } from "next/navigation";
 import z from "zod";
 import { GoBackButton } from "@/components/layouts/go-back-button";
+import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { WorkbookReport } from "@/components/workbook/workbook-report";
 import { getSession } from "@/lib/auth/server";
 
@@ -30,12 +31,13 @@ export default async function WorkbookReportPage({
     await workBookService.getWorkBookReportStats(id);
 
   return (
-    <div className="flex w-full h-screen">
-      <div className="absolute left-0 bottom-0 w-full bg-linear-to-b from-transparent to-primary/10 h-1/3" />
+    <div className="flex w-full h-full">
       <div className="flex-1">
-        <div className="w-full p-4 sticky top-0 z-10">
-          <GoBackButton href="/workbooks/creator">뒤로가기</GoBackButton>
-        </div>
+        <HeaderWithSidebarToggle>
+          <GoBackButton arrow={false} href="/workbooks/creator">
+            뒤로가기
+          </GoBackButton>
+        </HeaderWithSidebarToggle>
         <WorkbookReport
           book={book}
           blockStats={blockStats}

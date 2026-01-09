@@ -567,7 +567,7 @@ export function WorkbookEdit({
   }, [scrollTrigger]);
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       <div ref={ref} className="h-full overflow-y-auto relative">
         <div className="sticky top-0 z-10 py-4 backdrop-blur-sm flex items-center">
           {sidebarState === "collapsed" && (
