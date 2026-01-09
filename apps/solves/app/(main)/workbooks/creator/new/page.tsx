@@ -41,7 +41,7 @@ export default async function WorkBookCreatePage({
   return (
     <div className="flex flex-col">
       <HeaderWithSidebarToggle />
-      <div className="w-max-3xl mx-auto flex flex-col w-full p-6 lg:p-8">
+      <div className="w-max-3xl mx-auto flex flex-col w-full p-6 pt-0!">
         <WorkbookCreateForm
           isMaxInprogressWorkbookCreateCount={
             isMaxInprogressWorkbookCreateCount

@@ -1,9 +1,11 @@
 "use client";
 
+import { isNull } from "@workspace/util";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { SidebarIcon } from "../ui/custom-icon";
+import { Separator } from "../ui/separator";
 import { useSidebar } from "../ui/sidebar";
 
 export function HeaderWithSidebarToggle({
@@ -51,7 +53,16 @@ export function HeaderWithSidebarToggle({
             <span className="sr-only">Toggle Sidebar</span>
           </Button>
         )}
-        {children}
+        {isNull(children) ? null : (
+          <>
+            {isCollapsed && (
+              <div className="h-4">
+                <Separator orientation="vertical" />
+              </div>
+            )}
+            <div className="min-h-9 flex items-center px-2">{children}</div>
+          </>
+        )}
       </div>
     </div>
   );

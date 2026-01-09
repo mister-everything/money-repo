@@ -18,7 +18,7 @@ export default function Layout({
         }
       >
         <AppSidebar />
-        <main className="flex-1 overflow-hidden w-full h-screen p-2">
+        <main className="flex-1 overflow-hidden w-full h-full p-2">
           <div className="@container/main border rounded-3xl h-full overflow-y-auto relative bg-secondary dark:bg-card/40">
             {children}
           </div>

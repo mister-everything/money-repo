@@ -61,6 +61,9 @@ import { handleErrorToast } from "@/lib/handle-toast";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
+import { SidebarIcon } from "../ui/custom-icon";
+import { Separator } from "../ui/separator";
+import { SidebarTrigger, useSidebar } from "../ui/sidebar";
 import { Skeleton } from "../ui/skeleton";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
@@ -125,6 +128,8 @@ export function WorkbookEdit({
   } = useWorkbookEditStore();
 
   const ref = useRef<HTMLDivElement>(null);
+
+  const { state: sidebarState, toggleSidebar } = useSidebar();
 
   const router = useRouter();
 
@@ -562,11 +567,23 @@ export function WorkbookEdit({
   }, [scrollTrigger]);
 
   return (
-    <div className="h-full relative">
+    <div className="relative">
       <div ref={ref} className="h-full overflow-y-auto relative">
-        <div className="sticky top-0 z-10 py-2 backdrop-blur-sm flex items-center gap-2">
+        <div className="sticky top-0 z-10 py-4 backdrop-blur-sm flex items-center">
+          {sidebarState === "collapsed" && (
+            <>
+              <Button variant="ghost" onClick={toggleSidebar} size={"icon"}>
+                <SidebarIcon />
+              </Button>
+              <div className="h-4">
+                <Separator orientation="vertical" />
+              </div>
+            </>
+          )}
           <Button variant="ghost" onClick={handleGoBack} disabled={isPending}>
-            <ChevronLeftIcon className="size-4!" />
+            {sidebarState === "expanded" && (
+              <ChevronLeftIcon className="size-4!" />
+            )}
             뒤로가기
           </Button>
           <div className="flex-1" />

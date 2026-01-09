@@ -24,11 +24,11 @@ export default async function WorkbookEditPage({
   const { blocks, ...workBook } = book;
 
   return (
-    <div className="flex w-full h-screen px-4 gap-4">
-      <div className="flex-1 h-full overflow-hidden">
+    <div className="flex w-full overflow-hidden h-full px-2 gap-4">
+      <div className="flex-1 overflow-hidden h-full">
         <WorkbookEdit key={id} book={workBook} blocks={blocks} />
       </div>
-      <div className="hidden lg:block w-sm lg:w-lg xl:w-2xl 2xl:w-3xl h-full overflow-hidden p-2">
+      <div className="hidden lg:block w-sm lg:w-lg xl:w-2xl 2xl:w-3xl h-full py-2">
         <WorkbooksCreateChat workbookId={id} key={id} />
       </div>
     </div>
