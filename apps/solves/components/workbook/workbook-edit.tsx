@@ -63,7 +63,7 @@ import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { SidebarIcon } from "../ui/custom-icon";
 import { Separator } from "../ui/separator";
-import { SidebarTrigger, useSidebar } from "../ui/sidebar";
+import { useSidebar } from "../ui/sidebar";
 import { Skeleton } from "../ui/skeleton";
 import { Block } from "./block/block";
 import { BlockSelectPopup } from "./block/block-select-popup";
