@@ -1,20 +1,28 @@
+"use client";
+
+import { BookOpen, List, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "../ui/button";
 import { NavUser } from "./nav-user";
-import { SidebarEditMenuItem } from "./sidebar-edit-menu-item";
-import { SidebarSolveMenuItem } from "./sidebar-solve-menu-item";
 
 export function AppSidebar() {
+  const { setOpenMobile } = useSidebar();
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
       <SidebarRail />
@@ -37,14 +45,68 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarSolveMenuItem
-            rootHref="/workbooks"
-            solveSessionsHref="/workbooks/session"
-          />
-          <SidebarEditMenuItem
-            rootHref="/workbooks/creator/new"
-            myWorkbooksHref="/workbooks/creator"
-          />
+          <SidebarGroupLabel>풀기</SidebarGroupLabel>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/workbooks"}
+              >
+                <Link href="/workbooks" onClick={() => setOpenMobile(false)}>
+                  <BookOpen />
+                  <span>문제 풀기</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/workbooks/session"}
+              >
+                <Link
+                  href="/workbooks/session"
+                  onClick={() => setOpenMobile(false)}
+                >
+                  <List />
+                  <span>내가 푼 문제집</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>만들기</SidebarGroupLabel>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/workbooks/creator/new"}
+              >
+                <Link
+                  href="/workbooks/creator/new"
+                  onClick={() => setOpenMobile(false)}
+                >
+                  <Plus />
+                  <span>문제 생성</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/workbooks/creator"}
+              >
+                <Link
+                  href="/workbooks/creator"
+                  onClick={() => setOpenMobile(false)}
+                >
+                  <Pencil />
+                  <span>내가 만든 문제집</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">

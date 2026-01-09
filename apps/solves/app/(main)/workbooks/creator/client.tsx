@@ -12,7 +12,6 @@ import {
   softDeleteWorkbookAction,
   toggleWorkBookPublicAction,
 } from "@/actions/workbook";
-import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { notify } from "@/components/ui/notify";
 import { WorkbookCard } from "@/components/workbook/workbook-card";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
