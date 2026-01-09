@@ -303,7 +303,7 @@ export function MockUserSolver() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
-              className="size-28 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg"
+              className="size-28 rounded-full bg-liner-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg"
             >
               <TrophyIcon className="size-14 text-white" />
             </motion.div>

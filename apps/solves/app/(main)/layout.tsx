@@ -1,34 +1,27 @@
-import { cookies } from "next/headers";
 import { AppSidebar } from "@/components/layouts/app-sidebar";
-import { SIDEBAR_COOKIE_NAME, SidebarProvider } from "@/components/ui/sidebar";
-import { AUTH_COOKIE_PREFIX } from "@/lib/const";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
-export default async function Layout({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-
-  const isDefaultOpen = !Boolean(
-    cookieStore.get(`${AUTH_COOKIE_PREFIX}.session_token`),
-  )
-    ? false
-    : Boolean(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value === "true");
   return (
     <div>
       <SidebarProvider
-        defaultOpen={isDefaultOpen}
+        defaultOpen
         style={
           {
-            "--sidebar-width": "calc(var(--spacing) * 62)",
+            "--sidebar-width": "calc(var(--spacing) * 60)",
             "--header-height": "calc(var(--spacing) * 12)",
           } as React.CSSProperties
         }
       >
         <AppSidebar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="@container/main">{children}</div>
+        <main className="flex-1 overflow-hidden w-full h-screen p-2">
+          <div className="@container/main border rounded-3xl h-full overflow-y-auto relative bg-secondary dark:bg-card/40">
+            {children}
+          </div>
         </main>
       </SidebarProvider>
     </div>

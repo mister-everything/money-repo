@@ -590,7 +590,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   }, [blockIds]);
 
   return (
-    <div className="flex flex-col h-full border rounded-2xl bg-sidebar relative">
+    <div className="flex flex-col h-full border rounded-2xl bg-background relative">
       <div className="flex items-center p-2">
         <div className="flex-1 overflow-x-auto flex gap-1">
           {isThreadLoading ? (

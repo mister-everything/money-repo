@@ -33,10 +33,16 @@ const BUTTON_IDS = {
 } as const;
 
 export function MockSimulation() {
-  const [step, setStep] = useState<Step>("idle");
+  const [step, setStep] = useState<Step>("ask-question");
   const [messages, setMessages] = useState<
     { role: "ai" | "user"; content: React.ReactNode }[]
-  >([]);
+  >([
+    {
+      role: "ai",
+      content:
+        "안녕하세요! 어떤 문제집을 만들어볼까요? 주제를 알려주시면 제가 도와드릴게요.",
+    },
+  ]);
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -50,19 +56,6 @@ export function MockSimulation() {
   // Simulation Sequence
   useEffect(() => {
     const runSimulation = async () => {
-      // 1. Start: AI asks what to create
-      if (step === "idle") {
-        await new Promise((r) => setTimeout(r, 1000));
-        setMessages([
-          {
-            role: "ai",
-            content:
-              "안녕하세요! 어떤 문제집을 만들어볼까요? 주제를 알려주시면 제가 도와드릴게요.",
-          },
-        ]);
-        setStep("ask-question");
-      }
-
       // 2. User answers (simulated) - directly show message
       if (step === "ask-question") {
         await new Promise((r) => setTimeout(r, 2000));
@@ -159,8 +152,14 @@ export function MockSimulation() {
       // 6. Complete & Restart
       if (step === "complete") {
         await new Promise((r) => setTimeout(r, 5000));
-        setMessages([]);
-        setStep("idle");
+        setMessages([
+          {
+            role: "ai",
+            content:
+              "안녕하세요! 어떤 문제집을 만들어볼까요? 주제를 알려주시면 제가 도와드릴게요.",
+          },
+        ]);
+        setStep("ask-question");
       }
     };
 
@@ -294,8 +293,8 @@ function Cursor({
     } else if (step === "cursor-clicking-apply") {
       setIsClicking(true);
       setTimeout(() => setIsClicking(false), 300);
-    } else if (step === "idle") {
-      // Reset to bottom right area
+    } else if (step === "ask-question") {
+      // Reset to bottom right area when restarting
       const container = containerRef.current;
       if (container) {
         const rect = container.getBoundingClientRect();

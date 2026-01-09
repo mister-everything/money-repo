@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { PolicyFooter } from "@/components/layouts/policy-footer";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,7 +80,8 @@ export default async function Page() {
   });
 
   return (
-    <div className="flex flex-col w-full gap-0 overflow-x-hidden">
+    <div className="flex flex-col w-full gap-0">
+      <HeaderWithSidebarToggle showBlur={false} />
       {/* Hero Section */}
       <section className="relative h-[70vh] w-full flex flex-col items-center justify-center overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-8 p-4 mt-10 max-w-4xl mx-auto">
@@ -125,7 +127,7 @@ export default async function Page() {
                   size="lg"
                   className="rounded-full text-lg h-14 px-10 backdrop-blur-sm bg-background/50 hover:bg-background/80"
                 >
-                  둘러보기
+                  문제 풀어보기
                 </Button>
               </Link>
             </div>
@@ -147,7 +149,7 @@ export default async function Page() {
 
       {/* Carousel Section */}
       <section className="py-24 relative overflow-hidden">
-        <div className="container mx-auto px-6 relative">
+        <div className="mx-auto max-w-7xl px-6 md:px-10 relative">
           <Motion.FadeIn>
             <div className="flex flex-col gap-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -171,7 +173,7 @@ export default async function Page() {
                 </div>
                 <Link
                   href="/workbooks"
-                  className="text-sm font-medium text-primary hover:text-primary/80 transition-colors shrink-0 flex items-center gap-2 group"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0 flex items-center gap-2 group"
                 >
                   전체보기{" "}
                   <ChevronRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
@@ -183,7 +185,7 @@ export default async function Page() {
         </div>
       </section>
       {/* Interactive Simulation Section (Maker) */}
-      <section className="py-24 container mx-auto px-6">
+      <section className="py-24 mx-auto max-w-7xl px-6 md:px-10">
         <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
           {/* Text Content */}
           <Motion.SlideIn
@@ -255,7 +257,7 @@ export default async function Page() {
 
       {/* AI Solver Section - AI Solves Problems */}
       <section className="py-24 w-full">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto max-w-7xl px-6 md:px-10">
           <div className="flex flex-col xl:flex-row-reverse items-center gap-12 xl:gap-24">
             {/* Text Content */}
             <Motion.SlideIn
@@ -325,77 +327,79 @@ export default async function Page() {
       </section>
 
       {/* User Solver Section - User Solves Problems */}
-      <section className="py-24 container mx-auto px-6">
-        <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
-          {/* Text Content */}
-          <Motion.SlideIn
-            direction="left"
-            className="flex-1 space-y-6 xl:text-left text-center max-w-xl"
-          >
-            <div className="inline-flex items-center rounded-full bg-green-500/10 px-4 py-1.5 text-sm font-medium text-green-600 w-fit mx-auto xl:mx-0">
-              <PlayCircleIcon className="mr-2 size-4" />
-              Interactive Learning
-            </div>
-            <h3 className="text-3xl md:text-5xl font-bold leading-tight">
-              직접 풀어보세요
-              <br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-green-500 to-emerald-500">
-                인터랙티브 학습
-              </span>
-            </h3>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              책상 위의 문제집은 잊으세요.
-              <br />
-              클릭 한 번으로 정답을 확인하고,{" "}
-              <span className="text-foreground font-medium">
-                즉각적인 피드백
-              </span>
-              을 받으세요.
-              <br />
-              게임처럼 재미있게 학습할 수 있습니다.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
-                <div className="size-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <TrophyIcon className="size-4 text-green-600" />
+      <section className="py-24 w-full">
+        <div className="container mx-auto max-w-7xl px-6 md:px-10">
+          <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
+            {/* Text Content */}
+            <Motion.SlideIn
+              direction="left"
+              className="flex-1 space-y-6 xl:text-left text-center max-w-xl"
+            >
+              <div className="inline-flex items-center rounded-full bg-green-500/10 px-4 py-1.5 text-sm font-medium text-green-600 w-fit mx-auto xl:mx-0">
+                <PlayCircleIcon className="mr-2 size-4" />
+                Interactive Learning
+              </div>
+              <h3 className="text-3xl md:text-5xl font-bold leading-tight">
+                직접 풀어보세요
+                <br />
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-green-500 to-emerald-500">
+                  인터랙티브 학습
+                </span>
+              </h3>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                책상 위의 문제집은 잊으세요.
+                <br />
+                클릭 한 번으로 정답을 확인하고,{" "}
+                <span className="text-foreground font-medium">
+                  즉각적인 피드백
+                </span>
+                을 받으세요.
+                <br />
+                게임처럼 재미있게 학습할 수 있습니다.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                  <div className="size-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                    <TrophyIcon className="size-4 text-green-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">점수 & 랭킹</p>
+                    <p className="text-xs text-muted-foreground">
+                      풀이 결과를 점수로 확인
+                    </p>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">점수 & 랭킹</p>
-                  <p className="text-xs text-muted-foreground">
-                    풀이 결과를 점수로 확인
-                  </p>
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                  <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                    <Share2Icon className="size-4 text-emerald-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">결과 공유</p>
+                    <p className="text-xs text-muted-foreground">
+                      친구들과 점수를 비교
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
-                <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <Share2Icon className="size-4 text-emerald-600" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium">결과 공유</p>
-                  <p className="text-xs text-muted-foreground">
-                    친구들과 점수를 비교
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Motion.SlideIn>
+            </Motion.SlideIn>
 
-          {/* Simulation Component */}
-          <Motion.SlideIn
-            direction="right"
-            className="flex-1 w-full flex justify-center xl:justify-end"
-          >
-            <div className="relative w-full flex justify-end">
-              <div className="absolute -top-10 -right-10 size-32 bg-green-500/20 rounded-full blur-3xl opacity-50" />
-              <div className="absolute -bottom-10 -left-10 size-32 bg-emerald-500/20 rounded-full blur-3xl opacity-50" />
-              <MockUserSolver />
-            </div>
-          </Motion.SlideIn>
+            {/* Simulation Component */}
+            <Motion.SlideIn
+              direction="right"
+              className="flex-1 w-full flex justify-center xl:justify-end"
+            >
+              <div className="relative w-full flex justify-end">
+                <div className="absolute -top-10 -right-10 size-32 bg-green-500/20 rounded-full blur-3xl opacity-50" />
+                <div className="absolute -bottom-10 -left-10 size-32 bg-emerald-500/20 rounded-full blur-3xl opacity-50" />
+                <MockUserSolver />
+              </div>
+            </Motion.SlideIn>
+          </div>
         </div>
       </section>
 
       {/* Grid Features */}
-      <section className="py-24 container mx-auto px-6">
+      <section className="py-24 mx-auto max-w-7xl px-6 md:px-10 ">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
           <Motion.FadeIn>
             <h3 className="text-3xl md:text-4xl font-bold">
@@ -448,7 +452,7 @@ export default async function Page() {
         </div>
       </section>
 
-      <div className="container mx-auto px-6 py-24">
+      <div className="mx-auto px-6 py-24">
         <PolicyFooter />
       </div>
     </div>

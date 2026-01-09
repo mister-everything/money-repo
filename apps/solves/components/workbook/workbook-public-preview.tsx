@@ -54,9 +54,6 @@ export function WorkbookPublicPreview({
           {blocks.slice(0, 3).map((b, index) => {
             return (
               <div key={b.id} className="relative">
-                {index === 2 && (
-                  <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-transparent via-background/60 to-background" />
-                )}
                 <Block
                   index={index}
                   mode={"solve"}

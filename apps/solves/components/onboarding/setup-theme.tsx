@@ -1,7 +1,7 @@
-import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { Badge } from "../ui/badge";
+
+import { ThemeIcon } from "../ui/custom-icon";
 import { GradualSpacingText } from "../ui/gradual-spacing-text";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
@@ -11,11 +11,7 @@ export function SetupTheme() {
   return (
     <div className="flex flex-col gap-4 justify-center items-center">
       <Label className="text-2xl font-semibold px-2 flex items-center">
-        {resolvedTheme === "light" ? (
-          <SunIcon className="size-4 mr-2" />
-        ) : (
-          <MoonIcon className="size-4 fill-foreground mr-2" />
-        )}
+        <ThemeIcon className="mr-2" />
         <GradualSpacingText text="어떤 테마를 사용하시겠어요?" />
       </Label>
 
@@ -35,8 +31,6 @@ export function SetupTheme() {
         >
           <RadioGroupItem value="light" id="light" />
           <span>밝은</span>
-
-          <Badge className="rounded-full ml-auto">추천</Badge>
         </Label>
 
         <Label

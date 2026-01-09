@@ -87,8 +87,8 @@ export function WorkbooksClient({
   }, [selectedCategoryIds, flatedCategories]);
 
   return (
-    <div className="w-full flex flex-col min-h-screen ">
-      <div className="p-6 lg:p-10 pb-0!">
+    <div className="w-full flex flex-col">
+      <div className="p-6 pb-0! pt-0!">
         <div className="font-bold text-foreground flex items-center justify-between gap-4">
           <h1 className="text-xl shrink-0">어떤 문제를 풀고싶나요?</h1>
           <Input
@@ -111,7 +111,7 @@ export function WorkbooksClient({
         />
       </div>
 
-      <div className="flex flex-col gap-2 bg-secondary/40 dark:bg-transparent border-t p-6 pt-4! lg:p-10 flex-1">
+      <div className="flex flex-col gap-2 bg-secondary/40 dark:bg-transparent border-t p-6 pt-4! flex-1">
         <div className="flex flex-wrap gap-2 items-center">
           {selectedCategories.map((c) => {
             return (

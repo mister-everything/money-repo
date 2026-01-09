@@ -138,7 +138,7 @@ export function WorkbooksCreatorClient({
   }, [initialInProgressWorkbooks, initialPublishedWorkbooks]);
 
   return (
-    <div className="p-6 lg:p-8 w-full">
+    <div className="p-6 w-full">
       {inProgressWorkbooks.length > 0 && (
         <div className="flex flex-col gap-3 mb-12">
           <label className="text-sm font-bold text-foreground">
