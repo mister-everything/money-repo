@@ -20,11 +20,13 @@ export async function proxy(request: NextRequest) {
   if (pathname === "/") {
     return NextResponse.next();
   }
-  // 워크북 preview 페이지는 로그인 없이 접근 가능 (공개 미리보기)
+
   if (
-    /^\/workbooks\/[^/]+\/preview$/.test(pathname) ||
-    /^\/api\/categories$/.test(pathname) ||
-    PUBLIC_PATHS.some((path) => pathname.startsWith(path))
+    request.method === "GET" &&
+    (/^\/workbooks$/.test(pathname) ||
+      /^\/workbooks\/[^/]+\/preview$/.test(pathname) ||
+      /^\/api\/categories$/.test(pathname) ||
+      PUBLIC_PATHS.some((path) => pathname.startsWith(path)))
   ) {
     return NextResponse.next();
   }
