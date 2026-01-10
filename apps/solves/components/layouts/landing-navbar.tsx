@@ -90,12 +90,12 @@ export function LandingNavbar() {
         className={cn(
           "flex items-center justify-between px-6 py-3 rounded-full transition-all duration-300 w-full max-w-5xl",
           isScrolled
-            ? "bg-secondary/80 backdrop-blur-md shadow-lg"
+            ? "bg-secondary backdrop-blur-md border dark:border-none dark:bg-secondary/40"
             : "bg-transparent",
         )}
         layout
       >
-        <span className="font-bold text-xl tracking-tight">
+        <span className="font-bold text-xl tracking-tight logo-text">
           Solves
           <span className="text-primary group-hover:scale-110 inline-block transition-transform duration-300">
             .

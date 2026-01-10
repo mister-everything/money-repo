@@ -10,7 +10,7 @@ export default async function AuthLayout({
     <main className="relative w-full flex flex-col h-screen">
       <div className="flex-1 flex flex-col gap-4 p-4 md:p-6">
         <div className="flex items-center justify-between">
-          <Link className="text-xl font-bold" href="/">
+          <Link className="text-xl font-bold logo-text" href="/">
             Solves
             <span className="text-primary text-2xl">.</span>
           </Link>

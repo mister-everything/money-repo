@@ -212,8 +212,8 @@ export default async function Page() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted">
-                <div className="bg-background p-2 rounded-lg text-primary">
+              <div className="flex items-start gap-3 p-4 rounded-xl ">
+                <div className="p-2 rounded-lg text-primary bg-primary/10">
                   <Bot className="size-5" />
                 </div>
                 <div className="text-left">
@@ -223,8 +223,8 @@ export default async function Page() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted">
-                <div className="bg-background p-2 rounded-lg text-primary">
+              <div className="flex items-start gap-3 p-4 rounded-xl ">
+                <div className="bg-primary/10 p-2 rounded-lg text-primary">
                   <Library className="size-5" />
                 </div>
                 <div className="text-left">
@@ -356,7 +356,7 @@ export default async function Page() {
                 게임처럼 재미있게 학습할 수 있습니다.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-2 p-3 rounded-xl ">
                   <div className="size-8 rounded-lg bg-green-500/10 flex items-center justify-center">
                     <TrophyIcon className="size-4 text-green-600" />
                   </div>
@@ -367,7 +367,7 @@ export default async function Page() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-2 p-3 rounded-xl ">
                   <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                     <Share2Icon className="size-4 text-emerald-600" />
                   </div>
