@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { PolicyFooter } from "@/components/layouts/policy-footer";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,8 +79,7 @@ export default async function Page() {
   });
 
   return (
-    <div className="flex flex-col w-full gap-0">
-      <HeaderWithSidebarToggle showBlur={false} />
+    <div className="flex flex-col w-full gap-0 pt-20">
       {/* Hero Section */}
       <section className="relative h-[70vh] w-full flex flex-col items-center justify-center overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-8 p-4 mt-10 max-w-4xl mx-auto">
@@ -479,7 +477,7 @@ function FeatureCard({
 
   return (
     <Card
-      className={`h-full border bg-card hover:shadow-lg transition-all duration-300 group cursor-default ${colorClasses[color]}`}
+      className={`h-full border-none shadow-none bg-transparent hover:bg-card duration-300 group cursor-default ${colorClasses[color]}`}
     >
       <CardHeader className="pb-2">
         <div className="mb-3 p-2.5 w-fit rounded-xl bg-muted/50 group-hover:scale-110 transition-transform duration-300 ease-out">
