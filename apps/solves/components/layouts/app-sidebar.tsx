@@ -33,7 +33,7 @@ export function AppSidebar() {
               <Link href={"/"} className="font-bold flex-1">
                 <Button
                   variant="ghost"
-                  className="rounded-full font-bold gap-0 px-2!"
+                  className="rounded-full font-bold gap-0 px-2! logo-text"
                 >
                   Solves
                   <span className="text-lg text-primary">.</span>
@@ -48,10 +48,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>풀기</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/workbooks"}
-              >
+              <SidebarMenuButton asChild isActive={pathname === "/workbooks"}>
                 <Link href="/workbooks" onClick={() => setOpenMobile(false)}>
                   <BookOpen />
                   <span>문제 풀기</span>

@@ -13,13 +13,11 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-interface PlanCardProps {
+type PlanCardProps = {
   plan: SubscriptionPlan;
-  className?: string;
-  onClick?: () => void;
-}
+} & React.ComponentProps<"div">;
 
-export function PlanCard({ plan, className, onClick }: PlanCardProps) {
+export function PlanCard({ plan, className, ...props }: PlanCardProps) {
   const price = parseFloat(plan.price);
   const monthlyQuota = parseFloat(plan.monthlyQuota);
   const refillAmount = parseFloat(plan.refillAmount);
@@ -51,7 +49,7 @@ export function PlanCard({ plan, className, onClick }: PlanCardProps) {
         },
         className,
       )}
-      onClick={onClick}
+      {...props}
     >
       <CardHeader>
         <div className="flex items-start justify-between gap-2">

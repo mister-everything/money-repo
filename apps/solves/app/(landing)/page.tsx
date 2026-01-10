@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { PolicyFooter } from "@/components/layouts/policy-footer";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,8 +79,7 @@ export default async function Page() {
   });
 
   return (
-    <div className="flex flex-col w-full gap-0">
-      <HeaderWithSidebarToggle showBlur={false} />
+    <div className="flex flex-col w-full gap-0 pt-20">
       {/* Hero Section */}
       <section className="relative h-[70vh] w-full flex flex-col items-center justify-center overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-8 p-4 mt-10 max-w-4xl mx-auto">
@@ -214,8 +212,8 @@ export default async function Page() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted">
-                <div className="bg-background p-2 rounded-lg text-primary">
+              <div className="flex items-start gap-3 p-4 rounded-xl ">
+                <div className="p-2 rounded-lg text-primary bg-primary/10">
                   <Bot className="size-5" />
                 </div>
                 <div className="text-left">
@@ -225,8 +223,8 @@ export default async function Page() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-muted">
-                <div className="bg-background p-2 rounded-lg text-primary">
+              <div className="flex items-start gap-3 p-4 rounded-xl ">
+                <div className="bg-primary/10 p-2 rounded-lg text-primary">
                   <Library className="size-5" />
                 </div>
                 <div className="text-left">
@@ -358,7 +356,7 @@ export default async function Page() {
                 게임처럼 재미있게 학습할 수 있습니다.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-2 p-3 rounded-xl ">
                   <div className="size-8 rounded-lg bg-green-500/10 flex items-center justify-center">
                     <TrophyIcon className="size-4 text-green-600" />
                   </div>
@@ -369,7 +367,7 @@ export default async function Page() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-2 p-3 rounded-xl ">
                   <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                     <Share2Icon className="size-4 text-emerald-600" />
                   </div>
@@ -479,7 +477,7 @@ function FeatureCard({
 
   return (
     <Card
-      className={`h-full border bg-card hover:shadow-lg transition-all duration-300 group cursor-default ${colorClasses[color]}`}
+      className={`h-full border-none shadow-none bg-transparent hover:bg-card duration-300 group cursor-default ${colorClasses[color]}`}
     >
       <CardHeader className="pb-2">
         <div className="mb-3 p-2.5 w-fit rounded-xl bg-muted/50 group-hover:scale-110 transition-transform duration-300 ease-out">
