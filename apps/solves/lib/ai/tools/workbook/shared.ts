@@ -335,51 +335,76 @@ export const EditQuestionInputSchema = z.object({
 export const EditSolutionInputSchema = z.object({
   solution: z.string(),
 });
+const textOptionSchema = z.object({
+  id: z.string().min(1, "보기 ID는 필수입니다."),
+  type: z.literal("text"),
+  text: z
+    .string("보기 텍스트를 입력하세요.")
+    .min(1, "보기 텍스트를 1자 이상 입력하세요.")
+    .max(BLOCK_OPTION_TEXT_MAX_LENGTH),
+});
+
+const sourceOptionSchema = z.object({
+  id: z.string().min(1, "보기 ID는 필수입니다."),
+  type: z.literal("source"),
+  mimeType: z.string().min(1, "MIME 타입을 입력하세요."),
+  url: z.string("자료 URL을 입력하세요.").min(1),
+});
+
+const rankingItemSchema = z.union([textOptionSchema, sourceOptionSchema]);
+
 export const ContentSchemas: Record<BlockType, z.ZodObject<any>> = {
   mcq: z.object({
+    type: z.literal("mcq"),
     options: z
-      .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+      .array(z.union([textOptionSchema, sourceOptionSchema]))
       .min(MCQ_BLOCK_MIN_OPTIONS)
       .max(MCQ_BLOCK_MAX_OPTIONS)
       .describe("수정된 보기 목록"),
   }),
   "mcq-multiple": z.object({
+    type: z.literal("mcq-multiple"),
     options: z
-      .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+      .array(z.union([textOptionSchema, sourceOptionSchema]))
       .min(MCQ_BLOCK_MIN_OPTIONS)
       .max(MCQ_BLOCK_MAX_OPTIONS)
       .describe("수정된 보기 목록"),
   }),
   ranking: z.object({
+    type: z.literal("ranking"),
     items: z
-      .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
+      .array(rankingItemSchema)
       .min(RANKING_BLOCK_MIN_ITEMS)
       .max(RANKING_BLOCK_MAX_ITEMS)
       .describe("수정된 순위 항목 목록"),
   }),
-  default: z.object({}), // 주관식은 content 없음
-  ox: z.object({}), // OX도 content 없음
+  default: z.object({
+    type: z.literal("default"),
+  }), // 주관식은 content 필드에 type만 포함
+  ox: z.object({
+    type: z.literal("ox"),
+  }),
 };
 
 export const AnswerSchemas: Record<BlockType, z.ZodObject<any>> = {
   mcq: z.object({
-    correctOptionIndex: z
-      .number()
-      .int()
-      .nonnegative()
-      .describe("정답 인덱스 (0부터 시작)"),
+    answer: z
+      .string()
+      .min(1, "정답 옵션의 ID를 입력하세요.")
+      .describe("정답 옵션 ID"),
   }),
   "mcq-multiple": z.object({
-    correctOptionIndexes: z
-      .array(z.number().int().nonnegative())
-      .min(1)
-      .describe("정답 인덱스 배열"),
+    answer: z
+      .array(z.string().min(1, "정답 옵션의 ID를 입력하세요."))
+      .min(1, "최소 1개 이상의 정답 ID가 필요합니다.")
+      .describe("정답 옵션 ID 배열"),
   }),
   ranking: z.object({
-    correctOrderIndexes: z
-      .array(z.number().int().nonnegative())
+    order: z
+      .array(z.string().min(1, "순위 항목의 ID를 입력하세요."))
       .min(RANKING_BLOCK_MIN_ITEMS)
-      .describe("올바른 순서의 인덱스 배열"),
+      .max(RANKING_BLOCK_MAX_ITEMS)
+      .describe("올바른 순서의 항목 ID 배열"),
   }),
   default: z.object({
     answer: z
