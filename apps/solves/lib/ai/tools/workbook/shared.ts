@@ -386,7 +386,9 @@ export const AnswerSchemas: Record<BlockType, z.ZodObject<any>> = {
       .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
       .min(1)
       .max(DEFAULT_BLOCK_MAX_ANSWERS)
-      .describe("정답 후보 목록"),
+      .describe(
+        "정답, 정답 처리 가능한 단어를 입력하세요. (ex. 개, 강아지, dog, puppy)",
+      ),
   }),
   ox: z.object({
     answer: z.boolean().describe("정답 (true: O, false: X)"),

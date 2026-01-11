@@ -37,7 +37,7 @@ export function createEditAnswerTool(blockType: BlockType): Tool {
   if (!schema) throw new Error(`Unknown block type: ${blockType}`);
   return createTool({
     name: EDIT_FIELD_TOOL_NAMES.ANSWER,
-    description: "문제의 정답을 수정합니다.",
+    description: "문제의 정답을 수정합니다. ",
     inputSchema: schema,
   });
 }
