@@ -1,0 +1,211 @@
+"use client";
+
+import {
+  ReportCategoryDetail,
+  ReportCategoryMain,
+  ReportStatus,
+  ReportTargetType,
+} from "@service/report/shared";
+import { formatDistanceToNow } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Flame } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+export type ReportListItem = {
+  id: string;
+  reportedAt: string;
+  reporterUserId: string | null;
+  reporterName: string | null;
+  reporterEmail: string | null;
+  targetType: ReportTargetType;
+  targetOwnerId: string | null;
+  targetOwnerName: string | null;
+  targetOwnerEmail: string | null;
+  targetTitle: string | null;
+  categoryMain: ReportCategoryMain;
+  categoryDetail: ReportCategoryDetail;
+  detailText: string | null;
+  status: ReportStatus;
+  processorUserId: string | null;
+  processedAt: string | null;
+  processingNote: string | null;
+  reportCount: number;
+  isPriority: boolean;
+};
+
+export type ReportsData = {
+  reports: ReportListItem[];
+  totalCount: number;
+  totalPages: number;
+  stats: {
+    priorityCount: number;
+    pendingCount: number;
+    errorCount: number;
+    violationCount: number;
+    otherCount: number;
+  };
+};
+
+type Props = {
+  reports: ReportListItem[];
+};
+
+export function ReportTable({ reports }: Props) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[100px]">우선순위</TableHead>
+          <TableHead>카테고리</TableHead>
+          <TableHead>대상 제목</TableHead>
+          <TableHead>대상 생성자</TableHead>
+          <TableHead className="max-w-[300px]">신고 내용</TableHead>
+          <TableHead>신고자</TableHead>
+          <TableHead>상태</TableHead>
+          <TableHead>신고일</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {reports.map((report) => (
+          <TableRow
+            key={report.id}
+            className={`cursor-pointer ${
+              report.isPriority ? "bg-red-50/50 dark:bg-red-950/20" : ""
+            }`}
+          >
+            <TableCell>
+              {report.isPriority ? (
+                <Badge className="bg-red-500 hover:bg-red-600 gap-1">
+                  <Flame className="h-3 w-3" />
+                  {report.reportCount}명
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="gap-1">
+                  일반
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell>
+              <CategoryBadge
+                categoryMain={report.categoryMain}
+                categoryDetail={report.categoryDetail}
+              />
+            </TableCell>
+            <TableCell className="max-w-[200px]">
+              <p className="text-sm truncate">{report.targetTitle || "-"}</p>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {report.targetOwnerName || "알 수 없음"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {report.targetOwnerEmail || "-"}
+                </span>
+              </div>
+            </TableCell>
+            <TableCell className="max-w-[300px]">
+              <p className="text-sm truncate">{report.detailText || "-"}</p>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {report.reporterName || "알 수 없음"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {report.reporterEmail || "-"}
+                </span>
+              </div>
+            </TableCell>
+            <TableCell>
+              <StatusBadge status={report.status} />
+            </TableCell>
+            <TableCell>
+              <span className="text-sm text-muted-foreground">
+                {formatDistanceToNow(new Date(report.reportedAt), {
+                  addSuffix: true,
+                  locale: ko,
+                })}
+              </span>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function CategoryBadge({
+  categoryMain,
+  categoryDetail,
+}: {
+  categoryMain: ReportCategoryMain;
+  categoryDetail: ReportCategoryDetail;
+}) {
+  const color =
+    categoryMain === ReportCategoryMain.VIOLATION
+      ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-200"
+      : categoryMain === ReportCategoryMain.ERROR
+      ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200"
+      : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200";
+
+  const detailLabel: Record<ReportCategoryDetail, string> = {
+    [ReportCategoryDetail.ERROR_ANSWER]: "정답 오류",
+    [ReportCategoryDetail.ERROR_TYPO]: "오타 오류",
+    [ReportCategoryDetail.ERROR_EXPLANATION]: "해설 오류",
+    [ReportCategoryDetail.VIOL_GUIDELINE]: "가이드라인 위반",
+    [ReportCategoryDetail.VIOL_SPAM]: "스팸/도배",
+    [ReportCategoryDetail.VIOL_TITLE]: "연령·주제 위반",
+    [ReportCategoryDetail.VIOL_COPYRIGHT]: "저작권 위반",
+    [ReportCategoryDetail.VIOL_PERSONAL_DATA]: "개인정보 노출",
+    [ReportCategoryDetail.OTHER_SYSTEM]: "시스템 오류",
+    [ReportCategoryDetail.OTHER_FREE]: "기타",
+  };
+
+  return (
+    <Badge variant="outline" className={`gap-1 ${color}`}>
+      <span>
+        {categoryMain === ReportCategoryMain.VIOLATION
+          ? "위반"
+          : categoryMain === ReportCategoryMain.ERROR
+          ? "오류"
+          : "기타"}
+      </span>
+      <span className="text-[11px] text-muted-foreground">
+        {detailLabel[categoryDetail]}
+      </span>
+    </Badge>
+  );
+}
+
+function StatusBadge({ status }: { status: ReportStatus }) {
+  const label: Record<ReportStatus, string> = {
+    [ReportStatus.RECEIVED]: "접수됨",
+    [ReportStatus.IN_REVIEW]: "검토중",
+    [ReportStatus.RESOLVED]: "처리완료",
+    [ReportStatus.REJECTED]: "반려",
+  };
+  const color: Record<ReportStatus, string> = {
+    [ReportStatus.RECEIVED]:
+      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200",
+    [ReportStatus.IN_REVIEW]:
+      "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200",
+    [ReportStatus.RESOLVED]:
+      "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-200",
+    [ReportStatus.REJECTED]:
+      "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-200",
+  };
+
+  return (
+    <Badge variant="outline" className={color[status]}>
+      {label[status]}
+    </Badge>
+  );
+}

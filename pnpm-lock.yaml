@@ -857,6 +857,9 @@ importers:
       '@service/auth':
         specifier: workspace:*
         version: link:../auth
+      '@service/solves':
+        specifier: workspace:*
+        version: link:../solves
       '@workspace/error':
         specifier: workspace:*
         version: link:../../packages/error
