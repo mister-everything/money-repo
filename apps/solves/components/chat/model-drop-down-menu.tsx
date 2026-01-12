@@ -60,7 +60,8 @@ export function ModelDropDownMenu({
               <>
                 <ModelProviderIcon
                   provider={chatModel.provider}
-                  className="size-3 opacity-0 group-hover:opacity-100 group-data-[state=open]:opacity-100 transition-opacity duration-200"
+                  // className="size-3 opacity-0 group-hover:opacity-100 group-data-[state=open]:opacity-100 transition-opacity duration-200"
+                  className="size-3 group-data-[state=open]:opacity-100 transition-opacity duration-200"
                 />
                 <span
                   className="text-foreground group-data-[state=open]:text-foreground  "

@@ -3,7 +3,7 @@
 import { Policy, PolicyVersion } from "@service/auth/shared";
 import { formatDate } from "date-fns";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
@@ -16,7 +16,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../ui/dialog";
 import { GradualSpacingText } from "../ui/gradual-spacing-text";
 import { Label } from "../ui/label";
@@ -98,9 +97,7 @@ export function SetupPolicy({
             checked={allChecked}
             onCheckedChange={handleAllAgree}
           />
-          <Label htmlFor="all-agree" className="font-semibold cursor-pointer">
-            전체 동의
-          </Label>
+          <Label className="font-semibold cursor-pointer">전체 동의</Label>
         </div>
 
         {/* 약관 목록 */}
@@ -121,11 +118,16 @@ export function SetupPolicy({
         </div>
 
         {/* 필수 동의 안내 */}
-        {!allRequiredChecked && requiredPolicies.length > 0 && (
-          <p className="text-xs text-muted-foreground text-center">
-            필수 약관에 모두 동의해야 다음으로 진행할 수 있습니다
-          </p>
-        )}
+
+        <p className="text-xs text-muted-foreground text-center flex items-center gap-2 justify-center">
+          <CheckIcon
+            className={cn(
+              "size-3 opacity-0",
+              allRequiredChecked && "opacity-100",
+            )}
+          />
+          필수 약관에 모두 동의해야 다음으로 진행할 수 있습니다
+        </p>
       </div>
     </div>
   );
@@ -146,64 +148,77 @@ function PolicyItem({
   className,
   onCheckedChange,
 }: PolicyItemProps) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <div
-          className={cn(
-            "px-4 flex items-center gap-2 hover:bg-muted/50 transition-all duration-300 cursor-pointer group",
-            className,
-          )}
-        >
-          <div className="flex items-center gap-3 py-2 mr-auto">
-            <Checkbox
-              id={policy.id}
-              checked={checked}
-              onCheckedChange={onCheckedChange}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <Badge
-              variant={policy.isRequired ? "default" : "secondary"}
-              className="text-xs rounded-full"
-            >
-              {policy.isRequired ? "필수" : "선택"}
-            </Badge>
+  const [open, setOpen] = useState(false);
 
-            <div className="flex-1 py-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{label}</span>
-              </div>
+  return (
+    <>
+      <Label
+        htmlFor={policy.id}
+        className={cn(
+          "px-4 flex items-center gap-2 hover:bg-muted/50 transition-all duration-300 cursor-pointer group",
+          className,
+        )}
+      >
+        <div className="flex items-center gap-3 py-2 mr-auto">
+          <Checkbox
+            id={policy.id}
+            checked={checked}
+            onCheckedChange={onCheckedChange}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <Badge
+            variant={policy.isRequired ? "default" : "secondary"}
+            className="text-xs rounded-full"
+          >
+            {policy.isRequired ? "필수" : "선택"}
+          </Badge>
+
+          <div className="flex-1 py-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{label}</span>
             </div>
           </div>
-
+        </div>
+        <Button
+          // size={"icon"}
+          variant={"ghost"}
+          className="hover:bg-input text-sm text-muted-foreground ml-6"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+        >
+          자세히
           <ChevronRightIcon className="size-4 group-hover:text-foreground text-muted-foreground transition-all duration-300" />
-        </div>
-      </DialogTrigger>
-      <DialogContent className="md:max-w-xl!">
-        <div className="max-h-[80vh] overflow-y-auto pb-24">
-          <DialogHeader>
-            <DialogTitle>{`${label} v${policy.version}`}</DialogTitle>
-            <DialogDescription>
-              {formatDate(policy.effectiveAt, "시행일 yyyy년 M월 d일")}
-            </DialogDescription>
-          </DialogHeader>
-          <Streamdown mode="static" className="text-xs text-muted-foreground">
-            {policy.content}
-          </Streamdown>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background">
-          <DialogClose asChild>
-            <Button
-              size={"lg"}
-              className="rounded-full w-full font-bold"
-              onClick={() => onCheckedChange(true)}
-            >
-              <CheckIcon />
-              동의 하기
-            </Button>
-          </DialogClose>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </Button>
+      </Label>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="md:max-w-xl!">
+          <div className="max-h-[80vh] overflow-y-auto pb-24">
+            <DialogHeader>
+              <DialogTitle>{`${label} v${policy.version}`}</DialogTitle>
+              <DialogDescription>
+                {formatDate(policy.effectiveAt, "시행일 yyyy년 M월 d일")}
+              </DialogDescription>
+            </DialogHeader>
+            <Streamdown mode="static" className="text-xs text-muted-foreground">
+              {policy.content}
+            </Streamdown>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-background">
+            <DialogClose asChild>
+              <Button
+                size={"lg"}
+                className="rounded-full w-full font-bold"
+                onClick={() => onCheckedChange(true)}
+              >
+                <CheckIcon />
+                동의 하기
+              </Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
+import { BadgeCheckIcon } from "../ui/custom-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -249,6 +250,9 @@ export function WorkbookCard({
               </AvatarFallback>
             </Avatar>
             {workBook.ownerName ?? "-"}
+            {workBook.isAdmin && (
+              <BadgeCheckIcon className="size-3 text-blue-500" />
+            )}
           </div>
         </div>
       </CardContent>

@@ -58,11 +58,19 @@ export async function POST(req: Request) {
 
   const session = await getSession();
 
+  const threadTitle =
+    messages
+      .find((m) => m.role == "user")
+      ?.parts?.find((v) => v.type == "text")
+      ?.text?.trim()
+      ?.slice(0, 20) ||
+    new Date().toLocaleTimeString("ko-KR", { hour12: false });
+
   const thread = await chatService.createWorkBookThreadIfNotExists({
     threadId,
     workbookId,
     userId: session.user.id,
-    title: new Date().toLocaleTimeString("ko-KR", { hour12: false }),
+    title: threadTitle,
   });
 
   const lastMessage = messages.at(-1)!;

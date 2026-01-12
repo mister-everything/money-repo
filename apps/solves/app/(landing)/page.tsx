@@ -135,8 +135,8 @@ export default async function Page() {
 
       {/* Scroll Indicator */}
       <Motion.FadeIn delay={1.2}>
-        <div className="flex flex-col items-center gap-2 pb-12">
-          <span className="text-xs text-muted-foreground/50 tracking-widest uppercase">
+        <div className="flex flex-col items-center gap-2 py-8">
+          <span className="text-sm text-muted-foreground/50 tracking-widest uppercase">
             스크롤을 내려 더 많은 기능을 확인하세요.
           </span>
           <div className="relative flex flex-col items-center">

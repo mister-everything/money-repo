@@ -237,10 +237,10 @@ export function CategorySelector({
             <Button
               key={category.id}
               size={"sm"}
-              variant="secondary"
+              variant="outline"
               onClick={() => onCategoryChange?.(category.id)}
               className={cn(
-                "cursor-pointer rounded-full hover:bg-primary/10 transition-all",
+                "cursor-pointer rounded-full hover:bg-primary/10 transition-all shadow-none",
                 value === category.id &&
                   "bg-primary/5 hover:bg-primary/10 ring-primary ring",
               )}
