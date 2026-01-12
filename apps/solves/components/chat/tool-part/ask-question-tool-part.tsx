@@ -88,12 +88,7 @@ export function AskQuestionToolPart({ part }: AskQuestionToolPartProps) {
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
           <CircleDotIcon className="size-4 animate-pulse text-primary" />
-          <span>
-            {questions.length}개의 질문이 있어요.{" "}
-            <span className="text-primary font-medium">
-              아래에서 답변해주세요.
-            </span>
-          </span>
+          <TextShimmer duration={2}>질문 답변 중...</TextShimmer>
         </div>
       );
     }
@@ -118,8 +113,8 @@ export function AskQuestionToolPart({ part }: AskQuestionToolPartProps) {
     <div className="text-sm space-y-3 ">
       <StatusHeader />
 
-      {/* 질문 목록 - 항상 표시 */}
-      {questions.length > 0 && (
+      {/* 질문 목록 - 완료 상태이거나 건너뛴 상태일 때만 표시 */}
+      {isDone && questions.length > 0 && (
         <div className="space-y-2 pl-6 mb-8">
           {questions.map((q, qIdx) => {
             const qId = q?.id ?? "";
