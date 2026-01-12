@@ -701,7 +701,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       <div className={cn("p-2 absolute bottom-0 left-0 right-0")}>
         <div
           className={cn(
-            "bg-background border rounded-2xl p-2 flex flex-col gap-1 transition-colors",
+            "bg-secondary/60 backdrop-blur-xs border rounded-2xl p-2 flex flex-col gap-1 transition-colors",
           )}
         >
           {activeAskQuestionPart ? (
