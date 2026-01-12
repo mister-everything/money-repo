@@ -77,10 +77,10 @@ export const reportService = {
 
     /**
      * 우선 검토 대상 식별을 위한 서브쿼리
-     * 
+     *
      * 동일한 콘텐츠(워크북/블록)에 대해 몇 명의 고유한 사용자가 신고했는지 집계합니다.
      * 예: 워크북 A에 대해 사용자 1,2,3이 각각 신고 → reporterCount = 3
-     * 
+     *
      * 이 카운트가 5 이상이면 "우선 검토" 대상으로 분류됩니다.
      * (많은 사람이 문제를 제기한 콘텐츠 = 심각도가 높을 가능성)
      */
@@ -98,12 +98,12 @@ export const reportService = {
 
     /**
      * 테이블 별칭(alias) 정의
-     * 
+     *
      * userTable을 여러 역할로 조인하기 위해 별칭을 사용합니다:
      * - reporter: 신고를 제출한 사용자
      * - workBookOwner: 신고된 워크북의 소유자
      * - blockWorkBookOwner: 신고된 블록이 속한 워크북의 소유자
-     * 
+     *
      * workBooksTable도 두 가지 용도로 사용:
      * - workBooksTable: 직접 신고된 워크북
      * - blockWorkBook: 신고된 블록이 속한 워크북
@@ -115,7 +115,7 @@ export const reportService = {
 
     /**
      * WHERE 조건 구성
-     * 
+     *
      * 사용자가 선택한 필터 옵션에 따라 동적으로 WHERE 절을 구성합니다.
      */
     const where: any[] = [];
@@ -132,7 +132,7 @@ export const reportService = {
 
     /**
      * 통합 검색 기능
-     * 
+     *
      * 검색어가 다음 필드들 중 하나라도 포함되면 결과에 포함됩니다:
      * - 신고 내용 (detailText): 사용자가 작성한 신고 상세 내용
      * - 대상 ID (targetId): 신고된 워크북/블록의 고유 ID
@@ -140,7 +140,7 @@ export const reportService = {
      * - 처리 메모 (processingNote): 운영자가 작성한 처리 내용
      * - 신고자 정보 (reporter.name, reporter.email): 신고를 제출한 사용자
      * - 콘텐츠 소유자 정보 (workBookOwner, blockWorkBookOwner): 신고된 콘텐츠의 작성자
-     * 
+     *
      * ilike를 사용하여 대소문자 구분 없이 부분 일치 검색을 수행합니다.
      */
     if (search && search.trim()) {
@@ -163,7 +163,7 @@ export const reportService = {
 
     /**
      * 미처리 상태 정의
-     * 
+     *
      * RECEIVED(접수됨)와 IN_REVIEW(검토중)는 아직 처리가 완료되지 않은 상태입니다.
      * 우선 검토 대상 집계 시 이 상태들만 카운트합니다.
      */
@@ -174,11 +174,11 @@ export const reportService = {
 
     /**
      * 우선 검토 필터
-     * 
+     *
      * priorityOnly가 true일 때:
      * - 5명 이상의 고유 신고자가 있고 (gte(reporterCount, 5))
      * - 아직 처리되지 않은 (pendingStatuses) 신고만 조회
-     * 
+     *
      * 이는 긴급하게 처리해야 할 신고를 빠르게 파악하기 위한 필터입니다.
      */
     if (priorityOnly) {
@@ -192,17 +192,17 @@ export const reportService = {
 
     /**
      * 메인 쿼리 - SELECT 절
-     * 
+     *
      * 각 신고 건에 대한 상세 정보를 조회합니다.
-     * 
+     *
      * coalesce 함수 사용 이유:
      * 신고 대상이 워크북일 수도 있고 블록일 수도 있어서,
      * 두 경로 중 존재하는 값을 선택합니다.
-     * 
+     *
      * 예시:
      * - 워크북 신고 → workBookOwner.id 사용, blockWorkBookOwner.id는 null
      * - 블록 신고 → blockWorkBookOwner.id 사용, workBookOwner.id는 null
-     * 
+     *
      * reporterCount:
      * priorityCounts 서브쿼리에서 계산된 동일 대상에 대한 총 신고자 수
      * (이 값이 5 이상이면 우선 검토 대상)
@@ -212,16 +212,16 @@ export const reportService = {
         // 신고 기본 정보
         id: contentReportsTable.id,
         reportedAt: contentReportsTable.reportedAt,
-        
+
         // 신고자 정보
         reporterUserId: contentReportsTable.reporterUserId,
         reporterName: reporter.name,
         reporterEmail: reporter.email,
-        
+
         // 신고 대상 정보
         targetType: contentReportsTable.targetType,
         targetId: contentReportsTable.targetId,
-        
+
         // 신고 대상 소유자 정보 (워크북 소유자 또는 블록의 워크북 소유자)
         targetOwnerId: sql<
           string | null
@@ -232,30 +232,30 @@ export const reportService = {
         targetOwnerEmail: sql<
           string | null
         >`coalesce(${workBookOwner.email}, ${blockWorkBookOwner.email})`,
-        
+
         // 신고 대상 제목 (워크북 제목 또는 블록이 속한 워크북 제목)
         targetTitle: sql<
           string | null
         >`coalesce(${workBooksTable.title}, ${blockWorkBook.title})`,
-        
+
         // 신고 분류 및 내용
         categoryMain: contentReportsTable.categoryMain,
         categoryDetail: contentReportsTable.categoryDetail,
         detailText: contentReportsTable.detailText,
-        
+
         // 처리 상태 및 정보
         status: contentReportsTable.status,
         processorUserId: contentReportsTable.processorUserId,
         processedAt: contentReportsTable.processedAt,
         processingNote: contentReportsTable.processingNote,
-        
+
         // 우선순위 판단을 위한 동일 대상 신고자 수
         reporterCount: sql<number>`coalesce(${priorityCounts.reporterCount}, 0)`,
       })
       .from(contentReportsTable)
       /**
        * JOIN 1: priorityCounts (신고자 수 집계)
-       * 
+       *
        * 동일한 대상(targetType + targetId)에 대한 고유 신고자 수를 가져옵니다.
        * LEFT JOIN을 사용하여 집계 데이터가 없어도 신고 자체는 조회되도록 합니다.
        */
@@ -268,9 +268,9 @@ export const reportService = {
       )
       /**
        * JOIN 2: workBooksTable (워크북 정보)
-       * 
+       *
        * 신고 대상이 워크북(WORKBOOK)인 경우에만 조인됩니다.
-       * 
+       *
        * 타입 캐스팅 이유:
        * - contentReportsTable.targetId는 TEXT 타입 (다양한 대상 타입을 수용하기 위해)
        * - workBooksTable.id는 UUID 타입
@@ -289,7 +289,7 @@ export const reportService = {
       )
       /**
        * JOIN 3: blocksTable (블록 정보)
-       * 
+       *
        * 신고 대상이 블록(BLOCK)인 경우에만 조인됩니다.
        * 워크북과 동일한 이유로 타입 캐스팅을 수행합니다.
        */
@@ -305,28 +305,28 @@ export const reportService = {
       )
       /**
        * JOIN 4: blockWorkBook (블록이 속한 워크북)
-       * 
+       *
        * 신고 대상이 블록인 경우, 그 블록이 속한 워크북 정보를 가져옵니다.
        * 이를 통해 블록 신고 시에도 워크북 제목과 소유자 정보를 표시할 수 있습니다.
        */
       .leftJoin(blockWorkBook, eq(blocksTable.workBookId, blockWorkBook.id))
       /**
        * JOIN 5: reporter (신고자 사용자 정보)
-       * 
+       *
        * 신고를 제출한 사용자의 이름과 이메일을 가져옵니다.
        */
       .leftJoin(reporter, eq(contentReportsTable.reporterUserId, reporter.id))
       /**
        * JOIN 6: workBookOwner (워크북 소유자 정보)
-       * 
+       *
        * 신고 대상이 워크북인 경우, 해당 워크북의 소유자 정보를 가져옵니다.
        */
       .leftJoin(workBookOwner, eq(workBooksTable.ownerId, workBookOwner.id))
       /**
        * JOIN 7: blockWorkBookOwner (블록의 워크북 소유자 정보)
-       * 
+       *
        * 신고 대상이 블록인 경우, 그 블록이 속한 워크북의 소유자 정보를 가져옵니다.
-       * 
+       *
        * 최종적으로 coalesce(workBookOwner, blockWorkBookOwner)를 통해
        * 워크북 신고든 블록 신고든 콘텐츠 소유자 정보를 일관되게 제공합니다.
        */
@@ -337,7 +337,7 @@ export const reportService = {
 
     /**
      * WHERE 절 적용
-     * 
+     *
      * 앞서 구성한 필터 조건들을 AND로 결합합니다.
      * 조건이 없으면 undefined를 반환하여 전체 조회가 가능하도록 합니다.
      */
@@ -347,7 +347,7 @@ export const reportService = {
 
     /**
      * 페이지네이션된 신고 목록 조회
-     * 
+     *
      * - 최신 신고가 먼저 보이도록 reportedAt 기준 내림차순 정렬
      * - limit: 한 페이지에 표시할 개수
      * - offset: 건너뛸 개수 (이전 페이지들의 데이터)
@@ -359,9 +359,9 @@ export const reportService = {
 
     /**
      * 전체 개수 조회 쿼리
-     * 
+     *
      * 페이지네이션 UI 구성을 위해 필터 조건에 맞는 전체 신고 건수를 계산합니다.
-     * 
+     *
      * 주의: 메인 쿼리와 동일한 JOIN 구조를 유지해야 합니다.
      * 이유는 search 필터가 JOIN된 테이블의 컬럼(신고자/소유자 이름 등)을 참조하기 때문입니다.
      * JOIN 없이 COUNT만 하면 search 조건이 제대로 작동하지 않습니다.
@@ -413,7 +413,7 @@ export const reportService = {
 
     /**
      * 통계 데이터 수집
-     * 
+     *
      * 대시보드 상단에 표시할 집계 정보를 계산합니다.
      * 주의: 이 통계들은 사용자가 선택한 필터와 무관하게 전체 데이터 기준으로 계산됩니다.
      * (필터는 목록 조회에만 적용되고, 통계는 항상 전체 현황을 보여줌)
@@ -421,11 +421,11 @@ export const reportService = {
 
     /**
      * 1. 우선 검토 대상 개수
-     * 
+     *
      * 조건:
      * - 동일 대상에 대해 5명 이상이 신고했고
      * - 아직 처리되지 않은 (RECEIVED 또는 IN_REVIEW) 상태
-     * 
+     *
      * 이 숫자가 높으면 긴급하게 처리해야 할 신고가 많다는 의미입니다.
      */
     const [{ value: priorityCount }] = await pgDb
@@ -450,7 +450,7 @@ export const reportService = {
 
     /**
      * 2. 미처리 신고 개수
-     * 
+     *
      * 접수됨(RECEIVED) + 검토중(IN_REVIEW) 상태의 모든 신고
      * 운영팀이 처리해야 할 전체 작업량을 나타냅니다.
      */
@@ -461,7 +461,7 @@ export const reportService = {
 
     /**
      * 3. 오류 카테고리 신고 개수
-     * 
+     *
      * 콘텐츠의 기술적 문제(오타, 정답 오류, 해설 오류 등)에 대한 신고
      * 이 숫자가 높으면 콘텐츠 품질 개선이 필요합니다.
      */
@@ -472,7 +472,7 @@ export const reportService = {
 
     /**
      * 4. 위반 카테고리 신고 개수
-     * 
+     *
      * 부적절한 콘텐츠(스팸, 저작권 침해, 유해 콘텐츠 등)에 대한 신고
      * 이 숫자가 높으면 콘텐츠 모더레이션 강화가 필요합니다.
      */
@@ -485,7 +485,7 @@ export const reportService = {
 
     /**
      * 5. 기타 카테고리 신고 개수
-     * 
+     *
      * ERROR나 VIOLATION에 해당하지 않는 기타 신고들
      * (예: 개선 제안, 기타 문의 등)
      */
@@ -496,7 +496,7 @@ export const reportService = {
 
     /**
      * 최종 반환 데이터
-     * 
+     *
      * - reports: 현재 페이지의 신고 목록 (필터 적용됨)
      * - totalCount, totalPages, page, limit: 페이지네이션 정보 (필터 적용됨)
      * - stats: 전체 통계 (필터와 무관한 전체 현황)
