@@ -45,17 +45,18 @@ export const WorkbookCreateChatRequest = DefaultChatRequest.extend(
 export const uiPartToSavePart = (
   part: UIMessagePart<any, any>,
 ): UIMessagePart<any, any> => {
-  return exclude(part as any, [
-    "providerMetadata",
-    "callProviderMetadata",
-  ]) as UIMessagePart<any, any>;
+  return exclude(part as any, ["providerMetadata"]) as UIMessagePart<any, any>;
 };
 
 export function extractInProgressToolPart(message?: UIMessage): ToolUIPart[] {
   if (message?.role != "assistant") return [];
-  return message.parts.filter(
-    (part) => isToolUIPart(part) && part.state.startsWith("input-"),
-  ) as ToolUIPart[];
+  return message.parts.filter(isInProgressToolPart) as ToolUIPart[];
+}
+
+export function isInProgressToolPart(
+  part: UIMessagePart<any, any>,
+): part is ToolUIPart {
+  return isToolUIPart(part) && part.state.startsWith("input-");
 }
 
 export const Options = z.object({

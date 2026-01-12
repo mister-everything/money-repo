@@ -158,6 +158,11 @@ export const solvesBetterAuth = betterAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
+    naver: {
+      prompt: "select_account",
+      clientId: process.env.NAVER_CLIENT_ID!,
+      clientSecret: process.env.NAVER_CLIENT_SECRET!,
+    },
   },
   plugins: [anonymous(), nextCookies()],
 });

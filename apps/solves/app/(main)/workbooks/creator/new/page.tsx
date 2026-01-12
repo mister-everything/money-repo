@@ -1,8 +1,7 @@
 import { workBookService } from "@service/solves";
 import { BlockType, blockDisplayNames } from "@service/solves/shared";
-
+import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { Label } from "@/components/ui/label";
-
 import { WorkbookCreateForm } from "@/components/workbook/workbook-create-form";
 import { getSession } from "@/lib/auth/server";
 import { WorkbookOptions } from "@/store/types";
@@ -40,8 +39,13 @@ export default async function WorkBookCreatePage({
   });
 
   return (
-    <div className="flex flex-col p-6 lg:p-8">
-      <div className="w-max-3xl mx-auto flex flex-col w-full">
+    <div className="flex flex-col">
+      <HeaderWithSidebarToggle>
+        <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
+          문제집 생성
+        </span>
+      </HeaderWithSidebarToggle>
+      <div className="w-max-3xl mx-auto flex flex-col w-full p-6 pt-0!">
         <WorkbookCreateForm
           isMaxInprogressWorkbookCreateCount={
             isMaxInprogressWorkbookCreateCount

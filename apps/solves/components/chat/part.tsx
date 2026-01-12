@@ -15,6 +15,8 @@ import {
   ChevronUpIcon,
   CopyIcon,
   EllipsisIcon,
+  LoaderIcon,
+  TrashIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -27,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useCopy } from "@/hooks/use-copy";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
+import { ASK_QUESTION_TOOL_NAME } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { READ_BLOCK_TOOL_NAME } from "@/lib/ai/tools/workbook/read-block-tool";
 import {
   GEN_BLOCK_TOOL_NAMES,
@@ -37,6 +40,7 @@ import { MentionItem } from "../mention/mention-item";
 import { normalizeMentions } from "../mention/shared";
 import JsonView from "../ui/json-view";
 import { AssistantMetadataToolTip } from "./assistant-metadata-tool-tip";
+import { AskQuestionToolPart } from "./tool-part/ask-question-tool-part";
 import { GenerateBlockToolPart } from "./tool-part/generate-block-tool-part";
 import { ReadBlockToolPart } from "./tool-part/read-block-tool-part";
 import { WebSearchToolPart } from "./tool-part/web-search-part";
@@ -45,11 +49,17 @@ import { WorkbookMetaToolPart } from "./tool-part/workbook-meta-tool-part";
 interface UserMessagePartProps {
   part: TextUIPart;
   streaming?: boolean;
+  onDeleteMessage?: () => void;
+  isDeleting?: boolean;
 }
 
 const MAX_TEXT_LENGTH = 600;
 
-export function UserMessagePart({ part }: UserMessagePartProps) {
+export function UserMessagePart({
+  part,
+  onDeleteMessage,
+  isDeleting,
+}: UserMessagePartProps) {
   const [copied, copy] = useCopy();
 
   const [expanded, setExpanded] = useState(false);
@@ -110,6 +120,26 @@ export function UserMessagePart({ part }: UserMessagePartProps) {
         )}
       </div>
       <div className="flex w-full justify-end opacity-0 group-hover/message:opacity-100 transition-opacity duration-300">
+        {onDeleteMessage && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-testid="message-delete-button"
+                variant="ghost"
+                size="icon"
+                className={cn("size-3! p-4! hover:text-destructive")}
+                onClick={onDeleteMessage}
+              >
+                {isDeleting ? (
+                  <LoaderIcon className="animate-spin" />
+                ) : (
+                  <TrashIcon />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">삭제</TooltipContent>
+          </Tooltip>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -133,11 +163,15 @@ interface AssistantMessagePartProps {
   part: TextUIPart;
   streaming?: boolean;
   metadata?: AssistantMessageMetadata;
+  onDeleteMessage?: () => void;
+  isDeleting?: boolean;
 }
 export function AssistantTextPart({
   part,
   streaming,
   metadata,
+  onDeleteMessage,
+  isDeleting,
 }: AssistantMessagePartProps) {
   const [copied, copy] = useCopy();
   return (
@@ -162,6 +196,26 @@ export function AssistantTextPart({
               </TooltipTrigger>
               <TooltipContent>복사하기</TooltipContent>
             </Tooltip>
+            {onDeleteMessage && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="message-delete-button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn("size-3! p-4! hover:text-destructive")}
+                    onClick={onDeleteMessage}
+                  >
+                    {isDeleting ? (
+                      <LoaderIcon className="animate-spin" />
+                    ) : (
+                      <TrashIcon />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">삭제</TooltipContent>
+              </Tooltip>
+            )}
             {metadata && (
               <AssistantMetadataToolTip metadata={metadata}>
                 <Button
@@ -198,6 +252,7 @@ const variants = {
 interface ReasoningPartProps {
   part: ReasoningUIPart;
   streaming?: boolean;
+  onDeleteMessage?: () => void;
   defaultExpanded?: boolean;
 }
 
@@ -283,6 +338,7 @@ export function ToolPart({
   addToolOutput,
 }: {
   part: ToolUIPart;
+  onDeleteMessage?: () => void;
   addToolOutput?: UseChatHelpers<UIMessage>["addToolOutput"];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -317,6 +373,10 @@ export function ToolPart({
   }
   if (toolName === READ_BLOCK_TOOL_NAME) {
     return <ReadBlockToolPart part={part} addToolOutput={addToolOutput} />;
+  }
+
+  if (toolName === ASK_QUESTION_TOOL_NAME) {
+    return <AskQuestionToolPart part={part} />;
   }
 
   return (

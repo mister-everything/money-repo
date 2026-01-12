@@ -12,7 +12,7 @@ export const useCategories = (
     onError: handleErrorToast,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
-    dedupingInterval: TIME.MINUTES(10),
+    dedupingInterval: TIME.MINUTES(30),
     ...options,
   });
 };

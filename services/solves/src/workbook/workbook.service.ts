@@ -1148,4 +1148,168 @@ export const workBookService = {
       );
     return Boolean(row);
   },
+
+  /**
+   * 문제집 리포트 통계 조회 (첫 제출 기준)
+   * @param workBookId 문제집 ID
+   * @returns 문제별 정답률 통계
+   */
+  getWorkBookReportStats: async (
+    workBookId: string,
+  ): Promise<{
+    blockStats: {
+      blockId: string;
+      question: string;
+      order: number;
+      type: string;
+      totalSubmits: number;
+      correctCount: number;
+      correctRate: number;
+      content: any;
+      answer: any;
+    }[];
+    scoreDistribution: { range: string; count: number }[];
+    dailySolves: { date: string; count: number }[];
+  }> => {
+    // 첫 제출 기준 submitId들 가져오기
+    const firstSubmitIds = pgDb
+      .select({ submitId: workBookUserFirstScoresTable.submitId })
+      .from(workBookUserFirstScoresTable)
+      .where(eq(workBookUserFirstScoresTable.workBookId, workBookId));
+
+    // 점수 분포 및 일자별 집계를 위한 데이터
+    const scores = await pgDb
+      .select({
+        score: workBookUserFirstScoresTable.score,
+        firstSubmittedAt: workBookUserFirstScoresTable.firstSubmittedAt,
+      })
+      .from(workBookUserFirstScoresTable)
+      .where(eq(workBookUserFirstScoresTable.workBookId, workBookId));
+
+    const distributionMap = new Map<string, number>();
+    const ranges = ["0-20", "21-40", "41-60", "61-80", "81-100"];
+    ranges.forEach((r) => distributionMap.set(r, 0));
+
+    scores.forEach(({ score }) => {
+      let range = "0-20";
+      if (score > 80) range = "81-100";
+      else if (score > 60) range = "61-80";
+      else if (score > 40) range = "41-60";
+      else if (score > 20) range = "21-40";
+      distributionMap.set(range, (distributionMap.get(range) || 0) + 1);
+    });
+
+    const scoreDistribution = Array.from(distributionMap.entries()).map(
+      ([range, count]) => ({ range, count }),
+    );
+
+    // 일자별 풀이 수 집계 (최근 30일)
+    const dailySolveMap = new Map<string, number>();
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split("T")[0]!;
+      dailySolveMap.set(dateStr, 0);
+    }
+
+    scores.forEach(({ firstSubmittedAt }) => {
+      const dateStr = firstSubmittedAt.toISOString().split("T")[0]!;
+      if (dailySolveMap.has(dateStr)) {
+        dailySolveMap.set(dateStr, (dailySolveMap.get(dateStr) || 0) + 1);
+      }
+    });
+
+    const dailySolves = Array.from(dailySolveMap.entries()).map(
+      ([date, count]) => ({ date, count }),
+    );
+
+    // 문제별 정답률 집계
+    const blockStats = await pgDb
+      .select({
+        blockId: blocksTable.id,
+        question: blocksTable.question,
+        order: blocksTable.order,
+        type: blocksTable.type,
+        content: blocksTable.content,
+        answer: blocksTable.answer,
+        totalSubmits: sql<number>`count(${workBookBlockAnswerSubmitsTable.submitId})::int`,
+        correctCount: sql<number>`sum(case when ${workBookBlockAnswerSubmitsTable.isCorrect} then 1 else 0 end)::int`,
+      })
+      .from(blocksTable)
+      .leftJoin(
+        workBookBlockAnswerSubmitsTable,
+        and(
+          eq(blocksTable.id, workBookBlockAnswerSubmitsTable.blockId),
+          inArray(workBookBlockAnswerSubmitsTable.submitId, firstSubmitIds),
+        ),
+      )
+      .where(eq(blocksTable.workBookId, workBookId))
+      .groupBy(blocksTable.id)
+      .orderBy(blocksTable.order);
+
+    return {
+      blockStats: blockStats.map((stat) => ({
+        ...stat,
+        totalSubmits: stat.totalSubmits || 0,
+        correctCount: stat.correctCount || 0,
+        correctRate:
+          stat.totalSubmits > 0
+            ? Math.round((stat.correctCount / stat.totalSubmits) * 100)
+            : 0,
+      })),
+      scoreDistribution,
+      dailySolves,
+    };
+  },
+
+  /**
+   * 추천 문제집 조회
+   * 우선순위: 1. 풀지 않은 문제집 2. 같은 카테고리 3. 최근 배포
+   * @param options excludeWorkBookId, userId, categoryId
+   * @returns 추천 문제집 목록 (최대 3개)
+   */
+  getRecommendedWorkBooks: async (options: {
+    excludeWorkBookId: string;
+    userId: string;
+    categoryId?: number | null;
+  }): Promise<WorkBookWithoutBlocks[]> => {
+    const { excludeWorkBookId, userId, categoryId } = options;
+
+    const rows = await pgDb
+      .select({
+        ...WorkBookColumnsForList,
+        isSolved: sql<boolean>`CASE WHEN ${workBookUserFirstScoresTable.workBookId} IS NOT NULL THEN true ELSE false END`,
+        isSameCategory: sql<boolean>`CASE WHEN ${workBooksTable.categoryId} = ${categoryId ?? null} THEN true ELSE false END`,
+      })
+      .from(workBooksTable)
+      .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
+      .leftJoin(
+        workBookUserFirstScoresTable,
+        and(
+          eq(workBooksTable.id, workBookUserFirstScoresTable.workBookId),
+          eq(workBookUserFirstScoresTable.ownerId, userId),
+        ),
+      )
+      .where(
+        and(
+          eq(workBooksTable.isPublic, true),
+          isNotNull(workBooksTable.publishedAt),
+          isNull(workBooksTable.deletedAt),
+          sql`${workBooksTable.id} != ${excludeWorkBookId}`,
+        ),
+      )
+      .orderBy(
+        // 1. 풀지 않은 문제집 우선
+        sql`CASE WHEN ${workBookUserFirstScoresTable.workBookId} IS NULL THEN 0 ELSE 1 END`,
+        // 2. 같은 카테고리 우선
+        sql`CASE WHEN ${workBooksTable.categoryId} = ${categoryId ?? null} THEN 0 ELSE 1 END`,
+        // 3. 최근 배포순
+        desc(workBooksTable.publishedAt),
+      )
+      .limit(3);
+
+    // isSolved, isSameCategory 필드 제거하고 반환
+    return rows.map(({ isSolved, isSameCategory, ...workBook }) => workBook);
+  },
 };

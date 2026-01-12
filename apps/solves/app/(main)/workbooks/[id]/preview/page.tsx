@@ -1,6 +1,7 @@
 import { workBookService } from "@service/solves";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { GoBackButton } from "@/components/layouts/go-back-button";
 import { WorkbookPublicPreview } from "@/components/workbook/workbook-public-preview";
 
 // 30분(1800초) 동안 캐싱 후 revalidate
@@ -54,11 +55,15 @@ export default async function WorkbookPreviewPage({ params }: PageProps) {
   const book = await workBookService.getWorkBookWithoutAnswer(id, {
     isPublished: true,
   });
+
   if (!book) notFound();
 
   return (
-    <div className="flex w-full h-screen">
+    <div className="flex w-full h-full relative">
       <div className="flex-1">
+        <div className="p-4 absolute top-0 left-0 z-10 w-full">
+          <GoBackButton>목록으로</GoBackButton>
+        </div>
         <WorkbookPublicPreview book={book} />
       </div>
     </div>

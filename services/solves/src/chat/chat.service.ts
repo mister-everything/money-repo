@@ -128,6 +128,16 @@ export const chatService = {
     return threads;
   },
 
+  async deleteMessage(threadId: string, messageId: string) {
+    await pgDb
+      .delete(ChatMessageTable)
+      .where(
+        and(
+          eq(ChatMessageTable.id, messageId),
+          eq(ChatMessageTable.threadId, threadId),
+        ),
+      );
+  },
   /**
    * 시스템 프롬프트 조회
    * @param systemPrompt - 시스템 프롬프트 Enum 값
