@@ -100,7 +100,7 @@ export function WorkbooksClient({
               })
             }
             placeholder="키워드 검색"
-            className="w-full lg:w-md"
+            className="w-full lg:w-md shadow-none bg-background"
           />
         </div>
         <CategoryMultipleSelector
