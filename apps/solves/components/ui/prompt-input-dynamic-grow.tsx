@@ -111,7 +111,7 @@ interface RippleEffectsProps {
 }
 
 const BRAND_COLORS = {
-  primary: "var(--color-primary)",
+  primary: "var(--color-orange-500)",
   accent: "var(--color-accent)",
   ring: "var(--color-ring)",
   card: "var(--color-card)",
@@ -271,7 +271,7 @@ const GlowEffects = memo(
       0 0 36px ${mixWithTransparent(BRAND_COLORS.ring, 0.32 * glowIntensity)}
     `;
 
-    const cursorGradient = `radial-gradient(circle 140px at ${mousePosition.x}% ${mousePosition.y}%, ${mixWithTransparent(BRAND_COLORS.primary, 0.3)}, ${mixWithTransparent(BRAND_COLORS.accent, 0.18)} 50%, transparent 75%)`;
+    // const cursorGradient = `radial-gradient(circle 140px at ${mousePosition.x}% ${mousePosition.y}%, ${mixWithTransparent(BRAND_COLORS.primary, 0.3)}, ${mixWithTransparent(BRAND_COLORS.accent, 0.18)} 50%, transparent 75%)`;
 
     return (
       <>
@@ -313,7 +313,7 @@ const GlowEffects = memo(
         {/* Cursor following gradient */}
         <div
           className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-30 pointer-events-none blur-sm"
-          style={{ ...transitionStyle, background: cursorGradient }}
+          style={{ ...transitionStyle }}
         ></div>
 
         {/* Subtle trail animation overlay */}

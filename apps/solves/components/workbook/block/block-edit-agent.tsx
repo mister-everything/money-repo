@@ -173,12 +173,7 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent
-          side="left"
-          align="center"
-          sideOffset={12}
-          className="bg-none border-border shadow-md w-[320px]"
-        >
+        <PopoverContent side="left" align="start" sideOffset={12}>
           <PromptInputDynamicGrow
             placeholder="AI로 문제를 수정하세요"
             onSubmit={(value) => {
@@ -190,11 +185,12 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
             expandOnFocus={true}
           />
           {blockSnapshot && (
-            <div className="border-t pt-3">
-              <div className="mt-3 flex gap-2">
+            <div className="mt-1 mr-2">
+              <div className="flex gap-2 justify-end">
                 <Button
                   size="sm"
-                  className="flex-1"
+                  variant="outline"
+                  className="text-xs text-primary hover:text-primary hover:bg-primary/10"
                   onClick={handleAccept}
                   disabled={isBusy}
                 >
@@ -202,8 +198,8 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
                 </Button>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="flex-1 text-destructive hover:text-destructive"
+                  variant="outline"
+                  className="text-xs text-destructive hover:text-destructive"
                   onClick={handleReject}
                   disabled={isBusy || !blockSnapshot}
                 >
