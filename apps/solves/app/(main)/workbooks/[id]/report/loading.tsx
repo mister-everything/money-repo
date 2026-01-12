@@ -2,8 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
-    <div className="flex w-full h-screen">
-      <div className="absolute left-0 bottom-0 w-full bg-linear-to-b from-transparent to-primary/10 h-1/3" />
+    <div className="flex w-full">
       <div className="flex-1">
         {/* 뒤로가기 버튼 */}
         <div className="w-full p-4 sticky top-0 z-10">
@@ -62,4 +61,3 @@ export default function Loading() {
     </div>
   );
 }
-

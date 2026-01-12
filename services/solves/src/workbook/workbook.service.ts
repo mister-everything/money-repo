@@ -1,4 +1,5 @@
 import { userTable } from "@service/auth";
+import { Role } from "@service/auth/shared";
 import { PublicError } from "@workspace/error";
 import {
   and,
@@ -56,6 +57,7 @@ const WorkBookColumnsForList = {
   ownerName: userTable.nickname,
   ownerProfile: userTable.image,
   ownerPublicId: userTable.publicId,
+  isAdmin: sql<boolean>`${userTable.role} = ${Role.ADMIN}`,
   publishedAt: workBooksTable.publishedAt,
   tags: sql<
     { id: number; name: string }[]

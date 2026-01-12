@@ -46,6 +46,7 @@ export type WorkBook = {
   ownerName?: string | null;
   ownerPublicId: number;
   ownerProfile?: string | null;
+  isAdmin?: boolean;
   createdAt: Date;
   publishedAt?: Date | null;
   categoryId?: number | null;
