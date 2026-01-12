@@ -34,9 +34,9 @@ export function HeaderWithSidebarToggle({
           className="absolute inset-0 -bottom-4 backdrop-blur-sm pointer-events-none"
           style={{
             maskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
+              "linear-gradient(to bottom, black 40%, transparent 100%)",
             WebkitMaskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
+              "linear-gradient(to bottom, black 40%, transparent 100%)",
           }}
         />
       )}
