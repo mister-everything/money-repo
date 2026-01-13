@@ -116,6 +116,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const autoScrollRef = useRef(false);
+  const lastScrollTopRef = useRef<number>(0);
 
   const [, deleteAction] = useSafeAction(deleteThreadAction, {
     failMessage: "채팅 삭제에 실패했습니다. 다시 시도해주세요.",
@@ -537,10 +538,17 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       (isLoading && autoScrollRef.current); // 로딩 중이고 사용자가 스크롤 올리지 않음
 
     if (shouldScroll) {
-      messagesContainerRef.current?.scrollTo({
-        top: messagesContainerRef.current?.scrollHeight,
-        behavior: "smooth",
-      });
+      const el = messagesContainerRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: "smooth",
+        });
+        // 자동 스크롤 후 스크롤 위치 업데이트 (애니메이션 완료 후)
+        setTimeout(() => {
+          lastScrollTopRef.current = el.scrollTop;
+        }, 300);
+      }
     }
   }, [messages, status]);
 
@@ -548,14 +556,36 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
     const isLoading = status == "submitted" || status == "streaming";
     if (isLoading) {
       autoScrollRef.current = true;
+      const el = messagesContainerRef.current!;
+      if (el) {
+        lastScrollTopRef.current = el.scrollTop;
+      }
+      
       const handleScroll = () => {
         const el = messagesContainerRef.current!;
-        const isAtBottom =
-          el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-        if (!isAtBottom) {
+        if (!el) return;
+        
+        const currentScrollTop = el.scrollTop;
+        const scrollDelta = currentScrollTop - lastScrollTopRef.current;
+        
+        // 사용자가 위로 스크롤한 경우만 자동 스크롤 해제
+        // (scrollDelta가 음수이거나, 스크롤이 위로 올라간 경우)
+        if (scrollDelta < -5) {
+          // 위로 스크롤한 경우
           autoScrollRef.current = false;
+        } else if (scrollDelta > 0) {
+          // 아래로 스크롤한 경우 (자동 스크롤 또는 사용자가 아래로 스크롤)
+          // 바닥에 가까우면 자동 스크롤 유지
+          const isAtBottom =
+            el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+          if (isAtBottom) {
+            autoScrollRef.current = true;
+          }
         }
+        
+        lastScrollTopRef.current = currentScrollTop;
       };
+      
       messagesContainerRef.current?.addEventListener("scroll", handleScroll);
       return () => {
         messagesContainerRef.current?.removeEventListener(
@@ -568,18 +598,28 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   useEffect(() => {
     if (!isMessagesLoading) {
-      messagesContainerRef.current?.scrollTo({
-        top: messagesContainerRef.current?.scrollHeight,
-      });
+      const el = messagesContainerRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+        });
+        lastScrollTopRef.current = el.scrollTop;
+      }
     }
   }, [isMessagesLoading]);
 
   useEffect(() => {
     if (error) {
-      messagesContainerRef.current?.scrollTo({
-        top: messagesContainerRef.current?.scrollHeight,
-        behavior: "smooth",
-      });
+      const el = messagesContainerRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: "smooth",
+        });
+        setTimeout(() => {
+          lastScrollTopRef.current = el.scrollTop;
+        }, 300);
+      }
     }
   }, [error]);
 
