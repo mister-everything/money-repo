@@ -10,7 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Eye, EyeOff, Flame, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toggleWorkbookPublic } from "@/app/(dash-board)/solves/reports/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,6 @@ export function ReportTable({ reports }: Props) {
     if (!confirmed) return;
 
     setTogglingId(report.id);
-    console.log(report.targetOwnerId);
     startTransition(async () => {
       const result = await toggleWorkbookPublic({
         workBookId: report.targetId,
@@ -112,10 +111,6 @@ export function ReportTable({ reports }: Props) {
       setTogglingId(null);
     });
   };
-
-  useEffect(() => {
-    console.log(reports);
-  }, []);
 
   return (
     <>
