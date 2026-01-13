@@ -69,6 +69,7 @@ import { AskQuestionInteraction } from "../chat/tool-part/ask-question-tool-part
 import { toBlockMention } from "../mention/shared";
 import { SolvesMentionItem } from "../mention/types";
 import { Badge } from "../ui/badge";
+import { WorkbookChatWelcome } from "./workbook-chat-welcome";
 import {
   WorkbookOptionAgeGroup,
   WorkbookOptionBlockTypes,
@@ -560,14 +561,14 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       if (el) {
         lastScrollTopRef.current = el.scrollTop;
       }
-      
+
       const handleScroll = () => {
         const el = messagesContainerRef.current!;
         if (!el) return;
-        
+
         const currentScrollTop = el.scrollTop;
         const scrollDelta = currentScrollTop - lastScrollTopRef.current;
-        
+
         // 사용자가 위로 스크롤한 경우만 자동 스크롤 해제
         // (scrollDelta가 음수이거나, 스크롤이 위로 올라간 경우)
         if (scrollDelta < -5) {
@@ -582,10 +583,10 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             autoScrollRef.current = true;
           }
         }
-        
+
         lastScrollTopRef.current = currentScrollTop;
       };
-      
+
       messagesContainerRef.current?.addEventListener("scroll", handleScroll);
       return () => {
         messagesContainerRef.current?.removeEventListener(
@@ -704,29 +705,68 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       >
         {!isMessagesLoading && (
           <>
-            {messages.map((message, index) => {
-              const isLastMessage = index === messages.length - 1;
-              const isDeleting = deletingMessageIds.includes(message.id);
-              return (
-                <Message
-                  key={index}
-                  message={message}
-                  isLastMessage={isLastMessage}
-                  status={status}
-                  isDeleting={isDeleting}
-                  addToolOutput={addToolOutput}
-                  onDeleteMessage={handleDeleteMessage}
-                  className={
-                    !isLastMessage || error || overContextSize
-                      ? undefined
-                      : message.role == "assistant"
-                        ? "min-h-[calc(60dvh-30px)]"
-                        : "min-h-[calc(60dvh+70px)]"
-                  }
-                />
-              );
-            })}
+            {messages.length === 0 ? (
+              <WorkbookChatWelcome onSuggestClick={(prompt) => send(prompt)} />
+            ) : (
+              messages.map((message, index) => {
+                const isLastMessage = index === messages.length - 1;
+                const isDeleting = deletingMessageIds.includes(message.id);
+                return (
+                  <Message
+                    key={index}
+                    message={message}
+                    isLastMessage={isLastMessage}
+                    status={status}
+                    isDeleting={isDeleting}
+                    addToolOutput={addToolOutput}
+                    onDeleteMessage={handleDeleteMessage}
+                    className={
+                      !isLastMessage || error || overContextSize
+                        ? undefined
+                        : message.role == "assistant"
+                          ? "min-h-[calc(60dvh-30px)]"
+                          : "min-h-[calc(60dvh+70px)]"
+                    }
+                  />
+                );
+              })
+            )}
+            {isChatPending && messages.at(-1)?.role === "user" && (
+              <div className="py-8">
+                <div className="flex gap-2 items-center text-muted-foreground animate-pulse">
+                  <div className="size-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
+                  <div className="size-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
+                  <div className="size-2 rounded-full bg-primary/40 animate-bounce" />
+                </div>
+              </div>
+            )}
           </>
+        )}
+        {isMessagesLoading && (
+          <div
+            className="flex flex-col gap-8 py-8"
+            style={{
+              maskImage:
+                "linear-gradient(to bottom, black 40%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, black 40%, transparent 100%)",
+            }}
+          >
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-6">
+                <div className="flex justify-end">
+                  <Skeleton className="h-12 w-2/3 rounded-2xl rounded-tr-sm" />
+                </div>
+                <div className="flex justify-start gap-3">
+                  <Skeleton className="size-8 rounded-full shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-24 w-full rounded-2xl rounded-tl-sm" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         {error && (
           <div className="p-4 my-6">
@@ -887,7 +927,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             autofocus
             mentionItems={mentionItems}
             onAppendMention={handleAppendMention}
-            placeholder="무엇이든 물어보세요"
+            placeholder="어떤 문제를 추가할까요?"
             isSending={isChatPending}
             disabledSendButton={
               (!isChatPending && isPending) ||
