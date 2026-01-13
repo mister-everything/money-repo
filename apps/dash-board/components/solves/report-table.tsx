@@ -8,8 +8,12 @@ import {
 } from "@service/report/shared";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Flame } from "lucide-react";
+import { Eye, EyeOff, Flame, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { toggleWorkbookPublic } from "@/app/(dash-board)/solves/reports/actions";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -18,6 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { isSafeFail } from "@/lib/protocol/interface";
+import { notify } from "../ui/notify";
+import { ReportDetailDialog } from "./report-detail-dialog";
 export type ReportListItem = {
   id: string;
   reportedAt: string;
@@ -25,10 +32,12 @@ export type ReportListItem = {
   reporterName: string | null;
   reporterEmail: string | null;
   targetType: ReportTargetType;
+  targetId: string;
   targetOwnerId: string | null;
   targetOwnerName: string | null;
   targetOwnerEmail: string | null;
   targetTitle: string | null;
+  targetIsPublic: boolean | null;
   categoryMain: ReportCategoryMain;
   categoryDetail: ReportCategoryDetail;
   detailText: string | null;
@@ -58,87 +67,179 @@ type Props = {
 };
 
 export function ReportTable({ reports }: Props) {
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const router = useRouter();
+
+  const handleRowClick = (reportId: string) => {
+    setSelectedReportId(reportId);
+    setDialogOpen(true);
+  };
+
+  const handleTogglePublic = async (
+    e: React.MouseEvent,
+    report: ReportListItem
+  ) => {
+    e.stopPropagation();
+
+    if (report.targetType !== ReportTargetType.WORKBOOK) return;
+    if (!report.targetId) return;
+
+    const newIsPublic = !report.targetIsPublic;
+    const confirmMessage = newIsPublic
+      ? "공개 하시겠습니까?"
+      : "비공개 하시겠습니까?";
+
+    const confirmed = await notify.confirm({ title: confirmMessage });
+    if (!confirmed) return;
+
+    setTogglingId(report.id);
+    console.log(report.targetOwnerId);
+    startTransition(async () => {
+      const result = await toggleWorkbookPublic({
+        workBookId: report.targetId,
+        targetOwnerId: report.targetOwnerId ?? "",
+        isPublic: newIsPublic,
+      });
+      if (isSafeFail(result)) {
+        notify.alert({ title: `오류: ${result.message}` });
+      } else {
+        router.refresh();
+      }
+
+      setTogglingId(null);
+    });
+  };
+
+  useEffect(() => {
+    console.log(reports);
+  }, []);
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">우선순위</TableHead>
-          <TableHead>카테고리</TableHead>
-          <TableHead>대상 제목</TableHead>
-          <TableHead>대상 생성자</TableHead>
-          <TableHead className="max-w-[300px]">신고 내용</TableHead>
-          <TableHead>신고자</TableHead>
-          <TableHead>상태</TableHead>
-          <TableHead>신고일</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {reports.map((report) => (
-          <TableRow
-            key={report.id}
-            className={`cursor-pointer ${
-              report.isPriority ? "bg-red-50/50 dark:bg-red-950/20" : ""
-            }`}
-          >
-            <TableCell>
-              {report.isPriority ? (
-                <Badge className="bg-red-500 hover:bg-red-600 gap-1">
-                  <Flame className="h-3 w-3" />
-                  {report.reportCount}명
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="gap-1">
-                  일반
-                </Badge>
-              )}
-            </TableCell>
-            <TableCell>
-              <CategoryBadge
-                categoryMain={report.categoryMain}
-                categoryDetail={report.categoryDetail}
-              />
-            </TableCell>
-            <TableCell className="max-w-[200px]">
-              <p className="text-sm truncate">{report.targetTitle || "-"}</p>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="font-medium">
-                  {report.targetOwnerName || "알 수 없음"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {report.targetOwnerEmail || "-"}
-                </span>
-              </div>
-            </TableCell>
-            <TableCell className="max-w-[300px]">
-              <p className="text-sm truncate">{report.detailText || "-"}</p>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="font-medium">
-                  {report.reporterName || "알 수 없음"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {report.reporterEmail || "-"}
-                </span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <StatusBadge status={report.status} />
-            </TableCell>
-            <TableCell>
-              <span className="text-sm text-muted-foreground">
-                {formatDistanceToNow(new Date(report.reportedAt), {
-                  addSuffix: true,
-                  locale: ko,
-                })}
-              </span>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[120px]">공개 상태</TableHead>
+            <TableHead className="w-[100px]">우선순위</TableHead>
+            <TableHead>카테고리</TableHead>
+            <TableHead>대상 제목</TableHead>
+            <TableHead>대상 생성자</TableHead>
+            <TableHead className="max-w-[300px]">신고 내용</TableHead>
+            <TableHead>신고자</TableHead>
+            <TableHead>상태</TableHead>
+            <TableHead>신고일</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {reports.map((report) => (
+            <TableRow
+              key={report.id}
+              onClick={() => handleRowClick(report.id)}
+              className={`cursor-pointer ${
+                report.isPriority ? "bg-red-50/50 dark:bg-red-950/20" : ""
+              }`}
+            >
+              <TableCell>
+                {report.targetType === ReportTargetType.WORKBOOK && (
+                  <Button
+                    size="sm"
+                    variant={
+                      report.categoryDetail ===
+                      ReportCategoryDetail.VIOL_COPYRIGHT
+                        ? "destructive"
+                        : report.targetIsPublic
+                        ? "default"
+                        : "outline"
+                    }
+                    onClick={(e) => handleTogglePublic(e, report)}
+                    disabled={togglingId === report.id}
+                    className="gap-1"
+                  >
+                    {togglingId === report.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : report.targetIsPublic ? (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        공개
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        비공개
+                      </>
+                    )}
+                  </Button>
+                )}
+              </TableCell>
+              <TableCell>
+                {report.isPriority ? (
+                  <Badge className="bg-red-500 hover:bg-red-600 gap-1">
+                    <Flame className="h-3 w-3" />
+                    {report.reportCount}명
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="gap-1">
+                    일반
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <CategoryBadge
+                  categoryMain={report.categoryMain}
+                  categoryDetail={report.categoryDetail}
+                />
+              </TableCell>
+              <TableCell className="max-w-[200px]">
+                <p className="text-sm truncate">{report.targetTitle || "-"}</p>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {report.targetOwnerName || "알 수 없음"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {report.targetOwnerEmail || "-"}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell className="max-w-[300px]">
+                <p className="text-sm truncate">{report.detailText || "-"}</p>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {report.reporterName || "알 수 없음"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {report.reporterEmail || "-"}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <StatusBadge status={report.status} />
+              </TableCell>
+              <TableCell>
+                <span className="text-sm text-muted-foreground">
+                  {formatDistanceToNow(new Date(report.reportedAt), {
+                    addSuffix: true,
+                    locale: ko,
+                  })}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <ReportDetailDialog
+        reportId={selectedReportId}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+    </>
   );
 }
 

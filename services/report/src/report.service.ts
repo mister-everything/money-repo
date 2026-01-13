@@ -238,6 +238,11 @@ export const reportService = {
           string | null
         >`coalesce(${workBooksTable.title}, ${blockWorkBook.title})`,
 
+        // 신고 대상 공개 상태
+        targetIsPublic: sql<
+          boolean | null
+        >`coalesce(${workBooksTable.isPublic}, ${blockWorkBook.isPublic})`,
+
         // 신고 분류 및 내용
         categoryMain: contentReportsTable.categoryMain,
         categoryDetail: contentReportsTable.categoryDetail,
@@ -515,5 +520,142 @@ export const reportService = {
         otherCount,
       },
     };
+  },
+
+  /**
+   * 신고 상세 조회 최신 데이터 조회 위해 만듦
+   */
+  async getReportById(reportId: string) {
+    const priorityCounts = pgDb
+      .select({
+        targetType: contentReportsTable.targetType,
+        targetId: contentReportsTable.targetId,
+        reporterCount: countDistinct(contentReportsTable.reporterUserId).as(
+          "reporter_count",
+        ),
+      })
+      .from(contentReportsTable)
+      .groupBy(contentReportsTable.targetType, contentReportsTable.targetId)
+      .as("priority_counts");
+
+    const reporter = alias(userTable, "reporter");
+    const processor = alias(userTable, "processor");
+    const workBookOwner = alias(userTable, "workbook_owner");
+    const blockWorkBook = alias(workBooksTable, "block_workbook");
+    const blockWorkBookOwner = alias(userTable, "block_workbook_owner");
+
+    const [report] = await pgDb
+      .select({
+        id: contentReportsTable.id,
+        reportedAt: contentReportsTable.reportedAt,
+
+        reporterUserId: contentReportsTable.reporterUserId,
+        reporterName: reporter.name,
+        reporterEmail: reporter.email,
+
+        targetType: contentReportsTable.targetType,
+        targetId: contentReportsTable.targetId,
+
+        targetOwnerId: sql<
+          string | null
+        >`coalesce(${workBookOwner.id}, ${blockWorkBookOwner.id})`,
+        targetOwnerName: sql<
+          string | null
+        >`coalesce(${workBookOwner.name}, ${blockWorkBookOwner.name})`,
+        targetOwnerEmail: sql<
+          string | null
+        >`coalesce(${workBookOwner.email}, ${blockWorkBookOwner.email})`,
+
+        targetTitle: sql<
+          string | null
+        >`coalesce(${workBooksTable.title}, ${blockWorkBook.title})`,
+
+        targetIsPublic: sql<
+          boolean | null
+        >`coalesce(${workBooksTable.isPublic}, ${blockWorkBook.isPublic})`,
+
+        categoryMain: contentReportsTable.categoryMain,
+        categoryDetail: contentReportsTable.categoryDetail,
+        detailText: contentReportsTable.detailText,
+
+        status: contentReportsTable.status,
+        processorUserId: contentReportsTable.processorUserId,
+        processorName: processor.name,
+        processorEmail: processor.email,
+        processedAt: contentReportsTable.processedAt,
+        processingNote: contentReportsTable.processingNote,
+
+        reporterCount: sql<number>`coalesce(${priorityCounts.reporterCount}, 0)`,
+      })
+      .from(contentReportsTable)
+      .leftJoin(
+        priorityCounts,
+        and(
+          eq(priorityCounts.targetType, contentReportsTable.targetType),
+          eq(priorityCounts.targetId, contentReportsTable.targetId),
+        ),
+      )
+      .leftJoin(
+        workBooksTable,
+        and(
+          eq(contentReportsTable.targetType, ReportTargetType.WORKBOOK),
+          eq(
+            contentReportsTable.targetId,
+            sql<string>`${workBooksTable.id}::text`,
+          ),
+        ),
+      )
+      .leftJoin(
+        blocksTable,
+        and(
+          eq(contentReportsTable.targetType, ReportTargetType.BLOCK),
+          eq(
+            contentReportsTable.targetId,
+            sql<string>`${blocksTable.id}::text`,
+          ),
+        ),
+      )
+      .leftJoin(blockWorkBook, eq(blocksTable.workBookId, blockWorkBook.id))
+      .leftJoin(reporter, eq(contentReportsTable.reporterUserId, reporter.id))
+      .leftJoin(
+        processor,
+        eq(contentReportsTable.processorUserId, processor.id),
+      )
+      .leftJoin(workBookOwner, eq(workBooksTable.ownerId, workBookOwner.id))
+      .leftJoin(
+        blockWorkBookOwner,
+        eq(blockWorkBook.ownerId, blockWorkBookOwner.id),
+      )
+      .where(eq(contentReportsTable.id, reportId));
+
+    return report;
+  },
+
+  /**
+   * 신고 상태 업데이트
+   */
+  async updateReportStatus({
+    reportId,
+    status,
+    processorUserId,
+    processingNote,
+  }: {
+    reportId: string;
+    status: ReportStatus;
+    processorUserId: string;
+    processingNote?: string;
+  }) {
+    const [updated] = await pgDb
+      .update(contentReportsTable)
+      .set({
+        status,
+        processorUserId,
+        processedAt: new Date(),
+        processingNote: processingNote ?? null,
+      })
+      .where(eq(contentReportsTable.id, reportId))
+      .returning();
+
+    return updated;
   },
 };
