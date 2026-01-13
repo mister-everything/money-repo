@@ -2,6 +2,7 @@ import { workBookService } from "@service/solves";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GoBackButton } from "@/components/layouts/go-back-button";
+import { SidebarController } from "@/components/ui/sidebar";
 import { WorkbookPublicPreview } from "@/components/workbook/workbook-public-preview";
 
 // 30분(1800초) 동안 캐싱 후 revalidate
@@ -60,6 +61,7 @@ export default async function WorkbookPreviewPage({ params }: PageProps) {
 
   return (
     <div className="flex w-full h-full relative">
+      <SidebarController openMounted={false} openUnmounted={true} />
       <div className="flex-1">
         <div className="p-4 absolute top-0 left-0 z-10 w-full">
           <GoBackButton>목록으로</GoBackButton>

@@ -69,6 +69,7 @@ import { AskQuestionInteraction } from "../chat/tool-part/ask-question-tool-part
 import { toBlockMention } from "../mention/shared";
 import { SolvesMentionItem } from "../mention/types";
 import { Badge } from "../ui/badge";
+import { WorkbookChatWelcome } from "./workbook-chat-welcome";
 import {
   WorkbookOptionAgeGroup,
   WorkbookOptionBlockTypes,
@@ -116,6 +117,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const autoScrollRef = useRef(false);
+  const lastScrollTopRef = useRef<number>(0);
 
   const [, deleteAction] = useSafeAction(deleteThreadAction, {
     failMessage: "채팅 삭제에 실패했습니다. 다시 시도해주세요.",
@@ -531,26 +533,60 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   }, [threadId]);
 
   useEffect(() => {
-    if (autoScrollRef.current || messages.at(-1)?.role == "user") {
-      messagesContainerRef.current?.scrollTo({
-        top: messagesContainerRef.current?.scrollHeight,
-        behavior: "smooth",
-      });
+    const isLoading = status == "submitted" || status == "streaming";
+    const shouldScroll =
+      messages.at(-1)?.role == "user" || // 유저가 메시지를 보낸 직후
+      (isLoading && autoScrollRef.current); // 로딩 중이고 사용자가 스크롤 올리지 않음
+
+    if (shouldScroll) {
+      const el = messagesContainerRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: "smooth",
+        });
+        // 자동 스크롤 후 스크롤 위치 업데이트 (애니메이션 완료 후)
+        setTimeout(() => {
+          lastScrollTopRef.current = el.scrollTop;
+        }, 300);
+      }
     }
-  }, [messages]);
+  }, [messages, status]);
 
   useEffect(() => {
     const isLoading = status == "submitted" || status == "streaming";
     if (isLoading) {
       autoScrollRef.current = true;
+      const el = messagesContainerRef.current!;
+      if (el) {
+        lastScrollTopRef.current = el.scrollTop;
+      }
+
       const handleScroll = () => {
         const el = messagesContainerRef.current!;
-        const isAtBottom =
-          el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-        if (!isAtBottom) {
+        if (!el) return;
+
+        const currentScrollTop = el.scrollTop;
+        const scrollDelta = currentScrollTop - lastScrollTopRef.current;
+
+        // 사용자가 위로 스크롤한 경우만 자동 스크롤 해제
+        // (scrollDelta가 음수이거나, 스크롤이 위로 올라간 경우)
+        if (scrollDelta < -5) {
+          // 위로 스크롤한 경우
           autoScrollRef.current = false;
+        } else if (scrollDelta > 0) {
+          // 아래로 스크롤한 경우 (자동 스크롤 또는 사용자가 아래로 스크롤)
+          // 바닥에 가까우면 자동 스크롤 유지
+          const isAtBottom =
+            el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+          if (isAtBottom) {
+            autoScrollRef.current = true;
+          }
         }
+
+        lastScrollTopRef.current = currentScrollTop;
       };
+
       messagesContainerRef.current?.addEventListener("scroll", handleScroll);
       return () => {
         messagesContainerRef.current?.removeEventListener(
@@ -563,18 +599,28 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
 
   useEffect(() => {
     if (!isMessagesLoading) {
-      messagesContainerRef.current?.scrollTo({
-        top: messagesContainerRef.current?.scrollHeight,
-      });
+      const el = messagesContainerRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+        });
+        lastScrollTopRef.current = el.scrollTop;
+      }
     }
   }, [isMessagesLoading]);
 
   useEffect(() => {
     if (error) {
-      messagesContainerRef.current?.scrollTo({
-        top: messagesContainerRef.current?.scrollHeight,
-        behavior: "smooth",
-      });
+      const el = messagesContainerRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: "smooth",
+        });
+        setTimeout(() => {
+          lastScrollTopRef.current = el.scrollTop;
+        }, 300);
+      }
     }
   }, [error]);
 
@@ -659,29 +705,68 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
       >
         {!isMessagesLoading && (
           <>
-            {messages.map((message, index) => {
-              const isLastMessage = index === messages.length - 1;
-              const isDeleting = deletingMessageIds.includes(message.id);
-              return (
-                <Message
-                  key={index}
-                  message={message}
-                  isLastMessage={isLastMessage}
-                  status={status}
-                  isDeleting={isDeleting}
-                  addToolOutput={addToolOutput}
-                  onDeleteMessage={handleDeleteMessage}
-                  className={
-                    !isLastMessage || error || overContextSize
-                      ? undefined
-                      : message.role == "assistant"
-                        ? "min-h-[calc(60dvh-30px)]"
-                        : "min-h-[calc(60dvh+70px)]"
-                  }
-                />
-              );
-            })}
+            {messages.length === 0 ? (
+              <WorkbookChatWelcome onSuggestClick={(prompt) => send(prompt)} />
+            ) : (
+              messages.map((message, index) => {
+                const isLastMessage = index === messages.length - 1;
+                const isDeleting = deletingMessageIds.includes(message.id);
+                return (
+                  <Message
+                    key={index}
+                    message={message}
+                    isLastMessage={isLastMessage}
+                    status={status}
+                    isDeleting={isDeleting}
+                    addToolOutput={addToolOutput}
+                    onDeleteMessage={handleDeleteMessage}
+                    className={
+                      !isLastMessage || error || overContextSize
+                        ? undefined
+                        : message.role == "assistant"
+                          ? "min-h-[calc(60dvh-30px)]"
+                          : "min-h-[calc(60dvh+70px)]"
+                    }
+                  />
+                );
+              })
+            )}
+            {isChatPending && messages.at(-1)?.role === "user" && (
+              <div className="py-8">
+                <div className="flex gap-2 items-center text-muted-foreground animate-pulse">
+                  <div className="size-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
+                  <div className="size-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
+                  <div className="size-2 rounded-full bg-primary/40 animate-bounce" />
+                </div>
+              </div>
+            )}
           </>
+        )}
+        {isMessagesLoading && (
+          <div
+            className="flex flex-col gap-8 py-8"
+            style={{
+              maskImage:
+                "linear-gradient(to bottom, black 40%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, black 40%, transparent 100%)",
+            }}
+          >
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-6">
+                <div className="flex justify-end">
+                  <Skeleton className="h-12 w-2/3 rounded-2xl rounded-tr-sm" />
+                </div>
+                <div className="flex justify-start gap-3">
+                  <Skeleton className="size-8 rounded-full shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-24 w-full rounded-2xl rounded-tl-sm" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         {error && (
           <div className="p-4 my-6">
@@ -753,8 +838,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                           side="top"
                         >
                           <Badge
-                            variant={"secondary"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                            variant={"outline"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer shadow-none"
                           >
                             {WorkBookSituation.find(
                               (value) =>
@@ -781,8 +866,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                           side="top"
                         >
                           <Badge
-                            variant={"secondary"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                            variant={"outline"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none"
                           >
                             {WorkBookAgeGroup.find(
                               (value) =>
@@ -809,8 +894,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                           side="top"
                         >
                           <Badge
-                            variant={"secondary"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer"
+                            variant={"outline"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none"
                           >
                             {workbookOption?.blockTypes?.length ==
                             Object.keys(blockDisplayNames).length
@@ -842,7 +927,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             autofocus
             mentionItems={mentionItems}
             onAppendMention={handleAppendMention}
-            placeholder="무엇이든 물어보세요"
+            placeholder="어떤 문제를 추가할까요?"
             isSending={isChatPending}
             disabledSendButton={
               (!isChatPending && isPending) ||
