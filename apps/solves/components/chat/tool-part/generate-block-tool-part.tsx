@@ -59,7 +59,7 @@ function BaseCard({
   return (
     <div
       className={cn(
-        "text-sm rounded-lg border bg-background p-4 space-y-3 fade-2000",
+        "text-sm rounded-lg border bg-background p-4 space-y-3 fade-1000",
         (isPending || disabled) &&
           "text-muted-foreground border-secondary shadow-none bg-secondary",
         isPending && "animate-pulse",
