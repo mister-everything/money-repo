@@ -531,13 +531,18 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
   }, [threadId]);
 
   useEffect(() => {
-    if (autoScrollRef.current || messages.at(-1)?.role == "user") {
+    const isLoading = status == "submitted" || status == "streaming";
+    const shouldScroll =
+      messages.at(-1)?.role == "user" || // 유저가 메시지를 보낸 직후
+      (isLoading && autoScrollRef.current); // 로딩 중이고 사용자가 스크롤 올리지 않음
+
+    if (shouldScroll) {
       messagesContainerRef.current?.scrollTo({
         top: messagesContainerRef.current?.scrollHeight,
         behavior: "smooth",
       });
     }
-  }, [messages]);
+  }, [messages, status]);
 
   useEffect(() => {
     const isLoading = status == "submitted" || status == "streaming";
@@ -753,8 +758,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                           side="top"
                         >
                           <Badge
-                            variant={"secondary"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                            variant={"outline"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer shadow-none"
                           >
                             {WorkBookSituation.find(
                               (value) =>
@@ -781,8 +786,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                           side="top"
                         >
                           <Badge
-                            variant={"secondary"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer"
+                            variant={"outline"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none"
                           >
                             {WorkBookAgeGroup.find(
                               (value) =>
@@ -809,8 +814,8 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                           side="top"
                         >
                           <Badge
-                            variant={"secondary"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer"
+                            variant={"outline"}
+                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none"
                           >
                             {workbookOption?.blockTypes?.length ==
                             Object.keys(blockDisplayNames).length

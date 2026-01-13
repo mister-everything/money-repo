@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenCheck, LibraryIcon, List, Pencil, Plus } from "lucide-react";
+import { BookOpenCheck, LibraryIcon, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
