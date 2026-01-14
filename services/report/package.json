@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@service/auth": "workspace:*",
+    "@service/solves": "workspace:*",
     "@workspace/error": "workspace:*",
     "@workspace/util": "workspace:*",
     "consola": "^3.4.2",
