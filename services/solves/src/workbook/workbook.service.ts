@@ -12,6 +12,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { pgDb } from "../db";
+import { chatService } from "../chat/chat.service";
 import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
 import { blockValidate } from "./block-validate";
 import { BlockAnswer, BlockAnswerSubmit } from "./blocks";
@@ -108,6 +109,7 @@ export const workBookService = {
   },
 
   deleteWorkBook: async (workBookId: string): Promise<void> => {
+    await chatService.deleteThreadsByWorkbookId(workBookId);
     await pgDb.delete(workBooksTable).where(eq(workBooksTable.id, workBookId));
   },
   softDeleteWorkBook: async (
