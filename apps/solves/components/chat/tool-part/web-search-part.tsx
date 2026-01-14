@@ -2,17 +2,13 @@
 
 import { equal, toAny, truncateString } from "@workspace/util";
 import { ToolUIPart } from "ai";
+import { motion } from "framer-motion";
 import { AlertTriangleIcon, SearchIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 
 import { notify } from "@/components/ui/notify";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import {
   Tooltip,
@@ -23,7 +19,6 @@ import {
   ExaSearchResponse,
   ExaSearchSimpleInput,
 } from "@/lib/ai/tools/web-search/types";
-import { cn } from "@/lib/utils";
 
 interface WebSearchToolInvocationProps {
   part: ToolUIPart;
@@ -57,40 +52,80 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
 
   if (!part.state.startsWith("output"))
     return (
-      <div className="flex items-center text-muted-foreground gap-2 text-sm">
-        <SearchIcon className="size-3 wiggle" />
-        <TextShimmer>
-          {query?.length
-            ? `"${truncateString(query, 30)}" 에 관련 검색`
-            : "웹 검색 중..."}
-        </TextShimmer>
+      <div className="flex flex-col gap-3 min-w-[300px] w-full fade-300">
+        <div className="flex items-center text-muted-foreground gap-2 text-sm">
+          <SearchIcon className="size-3 wiggle" />
+          <TextShimmer>
+            {query?.length
+              ? `"${truncateString(query, 30)}" 에 관련 검색`
+              : "웹 검색 중..."}
+          </TextShimmer>
+        </div>
+        <div className="relative overflow-hidden rounded-xl border bg-background/50 mx-12">
+          {/* Browser Header Simulation */}
+          <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
+            <div className="flex gap-1.5">
+              <div className="size-2 rounded-full bg-muted-foreground/20" />
+              <div className="size-2 rounded-full bg-muted-foreground/20" />
+              <div className="size-2 rounded-full bg-muted-foreground/20" />
+            </div>
+          </div>
+
+          {/* Search Results Simulation */}
+          <div className="relative h-[160px] overflow-hidden p-3">
+            <div className="absolute inset-x-0 top-0 z-10 h-4 bg-linear-to-b from-background/50 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 z-10 h-12 bg-linear-to-t from-background/50 to-transparent" />
+
+            <motion.div
+              initial={{ y: 0 }}
+              animate={{ y: "-50%" }}
+              transition={{
+                duration: 5, // Slower duration since we scroll more content now
+                ease: "linear",
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "loop",
+              }}
+              className="flex flex-col"
+            >
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex gap-3 mb-4">
+                  <Skeleton className="size-10 rounded-lg shrink-0" />
+                  <div className="flex flex-col gap-2 flex-1 pt-1">
+                    <Skeleton className="h-3 w-3/4 rounded-full" />
+                    <Skeleton className="h-2 w-full rounded-full" />
+                    <Skeleton className="h-2 w-5/6 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
       </div>
     );
   return (
-    <div className="flex flex-col gap-2 text-sm text-muted-foreground fade-300">
-      <div className="flex items-center gap-2">
-        {result?.results?.length && (
-          <p className="text-xs ml-1 flex items-center gap-1">
-            {query?.length ? (
-              <span className="font-semibold">{`${truncateString(query, 40)}`}</span>
-            ) : (
-              ""
-            )}
-
-            <span>{`${result?.results?.length}개의 검색 결과`}</span>
-          </p>
-        )}
+    <div className="flex flex-col gap-3 min-w-[300px] w-full fade-300">
+      <div className="flex items-center text-muted-foreground gap-2 text-sm">
+        <SearchIcon className="size-3" />
+        <span className="text-muted-foreground">
+          {query?.length
+            ? `"${truncateString(query, 30)}" 검색 완료`
+            : "검색 완료"}
+        </span>
       </div>
-      <div className="flex gap-2">
-        <div className="px-2.5">
-          <Separator
-            orientation="vertical"
-            className="bg-linear-to-b from-border to-transparent from-80%"
-          />
+
+      <div className="relative overflow-hidden rounded-xl border bg-background/50 mx-12">
+        {/* Browser Header Simulation */}
+        <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
+          <div className="flex gap-1.5">
+            <div className="size-2 rounded-full bg-muted-foreground/20" />
+            <div className="size-2 rounded-full bg-muted-foreground/20" />
+            <div className="size-2 rounded-full bg-muted-foreground/20" />
+          </div>
         </div>
-        <div className="flex flex-col gap-2 pb-2">
+
+        <div className="p-3 flex flex-col gap-4 max-h-[400px] overflow-y-auto scrollbar-hide">
           {Boolean(images?.length) && (
-            <div className="grid grid-cols-3 gap-3 max-w-2xl">
+            <div className="grid grid-cols-3 gap-3">
               {images.map((image, i) => {
                 if (!image.url) return null;
                 return (
@@ -101,7 +136,6 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
                         onClick={() => {
                           notify.component({
                             className: "max-w-[90vw]! max-h-[90vh]! p-6!",
-
                             renderer: () => (
                               <div className="flex flex-col h-full gap-4">
                                 <div className="flex-1 flex items-center justify-center min-h-0 py-6">
@@ -117,29 +151,28 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
                             ),
                           });
                         }}
-                        className="block shadow rounded-lg overflow-hidden ring ring-input cursor-pointer"
+                        className="block rounded-lg overflow-hidden ring-1 ring-border/50 cursor-pointer group"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           loading="lazy"
                           src={image.url}
                           alt={image.description}
-                          className="w-full h-36 object-cover hover:scale-120 transition-transform duration-300"
+                          className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={onError}
                         />
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent className="p-4 max-w-xs whitespace-pre-wrap wrap-break-word">
-                      <p className="text-xs text-muted-foreground">
-                        {image.description || image.url}
-                      </p>
+                    <TooltipContent className="p-2 max-w-xs text-xs">
+                      {image.description || image.url}
                     </TooltipContent>
                   </Tooltip>
                 );
               })}
             </div>
           )}
-          <div className="flex flex-wrap gap-1">
+
+          <div className="flex flex-col gap-2">
             {part.errorText ? (
               <p className="text-xs text-destructive flex items-center gap-1">
                 <AlertTriangleIcon className="size-3.5" />
@@ -148,69 +181,35 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
             ) : (
               (result as ExaSearchResponse)?.results?.map((result, i) => {
                 return (
-                  <HoverCard key={i} openDelay={200} closeDelay={0}>
-                    <HoverCardTrigger asChild>
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group rounded-full bg-secondary pl-1.5 pr-2 py-1.5 text-xs flex items-center gap-1 hover:bg-primary/5 hover:ring hover:ring-primary transition-all cursor-pointer"
-                      >
-                        <div className="rounded-full bg-input ring ring-input">
-                          <Avatar className="size-3 rounded-full">
-                            <AvatarImage src={result.favicon} />
-                            <AvatarFallback>
-                              {result.title?.slice(0, 1).toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <span className="truncate max-w-44">{result.url}</span>
-                      </a>
-                    </HoverCardTrigger>
-
-                    <HoverCardContent className="flex flex-col gap-1 p-6">
+                  <a
+                    href={result.url}
+                    key={i}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50"
+                  >
+                    <div className="size-9 rounded-md bg-muted/50 border border-border/50 flex items-center justify-center shrink-0">
+                      <Avatar className="size-5 rounded-sm">
+                        <AvatarImage src={result.favicon} />
+                        <AvatarFallback className="text-[10px]">
+                          {result.title?.slice(0, 1).toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <div className="rounded-full ring ring-input">
-                          <Avatar className="size-6 rounded-full">
-                            <AvatarImage src={result.favicon} />
-                            <AvatarFallback>
-                              {result.title?.slice(0, 1).toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <span
-                          className={cn(
-                            "font-medium",
-                            !result.title && "truncate",
-                          )}
-                        >
+                        <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                           {result.title || result.url}
                         </span>
+                        <span className="text-[10px] text-muted-foreground/70 shrink-0">
+                          {new URL(result.url).hostname.replace("www.", "")}
+                        </span>
                       </div>
-                      <div className="flex flex-col gap-2 mt-4">
-                        <div className="relative">
-                          <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-transparent to-card from-80% " />
-                          <p className="text-xs text-muted-foreground max-h-60 overflow-y-auto">
-                            {result.text}
-                          </p>
-                        </div>
-                        {result.author && (
-                          <div className="text-xs text-muted-foreground mt-2">
-                            <span className="font-medium">Author:</span>{" "}
-                            {result.author}
-                          </div>
-                        )}
-                        {result.publishedDate && (
-                          <div className="text-xs text-muted-foreground">
-                            <span className="font-medium">Published:</span>{" "}
-                            {new Date(
-                              result.publishedDate,
-                            ).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {result.url}
+                      </p>
+                    </div>
+                  </a>
                 );
               })
             )}

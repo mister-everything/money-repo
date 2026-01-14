@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/layouts/app-sidebar";
+import { MainContainer } from "@/components/layouts/main-container";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Layout({
@@ -18,11 +19,7 @@ export default function Layout({
         }
       >
         <AppSidebar />
-        <main className="flex-1 overflow-hidden w-full h-screen p-2">
-          <div className="@container/main border rounded-3xl h-full overflow-y-auto relative bg-secondary dark:bg-card/40">
-            {children}
-          </div>
-        </main>
+        <MainContainer>{children}</MainContainer>
       </SidebarProvider>
     </div>
   );

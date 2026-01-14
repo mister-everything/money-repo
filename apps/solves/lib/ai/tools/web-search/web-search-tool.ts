@@ -1,3 +1,4 @@
+import { wait } from "@workspace/util";
 import { tool as createTool, Tool } from "ai";
 import {
   EXA_SEARCH_TOOL_NAME,
@@ -55,7 +56,7 @@ export const exaSearchTool: Tool = createTool({
         livecrawl: "preferred",
       },
     };
-
+    await wait(2000); // 애니메이션 효과를 위해 2초 대기
     const result = await fetchExa("/search", searchRequest);
 
     return {

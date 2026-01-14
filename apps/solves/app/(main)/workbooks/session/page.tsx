@@ -71,7 +71,7 @@ export default function Page() {
               })
             }
             placeholder="키워드 검색"
-            className="w-full lg:w-md shadow-none"
+            className="w-full lg:w-md shadow-none bg-background"
           />
         </div>
         <div className="flex items-center justify-between">

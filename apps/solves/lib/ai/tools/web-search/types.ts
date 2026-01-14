@@ -72,7 +72,7 @@ export const EXA_SEARCH_TOOL_NAME = "webSearch";
 // Keep only the knobs we actually need for fact-checking / sourcing.
 export const exaSearchSimpleInputSchema = z.object({
   query: z.string().describe("검색 질문"),
-  numResults: z.number().min(1).max(10).default(2).describe("검색 결과 개수"),
+  numResults: z.number().min(1).max(10).default(3).describe("검색 결과 개수"),
   maxCharacters: z
     .number()
     .min(200)

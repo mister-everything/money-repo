@@ -28,11 +28,11 @@ import { WorkBookComponentMode } from "./types";
 
 // 정답 일때
 const okClass =
-  "border-primary bg-primary/5 text-primary hover:text-primary hover:bg-primary/10";
+  "border-primary! bg-primary/5! text-primary! hover:text-primary! hover:bg-primary/10!";
 
 // 사용자가 선택했고 오답 일때
 const failClass =
-  "border-destructive bg-destructive/5 text-destructive hover:text-destructive hover:bg-destructive/10";
+  "border-destructive! bg-destructive/5! text-destructive! hover:text-destructive! hover:bg-destructive/10!";
 
 type BlockContentProps<T extends BlockType = BlockType> = {
   content: BlockContent<T>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, List, Pencil, Plus } from "lucide-react";
+import { BookOpenCheck, LibraryIcon, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -50,7 +50,7 @@ export function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === "/workbooks"}>
                 <Link href="/workbooks" onClick={() => setOpenMobile(false)}>
-                  <BookOpen />
+                  <LibraryIcon />
                   <span>문제 풀기</span>
                 </Link>
               </SidebarMenuButton>
@@ -64,7 +64,7 @@ export function AppSidebar() {
                   href="/workbooks/session"
                   onClick={() => setOpenMobile(false)}
                 >
-                  <List />
+                  <BookOpenCheck />
                   <span>내가 푼 문제집</span>
                 </Link>
               </SidebarMenuButton>

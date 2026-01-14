@@ -18,7 +18,7 @@ import {
   GenerateSubjectiveInputSchema,
 } from "./shared";
 
-const TOOL_DELAY = 3000; // 고의적으로 지연시간을 줘서 툴 사용 효과를 확인할 수 있도록
+const TOOL_DELAY = 5000; // 고의적으로 지연시간을 줘서 툴 사용 효과를 확인할 수 있도록
 
 /**
  * 객관식(단일) 생성 툴

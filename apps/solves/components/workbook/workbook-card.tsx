@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
+import { BadgeCheckIcon } from "../ui/custom-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -185,7 +186,7 @@ export function WorkbookCard({
           ) : session?.status === "in-progress" ? (
             <Badge
               variant="secondary"
-              className="w-fit bg-blue-50 dark:bg-blue-950 text-blue-500 dark:text-blue-100 rounded-full py-1"
+              className="w-fit bg-blue-100 dark:bg-blue-950 text-blue-500 rounded-full py-1"
             >
               풀이 중
             </Badge>
@@ -194,7 +195,7 @@ export function WorkbookCard({
           ) : !published ? (
             <Badge
               variant="secondary"
-              className="w-fit  bg-blue-50 dark:bg-blue-950 text-blue-500 :dark:text-blue-100 rounded-full py-1"
+              className="w-fit bg-blue-100 dark:bg-blue-950 text-blue-500 rounded-full py-1"
             >
               제작중
             </Badge>
@@ -249,6 +250,9 @@ export function WorkbookCard({
               </AvatarFallback>
             </Avatar>
             {workBook.ownerName ?? "-"}
+            {workBook.isAdmin && (
+              <BadgeCheckIcon className="size-3 text-blue-500" />
+            )}
           </div>
         </div>
       </CardContent>
