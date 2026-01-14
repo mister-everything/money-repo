@@ -1,6 +1,6 @@
 import { PublicError } from "@workspace/error";
 import { generateUUID } from "@workspace/util";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { pgDb } from "../db";
 import {
   ChatMessageTable,
@@ -137,24 +137,6 @@ export const chatService = {
           eq(ChatMessageTable.threadId, threadId),
         ),
       );
-  },
-
-  /**
-   * workbookId로 연결된 모든 thread 삭제
-   * @param workbookId - 워크북 ID
-   */
-  async deleteThreadsByWorkbookId(workbookId: string): Promise<void> {
-    const connectedThreads = await pgDb
-      .select({ threadId: WorkbookCreateChatThreadTable.threadId })
-      .from(WorkbookCreateChatThreadTable)
-      .where(eq(WorkbookCreateChatThreadTable.workbookId, workbookId));
-
-    if (connectedThreads.length > 0) {
-      const threadIds = connectedThreads.map((t) => t.threadId);
-      await pgDb
-        .delete(ChatThreadTable)
-        .where(inArray(ChatThreadTable.id, threadIds));
-    }
   },
   /**
    * 시스템 프롬프트 조회
