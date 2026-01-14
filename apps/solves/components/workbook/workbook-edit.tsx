@@ -1,5 +1,11 @@
 "use client";
 
+import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   BlockAnswer,
   BlockAnswerSubmit,
@@ -24,7 +30,7 @@ import {
   StateUpdate,
   TIME,
 } from "@workspace/util";
-import { GripVerticalIcon, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, {
   useCallback,
@@ -53,6 +59,7 @@ import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { Block } from "./block/block";
+import { BlockReorderItem } from "./block/block-reorder-item";
 import { BlockSelectPopup } from "./block/block-select-popup";
 import { WorkBookComponentMode } from "./block/types";
 import { WorkbookEditActionBar } from "./workbook-edit-action-bar";
@@ -128,9 +135,6 @@ export function WorkbookEdit({
   const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
 
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
-
-  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
-  const [dragOverBlockId, setDragOverBlockId] = useState<string | null>(null);
 
   const [isPublishPopupOpen, setIsPublishPopupOpen] = useState(false);
 
@@ -366,58 +370,18 @@ export function WorkbookEdit({
 
   const handleToggleReorderMode = useCallback(() => {
     setIsReorderMode((prev) => !prev);
-    setDraggedBlockId(null);
-    setDragOverBlockId(null);
   }, []);
 
-  const handleReorderDragStart = useCallback(
-    (e: React.DragEvent, blockId: string) => {
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", blockId);
-      setDraggedBlockId(blockId);
-    },
-    [],
-  );
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  const handleReorderDragOver = useCallback(
-    (e: React.DragEvent, blockId: string) => {
-      e.preventDefault();
-      if (draggedBlockId && draggedBlockId !== blockId) {
-        setDragOverBlockId(blockId);
-      }
-    },
-    [draggedBlockId],
-  );
-
-  const handleReorderDragLeave = useCallback(() => {
-    setDragOverBlockId(null);
-  }, []);
-
-  const handleReorderDrop = useCallback(
-    (e: React.DragEvent, targetId: string) => {
-      e.preventDefault();
-      if (!draggedBlockId || draggedBlockId === targetId) {
-        setDragOverBlockId(null);
-        return;
-      }
-      setBlocks((prev) => {
-        const draggedIndex = prev.findIndex((b) => b.id === draggedBlockId);
-        const targetIndex = prev.findIndex((b) => b.id === targetId);
-        if (draggedIndex === -1 || targetIndex === -1) return prev;
-        const newBlocks = [...prev];
-        const [removed] = newBlocks.splice(draggedIndex, 1);
-        newBlocks.splice(targetIndex, 0, removed);
-        return newBlocks.map((b, index) => ({ ...b, order: index }));
-      });
-      setDraggedBlockId(null);
-      setDragOverBlockId(null);
-    },
-    [draggedBlockId],
-  );
-
-  const handleReorderDragEnd = useCallback(() => {
-    setDraggedBlockId(null);
-    setDragOverBlockId(null);
+    setBlocks((prev) => {
+      const oldIndex = prev.findIndex((b) => b.id === active.id);
+      const newIndex = prev.findIndex((b) => b.id === over.id);
+      const newBlocks = arrayMove(prev, oldIndex, newIndex);
+      return newBlocks.map((b, index) => ({ ...b, order: index }));
+    });
   }, []);
 
   const handleUpdateSubmitAnswer = useCallback(
@@ -539,80 +503,74 @@ export function WorkbookEdit({
             book={workBook}
           />
 
-          {blocks.map((b, index) => {
-            const isDragOver = dragOverBlockId === b.id;
-            const mode =
-              control !== "edit"
-                ? control
-                : editingBlockId.includes(b.id)
-                  ? "edit"
-                  : "preview";
-            return (
-              <div
-                key={`${b.id}-${mode}`}
-                className={cn(
-                  "relative transition-all duration-200 rounded-xl border",
-                  isReorderMode &&
-                    "cursor-grab active:cursor-grabbing hover:border-primary/50 overflow-hidden max-h-80",
-                  isDragOver &&
-                    "border-muted-foreground bg-seborder-muted-foreground border-dashed",
-                )}
-                draggable={isReorderMode}
-                onDragStart={(e) =>
-                  isReorderMode && handleReorderDragStart(e, b.id)
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={blocks.map((b) => b.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {blocks.map((b, index) => {
+                if (isReorderMode) {
+                  return (
+                    <BlockReorderItem
+                      key={b.id}
+                      id={b.id}
+                      question={b.question ?? ""}
+                      type={b.type}
+                      index={index}
+                    />
+                  );
                 }
-                onDragOver={(e) =>
-                  isReorderMode && handleReorderDragOver(e, b.id)
-                }
-                onDragLeave={isReorderMode ? handleReorderDragLeave : undefined}
-                onDrop={(e) => isReorderMode && handleReorderDrop(e, b.id)}
-                onDragEnd={isReorderMode ? handleReorderDragEnd : undefined}
-              >
-                {isReorderMode && !isDragOver && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-xl transition-colors bg-muted/40 hover:bg-primary/10 backdrop-blur-[1px]">
-                    <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                      <GripVerticalIcon className="size-6" />
-                      <span className="text-sm font-medium">
-                        드래그하여 이동
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <Block
-                  index={index}
-                  isPending={isPending}
-                  ref={focusBlockId === b.id ? handleFocusBlock : undefined}
-                  className={cn(
-                    "border-none",
-                    isPending ? "opacity-50" : "",
-                    mode == "review" &&
-                      !correctAnswerIds[b.id] &&
-                      "bg-muted-foreground/5",
-                  )}
-                  mode={mode}
-                  onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
-                  type={b.type}
-                  question={b.question ?? ""}
-                  id={b.id}
-                  submit={submits[b.id]}
-                  onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
-                    null,
-                    b.id,
-                  )}
-                  order={b.order}
-                  isCorrect={correctAnswerIds[b.id]}
-                  answer={b.answer}
-                  content={b.content}
-                  onUpdateSolution={handleUpdateSolution.bind(null, b.id)}
-                  onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
-                  onUpdateContent={handleUpdateContent.bind(null, b.id)}
-                  onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
-                  onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
-                  errorFeedback={feedbacks[b.id]}
-                />
-              </div>
-            );
-          })}
+
+                const mode =
+                  control !== "edit"
+                    ? control
+                    : editingBlockId.includes(b.id)
+                      ? "edit"
+                      : "preview";
+
+                return (
+                  <Block
+                    key={`${b.id}-${mode}`}
+                    index={index}
+                    isPending={isPending}
+                    ref={focusBlockId === b.id ? handleFocusBlock : undefined}
+                    className={cn(
+                      "relative transition-all duration-200 rounded-xl border",
+                      isReorderMode &&
+                        "cursor-grab active:cursor-grabbing hover:border-primary/50 overflow-hidden max-h-80",
+                      isPending ? "opacity-50" : "",
+                      mode == "review" &&
+                        !correctAnswerIds[b.id] &&
+                        "bg-muted-foreground/5",
+                    )}
+                    mode={mode}
+                    onToggleEditMode={handleToggleEditMode.bind(null, b.id)}
+                    type={b.type}
+                    question={b.question ?? ""}
+                    id={b.id}
+                    submit={submits[b.id]}
+                    onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
+                      null,
+                      b.id,
+                    )}
+                    order={b.order}
+                    isCorrect={correctAnswerIds[b.id]}
+                    answer={b.answer}
+                    content={b.content}
+                    onUpdateSolution={handleUpdateSolution.bind(null, b.id)}
+                    onDeleteBlock={handleDeleteBlock.bind(null, b.id)}
+                    onUpdateContent={handleUpdateContent.bind(null, b.id)}
+                    onUpdateAnswer={handleUpdateAnswer.bind(null, b.id)}
+                    onUpdateQuestion={handleUpdateQuestion.bind(null, b.id)}
+                    errorFeedback={feedbacks[b.id]}
+                  />
+                );
+              })}
+            </SortableContext>
+          </DndContext>
           {control === "edit" &&
             stateRef.current.blocks.length < MAX_BLOCK_COUNT && (
               <Tooltip>

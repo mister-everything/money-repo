@@ -731,15 +731,6 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                 );
               })
             )}
-            {isChatPending && messages.at(-1)?.role === "user" && (
-              <div className="py-8">
-                <div className="flex gap-2 items-center text-muted-foreground animate-pulse">
-                  <div className="size-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]" />
-                  <div className="size-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]" />
-                  <div className="size-2 rounded-full bg-primary/40 animate-bounce" />
-                </div>
-              </div>
-            )}
           </>
         )}
         {isMessagesLoading && (
