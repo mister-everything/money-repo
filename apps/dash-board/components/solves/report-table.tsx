@@ -4,7 +4,6 @@ import {
   ReportCategoryDetail,
   ReportCategoryMain,
   ReportStatus,
-  ReportTargetType,
 } from "@service/report/shared";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -28,21 +27,14 @@ import { ReportDetailDialog } from "./report-detail-dialog";
 export type ReportListItem = {
   id: string;
   reportedAt: string;
-  reporterUserId: string | null;
-  reporterName: string | null;
-  reporterEmail: string | null;
-  targetType: ReportTargetType;
   targetId: string;
   targetOwnerId: string | null;
-  targetOwnerName: string | null;
-  targetOwnerEmail: string | null;
   targetTitle: string | null;
   targetIsPublic: boolean | null;
   categoryMain: ReportCategoryMain;
   categoryDetail: ReportCategoryDetail;
   detailText: string | null;
   status: ReportStatus;
-  processorUserId: string | null;
   processedAt: string | null;
   processingNote: string | null;
   reportCount: number;
@@ -84,7 +76,6 @@ export function ReportTable({ reports }: Props) {
   ) => {
     e.stopPropagation();
 
-    if (report.targetType !== ReportTargetType.WORKBOOK) return;
     if (!report.targetId) return;
 
     const newIsPublic = !report.targetIsPublic;
@@ -120,10 +111,8 @@ export function ReportTable({ reports }: Props) {
             <TableHead className="w-[120px]">공개 상태</TableHead>
             <TableHead className="w-[100px]">우선순위</TableHead>
             <TableHead>카테고리</TableHead>
-            <TableHead>대상 제목</TableHead>
-            <TableHead>대상 생성자</TableHead>
+            <TableHead>신고 문제집 제목</TableHead>
             <TableHead className="max-w-[300px]">신고 내용</TableHead>
-            <TableHead>신고자</TableHead>
             <TableHead>상태</TableHead>
             <TableHead>신고일</TableHead>
           </TableRow>
@@ -138,36 +127,34 @@ export function ReportTable({ reports }: Props) {
               }`}
             >
               <TableCell>
-                {report.targetType === ReportTargetType.WORKBOOK && (
-                  <Button
-                    size="sm"
-                    variant={
-                      report.categoryDetail ===
-                      ReportCategoryDetail.VIOL_COPYRIGHT
-                        ? "destructive"
-                        : report.targetIsPublic
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={(e) => handleTogglePublic(e, report)}
-                    disabled={togglingId === report.id}
-                    className="gap-1"
-                  >
-                    {togglingId === report.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : report.targetIsPublic ? (
-                      <>
-                        <Eye className="h-4 w-4" />
-                        공개
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="h-4 w-4" />
-                        비공개
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant={
+                    report.categoryDetail ===
+                    ReportCategoryDetail.VIOL_COPYRIGHT
+                      ? "destructive"
+                      : report.targetIsPublic
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={(e) => handleTogglePublic(e, report)}
+                  disabled={togglingId === report.id}
+                  className="gap-1"
+                >
+                  {togglingId === report.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : report.targetIsPublic ? (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      공개
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-4 w-4" />
+                      비공개
+                    </>
+                  )}
+                </Button>
               </TableCell>
               <TableCell>
                 {report.isPriority ? (
@@ -190,28 +177,8 @@ export function ReportTable({ reports }: Props) {
               <TableCell className="max-w-[200px]">
                 <p className="text-sm truncate">{report.targetTitle || "-"}</p>
               </TableCell>
-              <TableCell>
-                <div className="flex flex-col">
-                  <span className="font-medium">
-                    {report.targetOwnerName || "알 수 없음"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {report.targetOwnerEmail || "-"}
-                  </span>
-                </div>
-              </TableCell>
               <TableCell className="max-w-[300px]">
                 <p className="text-sm truncate">{report.detailText || "-"}</p>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col">
-                  <span className="font-medium">
-                    {report.reporterName || "알 수 없음"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {report.reporterEmail || "-"}
-                  </span>
-                </div>
               </TableCell>
               <TableCell>
                 <StatusBadge status={report.status} />

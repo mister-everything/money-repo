@@ -1,5 +1,4 @@
-import { userTable } from "@service/auth";
-import { blocksTable, workBooksTable } from "@service/solves";
+import { workBooksTable } from "@service/solves";
 import {
   and,
   count,
@@ -12,16 +11,10 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { pgDb } from "./db";
 import { contentReportsTable } from "./schema";
-import {
-  createReportSchema,
-  ReportCategoryMain,
-  ReportStatus,
-  ReportTargetType,
-} from "./types";
+import { createReportSchema, ReportCategoryMain, ReportStatus } from "./types";
 
 export const reportService = {
   //사용자가 문제를 신고
@@ -97,23 +90,6 @@ export const reportService = {
       .as("priority_counts");
 
     /**
-     * 테이블 별칭(alias) 정의
-     *
-     * userTable을 여러 역할로 조인하기 위해 별칭을 사용합니다:
-     * - reporter: 신고를 제출한 사용자
-     * - workBookOwner: 신고된 워크북의 소유자
-     * - blockWorkBookOwner: 신고된 블록이 속한 워크북의 소유자
-     *
-     * workBooksTable도 두 가지 용도로 사용:
-     * - workBooksTable: 직접 신고된 워크북
-     * - blockWorkBook: 신고된 블록이 속한 워크북
-     */
-    const reporter = alias(userTable, "reporter");
-    const workBookOwner = alias(userTable, "workbook_owner");
-    const blockWorkBook = alias(workBooksTable, "block_workbook");
-    const blockWorkBookOwner = alias(userTable, "block_workbook_owner");
-
-    /**
      * WHERE 조건 구성
      *
      * 사용자가 선택한 필터 옵션에 따라 동적으로 WHERE 절을 구성합니다.
@@ -135,11 +111,9 @@ export const reportService = {
      *
      * 검색어가 다음 필드들 중 하나라도 포함되면 결과에 포함됩니다:
      * - 신고 내용 (detailText): 사용자가 작성한 신고 상세 내용
-     * - 대상 ID (targetId): 신고된 워크북/블록의 고유 ID
      * - 카테고리 상세 (categoryDetail): 신고 세부 분류
      * - 처리 메모 (processingNote): 운영자가 작성한 처리 내용
-     * - 신고자 정보 (reporter.name, reporter.email): 신고를 제출한 사용자
-     * - 콘텐츠 소유자 정보 (workBookOwner, blockWorkBookOwner): 신고된 콘텐츠의 작성자
+     * - 신고 문제집 제목 (workBooksTable.title): 신고된 콘텐츠의 제목
      *
      * ilike를 사용하여 대소문자 구분 없이 부분 일치 검색을 수행합니다.
      */
@@ -148,15 +122,9 @@ export const reportService = {
       where.push(
         or(
           ilike(contentReportsTable.detailText, pattern),
-          ilike(contentReportsTable.targetId, pattern),
           ilike(contentReportsTable.categoryDetail, pattern),
           ilike(contentReportsTable.processingNote, pattern),
-          ilike(reporter.name, pattern),
-          ilike(reporter.email, pattern),
-          ilike(workBookOwner.name, pattern),
-          ilike(workBookOwner.email, pattern),
-          ilike(blockWorkBookOwner.name, pattern),
-          ilike(blockWorkBookOwner.email, pattern),
+          ilike(workBooksTable.title, pattern),
         ),
       );
     }
@@ -193,16 +161,6 @@ export const reportService = {
     /**
      * 메인 쿼리 - SELECT 절
      *
-     * 각 신고 건에 대한 상세 정보를 조회합니다.
-     *
-     * coalesce 함수 사용 이유:
-     * 신고 대상이 워크북일 수도 있고 블록일 수도 있어서,
-     * 두 경로 중 존재하는 값을 선택합니다.
-     *
-     * 예시:
-     * - 워크북 신고 → workBookOwner.id 사용, blockWorkBookOwner.id는 null
-     * - 블록 신고 → blockWorkBookOwner.id 사용, workBookOwner.id는 null
-     *
      * reporterCount:
      * priorityCounts 서브쿼리에서 계산된 동일 대상에 대한 총 신고자 수
      * (이 값이 5 이상이면 우선 검토 대상)
@@ -213,35 +171,18 @@ export const reportService = {
         id: contentReportsTable.id,
         reportedAt: contentReportsTable.reportedAt,
 
-        // 신고자 정보
-        reporterUserId: contentReportsTable.reporterUserId,
-        reporterName: reporter.name,
-        reporterEmail: reporter.email,
-
         // 신고 대상 정보
         targetType: contentReportsTable.targetType,
         targetId: contentReportsTable.targetId,
 
-        // 신고 대상 소유자 정보 (워크북 소유자 또는 블록의 워크북 소유자)
-        targetOwnerId: sql<
-          string | null
-        >`coalesce(${workBookOwner.id}, ${blockWorkBookOwner.id})`,
-        targetOwnerName: sql<
-          string | null
-        >`coalesce(${workBookOwner.name}, ${blockWorkBookOwner.name})`,
-        targetOwnerEmail: sql<
-          string | null
-        >`coalesce(${workBookOwner.email}, ${blockWorkBookOwner.email})`,
+        // 신고 대상 소유자 ID (공개 상태 토글에 필요)
+        targetOwnerId: workBooksTable.ownerId,
 
-        // 신고 대상 제목 (워크북 제목 또는 블록이 속한 워크북 제목)
-        targetTitle: sql<
-          string | null
-        >`coalesce(${workBooksTable.title}, ${blockWorkBook.title})`,
+        // 신고 문제집 제목
+        targetTitle: workBooksTable.title,
 
-        // 신고 대상 공개 상태
-        targetIsPublic: sql<
-          boolean | null
-        >`coalesce(${workBooksTable.isPublic}, ${blockWorkBook.isPublic})`,
+        // 신고 대상(문제집) 공개 상태
+        targetIsPublic: workBooksTable.isPublic,
 
         // 신고 분류 및 내용
         categoryMain: contentReportsTable.categoryMain,
@@ -250,7 +191,6 @@ export const reportService = {
 
         // 처리 상태 및 정보
         status: contentReportsTable.status,
-        processorUserId: contentReportsTable.processorUserId,
         processedAt: contentReportsTable.processedAt,
         processingNote: contentReportsTable.processingNote,
 
@@ -274,70 +214,17 @@ export const reportService = {
       /**
        * JOIN 2: workBooksTable (워크북 정보)
        *
-       * 신고 대상이 워크북(WORKBOOK)인 경우에만 조인됩니다.
-       *
        * 타입 캐스팅 이유:
-       * - contentReportsTable.targetId는 TEXT 타입 (다양한 대상 타입을 수용하기 위해)
+       * - contentReportsTable.targetId는 TEXT 타입
        * - workBooksTable.id는 UUID 타입
        * - PostgreSQL에서 TEXT와 UUID를 비교하려면 명시적 캐스팅 필요
        */
       .leftJoin(
         workBooksTable,
-        and(
-          eq(contentReportsTable.targetType, ReportTargetType.WORKBOOK),
-          // targetId is stored as text for OTHER 타입까지 포괄하기 때문에, UUID 컬럼과 조인 시 명시적으로 캐스팅한다.
-          eq(
-            contentReportsTable.targetId,
-            sql<string>`${workBooksTable.id}::text`,
-          ),
+        eq(
+          contentReportsTable.targetId,
+          sql<string>`${workBooksTable.id}::text`,
         ),
-      )
-      /**
-       * JOIN 3: blocksTable (블록 정보)
-       *
-       * 신고 대상이 블록(BLOCK)인 경우에만 조인됩니다.
-       * 워크북과 동일한 이유로 타입 캐스팅을 수행합니다.
-       */
-      .leftJoin(
-        blocksTable,
-        and(
-          eq(contentReportsTable.targetType, ReportTargetType.BLOCK),
-          eq(
-            contentReportsTable.targetId,
-            sql<string>`${blocksTable.id}::text`,
-          ),
-        ),
-      )
-      /**
-       * JOIN 4: blockWorkBook (블록이 속한 워크북)
-       *
-       * 신고 대상이 블록인 경우, 그 블록이 속한 워크북 정보를 가져옵니다.
-       * 이를 통해 블록 신고 시에도 워크북 제목과 소유자 정보를 표시할 수 있습니다.
-       */
-      .leftJoin(blockWorkBook, eq(blocksTable.workBookId, blockWorkBook.id))
-      /**
-       * JOIN 5: reporter (신고자 사용자 정보)
-       *
-       * 신고를 제출한 사용자의 이름과 이메일을 가져옵니다.
-       */
-      .leftJoin(reporter, eq(contentReportsTable.reporterUserId, reporter.id))
-      /**
-       * JOIN 6: workBookOwner (워크북 소유자 정보)
-       *
-       * 신고 대상이 워크북인 경우, 해당 워크북의 소유자 정보를 가져옵니다.
-       */
-      .leftJoin(workBookOwner, eq(workBooksTable.ownerId, workBookOwner.id))
-      /**
-       * JOIN 7: blockWorkBookOwner (블록의 워크북 소유자 정보)
-       *
-       * 신고 대상이 블록인 경우, 그 블록이 속한 워크북의 소유자 정보를 가져옵니다.
-       *
-       * 최종적으로 coalesce(workBookOwner, blockWorkBookOwner)를 통해
-       * 워크북 신고든 블록 신고든 콘텐츠 소유자 정보를 일관되게 제공합니다.
-       */
-      .leftJoin(
-        blockWorkBookOwner,
-        eq(blockWorkBook.ownerId, blockWorkBookOwner.id),
       );
 
     /**
@@ -368,8 +255,7 @@ export const reportService = {
      * 페이지네이션 UI 구성을 위해 필터 조건에 맞는 전체 신고 건수를 계산합니다.
      *
      * 주의: 메인 쿼리와 동일한 JOIN 구조를 유지해야 합니다.
-     * 이유는 search 필터가 JOIN된 테이블의 컬럼(신고자/소유자 이름 등)을 참조하기 때문입니다.
-     * JOIN 없이 COUNT만 하면 search 조건이 제대로 작동하지 않습니다.
+     * 이유는 search 필터가 JOIN된 테이블의 컬럼(신고 문제집 제목 등)을 참조하기 때문입니다.
      */
     const countQuery = pgDb
       .select({ value: count() })
@@ -383,30 +269,10 @@ export const reportService = {
       )
       .leftJoin(
         workBooksTable,
-        and(
-          eq(contentReportsTable.targetType, ReportTargetType.WORKBOOK),
-          eq(
-            contentReportsTable.targetId,
-            sql<string>`${workBooksTable.id}::text`,
-          ),
+        eq(
+          contentReportsTable.targetId,
+          sql<string>`${workBooksTable.id}::text`,
         ),
-      )
-      .leftJoin(
-        blocksTable,
-        and(
-          eq(contentReportsTable.targetType, ReportTargetType.BLOCK),
-          eq(
-            contentReportsTable.targetId,
-            sql<string>`${blocksTable.id}::text`,
-          ),
-        ),
-      )
-      .leftJoin(blockWorkBook, eq(blocksTable.workBookId, blockWorkBook.id))
-      .leftJoin(reporter, eq(contentReportsTable.reporterUserId, reporter.id))
-      .leftJoin(workBookOwner, eq(workBooksTable.ownerId, workBookOwner.id))
-      .leftJoin(
-        blockWorkBookOwner,
-        eq(blockWorkBook.ownerId, blockWorkBookOwner.id),
       );
 
     const [{ value: totalCount }] = await (whereClause
@@ -523,7 +389,7 @@ export const reportService = {
   },
 
   /**
-   * 신고 상세 조회 최신 데이터 조회 위해 만듦
+   * 신고 상세 조회
    */
   async getReportById(reportId: string) {
     const priorityCounts = pgDb
@@ -538,50 +404,23 @@ export const reportService = {
       .groupBy(contentReportsTable.targetType, contentReportsTable.targetId)
       .as("priority_counts");
 
-    const reporter = alias(userTable, "reporter");
-    const processor = alias(userTable, "processor");
-    const workBookOwner = alias(userTable, "workbook_owner");
-    const blockWorkBook = alias(workBooksTable, "block_workbook");
-    const blockWorkBookOwner = alias(userTable, "block_workbook_owner");
-
     const [report] = await pgDb
       .select({
         id: contentReportsTable.id,
         reportedAt: contentReportsTable.reportedAt,
 
-        reporterUserId: contentReportsTable.reporterUserId,
-        reporterName: reporter.name,
-        reporterEmail: reporter.email,
-
         targetType: contentReportsTable.targetType,
         targetId: contentReportsTable.targetId,
 
-        targetOwnerId: sql<
-          string | null
-        >`coalesce(${workBookOwner.id}, ${blockWorkBookOwner.id})`,
-        targetOwnerName: sql<
-          string | null
-        >`coalesce(${workBookOwner.name}, ${blockWorkBookOwner.name})`,
-        targetOwnerEmail: sql<
-          string | null
-        >`coalesce(${workBookOwner.email}, ${blockWorkBookOwner.email})`,
-
-        targetTitle: sql<
-          string | null
-        >`coalesce(${workBooksTable.title}, ${blockWorkBook.title})`,
-
-        targetIsPublic: sql<
-          boolean | null
-        >`coalesce(${workBooksTable.isPublic}, ${blockWorkBook.isPublic})`,
+        targetOwnerId: workBooksTable.ownerId,
+        targetTitle: workBooksTable.title,
+        targetIsPublic: workBooksTable.isPublic,
 
         categoryMain: contentReportsTable.categoryMain,
         categoryDetail: contentReportsTable.categoryDetail,
         detailText: contentReportsTable.detailText,
 
         status: contentReportsTable.status,
-        processorUserId: contentReportsTable.processorUserId,
-        processorName: processor.name,
-        processorEmail: processor.email,
         processedAt: contentReportsTable.processedAt,
         processingNote: contentReportsTable.processingNote,
 
@@ -597,34 +436,10 @@ export const reportService = {
       )
       .leftJoin(
         workBooksTable,
-        and(
-          eq(contentReportsTable.targetType, ReportTargetType.WORKBOOK),
-          eq(
-            contentReportsTable.targetId,
-            sql<string>`${workBooksTable.id}::text`,
-          ),
+        eq(
+          contentReportsTable.targetId,
+          sql<string>`${workBooksTable.id}::text`,
         ),
-      )
-      .leftJoin(
-        blocksTable,
-        and(
-          eq(contentReportsTable.targetType, ReportTargetType.BLOCK),
-          eq(
-            contentReportsTable.targetId,
-            sql<string>`${blocksTable.id}::text`,
-          ),
-        ),
-      )
-      .leftJoin(blockWorkBook, eq(blocksTable.workBookId, blockWorkBook.id))
-      .leftJoin(reporter, eq(contentReportsTable.reporterUserId, reporter.id))
-      .leftJoin(
-        processor,
-        eq(contentReportsTable.processorUserId, processor.id),
-      )
-      .leftJoin(workBookOwner, eq(workBooksTable.ownerId, workBookOwner.id))
-      .leftJoin(
-        blockWorkBookOwner,
-        eq(blockWorkBook.ownerId, blockWorkBookOwner.id),
       )
       .where(eq(contentReportsTable.id, reportId));
 

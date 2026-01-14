@@ -129,7 +129,7 @@ export function ReportsFilters({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="대상 ID, 내용으로 검색..."
+                  placeholder="신고 내용, 대상 제목"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"

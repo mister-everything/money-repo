@@ -32,23 +32,15 @@ import { notify } from "../ui/notify";
 type ReportDetail = {
   id: string;
   reportedAt: string;
-  reporterUserId: string | null;
-  reporterName: string | null;
-  reporterEmail: string | null;
   targetType: string;
   targetId: string;
   targetOwnerId: string | null;
-  targetOwnerName: string | null;
-  targetOwnerEmail: string | null;
   targetTitle: string | null;
   targetIsPublic: boolean | null;
   categoryMain: ReportCategoryMain;
   categoryDetail: ReportCategoryDetail;
   detailText: string | null;
   status: ReportStatus;
-  processorUserId: string | null;
-  processorName: string | null;
-  processorEmail: string | null;
   processedAt: string | null;
   processingNote: string | null;
   reportCount: number;
@@ -191,203 +183,195 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : report ? (
-          <div className="space-y-6">
-            {/* 상단: 신고 정보 */}
-            <div className="space-y-4 pb-6 border-b">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">접수 시각</p>
-                  <p className="text-sm">
+          <div className="space-y-5">
+            {/* 상단: 접수 정보 & 알림 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">접수 시각</p>
+                  <p className="text-sm font-medium">
                     {format(new Date(report.reportedAt), "PPP HH:mm", {
                       locale: ko,
                     })}
                   </p>
                 </div>
-              </div>
-
-              {report.isPriority && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
-                  <Flame className="h-5 w-5 text-red-500" />
-                  <div>
-                    <p className="font-semibold text-red-700 dark:text-red-400">
-                      우선 검토 필요
-                    </p>
-                    <p className="text-sm text-red-600 dark:text-red-500">
-                      {report.reportCount}명 이상이 동일 대상을 신고했습니다
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {report.categoryDetail ===
-                ReportCategoryDetail.VIOL_COPYRIGHT && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
-                  <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-                    이 신고는 즉시 비공개 조치가 필요합니다!
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium">분류</p>
                 <CategoryBadge
                   categoryMain={report.categoryMain}
                   categoryDetail={report.categoryDetail}
                   detailLabel={detailLabel}
                 />
               </div>
+              {report.isPriority && (
+                <Badge className="bg-red-500 hover:bg-red-600 gap-1.5 px-3 py-1.5">
+                  <Flame className="h-4 w-4" />
+                  <span className="font-semibold">
+                    우선검토 {report.reportCount}명
+                  </span>
+                </Badge>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium">신고 내용</p>
-                <p className="text-sm p-3 bg-muted rounded-lg whitespace-pre-wrap">
-                  {report.detailText || "-"}
+            {report.categoryDetail === ReportCategoryDetail.VIOL_COPYRIGHT && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                  저작권 위반 - 즉시 비공개 조치 필요
                 </p>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">신고 대상</p>
-                  <div className="p-3 bg-muted rounded-lg space-y-1">
+            {/* 신고 정보 카드 */}
+            <div className="grid grid-cols-[1fr,300px] gap-4">
+              <div className="space-y-3">
+                {/* 신고 내용 */}
+                <div className="p-4 bg-muted/50 rounded-lg border">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    신고 내용
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                    {report.detailText || "-"}
+                  </p>
+                </div>
+
+                {/* 신고 문제집 */}
+                <div className="p-4 bg-muted/50 rounded-lg border">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    신고 문제집
+                  </p>
+                  <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold">
                       {report.targetTitle || "-"}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      생성자: {report.targetOwnerName || "알 수 없음"} (
-                      {report.targetOwnerEmail || "-"})
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        공개 상태:
-                      </span>
-                      <Badge
-                        variant={
-                          report.targetIsPublic ? "default" : "secondary"
-                        }
-                      >
-                        {report.targetIsPublic ? "공개 중" : "비공개"}
-                      </Badge>
-                    </div>
+                    <Badge
+                      variant={report.targetIsPublic ? "default" : "secondary"}
+                      className="ml-2"
+                    >
+                      {report.targetIsPublic ? "공개" : "비공개"}
+                    </Badge>
                   </div>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">신고자</p>
-                  <div className="p-3 bg-muted rounded-lg space-y-1">
-                    <p className="text-sm font-semibold">
-                      {report.reporterName || "알 수 없음"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {report.reporterEmail || "-"}
-                    </p>
-                  </div>
+              {/* 처리 영역 */}
+              <div className="space-y-3">
+                <div className="p-4 border rounded-lg bg-background">
+                  <Label className="text-sm font-semibold mb-3 block">
+                    처리 상태
+                  </Label>
+                  <RadioGroup
+                    value={selectedStatus}
+                    onValueChange={(value) =>
+                      setSelectedStatus(value as ReportStatus)
+                    }
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value={ReportStatus.RECEIVED}
+                        id="received"
+                      />
+                      <Label
+                        htmlFor="received"
+                        className="cursor-pointer font-normal"
+                      >
+                        {statusLabel[ReportStatus.RECEIVED]}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value={ReportStatus.IN_REVIEW}
+                        id="in_review"
+                      />
+                      <Label
+                        htmlFor="in_review"
+                        className="cursor-pointer font-normal"
+                      >
+                        {statusLabel[ReportStatus.IN_REVIEW]}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value={ReportStatus.RESOLVED}
+                        id="resolved"
+                      />
+                      <Label
+                        htmlFor="resolved"
+                        className="cursor-pointer font-normal"
+                      >
+                        {statusLabel[ReportStatus.RESOLVED]}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value={ReportStatus.REJECTED}
+                        id="rejected"
+                      />
+                      <Label
+                        htmlFor="rejected"
+                        className="cursor-pointer font-normal"
+                      >
+                        {statusLabel[ReportStatus.REJECTED]}
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
               </div>
             </div>
 
-            {/* 하단: 처리 영역 */}
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <Label>처리 상태</Label>
-                <RadioGroup
-                  value={selectedStatus}
-                  onValueChange={(value) =>
-                    setSelectedStatus(value as ReportStatus)
-                  }
+            {/* 처리 메시지 (전체 너비) */}
+            {showProcessingNote && (
+              <div className="space-y-2">
+                <Label
+                  htmlFor="processingNote"
+                  className="text-sm font-semibold"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value={ReportStatus.RECEIVED}
-                      id="received"
-                    />
-                    <Label htmlFor="received" className="cursor-pointer">
-                      {statusLabel[ReportStatus.RECEIVED]}
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value={ReportStatus.IN_REVIEW}
-                      id="in_review"
-                    />
-                    <Label htmlFor="in_review" className="cursor-pointer">
-                      {statusLabel[ReportStatus.IN_REVIEW]}
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value={ReportStatus.RESOLVED}
-                      id="resolved"
-                    />
-                    <Label htmlFor="resolved" className="cursor-pointer">
-                      {statusLabel[ReportStatus.RESOLVED]}
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value={ReportStatus.REJECTED}
-                      id="rejected"
-                    />
-                    <Label htmlFor="rejected" className="cursor-pointer">
-                      {statusLabel[ReportStatus.REJECTED]}
-                    </Label>
-                  </div>
-                </RadioGroup>
+                  처리 메시지 <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="processingNote"
+                  placeholder="처리 결과를 입력해주세요"
+                  value={processingNote}
+                  onChange={(e) => setProcessingNote(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                />
               </div>
+            )}
 
-              {showProcessingNote && (
-                <div className="space-y-2">
-                  <Label htmlFor="processingNote">
-                    처리 메시지 <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="processingNote"
-                    placeholder="처리 결과를 입력해주세요"
-                    value={processingNote}
-                    onChange={(e) => setProcessingNote(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              {report.processedAt && (
-                <div className="space-y-2 p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">처리 이력</p>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="text-muted-foreground">
-                        이전 처리 상태:
-                      </span>{" "}
-                      <Badge variant="outline" className="ml-1">
-                        {statusLabel[report.status]}
-                      </Badge>
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">처리자:</span>{" "}
-                      {report.processorName || "알 수 없음"} (
-                      {report.processorEmail || "-"})
-                    </p>
-                    <p>
-                      <span className="text-muted-foreground">처리 시각:</span>{" "}
+            {/* 처리 이력 */}
+            {report.processedAt && (
+              <div className="p-4 bg-muted/30 rounded-lg border">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">
+                  처리 이력
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">상태:</span>
+                    <Badge variant="outline">
+                      {statusLabel[report.status]}
+                    </Badge>
+                    <span className="text-muted-foreground ml-2">
                       {format(new Date(report.processedAt), "PPP HH:mm", {
                         locale: ko,
                       })}
-                    </p>
-                    {report.processingNote && (
-                      <div className="mt-2">
-                        <p className="text-muted-foreground mb-1">
-                          이전 처리 메시지:
-                        </p>
-                        <p className="whitespace-pre-wrap p-2 bg-background rounded">
-                          {report.processingNote}
-                        </p>
-                      </div>
-                    )}
+                    </span>
                   </div>
+                  {report.processingNote && (
+                    <div className="mt-2 pt-2 border-t">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        처리 메시지:
+                      </p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {report.processingNote}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            {/* 하단 버튼 */}
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}

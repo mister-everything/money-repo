@@ -56,7 +56,6 @@ export const getReports = safeAction(
           processedAt: report.processedAt?.toISOString() ?? null,
           reportCount: reporterCount,
           isPriority: reporterCount >= 5 && isPending,
-          targetTitle: report.targetTitle,
         };
       }),
       totalCount: result.totalCount,
