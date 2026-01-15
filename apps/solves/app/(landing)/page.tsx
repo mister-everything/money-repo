@@ -2,7 +2,6 @@ import { workBookService } from "@service/solves";
 import {
   Bot,
   BrainIcon,
-  ChevronDownIcon,
   ChevronRightIcon,
   GlobeIcon,
   Library,
