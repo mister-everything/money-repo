@@ -105,19 +105,19 @@ export function WorkbookReport({
             <div className="flex items-center justify-between">
               <TabsList className="grid w-full grid-cols-3 h-12 gap-1 bg-transparent">
                 <TabsTrigger
-                  className="hover:bg-secondary data-[state=active]:border-none data-[state=active]:shadow-none data-[state=active]:bg-secondary/80"
+                  className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
                   value="overview"
                 >
                   통계 개요
                 </TabsTrigger>
                 <TabsTrigger
-                  className="hover:bg-secondary data-[state=active]:border-none data-[state=active]:shadow-none data-[state=active]:bg-secondary/80"
+                  className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
                   value="questions"
                 >
                   문제별 분석
                 </TabsTrigger>
                 <TabsTrigger
-                  className="hover:bg-secondary data-[state=active]:border-none data-[state=active]:shadow-none data-[state=active]:bg-secondary/80"
+                  className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
                   value="settings"
                 >
                   설정
@@ -187,7 +187,7 @@ function ReportHeader({ book }: { book: WorkBookWithoutBlocks }) {
             <Badge
               key={tag.id}
               variant="secondary"
-              className="rounded-sm text-xs gap-0.5"
+              className="rounded-sm text-xs gap-0.5 bg-background dark:bg-secondary"
             >
               <HashIcon className="size-2.5" />
               {tag.name}
@@ -276,7 +276,7 @@ function OverviewTab({
       </div>
 
       {/* 일자별 풀이 추이 차트 */}
-      <Card className="border-none shadow-none bg-secondary/70">
+      <Card className="border-none shadow-none bg-background dark:bg-secondary/70">
         <CardHeader>
           <CardTitle>일자별 풀이 추이</CardTitle>
           <CardDescription>최근 30일간 풀이 현황입니다.</CardDescription>
@@ -362,7 +362,7 @@ function OverviewTab({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 점수 분포 차트 */}
-        <Card className="col-span-1 border-none shadow-none bg-secondary/70">
+        <Card className="col-span-1 border-none shadow-none bg-background dark:bg-secondary/70">
           <CardHeader>
             <CardTitle>점수 분포</CardTitle>
             <CardDescription>참여자들의 점수 분포입니다.</CardDescription>
@@ -398,7 +398,7 @@ function OverviewTab({
         </Card>
 
         {/* 가장 어려운 문제 */}
-        <Card className="col-span-1 border-none shadow-none bg-secondary/70">
+        <Card className="col-span-1 border-none shadow-none bg-background dark:bg-secondary/70">
           <CardHeader>
             <CardTitle>가장 어려운 문제</CardTitle>
             <CardDescription>
@@ -462,7 +462,7 @@ function QuestionsTab({ blockStats }: { blockStats: BlockStat[] }) {
 
 function QuestionDetailCard({ stat }: { stat: BlockStat }) {
   return (
-    <div className="space-y-4 p-4 border rounded-xl">
+    <div className="space-y-4 p-4 border rounded-xl bg-background dark:bg-secondary/20">
       {/* 문제 표시 - Block 컴포넌트 사용 */}
       <Block
         index={stat.order}
@@ -653,7 +653,7 @@ function StatCard({
   description?: string;
 }) {
   return (
-    <Card className="border-none shadow-none bg-secondary/70">
+    <Card className="border-none shadow-none bg-background dark:bg-secondary/70">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <div className="text-muted-foreground">{icon}</div>
