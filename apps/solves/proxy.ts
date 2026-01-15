@@ -24,6 +24,7 @@ export async function proxy(request: NextRequest) {
   if (
     request.method === "GET" &&
     (/^\/workbooks$/.test(pathname) ||
+      /^\/workbooks\/creator\/new$/.test(pathname) ||
       /^\/workbooks\/[^/]+\/preview$/.test(pathname) ||
       /^\/api\/categories$/.test(pathname) ||
       PUBLIC_PATHS.some((path) => pathname.startsWith(path)))

@@ -10,6 +10,7 @@ import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { createWorkbookAction } from "@/actions/workbook";
+
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { useCategories } from "@/hooks/query/use-categories";
@@ -27,6 +28,7 @@ import { CategorySelector } from "./category-selector";
 
 export function WorkbookCreateForm({
   isMaxInprogressWorkbookCreateCount = false,
+  hasSession = true,
   initialFormData = {
     situation: "",
     ageGroup: "",
@@ -35,6 +37,7 @@ export function WorkbookCreateForm({
   },
 }: {
   isMaxInprogressWorkbookCreateCount?: boolean;
+  hasSession?: boolean;
   initialFormData?: WorkbookOptions;
 }) {
   const router = useRouter();
@@ -98,7 +101,7 @@ export function WorkbookCreateForm({
         </h1>
         {!isMaxInprogressWorkbookCreateCount && (
           <p className="text-xs text-point">
-            (* 한 문제집은 총 {MAX_BLOCK_COUNT}개의 문제로 구성돼요)
+            (* 한 문제집은 최대 {MAX_BLOCK_COUNT}개의 문제로 구성돼요)
           </p>
         )}
       </div>
@@ -173,40 +176,45 @@ export function WorkbookCreateForm({
           />
         </div>
 
-        {!valid && !isMaxInprogressWorkbookCreateCount && (
+        {!valid && !isMaxInprogressWorkbookCreateCount && hasSession && (
           <p className="w-full text-xs text-muted-foreground px-2 text-center">
             소재를 선택해주세요.
           </p>
         )}
 
-        <Button
-          onClick={handleCreateWorkbook}
-          variant={isMaxInprogressWorkbookCreateCount ? "secondary" : "default"}
-          disabled={isPending || isMaxInprogressWorkbookCreateCount || !valid}
-          className={cn(
-            "w-full rounded-lg py-6 text-base mt-2",
-            isMaxInprogressWorkbookCreateCount &&
-              "border-dashed shadow-none py-8",
-          )}
-        >
-          {isPending && <Loader className="size-4 animate-spin" />}
-          {isMaxInprogressWorkbookCreateCount ? (
-            <div className="space-y-2">
-              <p className="text-center text-muted-foreground text-sm">
-                아직 완성되지 않은 문제집이 있어요. 완성되지 않은 문제집은 최대{" "}
-                {MAX_INPROGRESS_WORKBOOK_CREATE_COUNT}개까지 생성할 수 있어요.
-              </p>
-              <p className="text-center text-muted-foreground text-sm">
-                아래 문제집을 <span className="text-point ">완성</span>하거나{" "}
-                <span className="text-point ">삭제</span>하면 문제집을{" "}
-                <span className="text-point font-semibold">생성</span>할 수
-                있어요.
-              </p>
-            </div>
-          ) : (
-            "문제 만들기"
-          )}
-        </Button>
+        {hasSession && (
+          <Button
+            onClick={handleCreateWorkbook}
+            variant={
+              isMaxInprogressWorkbookCreateCount ? "secondary" : "default"
+            }
+            disabled={isPending || isMaxInprogressWorkbookCreateCount || !valid}
+            className={cn(
+              "w-full rounded-lg py-6 text-base mt-2",
+              isMaxInprogressWorkbookCreateCount &&
+                "border-dashed shadow-none py-8",
+            )}
+          >
+            {isPending && <Loader className="size-4 animate-spin" />}
+            {isMaxInprogressWorkbookCreateCount ? (
+              <div className="space-y-2">
+                <p className="text-center text-muted-foreground text-sm">
+                  아직 완성되지 않은 문제집이 있어요. 완성되지 않은 문제집은
+                  최대 {MAX_INPROGRESS_WORKBOOK_CREATE_COUNT}개까지 생성할 수
+                  있어요.
+                </p>
+                <p className="text-center text-muted-foreground text-sm">
+                  아래 문제집을 <span className="text-point ">완성</span>하거나{" "}
+                  <span className="text-point ">삭제</span>하면 문제집을{" "}
+                  <span className="text-point font-semibold">생성</span>할 수
+                  있어요.
+                </p>
+              </div>
+            ) : (
+              "문제 만들기"
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
