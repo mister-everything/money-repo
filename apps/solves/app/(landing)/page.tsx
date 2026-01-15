@@ -23,16 +23,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import FaultyTerminal from "@/components/ui/faulty-terminal";
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
 import { WorkbookCarousel } from "@/components/workbook/workbook-carousel";
 import * as Motion from "./_components/motion-wrapper";
-
-const FaultyTerminal = dynamic(
-  () => import("@/components/ui/faulty-terminal").then((mod) => mod.default),
-  {
-    ssr: true,
-  },
-);
 
 // Lazy load heavy simulation components
 const MockSimulation = dynamic(
