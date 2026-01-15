@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { createWorkbookAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
+import { Textarea } from "@/components/ui/textarea";
 import { useCategories } from "@/hooks/query/use-categories";
 import {
   MAX_BLOCK_COUNT,
@@ -21,15 +22,20 @@ import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { notify } from "../ui/notify";
 import { CategorySelector } from "./category-selector";
 
+interface WorkbookCreateAiFormData extends WorkbookOptions {
+  prompt?: string;
+}
+
 export function WorkbookCreateAiForm({
   initialFormData = {
     situation: "",
     ageGroup: "",
     categoryId: undefined,
     blockTypes: Object.keys(blockDisplayNames) as BlockType[],
+    prompt: "",
   },
 }: {
-  initialFormData?: WorkbookOptions;
+  initialFormData?: WorkbookCreateAiFormData;
 }) {
   const router = useRouter();
   const { setWorkbookOption } = useWorkbookEditStore();
@@ -164,11 +170,30 @@ export function WorkbookCreateAiForm({
         </div>
 
         {!valid && (
-          <p className="w-full text-xs text-muted-foreground px-2 text-center">
-            소재를 선택해주세요.
+          <p className="w-full text-xs text-muted-foreground px-4 text-center">
+            모두 입력해주세요.
           </p>
         )}
 
+        <div className="space-y-3">
+          <div className="flex flex-col items-start gap-1">
+            <label className="text-sm font-bold text-foreground">
+              AI 프롬프트
+            </label>
+            <p className="text-xs text-muted-foreground">
+              원하는 문제 스타일이나 내용을 자유롭게 입력해주세요 (자세하게
+              입력할수록 원하는 문제집을 만들 수 있어요)
+            </p>
+          </div>
+          <Textarea
+            value={formData.prompt || ""}
+            onChange={(e) => {
+              setFormData({ ...formData, prompt: e.target.value });
+            }}
+            placeholder="예: 빠르게 풀어볼수 있게 중학교 1학년 수학 문제를 객관식과 주관식으로 5개 만들어주세요"
+            className="min-h-30 resize-none max-h-48"
+          />
+        </div>
         <Button
           onClick={handleCreateWorkbook}
           variant={"default"}
