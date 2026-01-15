@@ -3,16 +3,17 @@ import { BlockType, blockDisplayNames } from "@service/solves/shared";
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { Label } from "@/components/ui/label";
 import { WorkbookCreateForm } from "@/components/workbook/workbook-create-form";
-import { getSession } from "@/lib/auth/server";
+import { safeGetSession } from "@/lib/auth/server";
 import { WorkbookOptions } from "@/store/types";
 import { LatestWorkbooks } from "./latest-workbooks";
+import { LoginPreviewSection } from "./login-preview-section";
 
 export default async function WorkBookCreatePage({
   searchParams,
 }: {
   searchParams: Promise<Partial<WorkbookOptions> | undefined>;
 }) {
-  const session = await getSession();
+  const session = await safeGetSession();
 
   const initialFormData = await searchParams;
 
@@ -28,28 +29,34 @@ export default async function WorkBookCreatePage({
     initialFormData.blockTypes = [initialFormData.blockTypes];
   }
 
-  const isMaxInprogressWorkbookCreateCount =
-    await workBookService.isMaxInprogressWorkbookCreateCount(session.user.id);
+  const isMaxInprogressWorkbookCreateCount = session?.user
+    ? await workBookService.isMaxInprogressWorkbookCreateCount(session.user.id)
+    : false;
 
-  const latest3Workbooks = await workBookService.searchMyWorkBooks({
-    userId: session.user.id,
-    limit: 3,
-    // 완성되지 않은 문제집이 최대 개수를 초과하면 완성되지 않은 문제집만 조회
-    isPublished: isMaxInprogressWorkbookCreateCount ? false : undefined,
-  });
+  const latest3Workbooks = session?.user
+    ? await workBookService.searchMyWorkBooks({
+        userId: session.user.id,
+        limit: 3,
+        // 완성되지 않은 문제집이 최대 개수를 초과하면 완성되지 않은 문제집만 조회
+        isPublished: isMaxInprogressWorkbookCreateCount ? false : undefined,
+      })
+    : [];
+
+  const hasSession = !!session?.user;
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       <HeaderWithSidebarToggle>
         <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
           문제집 생성
         </span>
       </HeaderWithSidebarToggle>
-      <div className="w-max-3xl mx-auto flex flex-col w-full p-6 pt-0!">
+      <div className="w-max-3xl mx-auto flex flex-col w-full p-6 pt-0! h-full">
         <WorkbookCreateForm
           isMaxInprogressWorkbookCreateCount={
             isMaxInprogressWorkbookCreateCount
           }
+          hasSession={hasSession}
           initialFormData={{
             ...{
               situation: "",
@@ -62,21 +69,27 @@ export default async function WorkBookCreatePage({
           }}
         />
 
-        <div className="flex flex-col gap-1 mt-12">
-          <Label className="font-semibold mb-4">
-            {isMaxInprogressWorkbookCreateCount
-              ? "만들고 있는 문제집"
-              : "최근 생성한 문제집"}
-          </Label>
+        {hasSession ? (
+          <div className="flex flex-col gap-1 mt-12">
+            <Label className="font-semibold mb-4">
+              {isMaxInprogressWorkbookCreateCount
+                ? "만들고 있는 문제집"
+                : "최근 생성한 문제집"}
+            </Label>
 
-          {latest3Workbooks.length > 0 ? (
-            <LatestWorkbooks initialWorkBooks={latest3Workbooks} />
-          ) : (
-            <div className="text-center text-muted-foreground py-18 w-full h-full flex items-center justify-center">
-              <p>새로운 문제집을 만들어보세요</p>
-            </div>
-          )}
-        </div>
+            {latest3Workbooks.length > 0 ? (
+              <LatestWorkbooks initialWorkBooks={latest3Workbooks} />
+            ) : (
+              <div className="text-center text-muted-foreground py-18 w-full h-full flex items-center justify-center">
+                <p>새로운 문제집을 만들어보세요</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center w-full">
+            <LoginPreviewSection />
+          </div>
+        )}
       </div>
     </div>
   );

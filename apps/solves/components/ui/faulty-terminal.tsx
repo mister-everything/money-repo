@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { Color, Mesh, Program, Renderer, Triangle } from "ogl";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 
@@ -25,6 +26,8 @@ export interface FaultyTerminalProps
   dpr?: number;
   pageLoadAnimation?: boolean;
   brightness?: number;
+  /** Enable blur/glow effect (9x sampling, expensive). Default: false */
+  enableBlur?: boolean;
 }
 
 const vertexShader = `
@@ -62,6 +65,7 @@ uniform float uUseMouse;
 uniform float uPageLoadProgress;
 uniform float uUsePageLoadAnimation;
 uniform float uBrightness;
+uniform float uEnableBlur;
 
 float time;
 
@@ -174,27 +178,35 @@ float displace(vec2 look)
 }
 
 vec3 getColor(vec2 p){
+    // Scanline effect - skip calculation if intensity is 0
+    float bar = 1.0;
+    if (uScanlineIntensity > 0.0) {
+      bar = step(mod(p.y + time * 20.0, 1.0), 0.2) * 0.4 + 1.0;
+      bar *= uScanlineIntensity;
+    }
     
-    float bar = step(mod(p.y + time * 20.0, 1.0), 0.2) * 0.4 + 1.0;
-    bar *= uScanlineIntensity;
-    
-    float displacement = displace(p);
-    p.x += displacement;
-
-    if (uGlitchAmount != 1.0) {
-      float extra = displacement * (uGlitchAmount - 1.0);
-      p.x += extra;
+    // Displacement/glitch - skip if both flicker and glitch are disabled
+    if (uFlickerAmount > 0.0 || uGlitchAmount != 0.0) {
+      float displacement = displace(p);
+      p.x += displacement;
+      if (uGlitchAmount != 1.0) {
+        float extra = displacement * (uGlitchAmount - 1.0);
+        p.x += extra;
+      }
     }
 
     float middle = digit(p);
     
-    const float off = 0.002;
-    float sum = digit(p + vec2(-off, -off)) + digit(p + vec2(0.0, -off)) + digit(p + vec2(off, -off)) +
-                digit(p + vec2(-off, 0.0)) + digit(p + vec2(0.0, 0.0)) + digit(p + vec2(off, 0.0)) +
-                digit(p + vec2(-off, off)) + digit(p + vec2(0.0, off)) + digit(p + vec2(off, off));
+    // Blur/glow effect - 9x sampling is expensive, skip if disabled
+    if (uEnableBlur > 0.5) {
+      const float off = 0.002;
+      float sum = digit(p + vec2(-off, -off)) + digit(p + vec2(0.0, -off)) + digit(p + vec2(off, -off)) +
+                  digit(p + vec2(-off, 0.0)) + digit(p + vec2(0.0, 0.0)) + digit(p + vec2(off, 0.0)) +
+                  digit(p + vec2(-off, off)) + digit(p + vec2(0.0, off)) + digit(p + vec2(off, off));
+      return vec3(0.9) * middle + sum * 0.1 * vec3(1.0) * bar;
+    }
     
-    vec3 baseColor = vec3(0.9) * middle + sum * 0.1 * vec3(1.0) * bar;
-    return baseColor;
+    return vec3(middle) * (uScanlineIntensity > 0.0 ? bar : 1.0);
 }
 
 vec2 barrel(vec2 uv){
@@ -213,6 +225,7 @@ void main() {
     }
     
     vec2 p = uv * uScale;
+    p.x *= iResolution.z; // aspect ratio 보정 (width/height)
     vec3 col = getColor(p);
 
     if(uChromaticAberration != 0.0){
@@ -252,27 +265,29 @@ function hexToRgb(hex: string): [number, number, number] {
 
 export default function FaultyTerminal({
   scale = 2,
-  gridMul = [2, 1],
+  gridMul = [1, 1],
   digitSize = 1.5,
   timeScale = 1,
   pause = false,
   scanlineIntensity = 0,
   glitchAmount = 0,
-  flickerAmount = 1,
+  flickerAmount = 0,
   noiseAmp = 1,
   chromaticAberration = 0,
   dither = 0,
   curvature = 0,
-  tint = "#ffffff",
+  tint,
   mouseReact = true,
   mouseStrength = 0.2,
   dpr = Math.min(window.devicePixelRatio || 1, 2),
   pageLoadAnimation = true,
-  brightness = 1,
+  brightness,
+  enableBlur = false,
   className,
   style,
   ...rest
 }: FaultyTerminalProps) {
+  const { resolvedTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const programRef = useRef<Program>(null);
   const rendererRef = useRef<Renderer>(null);
@@ -282,8 +297,15 @@ export default function FaultyTerminal({
   const rafRef = useRef<number>(0);
   const loadAnimationStartRef = useRef<number>(0);
   const timeOffsetRef = useRef<number>(Math.random() * 100);
+  const isVisibleRef = useRef(true);
 
-  const tintVec = useMemo(() => hexToRgb(tint), [tint]);
+  const defaultTint = resolvedTheme === "dark" ? "#d0d0d0" : "#050610";
+  const defaultBrightness = resolvedTheme === "dark" ? 0.6 : 4;
+
+  const tintVec = useMemo(
+    () => hexToRgb(tint ?? defaultTint),
+    [tint, defaultTint],
+  );
 
   const ditherValue = useMemo(
     () => (typeof dither === "boolean" ? (dither ? 1 : 0) : dither),
@@ -344,7 +366,8 @@ export default function FaultyTerminal({
         uUseMouse: { value: mouseReact ? 1 : 0 },
         uPageLoadProgress: { value: pageLoadAnimation ? 0 : 1 },
         uUsePageLoadAnimation: { value: pageLoadAnimation ? 1 : 0 },
-        uBrightness: { value: brightness },
+        uBrightness: { value: brightness ?? defaultBrightness },
+        uEnableBlur: { value: enableBlur ? 1 : 0 },
       },
     });
     programRef.current = program;
@@ -365,8 +388,22 @@ export default function FaultyTerminal({
     resizeObserver.observe(ctn);
     resize();
 
+    // Intersection Observer for visibility-based optimization
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+      },
+      { threshold: 0 }
+    );
+    intersectionObserver.observe(ctn);
+
     const update = (t: number) => {
       rafRef.current = requestAnimationFrame(update);
+
+      // Skip heavy rendering when not visible (saves CPU/GPU)
+      if (!isVisibleRef.current) {
+        return;
+      }
 
       if (pageLoadAnimation && loadAnimationStartRef.current === 0) {
         loadAnimationStartRef.current = t;
@@ -409,6 +446,7 @@ export default function FaultyTerminal({
     return () => {
       cancelAnimationFrame(rafRef.current);
       resizeObserver.disconnect();
+      intersectionObserver.disconnect();
       if (mouseReact) ctn.removeEventListener("mousemove", handleMouseMove);
       if (gl.canvas.parentElement === ctn) ctn.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
@@ -434,6 +472,7 @@ export default function FaultyTerminal({
     mouseStrength,
     pageLoadAnimation,
     brightness,
+    enableBlur,
     handleMouseMove,
   ]);
 

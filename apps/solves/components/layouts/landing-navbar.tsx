@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
-import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -12,10 +11,7 @@ import { ThemeToggle } from "../theme-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 
-import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Skeleton } from "../ui/skeleton";
-
-const navLinks: { name: string; href: string }[] = [];
 
 function UserMenu() {
   const { data, isPending, isRefetching } = authClient.useSession();
@@ -36,7 +32,7 @@ function UserMenu() {
   if (isAnonymous) {
     return (
       <Link href="/sign-in?callbackUrl=/workbooks">
-        <Button variant="ghost" className="rounded-full font-medium">
+        <Button variant="outline" className="font-semibold rounded-full">
           로그인
         </Button>
       </Link>
@@ -88,7 +84,7 @@ export function LandingNavbar() {
     >
       <motion.nav
         className={cn(
-          "flex items-center justify-between px-6 py-3 rounded-full transition-all duration-300 w-full max-w-5xl",
+          "flex gap-4 items-center px-6 py-3 rounded-full transition-all duration-300 w-full max-w-5xl",
           isScrolled
             ? "bg-secondary backdrop-blur-md dark:bg-secondary/40"
             : "bg-transparent",
@@ -103,50 +99,23 @@ export function LandingNavbar() {
         </span>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hover:bg-muted/50 px-3 py-1.5 rounded-full"
-            >
-              {link.name}
-            </Link>
-          ))}
+        <div className="items-center ml-auto hidden md:flex">
+          <Link href="/workbooks/creator/new">
+            <Button variant="ghost" className="font-semibold rounded-full">
+              문제집 만들기
+            </Button>
+          </Link>
+          <Link href="/workbooks">
+            <Button variant="ghost" className="font-semibold rounded-full">
+              문제 풀기
+            </Button>
+          </Link>
         </div>
 
         {/* Action Buttons */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="items-center gap-3 hidden md:flex">
           <UserMenu />
           <ThemeToggle className="rounded-full" variant="outline" />
-        </div>
-
-        {/* Mobile Menu */}
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Menu className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="top" className="rounded-b-4xl pt-16">
-              <div className="flex flex-col items-center gap-6">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className="text-lg font-medium"
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-                <div className="flex flex-col gap-3 w-full max-w-xs mt-4 items-center">
-                  <UserMenu />
-                </div>
-                <ThemeToggle className="rounded-full" variant="outline" />
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       </motion.nav>
     </motion.header>
