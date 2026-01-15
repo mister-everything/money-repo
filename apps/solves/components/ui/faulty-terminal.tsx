@@ -263,6 +263,11 @@ function hexToRgb(hex: string): [number, number, number] {
   ];
 }
 
+const getWindow = () => {
+  if (typeof window === "undefined") return null;
+  return window;
+};
+
 export default function FaultyTerminal({
   scale = 2,
   gridMul = [1, 1],
@@ -279,7 +284,7 @@ export default function FaultyTerminal({
   tint,
   mouseReact = true,
   mouseStrength = 0.2,
-  dpr = Math.min(window.devicePixelRatio || 1, 2),
+  dpr = Math.min(getWindow()?.devicePixelRatio || 1, 2),
   pageLoadAnimation = true,
   brightness,
   enableBlur = false,
@@ -393,7 +398,7 @@ export default function FaultyTerminal({
       ([entry]) => {
         isVisibleRef.current = entry.isIntersecting;
       },
-      { threshold: 0 }
+      { threshold: 0 },
     );
     intersectionObserver.observe(ctn);
 
