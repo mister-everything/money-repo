@@ -70,7 +70,7 @@ export function LoginPreviewSection() {
   return (
     <Link
       href="/sign-in?callbackUrl=/workbooks/creator/new"
-      className="flex items-center w-full justify-center gap-5 mt-4 py-14 px-8 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-all group cursor-pointer"
+      className="flex flex-col md:flex-row items-center w-full justify-center gap-5 mt-4 py-14 px-8 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-all group cursor-pointer"
     >
       {/* 왼쪽: 애니메이션 프리뷰 */}
       <div className="relative w-36 h-24 flex gap-2.5 shrink-0">
