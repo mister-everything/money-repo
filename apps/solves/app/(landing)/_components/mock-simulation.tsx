@@ -169,7 +169,7 @@ export function MockSimulation() {
   return (
     <div
       ref={wrapperRef}
-      className="w-full h-[600px] flex flex-col rounded-2xl border bg-background/95 backdrop-blur shadow-2xl overflow-hidden relative cursor-none select-none"
+      className="w-full h-[600px] flex flex-col rounded-2xl border bg-background/95 backdrop-blur shadow-2xl overflow-hidden relative select-none pointer-events-none"
     >
       {/* Header */}
       <div className="h-14 border-b flex items-center px-4 bg-muted/30 gap-3 shrink-0">
