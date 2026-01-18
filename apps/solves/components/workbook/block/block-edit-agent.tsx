@@ -192,6 +192,30 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
     dropEditField("solution");
   }, [dropEditField]);
 
+  const handleAcceptAll = useCallback(() => {
+    if (!blockEditState) return;
+    if (blockEditState.question !== undefined)
+      onUpdateQuestion?.(blockEditState.question);
+    if (blockEditState.content !== undefined)
+      onUpdateContent?.(blockEditState.content);
+    if (blockEditState.answer !== undefined)
+      onUpdateAnswer?.(blockEditState.answer);
+    if (blockEditState.solution !== undefined)
+      onUpdateSolution?.(blockEditState.solution);
+    clearBuffers();
+  }, [
+    blockEditState,
+    clearBuffers,
+    onUpdateAnswer,
+    onUpdateContent,
+    onUpdateQuestion,
+    onUpdateSolution,
+  ]);
+
+  const handleRejectAll = useCallback(() => {
+    clearBuffers();
+  }, [clearBuffers]);
+
   const handleSendMessage = useCallback(
     (value: string) => {
       if (isBusy) return;
@@ -277,17 +301,25 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
                       : undefined
                   }
                 />
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs text-muted-foreground"
-                  onClick={clearBuffers}
-                  disabled={isBusy}
-                >
-                  닫기
-                </Button>
+                <div className="flex justify-end items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-destructive hover:text-destructive"
+                    onClick={handleAcceptAll}
+                  >
+                    Reject
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={handleAcceptAll}
+                  >
+                    Accept
+                  </Button>
+                </div>
               </div>
             </div>
           )}

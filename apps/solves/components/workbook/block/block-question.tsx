@@ -1,4 +1,5 @@
 import { MAX_QUESTION_LENGTH } from "@service/solves/shared";
+import { CheckIcon, XIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,7 @@ export function BlockQuestion({
               className="text-xs text-destructive hover:text-destructive"
               onClick={onRejectSuggest}
             >
-              Reject
+              <XIcon className="size-4" />
             </Button>
           )}
           {onAcceptSuggest && (
@@ -65,7 +66,7 @@ export function BlockQuestion({
               className="text-xs text-primary hover:text-primary hover:bg-primary/10"
               onClick={onAcceptSuggest}
             >
-              Accept
+              <CheckIcon className="size-4" />
             </Button>
           )}
         </div>

@@ -110,7 +110,7 @@ export function DefaultBlockContent({
               className="text-xs text-destructive hover:text-destructive"
               onClick={onRejectAnswer}
             >
-              Reject
+              <XIcon className="size-4" />
             </Button>
           )}
           {onAcceptAnswer && (
@@ -120,7 +120,7 @@ export function DefaultBlockContent({
               className="text-xs text-primary hover:text-primary hover:bg-primary/10"
               onClick={onAcceptAnswer}
             >
-              Accept
+              <CheckIcon className="size-4" />
             </Button>
           )}
         </div>
@@ -328,7 +328,7 @@ export function McqMultipleBlockContent({
                     className="text-xs text-destructive hover:text-destructive"
                     onClick={onRejectContent}
                   >
-                    Reject
+                    <XIcon className="size-4" />
                   </Button>
                 )}
                 {onAcceptContent && (
@@ -338,7 +338,7 @@ export function McqMultipleBlockContent({
                     className="text-xs text-primary hover:text-primary hover:bg-primary/10"
                     onClick={onAcceptContent}
                   >
-                    Accept
+                    <CheckIcon className="size-4" />
                   </Button>
                 )}
               </div>
@@ -612,7 +612,7 @@ export function McqSingleBlockContent({
                     className="text-xs text-destructive hover:text-destructive"
                     onClick={onRejectAnswer}
                   >
-                    Reject
+                    <XIcon className="size-4" />
                   </Button>
                 )}
                 {onAcceptAnswer && (
@@ -622,7 +622,7 @@ export function McqSingleBlockContent({
                     className="text-xs text-primary hover:text-primary hover:bg-primary/10"
                     onClick={onAcceptAnswer}
                   >
-                    Accept
+                    <CheckIcon className="size-4" />
                   </Button>
                 )}
               </div>
@@ -795,7 +795,7 @@ export function OXBlockContent({
               className="text-xs text-destructive hover:text-destructive"
               onClick={onRejectAnswer}
             >
-              Reject
+              <XIcon className="size-4" />
             </Button>
           )}
           {onAcceptAnswer && (
@@ -805,7 +805,7 @@ export function OXBlockContent({
               className="text-xs text-primary hover:text-primary hover:bg-primary/10"
               onClick={onAcceptAnswer}
             >
-              Accept
+              <CheckIcon className="size-4" />
             </Button>
           )}
         </div>
@@ -1019,7 +1019,7 @@ export function RankingBlockContent({
                   onRejectAnswer?.();
                 }}
               >
-                Reject
+                <XIcon className="size-4" />
               </Button>
             )}
             {(onAcceptContent || onAcceptAnswer) && (
@@ -1032,7 +1032,7 @@ export function RankingBlockContent({
                   onAcceptAnswer?.();
                 }}
               >
-                Accept
+                <CheckIcon className="size-4" />
               </Button>
             )}
           </div>
