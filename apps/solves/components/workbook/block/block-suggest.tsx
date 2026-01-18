@@ -18,8 +18,8 @@ import {
   RankingBlockContent,
 } from "./block-content";
 import { BlockEditState } from "./block-edit-agent";
-import { BlockEditSolution } from "./block-edit-solution";
 import { BlockQuestion } from "./block-question";
+import { BlockSolution } from "./block-solution";
 import { WorkBookComponentMode } from "./types";
 
 export type BlockSuggestProps<T extends BlockType = BlockType> = {
@@ -38,6 +38,14 @@ export type BlockSuggestProps<T extends BlockType = BlockType> = {
   onUpdateAnswer?: (answer: StateUpdate<BlockAnswer<T>>) => void;
   onUpdateQuestion?: (question: string) => void;
   onUpdateSolution?: (solution: string) => void;
+  onAcceptQuestion?: () => void;
+  onRejectQuestion?: () => void;
+  onAcceptContent?: () => void;
+  onRejectContent?: () => void;
+  onAcceptAnswer?: () => void;
+  onRejectAnswer?: () => void;
+  onAcceptSolution?: () => void;
+  onRejectSolution?: () => void;
 
   className?: string;
   ref?: Ref<HTMLDivElement>;
@@ -64,6 +72,9 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
             question={props.blockEditState?.question}
             mode={props.mode}
             onChangeQuestion={props.onUpdateQuestion}
+            isSuggest={true}
+            onAcceptSuggest={props.onAcceptQuestion}
+            onRejectSuggest={props.onRejectQuestion}
           />
         )}
       </CardHeader>
@@ -78,6 +89,8 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
                 isSuggest={true}
+                onAcceptAnswer={props.onAcceptAnswer}
+                onRejectAnswer={props.onRejectAnswer}
               />
             ) : blockPropsTypeGuard("mcq-multiple", props) ? (
               <McqMultipleBlockContent
@@ -87,6 +100,10 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
                 isSuggest={true}
+                onAcceptContent={props.onAcceptContent}
+                onRejectContent={props.onRejectContent}
+                onAcceptAnswer={props.onAcceptAnswer}
+                onRejectAnswer={props.onRejectAnswer}
               />
             ) : blockPropsTypeGuard("mcq", props) ? (
               <McqSingleBlockContent
@@ -96,6 +113,10 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
                 isSuggest={true}
+                onAcceptContent={props.onAcceptContent}
+                onRejectContent={props.onRejectContent}
+                onAcceptAnswer={props.onAcceptAnswer}
+                onRejectAnswer={props.onRejectAnswer}
               />
             ) : blockPropsTypeGuard("ox", props) ? (
               <OXBlockContent
@@ -105,6 +126,8 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
                 isSuggest={true}
+                onAcceptAnswer={props.onAcceptAnswer}
+                onRejectAnswer={props.onRejectAnswer}
               />
             ) : blockPropsTypeGuard("ranking", props) ? (
               <RankingBlockContent
@@ -114,6 +137,10 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
                 isSuggest={true}
+                onAcceptContent={props.onAcceptContent}
+                onRejectContent={props.onRejectContent}
+                onAcceptAnswer={props.onAcceptAnswer}
+                onRejectAnswer={props.onRejectAnswer}
               />
             ) : (
               <InDevelopment className="w-full text-sm h-48">
@@ -125,7 +152,17 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
       </CardContent>
       <CardFooter className="flex flex-col mt-2 px-4 md:px-6">
         {props.blockEditState?.solution && (
-          <BlockEditSolution solution={props.blockEditState.solution!} />
+          <BlockSolution
+            blockId={props.id}
+            question={props.question}
+            content={props.content}
+            answer={props.answer}
+            solution={props.blockEditState.solution!}
+            mode={props.mode}
+            isSuggest={true}
+            onAcceptSuggest={props.onAcceptSolution}
+            onRejectSuggest={props.onRejectSolution}
+          />
         )}
       </CardFooter>
     </Card>

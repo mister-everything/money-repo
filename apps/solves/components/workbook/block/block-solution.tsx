@@ -37,6 +37,8 @@ export function BlockSolution<T extends BlockType = BlockType>({
   submit,
   isCorrect,
   isSuggest = false,
+  onAcceptSuggest,
+  onRejectSuggest,
 }: {
   blockId?: string;
   question: string;
@@ -48,6 +50,8 @@ export function BlockSolution<T extends BlockType = BlockType>({
   submit?: BlockAnswerSubmit<T>;
   isCorrect?: boolean;
   isSuggest?: boolean;
+  onAcceptSuggest?: () => void;
+  onRejectSuggest?: () => void;
 }) {
   const { chatModel, setChatModel } = useAiStore();
   useChatModelList({
@@ -395,6 +399,31 @@ export function BlockSolution<T extends BlockType = BlockType>({
   if (isSuggest)
     return (
       <div className="px-2 pb-2 flex flex-col gap-4 text-muted-foreground text-xs">
+        {(onAcceptSuggest || onRejectSuggest) && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground mr-auto">해설</span>
+            {onRejectSuggest && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs text-destructive hover:text-destructive"
+                onClick={onRejectSuggest}
+              >
+                Reject
+              </Button>
+            )}
+            {onAcceptSuggest && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                onClick={onAcceptSuggest}
+              >
+                Accept
+              </Button>
+            )}
+          </div>
+        )}
         <div className="flex gap-2">
           <span className="w-16 text-muted-foreground/50 font-semibold">
             해설

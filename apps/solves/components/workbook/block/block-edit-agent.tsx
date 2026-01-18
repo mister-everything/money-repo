@@ -90,40 +90,34 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
       },
     }),
     onToolCall: ({ toolCall }) => {
-      // setBlockEdit((prev) => prev ?? getCurrentSnapshot());
-
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.QUESTION) {
         const updatedQuestion = (toolCall.input as EditQuestionInput).question;
-        // onUpdateQuestion?.(updatedQuestion);
         setBlockEditState((prev) => ({
-          ...prev,
+          ...(prev ?? {}),
           question: updatedQuestion,
         }));
         return;
       }
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.CONTENT) {
         const updatedContent = toolCall.input as BlockContent<T>;
-        // onUpdateContent?.(updatedContent);
         setBlockEditState((prev) => ({
-          ...prev,
+          ...(prev ?? {}),
           content: updatedContent,
         }));
         return;
       }
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.ANSWER) {
         const updatedAnswer = toolCall.input as BlockAnswer<T>;
-        // onUpdateAnswer?.(updatedAnswer);
         setBlockEditState((prev) => ({
-          ...prev,
+          ...(prev ?? {}),
           answer: updatedAnswer,
         }));
         return;
       }
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.SOLUTION) {
         const updatedSolution = (toolCall.input as EditSolutionInput).solution;
-        // onUpdateSolution?.(updatedSolution);
         setBlockEditState((prev) => ({
-          ...prev,
+          ...(prev ?? {}),
           solution: updatedSolution,
         }));
       }
@@ -145,34 +139,54 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
     setBlockEditState(null);
   }, []);
 
-  const handleAccept = useCallback(() => {
-    if (!blockEditState) return;
-    if (blockEditState.question !== undefined) {
-      onUpdateQuestion?.(blockEditState.question);
-    }
-    if (blockEditState.content !== undefined) {
-      onUpdateContent?.(blockEditState.content);
-    }
-    if (blockEditState.answer !== undefined) {
-      onUpdateAnswer?.(blockEditState.answer);
-    }
-    if (blockEditState.solution !== undefined) {
-      onUpdateSolution?.(blockEditState.solution);
-    }
-    clearBuffers();
-  }, [
-    blockEditState,
-    onUpdateQuestion,
-    onUpdateContent,
-    onUpdateAnswer,
-    onUpdateSolution,
-    clearBuffers,
-  ]);
+  const dropEditField = useCallback((field: keyof BlockEditState<T>) => {
+    setBlockEditState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return Object.keys(next).length ? next : null;
+    });
+  }, []);
 
-  const handleReject = useCallback(() => {
-    if (!blockEditState) return;
-    clearBuffers();
-  }, [clearBuffers, blockEditState]);
+  const handleAcceptQuestion = useCallback(() => {
+    if (blockEditState?.question === undefined) return;
+    onUpdateQuestion?.(blockEditState.question);
+    dropEditField("question");
+  }, [blockEditState?.question, dropEditField, onUpdateQuestion]);
+
+  const handleRejectQuestion = useCallback(() => {
+    dropEditField("question");
+  }, [dropEditField]);
+
+  const handleAcceptContent = useCallback(() => {
+    if (blockEditState?.content === undefined) return;
+    onUpdateContent?.(blockEditState.content);
+    dropEditField("content");
+  }, [blockEditState?.content, dropEditField, onUpdateContent]);
+
+  const handleRejectContent = useCallback(() => {
+    dropEditField("content");
+  }, [dropEditField]);
+
+  const handleAcceptAnswer = useCallback(() => {
+    if (blockEditState?.answer === undefined) return;
+    onUpdateAnswer?.(blockEditState.answer);
+    dropEditField("answer");
+  }, [blockEditState?.answer, dropEditField, onUpdateAnswer]);
+
+  const handleRejectAnswer = useCallback(() => {
+    dropEditField("answer");
+  }, [dropEditField]);
+
+  const handleAcceptSolution = useCallback(() => {
+    if (blockEditState?.solution === undefined) return;
+    onUpdateSolution?.(blockEditState.solution);
+    dropEditField("solution");
+  }, [blockEditState?.solution, dropEditField, onUpdateSolution]);
+
+  const handleRejectSolution = useCallback(() => {
+    dropEditField("solution");
+  }, [dropEditField]);
 
   const handleSendMessage = useCallback(
     (value: string) => {
@@ -218,26 +232,57 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
                   order={0}
                   type={type}
                   blockEditState={blockEditState}
+                  onAcceptQuestion={
+                    blockEditState.question !== undefined
+                      ? handleAcceptQuestion
+                      : undefined
+                  }
+                  onRejectQuestion={
+                    blockEditState.question !== undefined
+                      ? handleRejectQuestion
+                      : undefined
+                  }
+                  onAcceptContent={
+                    blockEditState.content !== undefined
+                      ? handleAcceptContent
+                      : undefined
+                  }
+                  onRejectContent={
+                    blockEditState.content !== undefined
+                      ? handleRejectContent
+                      : undefined
+                  }
+                  onAcceptAnswer={
+                    blockEditState.answer !== undefined
+                      ? handleAcceptAnswer
+                      : undefined
+                  }
+                  onRejectAnswer={
+                    blockEditState.answer !== undefined
+                      ? handleRejectAnswer
+                      : undefined
+                  }
+                  onAcceptSolution={
+                    blockEditState.solution !== undefined
+                      ? handleAcceptSolution
+                      : undefined
+                  }
+                  onRejectSolution={
+                    blockEditState.solution !== undefined
+                      ? handleRejectSolution
+                      : undefined
+                  }
                 />
               </div>
-              <div className="flex gap-2 justify-end">
+              <div className="flex justify-end">
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="text-xs text-primary hover:text-primary hover:bg-primary/10"
-                  onClick={handleAccept}
+                  variant="ghost"
+                  className="text-xs text-muted-foreground"
+                  onClick={clearBuffers}
                   disabled={isBusy}
                 >
-                  Accept
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs text-destructive hover:text-destructive"
-                  onClick={handleReject}
-                  disabled={isBusy || !blockEditState}
-                >
-                  Reject
+                  닫기
                 </Button>
               </div>
             </div>

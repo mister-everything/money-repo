@@ -44,6 +44,10 @@ type BlockContentProps<T extends BlockType = BlockType> = {
   answer?: BlockAnswer<T>;
   submit?: BlockAnswerSubmit<T>;
   isSuggest?: boolean;
+  onAcceptContent?: () => void;
+  onRejectContent?: () => void;
+  onAcceptAnswer?: () => void;
+  onRejectAnswer?: () => void;
 };
 // 주관식 문제
 export function DefaultBlockContent({
@@ -54,6 +58,8 @@ export function DefaultBlockContent({
   onUpdateSubmitAnswer,
   isCorrect,
   isSuggest = false,
+  onAcceptAnswer,
+  onRejectAnswer,
 }: BlockContentProps<"default">) {
   const handleChangeSubmitAnswer = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +100,31 @@ export function DefaultBlockContent({
 
   return (
     <div className="flex flex-col gap-2">
+      {isSuggest && (onAcceptAnswer || onRejectAnswer) && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground mr-auto">정답</span>
+          {onRejectAnswer && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs text-destructive hover:text-destructive"
+              onClick={onRejectAnswer}
+            >
+              Reject
+            </Button>
+          )}
+          {onAcceptAnswer && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+              onClick={onAcceptAnswer}
+            >
+              Accept
+            </Button>
+          )}
+        </div>
+      )}
       <div className="flex gap-2">
         {(mode == "solve" || mode == "preview") && (
           <Input
@@ -181,6 +212,10 @@ export function McqMultipleBlockContent({
   onUpdateContent,
   onUpdateSubmitAnswer,
   isSuggest = false,
+  onAcceptContent,
+  onRejectContent,
+  onAcceptAnswer,
+  onRejectAnswer,
 }: BlockContentProps<"mcq-multiple">) {
   const options = content.options ?? [];
   const addOption = useCallback(async () => {
@@ -275,6 +310,68 @@ export function McqMultipleBlockContent({
 
   return (
     <div className="flex flex-col gap-3">
+      {isSuggest &&
+        (onAcceptContent ||
+          onRejectContent ||
+          onAcceptAnswer ||
+          onRejectAnswer) && (
+          <div className="flex flex-col gap-2">
+            {(onAcceptContent || onRejectContent) && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground mr-auto">
+                  보기
+                </span>
+                {onRejectContent && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-destructive hover:text-destructive"
+                    onClick={onRejectContent}
+                  >
+                    Reject
+                  </Button>
+                )}
+                {onAcceptContent && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={onAcceptContent}
+                  >
+                    Accept
+                  </Button>
+                )}
+              </div>
+            )}
+            {(onAcceptAnswer || onRejectAnswer) && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground mr-auto">
+                  정답
+                </span>
+                {onRejectAnswer && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-destructive hover:text-destructive"
+                    onClick={onRejectAnswer}
+                  >
+                    Reject
+                  </Button>
+                )}
+                {onAcceptAnswer && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={onAcceptAnswer}
+                  >
+                    Accept
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       {options.map((option, index) => {
         if (option.type == "text") {
           const status =
@@ -394,6 +491,10 @@ export function McqSingleBlockContent({
   onUpdateContent,
   onUpdateSubmitAnswer,
   isSuggest = false,
+  onAcceptContent,
+  onRejectContent,
+  onAcceptAnswer,
+  onRejectAnswer,
 }: BlockContentProps<"mcq">) {
   const options = content.options ?? [];
   const addOption = useCallback(async () => {
@@ -466,6 +567,68 @@ export function McqSingleBlockContent({
 
   return (
     <div className="flex flex-col gap-3">
+      {isSuggest &&
+        (onAcceptContent ||
+          onRejectContent ||
+          onAcceptAnswer ||
+          onRejectAnswer) && (
+          <div className="flex flex-col gap-2">
+            {(onAcceptContent || onRejectContent) && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground mr-auto">
+                  보기
+                </span>
+                {onRejectContent && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-destructive hover:text-destructive"
+                    onClick={onRejectContent}
+                  >
+                    Reject
+                  </Button>
+                )}
+                {onAcceptContent && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={onAcceptContent}
+                  >
+                    Accept
+                  </Button>
+                )}
+              </div>
+            )}
+            {(onAcceptAnswer || onRejectAnswer) && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground mr-auto">
+                  정답
+                </span>
+                {onRejectAnswer && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-destructive hover:text-destructive"
+                    onClick={onRejectAnswer}
+                  >
+                    Reject
+                  </Button>
+                )}
+                {onAcceptAnswer && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={onAcceptAnswer}
+                  >
+                    Accept
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       {options.map((option, index) => {
         if (option.type == "text") {
           const status =
@@ -585,6 +748,8 @@ export function OXBlockContent({
   isCorrect,
   submit,
   isSuggest = false,
+  onAcceptAnswer,
+  onRejectAnswer,
 }: BlockContentProps<"ox">) {
   const handleClick = useCallback(
     (value: boolean) => {
@@ -619,29 +784,56 @@ export function OXBlockContent({
   );
 
   return (
-    <div className="grid grid-cols-2 gap-4 h-44 lg:h-64">
-      <Button
-        variant={"outline"}
-        className={cn(
-          "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
-          getSelectedClass(true),
-        )}
-        onClick={isSuggest ? undefined : () => handleClick(true)}
-        disabled={isSuggest}
-      >
-        <CircleIcon className="size-14 md:size-24" />
-      </Button>
-      <Button
-        variant={"outline"}
-        className={cn(
-          "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
-          getSelectedClass(false),
-        )}
-        onClick={isSuggest ? undefined : () => handleClick(false)}
-        disabled={isSuggest}
-      >
-        <XIcon className="size-14 md:size-24" />
-      </Button>
+    <div className="flex flex-col gap-3">
+      {isSuggest && (onAcceptAnswer || onRejectAnswer) && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground mr-auto">정답</span>
+          {onRejectAnswer && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs text-destructive hover:text-destructive"
+              onClick={onRejectAnswer}
+            >
+              Reject
+            </Button>
+          )}
+          {onAcceptAnswer && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+              onClick={onAcceptAnswer}
+            >
+              Accept
+            </Button>
+          )}
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-4 h-44 lg:h-64">
+        <Button
+          variant={"outline"}
+          className={cn(
+            "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
+            getSelectedClass(true),
+          )}
+          onClick={isSuggest ? undefined : () => handleClick(true)}
+          disabled={isSuggest}
+        >
+          <CircleIcon className="size-14 md:size-24" />
+        </Button>
+        <Button
+          variant={"outline"}
+          className={cn(
+            "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
+            getSelectedClass(false),
+          )}
+          onClick={isSuggest ? undefined : () => handleClick(false)}
+          disabled={isSuggest}
+        >
+          <XIcon className="size-14 md:size-24" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -655,6 +847,10 @@ export function RankingBlockContent({
   onUpdateContent,
   onUpdateSubmitAnswer,
   isSuggest = false,
+  onAcceptContent,
+  onRejectContent,
+  onAcceptAnswer,
+  onRejectAnswer,
 }: BlockContentProps<"ranking">) {
   const items = content.items || [];
   const slotCount = items.length;
@@ -829,43 +1025,79 @@ export function RankingBlockContent({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">
-          {isInteractive ? "항목 (클릭 또는 드래그하여 순위에 추가)" : "항목"}
-        </Label>
-        <div
-          className={cn(
-            mode != "review" && "bg-primary/5 border border-primary",
-            "flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg",
-          )}
-        >
-          {poolItems.map((item) => (
-            <div
-              key={item.id}
-              draggable={isInteractive}
-              onDragStart={(e) => isInteractive && handleDragStart(e, item.id)}
-              onClick={() => isInteractive && removeItem(item.id)}
-              onDragEnd={handleDragEnd}
-              className={cn(
-                "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1 select-none",
-                isInteractive &&
-                  "cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/5",
-              )}
-            >
-              {item.type === "text" && item.text}
-              {mode === "edit" && isInteractive && (
-                <span
-                  role="button"
-                  className="ml-1 text-muted-foreground p-0.5 rounded"
-                >
-                  <XIcon className="size-3" />
-                </span>
-              )}
-            </div>
-          ))}
-          {mode === "edit" &&
-            items.length < RANKING_BLOCK_MAX_ITEMS &&
-            !isSuggest && (
+      {isSuggest &&
+        (onAcceptContent ||
+          onRejectContent ||
+          onAcceptAnswer ||
+          onRejectAnswer) && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground mr-auto">순위</span>
+            {(onRejectContent || onRejectAnswer) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs text-destructive hover:text-destructive"
+                onClick={() => {
+                  onRejectContent?.();
+                  onRejectAnswer?.();
+                }}
+              >
+                Reject
+              </Button>
+            )}
+            {(onAcceptContent || onAcceptAnswer) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                onClick={() => {
+                  onAcceptContent?.();
+                  onAcceptAnswer?.();
+                }}
+              >
+                Accept
+              </Button>
+            )}
+          </div>
+        )}
+      {!isSuggest && (
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">
+            {isInteractive ? "항목 (클릭 또는 드래그하여 순위에 추가)" : "항목"}
+          </Label>
+          <div
+            className={cn(
+              mode != "review" && "bg-primary/5 border border-primary",
+              "flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg",
+            )}
+          >
+            {poolItems.map((item) => (
+              <div
+                key={item.id}
+                draggable={isInteractive}
+                onDragStart={(e) =>
+                  isInteractive && handleDragStart(e, item.id)
+                }
+                onClick={() => isInteractive && removeItem(item.id)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1 select-none",
+                  isInteractive &&
+                    "cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/5",
+                )}
+              >
+                {item.type === "text" && item.text}
+                {mode === "edit" && isInteractive && (
+                  <span
+                    role="button"
+                    className="ml-1 text-muted-foreground p-0.5 rounded"
+                  >
+                    <XIcon className="size-3" />
+                  </span>
+                )}
+              </div>
+            ))}
+            {mode === "edit" && items.length < RANKING_BLOCK_MAX_ITEMS && (
               <Button
                 variant="outline"
                 size="sm"
@@ -875,8 +1107,9 @@ export function RankingBlockContent({
                 <PlusIcon className="size-3 mr-1" /> 추가
               </Button>
             )}
+          </div>
         </div>
-      </div>
+      )}
 
       {slotCount > 0 && mode === "review" && (
         <div className="space-y-4">
