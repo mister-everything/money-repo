@@ -640,7 +640,7 @@ export default function PromptInputDynamicGrow({
     <ChatInputContext.Provider value={contextValue}>
       <form
         onSubmit={handleSubmit}
-        className={`mx-auto min-h-12 ${baseWidthClass} transition-all ease-out ${focusWidthClass} translate-y-0 opacity-100 ${className}`}
+        className={`mr-auto min-h-12 ${baseWidthClass} transition-all ease-out ${focusWidthClass} translate-y-0 opacity-100 ${className}`}
         style={{
           transition: `transform ${animationDuration}ms, opacity 200ms, width ${animationDuration}ms`,
         }}
