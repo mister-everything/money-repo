@@ -306,7 +306,7 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
                     size="sm"
                     variant="outline"
                     className="text-xs text-destructive hover:text-destructive"
-                    onClick={handleAcceptAll}
+                    onClick={handleRejectAll}
                   >
                     Reject
                   </Button>
