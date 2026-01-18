@@ -2,6 +2,8 @@ import { workBookService } from "@service/solves";
 import { WorkbooksClient } from "@/app/(main)/workbooks/client";
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const workBooks = await workBookService.searchWorkBooks({
     isPublished: true,

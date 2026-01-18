@@ -102,7 +102,7 @@ export const NavUser = memo(function NavUser() {
       <div className="flex items-center justify-between">
         {isAnonymous ? (
           <Link
-            href={"/sign-in"}
+            href={"/sign-in?callbackUrl=/workbooks"}
             onClick={(e) => {
               e.stopPropagation();
             }}

@@ -14,7 +14,7 @@ import {
 } from "@service/solves/shared";
 import { createIdGenerator, deduplicate, StateUpdate } from "@workspace/util";
 import { CheckIcon, CircleIcon, PlusIcon, XIcon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -855,10 +855,6 @@ export function RankingBlockContent({
   const items = content.items || [];
   const slotCount = items.length;
 
-  const [isDragging, setIsDragging] = useState(false);
-
-  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
-
   const currentOrder = useMemo(() => {
     const rawOrder =
       mode === "edit" ? answer?.order || [] : submit?.order || [];
@@ -873,6 +869,11 @@ export function RankingBlockContent({
     const placedIds = currentOrder.filter((id) => id !== "");
     return items.filter((item) => !placedIds.includes(item.id));
   }, [items, currentOrder]);
+
+  // 다음 빈 슬롯 인덱스 계산
+  const nextEmptySlotIndex = useMemo(() => {
+    return currentOrder.findIndex((id) => id === "");
+  }, [currentOrder]);
 
   const updateOrder = useCallback(
     (newOrder: string[]) => {
@@ -926,25 +927,26 @@ export function RankingBlockContent({
           ...prev,
           items: prev?.items?.filter((item) => item.id !== itemId) || [],
         }));
-      } else if (mode === "solve") {
-        onUpdateSubmitAnswer?.((prev) => ({
-          ...prev,
-          order: prev?.order?.filter((id) => id !== itemId) || [],
-        }));
       }
     },
-    [mode, onUpdateAnswer, onUpdateSubmitAnswer],
+    [mode, onUpdateAnswer, onUpdateContent],
   );
 
-  const addToSlot = useCallback(
-    (itemId: string, slotIndex: number) => {
-      if (currentOrder.includes(itemId)) return;
-      if (currentOrder[slotIndex] !== "") return;
+  const isInteractive = mode === "edit" || mode === "solve";
+  const rankBadgeClass = "bg-secondary text-secondary-foreground";
+  const filledCount = currentOrder.filter((id) => id !== "").length;
+
+  // 클릭하면 다음 빈 슬롯에 자동 추가
+  const handleItemClick = useCallback(
+    (itemId: string) => {
+      if (!isInteractive) return;
+      if (nextEmptySlotIndex === -1) return; // 모든 슬롯이 채워져 있음
+      if (currentOrder.includes(itemId)) return; // 이미 배치됨
       const newOrder = [...currentOrder];
-      newOrder[slotIndex] = itemId;
+      newOrder[nextEmptySlotIndex] = itemId;
       updateOrder(newOrder);
     },
-    [currentOrder, updateOrder],
+    [isInteractive, nextEmptySlotIndex, currentOrder, updateOrder],
   );
 
   const removeFromSlot = useCallback(
@@ -960,27 +962,6 @@ export function RankingBlockContent({
     updateOrder([]);
   }, [updateOrder]);
 
-  const handleDragStart = useCallback((e: React.DragEvent, itemId: string) => {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", itemId);
-    setIsDragging(true);
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
-    setDragOverSlot(null);
-  }, []);
-
-  const handleDropOnSlot = useCallback(
-    (e: React.DragEvent, slotIndex: number) => {
-      e.preventDefault();
-      const itemId = e.dataTransfer.getData("text/plain");
-      if (itemId) addToSlot(itemId, slotIndex);
-      setDragOverSlot(null);
-    },
-    [addToSlot],
-  );
-
   const getSlotStatus = useCallback(
     (slotIndex: number) => {
       if (mode !== "review") return null;
@@ -993,10 +974,6 @@ export function RankingBlockContent({
     },
     [mode, answer?.order, submit?.order],
   );
-
-  const isInteractive = (mode === "edit" || mode === "solve") && !isSuggest;
-  const rankBadgeClass = "bg-secondary text-secondary-foreground";
-  const filledCount = currentOrder.filter((id) => id !== "").length;
 
   if (mode === "preview" && items.length === 0) {
     return (
@@ -1063,7 +1040,7 @@ export function RankingBlockContent({
       {!isSuggest && (
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">
-            {isInteractive ? "항목 (클릭 또는 드래그하여 순위에 추가)" : "항목"}
+            {isInteractive ? "항목 (클릭하여 순위에 추가)" : "항목"}
           </Label>
           <div
             className={cn(
@@ -1074,20 +1051,19 @@ export function RankingBlockContent({
             {poolItems.map((item) => (
               <div
                 key={item.id}
-                draggable={isInteractive}
-                onDragStart={(e) =>
-                  isInteractive && handleDragStart(e, item.id)
+                onClick={() =>
+                  mode === "edit"
+                    ? removeItem(item.id)
+                    : handleItemClick(item.id)
                 }
-                onClick={() => isInteractive && removeItem(item.id)}
-                onDragEnd={handleDragEnd}
                 className={cn(
                   "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1 select-none",
                   isInteractive &&
-                    "cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/5",
+                    "cursor-pointer hover:border-primary hover:bg-primary/5 active:scale-95",
                 )}
               >
                 {item.type === "text" && item.text}
-                {mode === "edit" && isInteractive && (
+                {mode === "edit" && (
                   <span
                     role="button"
                     className="ml-1 text-muted-foreground p-0.5 rounded"
@@ -1125,7 +1101,7 @@ export function RankingBlockContent({
                   <div key={slotIndex} className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "size-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                        "size-12 rounded-md flex items-center justify-center text-xs font-bold shrink-0",
                         rankBadgeClass,
                       )}
                     >
@@ -1188,29 +1164,20 @@ export function RankingBlockContent({
               const itemId = currentOrder[slotIndex];
               const item = itemId ? items.find((i) => i.id === itemId) : null;
               const slotStatus = getSlotStatus(slotIndex);
-              const isEmpty = !item;
+              const isNextSlot = slotIndex === nextEmptySlotIndex;
 
               return (
-                <div
-                  key={slotIndex}
-                  className="flex items-center gap-3"
-                  onDragOver={(e) => {
-                    if (!isInteractive || !isEmpty) return;
-                    e.preventDefault();
-                    setDragOverSlot(slotIndex);
-                  }}
-                  onDragLeave={() => setDragOverSlot(null)}
-                  onDrop={(e) =>
-                    isInteractive && isEmpty && handleDropOnSlot(e, slotIndex)
-                  }
-                >
+                <div key={slotIndex} className="flex items-center gap-3">
                   {/* 순위 뱃지 */}
                   <div
                     className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      "size-12 rounded-md flex items-center justify-center text-lg font-bold shrink-0",
                       slotStatus === "correct" &&
                         "bg-primary text-primary-foreground",
                       slotStatus !== "correct" && rankBadgeClass,
+                      isNextSlot &&
+                        isInteractive &&
+                        "bg-primary text-primary-foreground",
                     )}
                   >
                     {slotIndex + 1}
@@ -1219,35 +1186,39 @@ export function RankingBlockContent({
                   {/* 슬롯 */}
                   {item ? (
                     <div
+                      onClick={() => isInteractive && removeFromSlot(slotIndex)}
                       className={cn(
-                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card",
+                        "flex-1 flex items-center px-3 py-3 rounded-md border transition-all bg-card select-none",
                         slotStatus === "correct" && okClass,
+                        isInteractive &&
+                          "cursor-pointer hover:bg-destructive/5 hover:border-destructive/50 active:scale-[0.99]",
                       )}
                     >
-                      <span className="text-sm font-medium flex-1">
+                      <span className="text font-medium flex-1">
                         {item.type === "text" && item.text}
                       </span>
                       {isInteractive && (
-                        <button
-                          type="button"
-                          onClick={() => removeFromSlot(slotIndex)}
-                          className="text-muted-foreground hover:text-foreground ml-2 p-1 -mr-1 rounded hover:bg-muted"
-                        >
-                          <XIcon className="size-4" />
-                        </button>
+                        <XIcon className="size-5 text-muted-foreground" />
                       )}
                     </div>
                   ) : (
                     <div
                       className={cn(
-                        "flex-1 min-h-[40px] rounded-md border-2 border-dashed bg-muted/20 transition-all flex items-center justify-center",
-                        isDragging && "border-muted-foreground/30",
-                        dragOverSlot === slotIndex &&
-                          "border-primary bg-primary/10",
+                        "flex-1 min-h-[40px] py-3 rounded-md border-2 border-dashed bg-muted/20 transition-all flex items-center justify-center",
+                        isNextSlot &&
+                          isInteractive &&
+                          "border-primary bg-primary/10 animate-pulse",
                       )}
                     >
-                      <span className="text-xs text-muted-foreground">
-                        {isInteractive ? "여기에 드래그하세요" : "비어있음"}
+                      <span
+                        className={cn(
+                          "text-sm",
+                          isNextSlot && isInteractive
+                            ? "text-primary font-medium"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {isNextSlot && isInteractive ? "다음 순위" : "비어있음"}
                       </span>
                     </div>
                   )}

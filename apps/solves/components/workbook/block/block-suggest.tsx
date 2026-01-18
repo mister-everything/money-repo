@@ -64,12 +64,40 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
   ref,
   ...props
 }: BlockSuggestProps<T>) {
+  const hasQuestionSuggest =
+    props.blockEditState.question !== undefined &&
+    props.blockEditState.question.trim() !== "" &&
+    props.blockEditState.question.trim() !== props.question.trim();
+
+  const hasContentSuggest =
+    props.blockEditState.content !== undefined &&
+    !equal(props.blockEditState.content, props.content);
+
+  const hasAnswerSuggest =
+    props.blockEditState.answer !== undefined &&
+    !equal(props.blockEditState.answer, props.answer);
+
+  const baseSolution = (props.answer as any)?.solution ?? "";
+  const hasSolutionSuggest =
+    props.blockEditState.solution !== undefined &&
+    props.blockEditState.solution.trim() !== "" &&
+    props.blockEditState.solution.trim() !== String(baseSolution).trim();
+
+  const hasAnySuggest =
+    hasQuestionSuggest ||
+    hasContentSuggest ||
+    hasAnswerSuggest ||
+    hasSolutionSuggest;
+
+  // suggest로 표시할 값이 없으면 껍데기(Card) 자체를 렌더하지 않음
+  if (!hasAnySuggest) return null;
+
   return (
     <Card className={cn("gap-2 shadow-none ", className)} ref={ref}>
       <CardHeader className="px-4 md:px-6">
-        {props.blockEditState?.question && (
+        {hasQuestionSuggest && (
           <BlockQuestion
-            question={props.blockEditState?.question}
+            question={props.blockEditState.question ?? ""}
             mode={props.mode}
             onChangeQuestion={props.onUpdateQuestion}
             isSuggest={true}
@@ -79,12 +107,12 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
         )}
       </CardHeader>
       <CardContent className="px-4 md:px-6">
-        {(props.blockEditState?.content || props.blockEditState?.answer) && (
+        {(hasContentSuggest || hasAnswerSuggest) && (
           <>
             {blockPropsTypeGuard("default", props) ? (
               <DefaultBlockContent
                 content={props.blockEditState.content ?? props.content}
-                answer={props.blockEditState.answer ?? props.answer}
+                answer={props.blockEditState.answer}
                 mode={"edit"}
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
@@ -95,7 +123,7 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
             ) : blockPropsTypeGuard("mcq-multiple", props) ? (
               <McqMultipleBlockContent
                 content={props.blockEditState.content ?? props.content}
-                answer={props.blockEditState.answer ?? props.answer}
+                answer={props.blockEditState.answer}
                 mode={"edit"}
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
@@ -108,7 +136,7 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
             ) : blockPropsTypeGuard("mcq", props) ? (
               <McqSingleBlockContent
                 content={props.blockEditState.content ?? props.content}
-                answer={props.blockEditState.answer ?? props.answer}
+                answer={props.blockEditState.answer}
                 mode={"edit"}
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
@@ -121,7 +149,7 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
             ) : blockPropsTypeGuard("ox", props) ? (
               <OXBlockContent
                 content={props.blockEditState.content ?? props.content}
-                answer={props.blockEditState.answer ?? props.answer}
+                answer={props.blockEditState.answer}
                 mode={"edit"}
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
@@ -132,7 +160,7 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
             ) : blockPropsTypeGuard("ranking", props) ? (
               <RankingBlockContent
                 content={props.blockEditState.content ?? props.content}
-                answer={props.blockEditState.answer ?? props.answer}
+                answer={props.blockEditState.answer}
                 mode={"edit"}
                 onUpdateContent={props.onUpdateContent}
                 onUpdateAnswer={props.onUpdateAnswer}
@@ -151,7 +179,7 @@ function PureBlockSuggest<T extends BlockType = BlockType>({
         )}
       </CardContent>
       <CardFooter className="flex flex-col mt-2 px-4 md:px-6">
-        {props.blockEditState?.solution && (
+        {hasSolutionSuggest && (
           <BlockSolution
             blockId={props.id}
             question={props.question}

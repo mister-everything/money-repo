@@ -6,11 +6,6 @@ import { motion } from "framer-motion";
 import { AlertTriangleIcon, SearchIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 
 import { notify } from "@/components/ui/notify";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +19,6 @@ import {
   ExaSearchResponse,
   ExaSearchSimpleInput,
 } from "@/lib/ai/tools/web-search/types";
-import { cn } from "@/lib/utils";
 
 interface WebSearchToolInvocationProps {
   part: ToolUIPart;
@@ -67,7 +61,7 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
               : "웹 검색 중..."}
           </TextShimmer>
         </div>
-        <div className="relative overflow-hidden rounded-xl border bg-background/50 shadow-xs mx-12">
+        <div className="relative overflow-hidden rounded-xl border bg-background/50 mx-12">
           {/* Browser Header Simulation */}
           <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
             <div className="flex gap-1.5">
@@ -119,7 +113,7 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
         </span>
       </div>
 
-      <div className="relative overflow-hidden rounded-xl border bg-background/50 shadow-xs mx-12">
+      <div className="relative overflow-hidden rounded-xl border bg-background/50 mx-12">
         {/* Browser Header Simulation */}
         <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
           <div className="flex gap-1.5">
@@ -157,7 +151,7 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
                             ),
                           });
                         }}
-                        className="block shadow-sm rounded-lg overflow-hidden ring-1 ring-border/50 cursor-pointer group"
+                        className="block rounded-lg overflow-hidden ring-1 ring-border/50 cursor-pointer group"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -187,76 +181,35 @@ function PureWebSearchToolPart({ part }: WebSearchToolInvocationProps) {
             ) : (
               (result as ExaSearchResponse)?.results?.map((result, i) => {
                 return (
-                  <HoverCard key={i} openDelay={200} closeDelay={0}>
-                    <HoverCardTrigger asChild>
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50"
-                      >
-                        <div className="size-9 rounded-md bg-muted/50 border border-border/50 flex items-center justify-center shrink-0">
-                          <Avatar className="size-5 rounded-sm">
-                            <AvatarImage src={result.favicon} />
-                            <AvatarFallback className="text-[10px]">
-                              {result.title?.slice(0, 1).toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                              {result.title || result.url}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/70 shrink-0">
-                              {new URL(result.url).hostname.replace("www.", "")}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {result.url}
-                          </p>
-                        </div>
-                      </a>
-                    </HoverCardTrigger>
-
-                    <HoverCardContent className="flex flex-col gap-1 p-4 w-80">
+                  <a
+                    href={result.url}
+                    key={i}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50"
+                  >
+                    <div className="size-9 rounded-md bg-muted/50 border border-border/50 flex items-center justify-center shrink-0">
+                      <Avatar className="size-5 rounded-sm">
+                        <AvatarImage src={result.favicon} />
+                        <AvatarFallback className="text-[10px]">
+                          {result.title?.slice(0, 1).toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <Avatar className="size-5 rounded-sm">
-                          <AvatarImage src={result.favicon} />
-                          <AvatarFallback>
-                            {result.title?.slice(0, 1).toUpperCase() || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span
-                          className={cn(
-                            "font-medium text-sm",
-                            !result.title && "truncate",
-                          )}
-                        >
+                        <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                           {result.title || result.url}
                         </span>
+                        <span className="text-[10px] text-muted-foreground/70 shrink-0">
+                          {new URL(result.url).hostname.replace("www.", "")}
+                        </span>
                       </div>
-                      <div className="flex flex-col gap-2 mt-3">
-                        <p className="text-xs text-muted-foreground max-h-60 overflow-y-auto leading-relaxed">
-                          {result.text}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2 pt-2 border-t">
-                          {result.publishedDate && (
-                            <div className="text-[10px] text-muted-foreground">
-                              {new Date(
-                                result.publishedDate,
-                              ).toLocaleDateString()}
-                            </div>
-                          )}
-                          {result.author && (
-                            <div className="text-[10px] text-muted-foreground ml-auto">
-                              By {result.author}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {result.url}
+                      </p>
+                    </div>
+                  </a>
                 );
               })
             )}

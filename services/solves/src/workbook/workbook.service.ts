@@ -11,6 +11,7 @@ import {
   isNull,
   sql,
 } from "drizzle-orm";
+import { ChatThreadTable, WorkbookCreateChatThreadTable } from "../chat/schema";
 import { pgDb } from "../db";
 import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
 import { blockValidate } from "./block-validate";
@@ -108,7 +109,24 @@ export const workBookService = {
   },
 
   deleteWorkBook: async (workBookId: string): Promise<void> => {
-    await pgDb.delete(workBooksTable).where(eq(workBooksTable.id, workBookId));
+    await pgDb.transaction(async (tx) => {
+      // 워크북과 연결된 모든 스레드 조회
+      const connectedThreads = await tx
+        .select({ threadId: WorkbookCreateChatThreadTable.threadId })
+        .from(WorkbookCreateChatThreadTable)
+        .where(eq(WorkbookCreateChatThreadTable.workbookId, workBookId));
+
+      // 연결된 스레드 삭제
+      if (connectedThreads.length > 0) {
+        const threadIds = connectedThreads.map((t) => t.threadId);
+        await tx
+          .delete(ChatThreadTable)
+          .where(inArray(ChatThreadTable.id, threadIds));
+      }
+
+      // 워크북 삭제
+      await tx.delete(workBooksTable).where(eq(workBooksTable.id, workBookId));
+    });
   },
   softDeleteWorkBook: async (
     workBookId: string,

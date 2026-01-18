@@ -186,7 +186,7 @@ export function WorkbookCard({
           ) : session?.status === "in-progress" ? (
             <Badge
               variant="secondary"
-              className="w-fit bg-blue-50 dark:bg-blue-950 text-blue-500 dark:text-blue-100 rounded-full py-1"
+              className="w-fit bg-blue-100 dark:bg-blue-950 text-blue-500 rounded-full py-1"
             >
               풀이 중
             </Badge>
@@ -195,7 +195,7 @@ export function WorkbookCard({
           ) : !published ? (
             <Badge
               variant="secondary"
-              className="w-fit  bg-blue-50 dark:bg-blue-950 text-blue-500 :dark:text-blue-100 rounded-full py-1"
+              className="w-fit bg-blue-100 dark:bg-blue-950 text-blue-500 rounded-full py-1"
             >
               제작중
             </Badge>

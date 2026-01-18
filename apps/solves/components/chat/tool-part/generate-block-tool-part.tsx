@@ -6,6 +6,7 @@ import {
 } from "@service/solves/shared";
 import { normalizeNewLine } from "@workspace/util";
 import { ToolUIPart } from "ai";
+import { motion } from "framer-motion";
 import { AlertTriangleIcon, CheckIcon, CircleIcon, XIcon } from "lucide-react";
 import { ReactNode, useCallback, useMemo } from "react";
 import { toast } from "sonner";
@@ -13,6 +14,8 @@ import { Streamdown } from "streamdown";
 import { useShallow } from "zustand/shallow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import {
   GEN_BLOCK_TOOL_NAMES,
@@ -56,7 +59,7 @@ function BaseCard({
   return (
     <div
       className={cn(
-        "text-sm rounded-lg border bg-background p-4 shadow-sm space-y-3 fade-300",
+        "text-sm rounded-lg border bg-background p-4 space-y-3 fade-1000",
         (isPending || disabled) &&
           "text-muted-foreground border-secondary shadow-none bg-secondary",
         isPending && "animate-pulse",
@@ -71,6 +74,145 @@ function BaseCard({
         )}
       </div>
       {children}
+    </div>
+  );
+}
+
+function BuildingBlock({
+  className,
+  delay = 0,
+}: {
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <div className={cn("relative w-full h-full", className)}>
+      {/* 1. The Resulting Skeleton Block */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{
+          opacity: [0, 1, 1, 0],
+          scale: [0.95, 1, 1, 0.95],
+        }}
+        transition={{
+          duration: 6,
+          times: [0.2, 0.3, 0.8, 1],
+          repeat: Number.POSITIVE_INFINITY,
+          delay: delay,
+          ease: "easeInOut",
+        }}
+        className="absolute inset-0 overflow-hidden"
+      >
+        <Skeleton className="w-full h-full rounded-xl opacity-50" />
+      </motion.div>
+
+      {/* 2. The Selection Box (Dashed) */}
+      <motion.div
+        initial={{ width: 0, height: 0, opacity: 0 }}
+        animate={{
+          width: ["0%", "100%", "100%", "100%"],
+          height: ["0%", "100%", "100%", "100%"],
+          opacity: [0, 1, 0, 0],
+        }}
+        transition={{
+          duration: 6,
+          times: [0, 0.15, 0.25, 1],
+          repeat: Number.POSITIVE_INFINITY,
+          delay: delay,
+          ease: "easeInOut",
+        }}
+        className="absolute top-0 left-0 border-2 border-dashed border-primary bg-primary/5 z-10 rounded-lg backdrop-blur-[1px]"
+      />
+    </div>
+  );
+}
+
+function LayoutOne() {
+  return (
+    <div className="grid grid-cols-2 gap-4 w-full h-full">
+      {/* Left Column - Big Block */}
+      <BuildingBlock className="h-full" delay={0} />
+
+      {/* Right Column - Two Stacked Blocks */}
+      <div className="flex flex-col gap-4 h-full">
+        <BuildingBlock className="h-full" delay={1.5} />
+        <BuildingBlock className="h-full" delay={3} />
+      </div>
+    </div>
+  );
+}
+
+function LayoutTwo() {
+  return (
+    <div className="flex flex-col gap-4 w-full h-full">
+      {/* Top - Big Block */}
+      <BuildingBlock className="h-1/2" delay={0} />
+
+      {/* Bottom - Two Columns */}
+      <div className="grid grid-cols-2 gap-4 h-1/2">
+        <BuildingBlock className="h-full" delay={1.5} />
+        <BuildingBlock className="h-full" delay={3} />
+      </div>
+    </div>
+  );
+}
+
+function LayoutThree() {
+  return (
+    <div className="grid grid-cols-3 grid-rows-2 gap-4 w-full h-full">
+      <BuildingBlock className="col-span-2" delay={0} />
+      <BuildingBlock className="col-span-1" delay={1.2} />
+      <BuildingBlock className="col-span-1" delay={2.4} />
+      <BuildingBlock className="col-span-2" delay={3.6} />
+    </div>
+  );
+}
+
+function PendingGenerationUI({
+  type,
+  part,
+}: {
+  type: GEN_BLOCK_TOOL_NAMES;
+  part: ToolUIPart;
+}) {
+  const blockType = toolNameToBlockType[type];
+  const displayName = getBlockDisplayName(blockType);
+  const input = part.input as any;
+  const question = input?.question;
+
+  const Layout = useMemo(() => {
+    const layouts = [LayoutOne, LayoutTwo, LayoutThree];
+    return layouts[Math.floor(Math.random() * layouts.length)];
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-3 min-w-[300px] w-full fade-300">
+      <div className="flex items-center text-muted-foreground gap-2 text-sm">
+        <TextShimmer>문제 생성 중</TextShimmer>
+      </div>
+      <div className="relative overflow-hidden rounded-xl border bg-background/50 h-[320px] flex flex-col">
+        <div className="absolute inset-x-0 top-0 z-10 h-12 bg-linear-to-b from-background to-transparent" />
+
+        <div className="flex-1 overflow-hidden relative p-4">
+          <Layout />
+        </div>
+
+        {/* Fixed Status Footer */}
+        <div className="relative z-20 p-4 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <span>
+              <GradualSpacingText
+                text={`${displayName} 문제 생성하고 있어요`}
+              />
+            </span>
+          </div>
+          {question && (
+            <div className="text-xs text-muted-foreground truncate">
+              <GradualSpacingText text={question} />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -347,6 +489,11 @@ export function GenerateBlockToolPart({
     }
   }, [input, type]);
 
+  if (isPending && !part.errorText) {
+    // if ((isPending && !part.errorText) || true) {
+    return <PendingGenerationUI type={type} part={part} />;
+  }
+
   return (
     <BaseCard
       title={getBlockDisplayName(blockType)}
@@ -365,7 +512,7 @@ export function GenerateBlockToolPart({
           variant={appendedBlock ? "ghost" : "default"}
           size="sm"
           disabled={appendedBlock}
-          onClick={() => handleAppendBlock(output.id, input)}
+          onClick={() => output && handleAppendBlock(output.id, input)}
         >
           {appendedBlock ? (
             <>

@@ -144,7 +144,11 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
       if (!prev) return prev;
       const next = { ...prev };
       delete next[field];
-      return Object.keys(next).length ? next : null;
+      // undefined 값만 남는 케이스까지 정리해서 껍데기 렌더를 방지
+      const cleaned = Object.fromEntries(
+        Object.entries(next).filter(([, v]) => v !== undefined),
+      ) as BlockEditState<T>;
+      return Object.keys(cleaned).length ? cleaned : null;
     });
   }, []);
 
