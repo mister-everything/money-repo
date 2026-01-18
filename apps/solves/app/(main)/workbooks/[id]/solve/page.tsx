@@ -38,7 +38,7 @@ export default async function Page({
 
   return (
     <div className="flex w-full px-4">
-      <SidebarController openMounted={false} openUnmounted={true} />
+      <SidebarController openMounted={false} />
       <WorkBookSolve
         workBook={book}
         initialSession={workbookSession}
