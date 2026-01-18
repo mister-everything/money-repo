@@ -36,6 +36,7 @@ export function BlockSolution<T extends BlockType = BlockType>({
   content,
   submit,
   isCorrect,
+  isSuggest = false,
 }: {
   blockId?: string;
   question: string;
@@ -46,6 +47,7 @@ export function BlockSolution<T extends BlockType = BlockType>({
   answer?: BlockAnswer<T>;
   submit?: BlockAnswerSubmit<T>;
   isCorrect?: boolean;
+  isSuggest?: boolean;
 }) {
   const { chatModel, setChatModel } = useAiStore();
   useChatModelList({
@@ -55,7 +57,7 @@ export function BlockSolution<T extends BlockType = BlockType>({
     },
   });
 
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(isSuggest);
   const [isSending, setIsSending] = useState(false);
   const handleToggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -369,7 +371,7 @@ export function BlockSolution<T extends BlockType = BlockType>({
             </p>
             <div className="mt-2">
               <ExplainInput
-                input={solution}
+                input={answer?.solution ?? ""}
                 onChange={(text) => {
                   onChangeSolution?.(text);
                 }}
@@ -384,9 +386,23 @@ export function BlockSolution<T extends BlockType = BlockType>({
           </div>
         ) : (
           <p className="px-2 text-xs text-muted-foreground truncate min-w-0">
-            {solution}
+            {answer?.solution ?? "해설이 없습니다."}
           </p>
         )}
+      </div>
+    );
+
+  if (isSuggest)
+    return (
+      <div className="px-2 pb-2 flex flex-col gap-4 text-muted-foreground text-xs">
+        <div className="flex gap-2">
+          <span className="w-16 text-muted-foreground/50 font-semibold">
+            해설
+          </span>
+          <p className="text-muted-foreground whitespace-pre-wrap">
+            {solution.trim() || "해설이 없습니다."}
+          </p>
+        </div>
       </div>
     );
 

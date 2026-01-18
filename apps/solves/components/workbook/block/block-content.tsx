@@ -43,6 +43,7 @@ type BlockContentProps<T extends BlockType = BlockType> = {
   onUpdateAnswer?: (answer: StateUpdate<BlockAnswer<T>>) => void;
   answer?: BlockAnswer<T>;
   submit?: BlockAnswerSubmit<T>;
+  isSuggest?: boolean;
 };
 // 주관식 문제
 export function DefaultBlockContent({
@@ -52,6 +53,7 @@ export function DefaultBlockContent({
   onUpdateAnswer,
   onUpdateSubmitAnswer,
   isCorrect,
+  isSuggest = false,
 }: BlockContentProps<"default">) {
   const handleChangeSubmitAnswer = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,26 +131,39 @@ export function DefaultBlockContent({
         )}
         {mode == "edit" && (
           <div className="flex flex-wrap items-center gap-2">
-            {answer?.answer.map((correctAnswer, index) => (
-              <Button
-                onClick={() => removeAnswer(index)}
-                variant="outline"
-                className={okClass}
-                key={index}
-              >
-                {correctAnswer}
-                <XIcon />
-              </Button>
-            ))}
-            {(answer?.answer.length ?? 0) < DEFAULT_BLOCK_MAX_ANSWERS && (
-              <Button
-                onClick={addAnswer}
-                variant="outline"
-                className="border-dashed"
-              >
-                <PlusIcon /> 정답 추가
-              </Button>
+            {answer?.answer.map((correctAnswer, index) =>
+              isSuggest ? (
+                <div
+                  key={index}
+                  className={cn(
+                    okClass,
+                    "inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium",
+                  )}
+                >
+                  {correctAnswer}
+                </div>
+              ) : (
+                <Button
+                  onClick={() => removeAnswer(index)}
+                  variant="outline"
+                  className={okClass}
+                  key={index}
+                >
+                  {correctAnswer}
+                  <XIcon />
+                </Button>
+              ),
             )}
+            {(answer?.answer.length ?? 0) < DEFAULT_BLOCK_MAX_ANSWERS &&
+              !isSuggest && (
+                <Button
+                  onClick={addAnswer}
+                  variant="outline"
+                  className="border-dashed"
+                >
+                  <PlusIcon /> 정답 추가
+                </Button>
+              )}
           </div>
         )}
       </div>
@@ -165,7 +180,9 @@ export function McqMultipleBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
+  isSuggest = false,
 }: BlockContentProps<"mcq-multiple">) {
+  const options = content.options ?? [];
   const addOption = useCallback(async () => {
     if ((content.options.length ?? 0) >= MCQ_BLOCK_MAX_OPTIONS)
       return toast.warning(
@@ -258,7 +275,7 @@ export function McqMultipleBlockContent({
 
   return (
     <div className="flex flex-col gap-3">
-      {content.options.map((option, index) => {
+      {options.map((option, index) => {
         if (option.type == "text") {
           const status =
             mode == "review" && submit?.answer.includes(option.id)
@@ -272,10 +289,14 @@ export function McqMultipleBlockContent({
           return (
             <div
               key={option.id}
-              onClick={() => handleOptionSelect(option.id)}
+              onClick={
+                isSuggest ? undefined : () => handleOptionSelect(option.id)
+              }
               className={cn(
                 "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
-                (mode == "edit" || mode == "solve") && "cursor-pointer",
+                !isSuggest &&
+                  (mode == "edit" || mode == "solve") &&
+                  "cursor-pointer",
                 getSelectedClass(option.id),
               )}
             >
@@ -288,6 +309,7 @@ export function McqMultipleBlockContent({
                   <Checkbox
                     id={option.id}
                     checked={answer?.answer.includes(option.id)}
+                    disabled={isSuggest}
                     className="mr-3 rounded-sm border-border bg-card"
                   />
                 ) : (
@@ -309,7 +331,7 @@ export function McqMultipleBlockContent({
                 </span>
               </div>
               <div className="flex-1" />
-              {mode == "edit" ? (
+              {mode == "edit" && !isSuggest ? (
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -339,23 +361,25 @@ export function McqMultipleBlockContent({
         );
       })}
       {mode == "preview" &&
-        content.options.length === 0 &&
+        options.length === 0 &&
         Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
             className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
           />
         ))}
-      {mode == "edit" && content.options.length <= MCQ_BLOCK_MIN_OPTIONS && (
-        <Button
-          variant="outline"
-          size="lg"
-          className="border-dashed w-full py-6!"
-          onClick={addOption}
-        >
-          <PlusIcon /> 보기 추가
-        </Button>
-      )}
+      {mode == "edit" &&
+        options.length <= MCQ_BLOCK_MIN_OPTIONS &&
+        !isSuggest && (
+          <Button
+            variant="outline"
+            size="lg"
+            className="border-dashed w-full py-6!"
+            onClick={addOption}
+          >
+            <PlusIcon /> 보기 추가
+          </Button>
+        )}
     </div>
   );
 }
@@ -369,7 +393,9 @@ export function McqSingleBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
+  isSuggest = false,
 }: BlockContentProps<"mcq">) {
+  const options = content.options ?? [];
   const addOption = useCallback(async () => {
     if ((content.options.length ?? 0) >= MCQ_BLOCK_MAX_OPTIONS)
       return toast.warning(
@@ -440,7 +466,7 @@ export function McqSingleBlockContent({
 
   return (
     <div className="flex flex-col gap-3">
-      {content.options.map((option, index) => {
+      {options.map((option, index) => {
         if (option.type == "text") {
           const status =
             mode == "review" && submit?.answer == option.id
@@ -454,10 +480,14 @@ export function McqSingleBlockContent({
           return (
             <div
               key={option.id}
-              onClick={() => handleOptionSelect(option.id)}
+              onClick={
+                isSuggest ? undefined : () => handleOptionSelect(option.id)
+              }
               className={cn(
                 "flex items-center gap-3 rounded-lg border p-4 transition-colors select-none",
-                (mode == "edit" || mode == "solve") && "cursor-pointer",
+                !isSuggest &&
+                  (mode == "edit" || mode == "solve") &&
+                  "cursor-pointer",
                 getSelectedClass(option.id),
               )}
             >
@@ -470,6 +500,7 @@ export function McqSingleBlockContent({
                   <Checkbox
                     id={option.id}
                     checked={answer?.answer == option.id}
+                    disabled={isSuggest}
                     className="mr-3 rounded-sm border-border bg-card"
                   />
                 ) : (
@@ -492,7 +523,7 @@ export function McqSingleBlockContent({
                 </span>
               </div>
               <div className="flex-1" />
-              {mode == "edit" ? (
+              {mode == "edit" && !isSuggest ? (
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -522,23 +553,25 @@ export function McqSingleBlockContent({
         );
       })}
       {mode == "preview" &&
-        content.options.length === 0 &&
+        options.length === 0 &&
         Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
             className="w-full h-12 rounded-lg border border-dashed bg-muted-foreground/5"
           />
         ))}
-      {mode == "edit" && content.options.length <= MCQ_BLOCK_MIN_OPTIONS && (
-        <Button
-          variant="outline"
-          size="lg"
-          className="border-dashed w-full py-6!"
-          onClick={addOption}
-        >
-          <PlusIcon /> 보기 추가
-        </Button>
-      )}
+      {mode == "edit" &&
+        options.length <= MCQ_BLOCK_MIN_OPTIONS &&
+        !isSuggest && (
+          <Button
+            variant="outline"
+            size="lg"
+            className="border-dashed w-full py-6!"
+            onClick={addOption}
+          >
+            <PlusIcon /> 보기 추가
+          </Button>
+        )}
     </div>
   );
 }
@@ -551,6 +584,7 @@ export function OXBlockContent({
   answer,
   isCorrect,
   submit,
+  isSuggest = false,
 }: BlockContentProps<"ox">) {
   const handleClick = useCallback(
     (value: boolean) => {
@@ -592,7 +626,8 @@ export function OXBlockContent({
           "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
           getSelectedClass(true),
         )}
-        onClick={() => handleClick(true)}
+        onClick={isSuggest ? undefined : () => handleClick(true)}
+        disabled={isSuggest}
       >
         <CircleIcon className="size-14 md:size-24" />
       </Button>
@@ -602,7 +637,8 @@ export function OXBlockContent({
           "text-muted-foreground flex h-full w-full items-center rounded-lg transition-colors",
           getSelectedClass(false),
         )}
-        onClick={() => handleClick(false)}
+        onClick={isSuggest ? undefined : () => handleClick(false)}
+        disabled={isSuggest}
       >
         <XIcon className="size-14 md:size-24" />
       </Button>
@@ -618,6 +654,7 @@ export function RankingBlockContent({
   onUpdateAnswer,
   onUpdateContent,
   onUpdateSubmitAnswer,
+  isSuggest = false,
 }: BlockContentProps<"ranking">) {
   const items = content.items || [];
   const slotCount = items.length;
@@ -761,7 +798,7 @@ export function RankingBlockContent({
     [mode, answer?.order, submit?.order],
   );
 
-  const isInteractive = mode === "edit" || mode === "solve";
+  const isInteractive = (mode === "edit" || mode === "solve") && !isSuggest;
   const rankBadgeClass = "bg-secondary text-secondary-foreground";
   const filledCount = currentOrder.filter((id) => id !== "").length;
 
@@ -807,7 +844,7 @@ export function RankingBlockContent({
               key={item.id}
               draggable={isInteractive}
               onDragStart={(e) => isInteractive && handleDragStart(e, item.id)}
-              onClick={() => removeItem(item.id)}
+              onClick={() => isInteractive && removeItem(item.id)}
               onDragEnd={handleDragEnd}
               className={cn(
                 "px-3 py-1.5 rounded-md border bg-card text-sm font-medium transition-all flex items-center gap-1 select-none",
@@ -816,7 +853,7 @@ export function RankingBlockContent({
               )}
             >
               {item.type === "text" && item.text}
-              {mode === "edit" && (
+              {mode === "edit" && isInteractive && (
                 <span
                   role="button"
                   className="ml-1 text-muted-foreground p-0.5 rounded"
@@ -826,16 +863,18 @@ export function RankingBlockContent({
               )}
             </div>
           ))}
-          {mode === "edit" && items.length < RANKING_BLOCK_MAX_ITEMS && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-dashed h-8"
-              onClick={addItem}
-            >
-              <PlusIcon className="size-3 mr-1" /> 추가
-            </Button>
-          )}
+          {mode === "edit" &&
+            items.length < RANKING_BLOCK_MAX_ITEMS &&
+            !isSuggest && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-dashed h-8"
+                onClick={addItem}
+              >
+                <PlusIcon className="size-3 mr-1" /> 추가
+              </Button>
+            )}
         </div>
       </div>
 
