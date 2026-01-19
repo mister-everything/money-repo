@@ -27,7 +27,6 @@ import {
   workBookUserFirstScoresTable,
 } from "./schema";
 import {
-  SessionInProgress,
   SessionStatus,
   SessionSubmitted,
   UpdateBlock,
@@ -569,220 +568,22 @@ export const workBookService = {
   },
 
   /**
-   * 문제집 세션 시작 또는 재개
-   * 진행 중인 세션이 있으면 해당 세션을 반환하고, 없으면 새로 생성
-   * @param workBookId 문제집 I
-   * @param userId 사용자 ID
-   * @returns 세션 정보 (submitId, startTime, savedAnswer
-   */
-  startOrResumeWorkBookSession: async (
-    workBookId: string,
-    userId: string,
-  ): Promise<{
-    session: SessionInProgress;
-    isNewSession: boolean;
-  }> => {
-    const session: SessionInProgress = {
-      status: "in-progress",
-      submitId: "",
-      startTime: new Date(),
-    };
-    let isNewSession = false;
-
-    return pgDb.transaction(async (tx) => {
-      const [existingSession] = await tx
-        .select({
-          id: workBookSubmitsTable.id,
-          startTime: workBookSubmitsTable.startTime,
-        })
-        .from(workBookSubmitsTable)
-        .innerJoin(
-          workBooksTable,
-          eq(workBookSubmitsTable.workBookId, workBooksTable.id),
-        )
-        .where(
-          and(
-            eq(workBookSubmitsTable.workBookId, workBookId),
-            eq(workBookSubmitsTable.ownerId, userId),
-            isNull(workBookSubmitsTable.endTime),
-            eq(workBookSubmitsTable.active, true),
-          ),
-        )
-        .orderBy(desc(workBookSubmitsTable.startTime))
-        .limit(1);
-      if (existingSession) {
-        session.submitId = existingSession.id;
-        session.startTime = existingSession.startTime;
-      } else {
-        isNewSession = true;
-
-        await tx
-          .update(workBookSubmitsTable)
-          .set({ active: false })
-          .where(
-            and(
-              eq(workBookSubmitsTable.workBookId, workBookId),
-              eq(workBookSubmitsTable.ownerId, userId),
-            ),
-          );
-
-        const [row] = await tx
-          .select({
-            blockCount: count(blocksTable.id),
-          })
-          .from(blocksTable)
-          .where(eq(blocksTable.workBookId, workBookId));
-
-        const [newSession] = await tx
-          .insert(workBookSubmitsTable)
-          .values({
-            workBookId,
-            ownerId: userId,
-            startTime: new Date(),
-            active: true,
-            blockCount: row.blockCount,
-            correctBlocks: 0,
-          })
-          .returning({
-            id: workBookSubmitsTable.id,
-            startTime: workBookSubmitsTable.startTime,
-          });
-
-        session.submitId = newSession.id;
-        session.startTime = newSession.startTime;
-      }
-      return {
-        session,
-        isNewSession,
-      };
-    });
-  },
-
-  resetWorkBookSession: async ({
-    userId,
-    submitId,
-  }: {
-    userId: string;
-    submitId: string;
-  }): Promise<void> => {
-    return pgDb.transaction(async (tx) => {
-      const result = await tx
-        .update(workBookSubmitsTable)
-        .set({
-          startTime: new Date(),
-          endTime: null,
-        })
-        .where(
-          and(
-            eq(workBookSubmitsTable.id, submitId),
-            eq(workBookSubmitsTable.ownerId, userId),
-            eq(workBookSubmitsTable.active, true),
-          ),
-        );
-      if (result.rowCount === 0) {
-        throw new PublicError("세션을 찾을 수 없습니다.");
-      }
-      await tx
-        .delete(workBookBlockAnswerSubmitsTable)
-        .where(and(eq(workBookBlockAnswerSubmitsTable.submitId, submitId)));
-    });
-  },
-
-  /**
-   * 답안 진행 상황 저장 (자동 저장)
-   * @param submitId 세션 ID
-   * @param answers 답안 목록 (blockId -> answer)
-   */
-  saveAnswerProgress: async (
-    userId: string,
-    submitId: string,
-    {
-      answers,
-      deleteAnswers,
-    }: {
-      answers: Record<string, BlockAnswerSubmit>;
-      deleteAnswers: string[];
-    },
-  ): Promise<void> => {
-    const [session] = await pgDb
-      .select({
-        id: workBookSubmitsTable.id,
-      })
-      .from(workBookSubmitsTable)
-      .where(
-        and(
-          eq(workBookSubmitsTable.id, submitId),
-          eq(workBookSubmitsTable.ownerId, userId),
-          eq(workBookSubmitsTable.active, true),
-        ),
-      );
-    if (!session) {
-      throw new PublicError("세션을 찾을 수 없습니다.");
-    }
-
-    return pgDb.transaction(async (tx) => {
-      if (deleteAnswers.length > 0) {
-        await tx
-          .delete(workBookBlockAnswerSubmitsTable)
-          .where(
-            inArray(workBookBlockAnswerSubmitsTable.blockId, deleteAnswers),
-          );
-      }
-      const answerEntries = Object.entries(answers);
-
-      if (answerEntries.length > 0) {
-        await tx
-          .insert(workBookBlockAnswerSubmitsTable)
-          .values(
-            answerEntries.map(([blockId, answer]) => ({
-              blockId,
-              submitId,
-              answer,
-              isCorrect: false, // 자동 저장 시에는 아직 채점 안 함
-            })),
-          )
-          .onConflictDoUpdate({
-            target: [
-              workBookBlockAnswerSubmitsTable.blockId,
-              workBookBlockAnswerSubmitsTable.submitId,
-            ],
-            set: {
-              answer: sql`excluded.answer`,
-            },
-          });
-      }
-    });
-  },
-
-  /**
-   * 문제집 세션 제출 및 채점
-   * @param submitId 세션 ID
+   * 문제집 제출 및 채점 (한 번에 처리)
+   * 세션 생성과 답안 저장, 채점을 모두 한 트랜잭션에서 처리
    * @param workBookId 문제집 ID
-   * @param answers 최종 답안
-   * @returns 제출 결과
+   * @param userId 사용자 ID
+   * @param answers 사용자 답안 (blockId -> answer)
+   * @param startTime 풀이 시작 시간 (클라이언트에서 전달)
+   * @returns 제출 결과 (submitId)
    */
   submitWorkBookSession: async (
+    workBookId: string,
     userId: string,
-    submitId: string,
-  ): Promise<void> => {
+    answers: Record<string, BlockAnswerSubmit>,
+    startTime: Date,
+  ): Promise<{ submitId: string }> => {
     return pgDb.transaction(async (tx) => {
-      const locked = await tx.execute<{
-        workBookId: string;
-        endTime: Date | null;
-      }>(sql`
-        SELECT
-          ${workBookSubmitsTable.workBookId} as "workBookId",
-          ${workBookSubmitsTable.endTime} as "endTime"
-        FROM ${workBookSubmitsTable}
-        WHERE ${workBookSubmitsTable.id} = ${submitId}
-          AND ${workBookSubmitsTable.ownerId} = ${userId}
-        FOR UPDATE
-      `);
-
-      const session = locked.rows[0];
-      if (!session) throw new PublicError("세션을 찾을 수 없습니다.");
-      if (session.endTime) throw new PublicError("이미 제출된 세션 입니다.");
-
+      // 문제집 블록 조회
       const blocks = await tx
         .select({
           id: blocksTable.id,
@@ -791,26 +592,34 @@ export const workBookService = {
           type: blocksTable.type,
         })
         .from(blocksTable)
-        .where(eq(blocksTable.workBookId, session.workBookId));
+        .where(eq(blocksTable.workBookId, workBookId));
 
-      const submits = await tx
-        .select({
-          blockId: workBookBlockAnswerSubmitsTable.blockId,
-          answer: workBookBlockAnswerSubmitsTable.answer,
+      if (blocks.length === 0) {
+        throw new PublicError("문제집에 문제가 없습니다.");
+      }
+
+      const now = new Date();
+
+      // 제출 세션 생성 (endTime과 함께)
+      const [newSession] = await tx
+        .insert(workBookSubmitsTable)
+        .values({
+          workBookId,
+          ownerId: userId,
+          startTime,
+          endTime: now,
+          blockCount: blocks.length,
+          correctBlocks: 0, // 아래에서 업데이트
         })
-        .from(workBookBlockAnswerSubmitsTable)
-        .where(eq(workBookBlockAnswerSubmitsTable.submitId, submitId));
+        .returning({
+          id: workBookSubmitsTable.id,
+        });
 
-      const submitByBlockId = submits.reduce(
-        (acc, submit) => {
-          acc[submit.blockId] = submit.answer;
-          return acc;
-        },
-        {} as Record<string, BlockAnswerSubmit>,
-      );
+      const submitId = newSession.id;
 
+      // 답안 채점 및 저장
       const saveSubmits = blocks.map((block) => {
-        const submittedAnswer = submitByBlockId[block.id];
+        const submittedAnswer = answers[block.id];
         const isCorrect = block.answer
           ? checkAnswer(block.answer as unknown as BlockAnswer, submittedAnswer)
           : false;
@@ -822,19 +631,7 @@ export const workBookService = {
         };
       });
 
-      await tx
-        .insert(workBookBlockAnswerSubmitsTable)
-        .values(saveSubmits)
-        .onConflictDoUpdate({
-          target: [
-            workBookBlockAnswerSubmitsTable.blockId,
-            workBookBlockAnswerSubmitsTable.submitId,
-          ],
-          set: {
-            answer: sql`excluded.answer`,
-            isCorrect: sql`excluded.is_correct`,
-          },
-        });
+      await tx.insert(workBookBlockAnswerSubmitsTable).values(saveSubmits);
 
       const correctBlocksCount = saveSubmits.filter(
         (submit) => submit.isCorrect,
@@ -845,24 +642,22 @@ export const workBookService = {
           ? Math.round((correctBlocksCount * 100) / totalBlocks)
           : 0;
 
-      const now = new Date();
-
+      // 정답 개수 업데이트
       await tx
         .update(workBookSubmitsTable)
         .set({
-          endTime: now,
-          blockCount: totalBlocks,
           correctBlocks: correctBlocksCount,
         })
         .where(eq(workBookSubmitsTable.id, submitId));
 
+      // 첫 제출 기록 (이미 있으면 무시)
       const inserted = await tx
         .insert(workBookUserFirstScoresTable)
         .values({
-          workBookId: session.workBookId,
+          workBookId,
           ownerId: userId,
           score,
-          submitId: submitId,
+          submitId,
           firstSubmittedAt: now,
           createdAt: now,
         })
@@ -876,6 +671,7 @@ export const workBookService = {
           workBookId: workBookUserFirstScoresTable.workBookId,
         });
 
+      // 첫 제출인 경우 통계 업데이트
       if (inserted.length > 0) {
         await tx
           .update(workBooksTable)
@@ -883,30 +679,27 @@ export const workBookService = {
             firstScoreSum: sql`${workBooksTable.firstScoreSum} + ${score}`,
             firstSolverCount: sql`${workBooksTable.firstSolverCount} + 1`,
           })
-          .where(eq(workBooksTable.id, session.workBookId));
+          .where(eq(workBooksTable.id, workBookId));
       }
+
+      return { submitId };
     });
   },
 
   /**
-   * 풀고있는 문제집
+   * 제출한 문제집 목록 조회
    * @param userId 사용자 ID
-   * @returns 풀고있는 문제집 목록
+   * @returns 제출한 문제집 목록
    */
   searchWorkBookSessions: async (
     userId: string,
     options?: {
       page?: number;
       limit?: number;
-      active?: boolean;
     },
   ): Promise<WorkBookSession[]> => {
-    const { page = 1, limit = 100, active = true } = options ?? {};
+    const { page = 1, limit = 100 } = options ?? {};
     const offset = (page - 1) * limit;
-
-    const where = [eq(workBookSubmitsTable.ownerId, userId)];
-
-    where.push(eq(workBookSubmitsTable.active, Boolean(active)));
 
     const rows = await pgDb
       .select({
@@ -926,7 +719,7 @@ export const workBookService = {
         ),
       )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(and(...where))
+      .where(eq(workBookSubmitsTable.ownerId, userId))
       .orderBy(desc(workBookSubmitsTable.startTime))
       .offset(offset)
       .limit(limit);
@@ -944,13 +737,13 @@ export const workBookService = {
       return {
         workBook: workBook as WorkBookWithoutAnswer,
         session: {
-          status: endTime ? "submitted" : "in-progress",
+          status: "submitted",
           startTime: startTime,
           submitId: submitId,
           endTime: endTime,
           totalBlocks: blockCount,
           correctBlocks: correctBlocks,
-        } as SessionInProgress | SessionSubmitted,
+        } as SessionSubmitted,
       };
     });
   },
@@ -1035,6 +828,12 @@ export const workBookService = {
     return rows;
   },
 
+  /**
+   * 문제집 세션 상태 조회
+   * @param workBookId 문제집 ID
+   * @param userId 사용자 ID
+   * @returns 세션 상태 (not-started 또는 submitted)
+   */
   getSessionStatusByWorkBookId: async (
     workBookId: string,
     userId: string,
@@ -1052,18 +851,12 @@ export const workBookService = {
         and(
           eq(workBookSubmitsTable.workBookId, workBookId),
           eq(workBookSubmitsTable.ownerId, userId),
-          eq(workBookSubmitsTable.active, true),
         ),
       )
       .orderBy(desc(workBookSubmitsTable.startTime))
       .limit(1);
+
     if (!session) return { status: "not-started" };
-    if (!session.endTime)
-      return {
-        status: "in-progress",
-        startTime: session.startTime,
-        submitId: session.submitId,
-      };
 
     return {
       status: "submitted",
@@ -1073,24 +866,6 @@ export const workBookService = {
       totalBlocks: session.blockCount,
       correctBlocks: session.correctBlocks,
     };
-  },
-
-  unActiveSessionByWorkBookId: async (
-    userId: string,
-    workBookId: string,
-  ): Promise<void> => {
-    await pgDb
-      .update(workBookSubmitsTable)
-      .set({
-        active: false,
-      })
-      .where(
-        and(
-          eq(workBookSubmitsTable.workBookId, workBookId),
-          eq(workBookSubmitsTable.ownerId, userId),
-          eq(workBookSubmitsTable.active, true),
-        ),
-      );
   },
   toggleLikeWorkBook: async (
     workBookId: string,

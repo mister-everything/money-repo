@@ -50,6 +50,13 @@
       "when": 1766108550427,
       "tag": "0006_fat_ronan",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1768831389100,
+      "tag": "0007_pale_ken_ellis",
+      "breakpoints": true
     }
   ]
 }

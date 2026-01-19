@@ -97,6 +97,7 @@ export const blocksTable = solvesSchema.table("blocks", {
 
 /**
  * 문제집 제출 테이블
+ * 제출 완료된 세션만 저장됨 (중간 저장 없음)
  */
 export const workBookSubmitsTable = solvesSchema.table("work_book_submits", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -107,11 +108,10 @@ export const workBookSubmitsTable = solvesSchema.table("work_book_submits", {
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
   startTime: timestamp("start_time").notNull().defaultNow(), // 시작 시간
-  endTime: timestamp("end_time"), // 종료 시간 (진행 중이면 null)
+  endTime: timestamp("end_time").notNull().defaultNow(), // 종료 시간 (제출 완료 시점)
   createdAt: timestamp("created_at").notNull().defaultNow(),
   blockCount: integer("block_count").notNull().default(0), // 제출 완료했을때 기준 문제 개수
   correctBlocks: integer("correct_blocks").notNull().default(0), // 정답 문제 개수
-  active: boolean("active").notNull().default(false), // 활성 여부
 });
 
 export const workBookUserFirstScoresTable = solvesSchema.table(
