@@ -2,10 +2,9 @@
 
 import { isNull } from "@workspace/util";
 import { CheckIcon } from "lucide-react";
-import { ComponentProps, useMemo, useState } from "react";
+import { ComponentProps, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CircularProgress } from "@/components/ui/circular-progress";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,6 @@ type SolveModeSelectorProps = {
   onModeSelect?: (mode: "all" | "sequential") => void;
   initialMode?: "all" | "sequential";
   totalCount?: number;
-  currentCount?: number;
 } & ComponentProps<"div">;
 
 export function SolveModeSelector({
@@ -22,19 +20,11 @@ export function SolveModeSelector({
   className,
   initialMode,
   totalCount = 0,
-  currentCount = 0,
   ...cardProps
 }: SolveModeSelectorProps) {
   const [mode, setMode] = useState<"all" | "sequential" | undefined>(
     initialMode,
   );
-
-  const progress = useMemo(() => {
-    if (totalCount === 0) return 0;
-    return Math.round((currentCount / totalCount) * 100);
-  }, [currentCount, totalCount]);
-
-  const hasProgress = currentCount > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,6 +34,7 @@ export function SolveModeSelector({
       >
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="font-semibold mr-auto">풀이 방식 선택</span>
+          {totalCount > 0 && <span className="text-xs">{totalCount}문제</span>}
         </div>
         <RadioGroup
           value={mode}
@@ -96,13 +87,6 @@ export function SolveModeSelector({
             </div>
           </Label>
         </RadioGroup>
-        {hasProgress && (
-          <div className="flex items-center justify-end gap-2 text-muted-foreground text-xs">
-            {`${totalCount}문제 중 ${currentCount}문제 풀이완료`}
-
-            <CircularProgress progress={progress} size={16} strokeWidth={2} />
-          </div>
-        )}
       </div>
 
       {/* Single Start Button */}
@@ -113,7 +97,7 @@ export function SolveModeSelector({
         className="w-full font-bold text-lg py-6 gap-2"
         onClick={() => mode && onModeSelect?.(mode)}
       >
-        {hasProgress ? "이어서 풀기" : "시작하기"}
+        시작하기
       </Button>
     </div>
   );

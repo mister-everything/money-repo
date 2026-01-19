@@ -72,12 +72,6 @@ export type SessionNotStarted = {
   status: "not-started";
 };
 
-export type SessionInProgress = {
-  status: "in-progress";
-  startTime: Date;
-  submitId: string;
-};
-
 export type SessionSubmitted = {
   status: "submitted";
   startTime: Date;
@@ -86,14 +80,12 @@ export type SessionSubmitted = {
   totalBlocks: number;
   correctBlocks: number;
 };
-export type SessionStatus =
-  | SessionNotStarted
-  | SessionInProgress
-  | SessionSubmitted;
+
+export type SessionStatus = SessionNotStarted | SessionSubmitted;
 
 export type WorkBookSession = {
   workBook: WorkBookWithoutAnswer;
-  session: SessionInProgress | SessionSubmitted;
+  session: SessionSubmitted;
 };
 
 export type WorkBookReviewSession = {
