@@ -16,9 +16,3 @@ EXCEPTION
   WHEN undefined_column THEN NULL;
 END $$;
 --> statement-breakpoint
-
-DO $$ BEGIN
-ALTER TABLE "solves"."work_book_submits" DROP COLUMN IF EXISTS "active";
-EXCEPTION
-  WHEN undefined_column THEN NULL;
-END $$;

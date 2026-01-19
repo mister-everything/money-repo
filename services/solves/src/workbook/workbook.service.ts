@@ -598,9 +598,20 @@ export const workBookService = {
         throw new PublicError("문제집에 문제가 없습니다.");
       }
 
+      // 기존 세션들 비활성화
+      await tx
+        .update(workBookSubmitsTable)
+        .set({ active: false })
+        .where(
+          and(
+            eq(workBookSubmitsTable.workBookId, workBookId),
+            eq(workBookSubmitsTable.ownerId, userId),
+          ),
+        );
+
       const now = new Date();
 
-      // 제출 세션 생성 (endTime과 함께)
+      // 새 제출 세션 생성 (active: true)
       const [newSession] = await tx
         .insert(workBookSubmitsTable)
         .values({
@@ -610,6 +621,7 @@ export const workBookService = {
           endTime: now,
           blockCount: blocks.length,
           correctBlocks: 0, // 아래에서 업데이트
+          active: true,
         })
         .returning({
           id: workBookSubmitsTable.id,
@@ -687,7 +699,7 @@ export const workBookService = {
   },
 
   /**
-   * 제출한 문제집 목록 조회
+   * 제출한 문제집 목록 조회 (활성 세션만, 문제집당 1개)
    * @param userId 사용자 ID
    * @returns 제출한 문제집 목록
    */
@@ -719,7 +731,12 @@ export const workBookService = {
         ),
       )
       .innerJoin(userTable, eq(workBooksTable.ownerId, userTable.id))
-      .where(eq(workBookSubmitsTable.ownerId, userId))
+      .where(
+        and(
+          eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
+        ),
+      )
       .orderBy(desc(workBookSubmitsTable.startTime))
       .offset(offset)
       .limit(limit);
@@ -829,7 +846,7 @@ export const workBookService = {
   },
 
   /**
-   * 문제집 세션 상태 조회
+   * 문제집 세션 상태 조회 (활성 세션만)
    * @param workBookId 문제집 ID
    * @param userId 사용자 ID
    * @returns 세션 상태 (not-started 또는 submitted)
@@ -851,6 +868,7 @@ export const workBookService = {
         and(
           eq(workBookSubmitsTable.workBookId, workBookId),
           eq(workBookSubmitsTable.ownerId, userId),
+          eq(workBookSubmitsTable.active, true),
         ),
       )
       .orderBy(desc(workBookSubmitsTable.startTime))
