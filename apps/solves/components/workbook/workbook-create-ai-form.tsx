@@ -5,7 +5,7 @@ import { errorToString, isNull } from "@workspace/util";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { createWorkbookAction } from "@/actions/workbook";
+import { generateAndSaveWorkbookAction } from "@/actions/workbook-ai";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +18,6 @@ import {
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
-import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { notify } from "../ui/notify";
 import { CategorySelector } from "./category-selector";
 
@@ -38,7 +37,6 @@ export function WorkbookCreateAiForm({
   initialFormData?: WorkbookCreateAiFormData;
 }) {
   const router = useRouter();
-  const { setWorkbookOption } = useWorkbookEditStore();
 
   const [formData, setFormData] = useState(initialFormData);
   const { data: categories = [], isLoading } = useCategories({
@@ -59,36 +57,52 @@ export function WorkbookCreateAiForm({
     },
   });
 
-  const [, createWorkbook, isPending] = useSafeAction(createWorkbookAction, {
-    onSuccess: (result) => {
-      setWorkbookOption(result.id, formData);
-      router.push(`/workbooks/${result.id}/edit`);
+  const [, generateAndSave, isGenerating] = useSafeAction(
+    generateAndSaveWorkbookAction,
+    {
+      onSuccess: (result) => {
+        router.push(`/workbooks/${result.workbookId}/solve`);
+      },
+      failMessage: errorToString,
+      successMessage: "문제가 생성되었습니다.",
     },
-    failMessage: errorToString,
-    successMessage: "문제집 페이지로 이동합니다.",
-  });
+  );
 
   const handleCreateWorkbook = async () => {
     if (!formData.categoryId) {
       return;
     }
+    if (!formData.prompt || formData.prompt.trim().length === 0) {
+      await notify.alert({
+        title: "프롬프트 필요",
+        description: "AI 프롬프트를 입력해주세요.",
+      });
+      return;
+    }
     const confirm = await notify.confirm({
-      title: "문제집을 생성해볼까요?",
-      okText: "이대로 진행하기",
-      cancelText: "다시 선택하기",
+      title: "AI로 문제집을 생성할까요?",
+      okText: "생성하기",
+      cancelText: "취소",
     });
     if (!confirm) {
       return;
     }
-    createWorkbook({
-      title: "",
+    generateAndSave({
       categoryId: formData.categoryId,
+      blockTypes: formData.blockTypes,
+      situation: formData.situation,
+      ageGroup: formData.ageGroup,
+      prompt: formData.prompt,
     });
   };
 
   const valid = useMemo(() => {
-    return !isNull(formData.categoryId);
-  }, [formData.categoryId]);
+    return (
+      !isNull(formData.categoryId) &&
+      formData.prompt &&
+      formData.prompt.trim().length > 0
+    );
+  }, [formData.categoryId, formData.prompt]);
 
   return (
     <div className="w-full">
@@ -197,11 +211,11 @@ export function WorkbookCreateAiForm({
         <Button
           onClick={handleCreateWorkbook}
           variant={"default"}
-          disabled={isPending || !valid}
+          disabled={isGenerating || !valid}
           className={cn("w-full rounded-lg py-6 text-base mt-2")}
         >
-          {isPending && <Loader className="size-4 animate-spin" />}
-          AI로 문제집 만들기
+          {isGenerating && <Loader className="size-4 animate-spin mr-2" />}
+          {isGenerating ? "문제 생성 중..." : "AI로 문제 만들기"}
         </Button>
       </div>
     </div>
