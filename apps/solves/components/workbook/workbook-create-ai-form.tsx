@@ -3,9 +3,8 @@
 import { BlockType, blockDisplayNames } from "@service/solves/shared";
 import { errorToString, isNull } from "@workspace/util";
 import { Loader } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { generateAndSaveWorkbookAction } from "@/actions/workbook-ai";
+import { generateWorkbookPlanAction } from "@/actions/workbook-ai";
 import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +17,7 @@ import {
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
+import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { notify } from "../ui/notify";
 import { CategorySelector } from "./category-selector";
 
@@ -36,9 +36,10 @@ export function WorkbookCreateAiForm({
 }: {
   initialFormData?: WorkbookCreateAiFormData;
 }) {
-  const router = useRouter();
-
   const [formData, setFormData] = useState(initialFormData);
+  const setWorkbookPlan = useWorkbookEditStore(
+    (state) => state.setWorkbookPlan,
+  );
   const { data: categories = [], isLoading } = useCategories({
     onSuccess: (data) => {
       if (data.length > 0) {
@@ -58,13 +59,13 @@ export function WorkbookCreateAiForm({
   });
 
   const [, generateAndSave, isGenerating] = useSafeAction(
-    generateAndSaveWorkbookAction,
+    generateWorkbookPlanAction,
     {
       onSuccess: (result) => {
-        router.push(`/workbooks/${result.workbookId}/solve`);
+        setWorkbookPlan(result.plan);
       },
       failMessage: errorToString,
-      successMessage: "문제가 생성되었습니다.",
+      successMessage: "플래닝이 완료되었습니다.",
     },
   );
 
@@ -80,8 +81,8 @@ export function WorkbookCreateAiForm({
       return;
     }
     const confirm = await notify.confirm({
-      title: "AI로 문제집을 생성할까요?",
-      okText: "생성하기",
+      title: "AI로 문제집 플래닝을 진행할까요?",
+      okText: "확인",
       cancelText: "취소",
     });
     if (!confirm) {
@@ -215,7 +216,7 @@ export function WorkbookCreateAiForm({
           className={cn("w-full rounded-lg py-6 text-base mt-2")}
         >
           {isGenerating && <Loader className="size-4 animate-spin mr-2" />}
-          {isGenerating ? "문제 생성 중..." : "AI로 문제 만들기"}
+          {isGenerating ? "플래닝 중..." : "AI로 플래닝하기"}
         </Button>
       </div>
     </div>
