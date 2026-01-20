@@ -18,6 +18,7 @@ import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { WorkbookOptions } from "@/store/types";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
+import JsonView from "../ui/json-view";
 import { notify } from "../ui/notify";
 import { CategorySelector } from "./category-selector";
 
@@ -58,7 +59,7 @@ export function WorkbookCreateAiForm({
     },
   });
 
-  const [, generateAndSave, isGenerating] = useSafeAction(
+  const [result, generateAndSave, isGenerating] = useSafeAction(
     generateWorkbookPlanAction,
     {
       onSuccess: (result) => {
@@ -209,6 +210,7 @@ export function WorkbookCreateAiForm({
             className="min-h-30 resize-none max-h-48"
           />
         </div>
+        {result?.success && <JsonView data={result.data} />}
         <Button
           onClick={handleCreateWorkbook}
           variant={"default"}

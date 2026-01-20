@@ -9,7 +9,7 @@ import {
 } from "@service/solves/shared";
 import { generateObject } from "ai";
 import z from "zod";
-import { getChatModel } from "@/lib/ai/model";
+import { getDefaultChatModel } from "@/lib/ai/model";
 import { getSession } from "@/lib/auth/server";
 import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 import { fail } from "@/lib/protocol/interface";
@@ -52,21 +52,19 @@ const generateWorkbookPlanActionImpl = safeAction(
         : "전체";
 
     const planSchema = z.object({
-      title: z.string().min(1),
-      description: z.string().min(1),
-      goal: z.string().min(1),
-      audience: z.string().min(1),
-      blockPlan: z
-        .array(
-          z.object({
-            type: z.string().min(1),
-            intent: z.string().min(1),
-          }),
-        )
-        .min(1),
-      constraints: z.array(z.string().min(1)).min(1),
-      notes: z.array(z.string().min(1)).min(1),
-      openQuestions: z.array(z.string().min(1)).optional(),
+      title: z.string(), // .min(1), 에러 발생확률이 있기때문에 제거
+      description: z.string(), // .min(1), 에러 발생확률이 있기때문에 제거
+      goal: z.string(), // .min(1), 에러 발생확률이 있기때문에 제거
+      audience: z.string(), // .min(1), 에러 발생확률이 있기때문에 제거
+      blockPlan: z.array(
+        z.object({
+          type: z.string(), // .min(1), 에러 발생확률이 있기때문에 제거
+          intent: z.string(), // .min(1), 에러 발생확률이 있기때문에 제거
+        }),
+      ),
+      constraints: z.array(z.string()),
+      notes: z.array(z.string()),
+      openQuestions: z.array(z.string()).optional(),
     });
 
     const planningPrompt = `
@@ -88,10 +86,7 @@ ${prompt.trim()}
 `.trim();
 
     const result = await generateObject({
-      model: getChatModel({
-        provider: "xai",
-        model: "grok-4.1-fast-non-reasoning",
-      }),
+      model: await getDefaultChatModel(),
       schema: planSchema,
       prompt: planningPrompt,
     });
