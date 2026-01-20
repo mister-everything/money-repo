@@ -19,6 +19,12 @@ export const CacheKeys = {
   aiPrice: (provider: string, model: string) => `price:${provider}:${model}`,
 
   category: (id: number) => `category:${id}`,
+
+  /**
+   * 전체 카테고리 목록 캐시
+   * @returns Redis key: categories:all
+   */
+  categoriesAll: () => `categories:all`,
 } as const;
 
 /**
@@ -31,4 +37,10 @@ export const CacheTTL = {
 
   /** AI 가격표 캐시 - 1시간 (가격이 자주 변경되지 않음) */
   AI_PRICE: 3600,
+
+  /** 개별 카테고리 캐시 - 1시간 */
+  CATEGORY: 3600,
+
+  /** 전체 카테고리 목록 캐시 - 1시간 */
+  CATEGORIES_ALL: 3600,
 } as const;

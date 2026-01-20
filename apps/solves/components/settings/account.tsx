@@ -25,7 +25,7 @@ export function Account() {
     });
     if (answer) {
       authClient.signOut().finally(() => {
-        router.push("/sign-in");
+        router.push("/sign-in?callbackUrl=/workbooks");
       });
     }
   }, [router]);

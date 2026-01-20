@@ -2,7 +2,6 @@ import { workBookService } from "@service/solves";
 import {
   Bot,
   BrainIcon,
-  ChevronDownIcon,
   ChevronRightIcon,
   GlobeIcon,
   Library,
@@ -27,6 +26,14 @@ import {
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
 import { WorkbookCarousel } from "@/components/workbook/workbook-carousel";
 import * as Motion from "./_components/motion-wrapper";
+
+const FaultyTerminal = dynamic(
+  () => import("@/components/ui/faulty-terminal").then((mod) => mod.default),
+  {
+    loading: () => null,
+    ssr: true,
+  },
+);
 
 // Lazy load heavy simulation components
 const MockSimulation = dynamic(
@@ -79,12 +86,23 @@ export default async function Page() {
   });
 
   return (
-    <div className="flex flex-col w-full gap-0 pt-20">
+    <div className="flex flex-col w-full gap-0 pt-20 relative">
+      <div className="absolute inset-0 w-full h-screen opacity-50">
+        <FaultyTerminal mouseReact={false} />
+        <div className="absolute inset-0 bg-linear-to-b from-transparent to-background" />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 50% 50% at 50% 50%, var(--background) 0%, var(--background) 20%, transparent 70%)",
+          }}
+        />
+      </div>
       {/* Hero Section */}
-      <section className="relative h-[70vh] w-full flex flex-col items-center justify-center overflow-hidden">
-        <div className="z-10 flex flex-col items-center text-center gap-8 p-4 mt-10 max-w-4xl mx-auto">
+      <section className="relative w-full flex flex-col items-center justify-center overflow-hidden mt-12 z-10">
+        <div className="z-10 flex flex-col items-center text-center gap-4 md:gap-8 p-4 mt-10 max-w-4xl mx-auto">
           <Motion.FadeIn>
-            <h1 className="text-4xl md:text-7xl font-bold tracking-tight mb-2">
+            <h1 className="text-3xl md:text-6xl font-bold tracking-tight mb-2">
               <GradualSpacingText
                 duration={0.8}
                 delayMultiple={0.05}
@@ -95,14 +113,14 @@ export default async function Page() {
 
           <Motion.FadeIn delay={0.5}>
             <div className="relative">
-              <h2 className="text-5xl md:text-8xl font-black bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/50">
+              <h2 className="text-4xl md:text-7xl font-black bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/50">
                 Solves<span className="text-primary">.</span>
               </h2>
             </div>
           </Motion.FadeIn>
 
           <Motion.FadeIn delay={0.8}>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
+            <p className="md:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
               AI와 함께 만드는 나만의 지식 놀이터.
               <br />
               상상하던 모든 것을 문제집으로 만들어보세요.
@@ -114,7 +132,7 @@ export default async function Page() {
               <Link href="/workbooks/creator/new">
                 <Button
                   size="lg"
-                  className="rounded-full text-lg h-14 px-10 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
+                  className="rounded-full md:text-lg h-14 px-10 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
                 >
                   문제집 만들기
                 </Button>
@@ -123,7 +141,7 @@ export default async function Page() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="rounded-full text-lg h-14 px-10 backdrop-blur-sm bg-background/50 hover:bg-background/80"
+                  className="rounded-full md:text-lg h-14 px-10 backdrop-blur-sm bg-background/50 hover:bg-background/80"
                 >
                   문제 풀어보기
                 </Button>
@@ -133,63 +151,11 @@ export default async function Page() {
         </div>
       </section>
 
-      {/* Scroll Indicator */}
-      <Motion.FadeIn delay={1.2}>
-        <div className="flex flex-col items-center gap-2 py-8">
-          <span className="text-sm text-muted-foreground/50 tracking-widest uppercase">
-            스크롤을 내려 더 많은 기능을 확인하세요.
-          </span>
-          <div className="relative flex flex-col items-center">
-            <ChevronDownIcon className="size-5 text-muted-foreground/50 animate-bounce mt-1" />
-          </div>
-        </div>
-      </Motion.FadeIn>
-
-      {/* Carousel Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="mx-auto max-w-7xl px-6 md:px-10 relative">
-          <Motion.FadeIn>
-            <div className="flex flex-col gap-8">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center rounded-full bg-rose-500/10 px-4 py-1.5 text-sm font-medium text-rose-600 w-fit">
-                    <TrophyIcon className="mr-2 size-4" />
-                    Trending Now
-                  </div>
-                  <h3 className="text-3xl md:text-4xl font-bold">
-                    지금 뜨는{" "}
-                    <span className="text-transparent bg-clip-text bg-linear-to-r from-rose-500 to-orange-500">
-                      문제집
-                    </span>{" "}
-                    🔥
-                  </h3>
-                  <p className="text-muted-foreground text-lg">
-                    다른 사용자들이 만든 문제집을 풀어보세요.
-                    <br className="hidden sm:block" />
-                    다양한 주제의 퀴즈가 기다리고 있어요.
-                  </p>
-                </div>
-                <Link
-                  href="/workbooks"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0 flex items-center gap-2 group"
-                >
-                  전체보기{" "}
-                  <ChevronRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </div>
-              <WorkbookCarousel workBooks={workBooks} />
-            </div>
-          </Motion.FadeIn>
-        </div>
-      </section>
       {/* Interactive Simulation Section (Maker) */}
-      <section className="py-24 mx-auto max-w-7xl px-6 md:px-10">
+      <section className="py-24 mx-auto max-w-7xl px-6 md:px-10 z-10">
         <div className="flex flex-col xl:flex-row items-center gap-12 xl:gap-24">
           {/* Text Content */}
-          <Motion.SlideIn
-            direction="left"
-            className="flex-1 space-y-8 max-w-2xl xl:text-left text-center"
-          >
+          <div className="flex-1 space-y-8 max-w-2xl xl:text-left text-center">
             <div className="space-y-4">
               <div className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary w-fit mx-auto xl:mx-0">
                 <Bot className="mr-2 size-4" />
@@ -235,21 +201,56 @@ export default async function Page() {
                 </div>
               </div>
             </div>
-          </Motion.SlideIn>
+          </div>
 
           {/* Simulation Component */}
-          <Motion.SlideIn
-            direction="right"
-            className="flex-1 w-full flex justify-center xl:justify-end"
-          >
+          <div className="flex-1 w-full flex justify-center xl:justify-end">
             <div className="relative w-full">
               {/* Decorative Elements */}
-              <div className="absolute -top-10 -right-10 size-32 bg-primary/20 rounded-full blur-3xl opacity-50" />
-              <div className="absolute -bottom-10 -left-10 size-32 bg-purple-500/20 rounded-full blur-3xl opacity-50" />
+              <div className="hidden md:block absolute -top-10 -right-10 size-32 bg-primary/20 rounded-full blur-3xl opacity-50" />
+              <div className="hidden md:block absolute -bottom-10 -left-10 size-32 bg-purple-500/20 rounded-full blur-3xl opacity-50" />
 
               <MockSimulation />
             </div>
-          </Motion.SlideIn>
+          </div>
+        </div>
+      </section>
+
+      {/* Carousel Section */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="mx-auto max-w-7xl px-6 md:px-10 relative">
+          <Motion.FadeIn>
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center rounded-full bg-rose-500/10 px-4 py-1.5 text-sm font-medium text-rose-600 w-fit">
+                    <TrophyIcon className="mr-2 size-4" />
+                    Trending Now
+                  </div>
+                  <h3 className="text-3xl md:text-4xl font-bold">
+                    지금 뜨는{" "}
+                    <span className="text-transparent bg-clip-text bg-linear-to-r from-rose-500 to-orange-500">
+                      문제집
+                    </span>{" "}
+                    🔥
+                  </h3>
+                  <p className="text-muted-foreground text-lg">
+                    다른 사용자들이 만든 문제집을 풀어보세요.
+                    <br className="hidden sm:block" />
+                    다양한 주제의 퀴즈가 기다리고 있어요.
+                  </p>
+                </div>
+                <Link
+                  href="/workbooks"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0 flex items-center gap-2 group"
+                >
+                  전체보기{" "}
+                  <ChevronRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+              <WorkbookCarousel workBooks={workBooks} />
+            </div>
+          </Motion.FadeIn>
         </div>
       </section>
 
@@ -315,8 +316,8 @@ export default async function Page() {
               className="flex-1 w-full flex justify-center xl:justify-start"
             >
               <div className="relative">
-                <div className="absolute -top-10 -right-10 size-32 bg-amber-500/20 rounded-full blur-3xl opacity-50" />
-                <div className="absolute -bottom-10 -left-10 size-32 bg-orange-500/20 rounded-full blur-3xl opacity-50" />
+                <div className="hidden md:block absolute -top-10 -right-10 size-32 bg-amber-500/20 rounded-full blur-3xl opacity-50" />
+                <div className="hidden md:block absolute -bottom-10 -left-10 size-32 bg-orange-500/20 rounded-full blur-3xl opacity-50" />
                 <MockAiSolver />
               </div>
             </Motion.SlideIn>
@@ -386,9 +387,9 @@ export default async function Page() {
               direction="right"
               className="flex-1 w-full flex justify-center xl:justify-end"
             >
-              <div className="relative w-full flex justify-end">
-                <div className="absolute -top-10 -right-10 size-32 bg-green-500/20 rounded-full blur-3xl opacity-50" />
-                <div className="absolute -bottom-10 -left-10 size-32 bg-emerald-500/20 rounded-full blur-3xl opacity-50" />
+              <div className="relative w-full flex justify-center xl:justify-end">
+                <div className="hidden md:block absolute -top-10 -right-10 size-32 bg-green-500/20 rounded-full blur-3xl opacity-50" />
+                <div className="hidden md:block absolute -bottom-10 -left-10 size-32 bg-emerald-500/20 rounded-full blur-3xl opacity-50" />
                 <MockUserSolver />
               </div>
             </Motion.SlideIn>

@@ -2,7 +2,6 @@
 
 import {
   isPublished,
-  SessionInProgress,
   SessionSubmitted,
   WorkBookWithoutBlocks,
 } from "@service/solves/shared";
@@ -25,7 +24,7 @@ import { WorkbookDifficulty } from "./workbook-difficulty";
 
 interface WorkbookCardProps {
   workBook: WorkBookWithoutBlocks;
-  session?: SessionInProgress | SessionSubmitted;
+  session?: SessionSubmitted;
   onDelete?: () => void;
   onTogglePublic?: () => void;
   onCopy?: () => void;
@@ -183,15 +182,6 @@ export function WorkbookCard({
                 정답 {session.correctBlocks}/{session.totalBlocks}
               </Badge>
             </>
-          ) : session?.status === "in-progress" ? (
-            <Badge
-              variant="secondary"
-              className="w-fit bg-blue-100 dark:bg-blue-950 text-blue-500 rounded-full py-1"
-            >
-              풀이 중
-            </Badge>
-          ) : session ? (
-            <Badge variant="secondary">풀지 않음</Badge>
           ) : !published ? (
             <Badge
               variant="secondary"

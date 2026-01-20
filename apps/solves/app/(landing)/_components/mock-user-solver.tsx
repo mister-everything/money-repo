@@ -164,7 +164,7 @@ export function MockUserSolver() {
   return (
     <div
       ref={containerRef}
-      className="w-full lg:w-lg h-[600px] flex flex-col rounded-2xl border bg-background/95 backdrop-blur shadow-2xl overflow-hidden relative cursor-none select-none"
+      className="w-full lg:w-lg h-[600px] flex flex-col rounded-2xl border bg-background/95 backdrop-blur shadow-2xl overflow-hidden relative select-none pointer-events-none"
     >
       {/* Header */}
       <div className="h-14 border-b flex items-center px-4 bg-liner-to-r from-green-500/10 to-emerald-500/10 gap-3 shrink-0">
