@@ -1,6 +1,6 @@
 import { PublicError } from "@workspace/error";
 import { and, eq, isNull } from "drizzle-orm";
-import { CacheKeys } from "../cache-keys";
+import { CacheKeys, CacheTTL } from "../cache-keys";
 import { pgDb } from "../db";
 import { sharedCache } from "../shared-cache";
 import { categoryTable } from "./schema";
@@ -54,7 +54,11 @@ export const categoryService = {
       .from(categoryTable)
       .where(eq(categoryTable.id, id));
     if (row) {
-      await sharedCache.setex(cacheKey, 3600, JSON.stringify(row));
+      await sharedCache.setex(
+        cacheKey,
+        CacheTTL.CATEGORY,
+        JSON.stringify(row),
+      );
     }
     return row ?? null;
   },
@@ -63,6 +67,12 @@ export const categoryService = {
    * 전체 카테고리 조회 (트리 구조)
    */
   getAllCategories: async (): Promise<CategoryTree[]> => {
+    const cacheKey = CacheKeys.categoriesAll();
+    const cached = await sharedCache.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached) as CategoryTree[];
+    }
+
     const categories = await pgDb
       .select({
         id: categoryTable.id,
@@ -74,7 +84,14 @@ export const categoryService = {
       })
       .from(categoryTable);
 
-    return buildCategoryTree(categories);
+    const result = buildCategoryTree(categories);
+    await sharedCache.setex(
+      cacheKey,
+      CacheTTL.CATEGORIES_ALL,
+      JSON.stringify(result),
+    );
+
+    return result;
   },
 
   /**
@@ -147,9 +164,11 @@ export const categoryService = {
     if (row) {
       await sharedCache.setex(
         CacheKeys.category(row.id),
-        3600,
+        CacheTTL.CATEGORY,
         JSON.stringify(row),
       );
+      // 전체 카테고리 목록 캐시 무효화
+      await sharedCache.del(CacheKeys.categoriesAll());
     } else throw new PublicError("카테고리 생성에 실패했습니다.");
 
     return row;
@@ -178,9 +197,11 @@ export const categoryService = {
     if (row) {
       await sharedCache.setex(
         CacheKeys.category(row.id),
-        3600,
+        CacheTTL.CATEGORY,
         JSON.stringify(row),
       );
+      // 전체 카테고리 목록 캐시 무효화
+      await sharedCache.del(CacheKeys.categoriesAll());
     } else throw new PublicError("카테고리를 찾을 수 없습니다.");
 
     return row;
@@ -192,5 +213,7 @@ export const categoryService = {
   deleteCategory: async (id: number): Promise<void> => {
     await pgDb.delete(categoryTable).where(eq(categoryTable.id, id));
     await sharedCache.del(CacheKeys.category(id));
+    // 전체 카테고리 목록 캐시 무효화
+    await sharedCache.del(CacheKeys.categoriesAll());
   },
 };

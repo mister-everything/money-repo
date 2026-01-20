@@ -37,7 +37,7 @@ export function AboutYouClient({
 
   return (
     <div className="w-full h-screen flex items-center justify-center relative">
-      <h1 className="absolute top-0 left-0 text-lg p-4 font-bold z-10">
+      <h1 className="absolute top-0 left-0 text-lg p-6 font-bold z-10">
         <GradualSpacingText text="Solves" />
         <span className="text-lg text-primary">.</span>
       </h1>
