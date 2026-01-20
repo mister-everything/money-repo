@@ -63,9 +63,11 @@ export default function Page() {
 
   return (
     <>
-      <div className="absolute inset-0 w-full h-full opacity-40">
-        <FaultyTerminal mouseReact={false} />
-      </div>
+      {!isLoading && workBookSessions?.length === 0 && (
+        <div className="absolute inset-0 w-full h-full opacity-40">
+          <FaultyTerminal mouseReact={false} />
+        </div>
+      )}
       <div className="relative h-full">
         <HeaderWithSidebarToggle>
           <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">

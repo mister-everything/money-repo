@@ -4,6 +4,7 @@ import { SetStateAction } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { SolvesMentionItem } from "@/components/mention/types";
+import { WorkbookPlan } from "@/lib/ai/tools/workbook/workbook-plan";
 import { WorkbookOptions } from "./types";
 
 interface WorkbookEditStoreState {
@@ -28,17 +29,6 @@ interface WorkbookEditStoreDispatch {
 }
 
 const MAX_WORKBOOKS = 20;
-
-export interface WorkbookPlan {
-  title: string;
-  description: string;
-  goal: string;
-  audience: string;
-  blockPlan: Array<{ type: string; intent: string }>;
-  constraints: string[];
-  notes: string[];
-  openQuestions?: string[];
-}
 
 const initialState: WorkbookEditStoreState = {
   workbookOptions: {},
