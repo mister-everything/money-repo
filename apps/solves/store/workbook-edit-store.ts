@@ -8,6 +8,7 @@ import { WorkbookOptions } from "./types";
 
 interface WorkbookEditStoreState {
   workbookOptions: Record<string, WorkbookOptions & { updatedAt: Date }>;
+  workbookPlan?: WorkbookPlan;
   workBook?: WorkBookWithoutBlocks;
   focusBlockId?: string;
   scrollTrigger: number;
@@ -16,6 +17,7 @@ interface WorkbookEditStoreState {
 }
 
 interface WorkbookEditStoreDispatch {
+  setWorkbookPlan: (plan: WorkbookPlan | undefined) => void;
   setWorkbookOption: (id: string, options: WorkbookOptions) => void;
   setMentions: (mentions: SolvesMentionItem[]) => void;
   setWorkBook: (workBook: SetStateAction<WorkBookWithoutBlocks>) => void;
@@ -27,12 +29,24 @@ interface WorkbookEditStoreDispatch {
 
 const MAX_WORKBOOKS = 20;
 
+export interface WorkbookPlan {
+  title: string;
+  description: string;
+  goal: string;
+  audience: string;
+  blockPlan: Array<{ type: string; intent: string }>;
+  constraints: string[];
+  notes: string[];
+  openQuestions?: string[];
+}
+
 const initialState: WorkbookEditStoreState = {
   workbookOptions: {},
   blocks: [],
   workBook: undefined,
   mentions: [],
   scrollTrigger: 0,
+  workbookPlan: undefined,
 };
 
 export const useWorkbookEditStore = create<
@@ -41,6 +55,9 @@ export const useWorkbookEditStore = create<
   persist(
     (set) => ({
       ...initialState,
+      setWorkbookPlan: (plan) => {
+        set({ workbookPlan: plan });
+      },
       setFocusBlockId: (id) => {
         set({
           focusBlockId: id,

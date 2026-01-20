@@ -1,5 +1,5 @@
+import { aiPriceService } from "@service/solves";
 import { ChatModel } from "@service/solves/shared";
-
 import {
   defaultSettingsMiddleware,
   gateway,
@@ -41,4 +41,18 @@ export const getChatModel = (model: ChatModel) => {
   });
   memory.set(key, chatModel);
   return chatModel;
+};
+
+/**
+ * @deprecated 개발용으로만 사용하세요.
+ */
+export const getDefaultChatModel = async () => {
+  const model = await aiPriceService.getDefaultChatModel();
+  if (!model) {
+    throw new Error("Default chat model not found");
+  }
+  return getChatModel({
+    provider: model.provider,
+    model: model.model,
+  });
 };
