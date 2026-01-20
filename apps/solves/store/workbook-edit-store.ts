@@ -34,8 +34,7 @@ export interface WorkbookPlan {
   description: string;
   goal: string;
   audience: string;
-  totalQuestions: number;
-  blockPlan: Array<{ type: string; count: number; intent: string }>;
+  blockPlan: Array<{ type: string; intent: string }>;
   constraints: string[];
   notes: string[];
   openQuestions?: string[];

@@ -11,11 +11,7 @@ import { generateObject } from "ai";
 import z from "zod";
 import { getChatModel } from "@/lib/ai/model";
 import { getSession } from "@/lib/auth/server";
-import {
-  MAX_BLOCK_COUNT,
-  WorkBookAgeGroup,
-  WorkBookSituation,
-} from "@/lib/const";
+import { WorkBookAgeGroup, WorkBookSituation } from "@/lib/const";
 import { fail } from "@/lib/protocol/interface";
 import { safeAction } from "@/lib/protocol/server-action";
 
@@ -35,9 +31,6 @@ const generateWorkbookPlanActionImpl = safeAction(
     if (!category) {
       return fail("카테고리를 찾을 수 없습니다.");
     }
-
-    const tempTitle = `${category.name} AI 문제집`;
-    const tempDescription = prompt.slice(0, WORKBOOK_DESCRIPTION_MAX_LENGTH);
 
     const targetBlockTypes =
       blockTypes && blockTypes.length > 0
@@ -63,12 +56,10 @@ const generateWorkbookPlanActionImpl = safeAction(
       description: z.string().min(1),
       goal: z.string().min(1),
       audience: z.string().min(1),
-      totalQuestions: z.number().int().min(1).max(MAX_BLOCK_COUNT),
       blockPlan: z
         .array(
           z.object({
             type: z.string().min(1),
-            count: z.number().int().min(1),
             intent: z.string().min(1),
           }),
         )
@@ -83,10 +74,7 @@ const generateWorkbookPlanActionImpl = safeAction(
 다음 규칙을 반드시 지켜라:
 - 실제 문제/정답/보기/해설을 생성하지 마라.
 - 외부 링크, 문제 ID, 문제집 생성 API 호출을 전제로 한 내용은 포함하지 마라.
-- totalQuestions 는 최대 ${MAX_BLOCK_COUNT}를 넘지 않는다.
-- blockPlan의 count 합계는 totalQuestions와 일치해야 한다.
 - blockPlan.type은 다음 목록에서만 선택한다: ${blockTypeLabels}
-- 불명확한 요구가 있으면 openQuestions에 1~3개 질문을 작성한다.
 
 컨텍스트:
 - 사용자 이름: ${session.user.nickname || session.user.name}
@@ -94,8 +82,6 @@ const generateWorkbookPlanActionImpl = safeAction(
 - 카테고리 힌트: ${category.aiPrompt || "없음"}
 - 상황: ${situationLabel || "미선택"}
 - 연령대: ${ageGroupLabel || "미선택"}
-- 임시 제목: ${tempTitle}
-- 임시 설명: ${tempDescription}
 
 사용자 프롬프트:
 ${prompt.trim()}
@@ -110,13 +96,12 @@ ${prompt.trim()}
       prompt: planningPrompt,
     });
 
-    const finalTitle =
-      result.object.title.slice(0, WORKBOOK_TITLE_MAX_LENGTH).trim() ||
-      tempTitle.slice(0, WORKBOOK_TITLE_MAX_LENGTH);
-    const finalDescription =
-      result.object.description
-        .slice(0, WORKBOOK_DESCRIPTION_MAX_LENGTH)
-        .trim() || tempDescription;
+    const finalTitle = result.object.title
+      .slice(0, WORKBOOK_TITLE_MAX_LENGTH)
+      .trim();
+    const finalDescription = result.object.description
+      .slice(0, WORKBOOK_DESCRIPTION_MAX_LENGTH)
+      .trim();
 
     return {
       plan: {
