@@ -2,8 +2,9 @@ import { BlockType, blockDisplayNames, Category } from "@service/solves/shared";
 import { MAX_BLOCK_COUNT, WorkBookAgeGroup, WorkBookSituation } from "../const";
 import { ASK_QUESTION_TOOL_NAME } from "./tools/workbook/ask-question-tools";
 import { WORKBOOK_META_TOOL_NAME } from "./tools/workbook/shared";
+import { WorkbookPlan } from "./tools/workbook/workbook-plan";
 
-export const WorkBookCreatePrompt = ({
+export const CreateWorkBookPrompt = ({
   title,
   description,
   blockTypes,
@@ -82,7 +83,7 @@ ${serializeBlocks.join("\n\n")}
 `.trim();
 };
 
-export const workbookPlanPrompt = ({
+export const CreateWorkbookPlanPrompt = ({
   category,
   blockTypes = Object.keys(blockDisplayNames) as BlockType[],
   blockCount,
@@ -138,4 +139,82 @@ export const workbookPlanPrompt = ({
 
 
   `.trim();
+};
+
+export const CreateBlockWithPlanPrompt = ({
+  plan,
+  previousBlocks = [],
+}: {
+  plan: Omit<WorkbookPlan, "blockPlans">;
+  previousBlocks?: string[];
+}) => {
+  const constraintsText = plan.constraints?.length
+    ? plan.constraints.map((c) => `- ${c}`).join("\n")
+    : "- 없음";
+
+  const guidelinesText = plan.guidelines?.length
+    ? plan.guidelines.map((g) => `- ${g}`).join("\n")
+    : "- 없음";
+
+  const prevText = previousBlocks?.length
+    ? previousBlocks.map((b, i) => `[#${i + 1}]\n${b}`).join("\n\n")
+    : "없음";
+
+  return `
+너는 문제 생성 전문가야
+너의 임무는 사용자 메시지로 전달되는 blockPlan(JSON 1개)을 기반으로 도구를 사용하여 **문제(블록) 1개만** 생성하는 것이다.
+
+> 지금 시간은 한국 시간으로 **${new Date().toLocaleTimeString("ko-KR", { hour12: false })}** 입니다.
+    
+# 문제집(전역) 정보
+- 제목: "${plan.overview.title}"
+- 설명: "${plan.overview.description}"
+- 전체 목표: "${plan.overview.goal}"
+- 대상: "${plan.overview.targetAudience}"
+- 문제집 전체 난이도(톤/기준): "${plan.overview.difficulty}"
+
+# 전역 제약/가이드라인 (모든 문제에 공통 적용)
+constraints:
+${constraintsText}
+
+guidelines:
+${guidelinesText}
+
+# 이미 생성된 문제들(previousBlocks)
+- 아래 목록은 이미 만들어진 기존 문제들이다.
+- 너는 이 목록을 참고하여 **중복/유사 문제를 만들지 말아야** 한다.
+- 동일한 질문, 동일한 지문, 동일한 정답 구조(보기 구성/정답 위치/수치/상황)가 반복되면 안 된다.
+- 같은 topic이라도 관점/상황/수치/지문/보기 구성을 바꿔 변주하라.
+
+${prevText}
+
+# 입력 형태 (User Message)
+사용자 메시지는 아래 형태의 JSON "하나"만 제공한다:
+{
+  "type": string,
+  "intent": string,
+  "learningObjective": string,
+  "expectedDifficulty": "easy" | "medium" | "hard",
+  "topic": string,
+  "notes"?: string
+}
+
+# 핵심 규칙 (절대 준수)
+1) 이번 응답에서는 **문제 1개만** 생성하라.
+2) 문제 유형은 사용자 메시지의 type을 정확히 따르라. (임의 변경 금지)
+3) 문제는 intent / learningObjective / topic / notes 를 직접 반영하라.
+4) 난이도는 expectedDifficulty를 최우선으로 맞추되,
+   전체 톤/표현은 대상("${plan.overview.targetAudience}")과 전체 난이도("${plan.overview.difficulty}")에 맞춰 일관되게 유지하라.
+5) previousBlocks와 **중복/유사**하면 안 된다. (유사 판단 기준: 주제 동일 + 질문 구조 유사 + 정답 패턴 유사 등)
+6) 정보가 부족하면 최소한의 보수적 가정으로 문제를 성립시키되,
+   문제 품질을 해치지 말아라.
+
+# 난이도 가이드
+- easy: 단순 회상/기초 확인, 지문 짧게, 함정 최소
+- medium: 개념 적용/간단 추론, 조건 활용, 변별력 있는 보기
+- hard: 다단계 추론/복합 개념, 오개념 유도 보기 가능(단 정답 명확)
+
+
+이제 사용자 메시지로 제공되는 blockPlan(JSON 1개)을 사용해 문제 1개를 생성하라.
+    `.trim();
 };

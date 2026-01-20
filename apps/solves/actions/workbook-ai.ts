@@ -5,7 +5,7 @@ import { BlockType } from "@service/solves/shared";
 import { generateObject } from "ai";
 import z from "zod";
 import { getDefaultChatModel } from "@/lib/ai/model";
-import { workbookPlanPrompt } from "@/lib/ai/prompt";
+import { CreateWorkbookPlanPrompt } from "@/lib/ai/prompt";
 import { workbookPlanSchema } from "@/lib/ai/tools/workbook/workbook-plan";
 import { getSession } from "@/lib/auth/server";
 import { MAX_BLOCK_COUNT } from "@/lib/const";
@@ -30,7 +30,7 @@ export const generateWorkbookPlanAction = safeAction(
     if (!category) {
       return fail("카테고리를 찾을 수 없습니다.");
     }
-    const planningPrompt = workbookPlanPrompt({
+    const planningPrompt = CreateWorkbookPlanPrompt({
       category,
       blockTypes: blockTypes as BlockType[],
       blockCount,
