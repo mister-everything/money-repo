@@ -4,7 +4,7 @@ import { generateText, Tool } from "ai";
 import z from "zod";
 import { getDefaultChatModel } from "@/lib/ai/model";
 import { loadGenerateBlockTools } from "@/lib/ai/tools/workbook/generate-block-tools";
-import { nextOk } from "@/lib/protocol/next-route-helper";
+import { nextFail, nextOk } from "@/lib/protocol/next-route-helper";
 
 export const maxDuration = 300;
 
@@ -114,23 +114,24 @@ ${previousBlocks && previousBlocks.length > 0 ? "- 이미 생성된 문제들과
       maxRetries: 1,
     });
 
-    // 첫 번째 (유일한) tool call 결과 추출
     const steps = result.steps;
     if (!steps || steps.length === 0) {
       throw new Error("문제 생성에 실패했습니다.");
     }
 
-    const lastStep = steps[steps.length - 1];
-    const toolCall = lastStep.toolCalls?.[0];
-    const toolResult = lastStep.toolResults?.[0];
+    const toolStep = steps.find((step) => step.toolCalls?.length);
+    if (!toolStep) {
+      throw new Error("문제 생성 도구 호출 정보를 찾을 수 없습니다.");
+    }
 
-    if (!toolCall || !toolResult) {
+    const toolCall = toolStep.toolCalls?.[0];
+    if (!toolCall) {
       throw new Error("문제 생성 도구 호출에 실패했습니다.");
     }
 
     return nextOk(toolCall.input);
   } catch (error) {
     console.error("Instant block generation error:", error);
-    throw error;
+    return nextFail(error);
   }
 }
