@@ -3,33 +3,15 @@
 import {
   BlockAnswerSubmit,
   initialSubmitAnswer,
-  SessionInProgress,
   WorkBookBlockWithoutAnswer,
   WorkBookWithoutAnswer,
 } from "@service/solves/shared";
-import {
-  applyStateUpdate,
-  createDebounce,
-  equal,
-  isNull,
-  StateUpdate,
-  TIME,
-} from "@workspace/util";
+import { applyStateUpdate, isNull, StateUpdate } from "@workspace/util";
 import confetti from "canvas-confetti";
 import { LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  RefCallback,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  saveAnswerProgressAction,
-  submitWorkbookSessionAction,
-} from "@/actions/workbook";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { submitWorkbookSessionAction } from "@/actions/workbook";
 import { Button } from "@/components/ui/button";
 import { useToRef } from "@/hooks/use-to-ref";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
@@ -41,56 +23,32 @@ import { WorkbookHeader } from "./workbook-header";
 
 interface WorkBookSolveProps {
   workBook: WorkBookWithoutAnswer;
-  initialSession: SessionInProgress;
-  savedAnswers: Record<string, BlockAnswerSubmit>;
 }
-
-const debounce = createDebounce();
 
 export function WorkBookSolve({
   workBook: { blocks, ...workBook },
-  initialSession,
-  savedAnswers,
 }: WorkBookSolveProps) {
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
-  const [focusBlockId, setFocusBlockId] = useState<string | null>(null);
+  // 풀이 시작 시간 기록
+  const startTimeRef = useRef<Date>(new Date());
 
   const [mode, setMode] = useState<"all" | "sequential">();
 
-  const [submits, setSubmits] =
-    useState<Record<string, BlockAnswerSubmit>>(savedAnswers);
-
-  const sumbmitSnapshot = useRef<Record<string, BlockAnswerSubmit>>({
-    ...savedAnswers,
-  });
-
-  const [, saveAnswerProgress, isSaving] = useSafeAction(
-    saveAnswerProgressAction,
-    {
-      onSuccess: () => {
-        sumbmitSnapshot.current = {
-          ...submits,
-        };
-      },
-      failMessage: "답안 저장에 실패했습니다.",
-    },
-  );
+  const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
 
   const [, submitWorkbookSession, isSubmitting] = useSafeAction(
     submitWorkbookSessionAction,
     {
-      onSuccess: () => {
+      onSuccess: (result) => {
         handleConfetti();
-        router.push(`/workbooks/session/${initialSession.submitId}/review`);
+        router.push(`/workbooks/session/${result.submitId}/review`);
       },
     },
   );
 
-  const isPending = isSaving || isSubmitting;
-
   const stateRef = useToRef({
-    isPending,
+    isSubmitting,
     blocks,
     submits,
   });
@@ -104,38 +62,26 @@ export function WorkBookSolve({
     return blocks[cursor];
   }, [blocks, sequentialCursor]);
 
-  const handleSaveAnswerProgress = useCallback(async () => {
-    if (stateRef.current.isPending) return;
-    const diff = extractSubmitsDiff(
-      sumbmitSnapshot.current,
-      stateRef.current.submits,
-    );
-    const hasDiff = Object.keys(diff).length > 0;
-    if (!hasDiff) return;
-    saveAnswerProgress({
-      submitId: initialSession.submitId,
-      answers: diff,
-      deleteAnswers: [],
-    });
-  }, [initialSession.submitId]);
-
   const handleSubmit = useCallback(async () => {
-    await handleSaveAnswerProgress();
+    if (stateRef.current.isSubmitting) return;
     submitWorkbookSession({
-      submitId: initialSession.submitId,
+      workBookId: workBook.id,
+      answers: stateRef.current.submits,
+      startTime: startTimeRef.current.toISOString(),
     });
-  }, [handleSaveAnswerProgress]);
+  }, [workBook.id, submitWorkbookSession]);
 
   const onNext = useCallback(() => {
     setSequentialCursor((prev) => Math.min(prev + 1, blocks.length - 1));
-  }, []);
+  }, [blocks.length]);
+
   const onPrevious = useCallback(() => {
     setSequentialCursor((prev) => Math.max(prev - 1, 0));
   }, []);
 
   const handleUpdateSubmitAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswerSubmit>) => {
-      if (stateRef.current.isPending) return;
+      if (stateRef.current.isSubmitting) return;
       setSubmits((prev) => {
         const nextSubmits = { ...prev };
         const block = stateRef.current.blocks.find((b) => b.id === id);
@@ -146,31 +92,9 @@ export function WorkBookSolve({
         );
         return nextSubmits;
       });
-      debounce(() => {
-        handleSaveAnswerProgress();
-      }, TIME.SECONDS(10));
     },
-    [handleSaveAnswerProgress],
+    [],
   );
-
-  const handleFocusBlock = useCallback<RefCallback<HTMLDivElement>>(
-    (node) => {
-      node?.scrollIntoView({ behavior: "smooth", block: "center" });
-    },
-    [focusBlockId],
-  );
-
-  useEffect(() => {
-    if (isNull(mode)) return;
-    const submitIds = Object.keys(submits);
-    if (submitIds.length == 0) return;
-    const focusBlockIndex = blocks.findIndex(
-      (block) => !submitIds.includes(block.id),
-    );
-    if (focusBlockIndex == -1) return;
-    if (mode == "sequential") setSequentialCursor(focusBlockIndex);
-    else setFocusBlockId(blocks[focusBlockIndex].id);
-  }, [mode]);
 
   return (
     <div ref={ref} className="w-full h-full pb-20">
@@ -178,12 +102,11 @@ export function WorkBookSolve({
         <GoBackButton>뒤로가기</GoBackButton>
       </div>
 
-      <div className="max-w-3xl mx-auto w-full flex flex-col  gap-6">
+      <div className="max-w-3xl mx-auto w-full flex flex-col gap-6">
         <WorkbookHeader book={workBook} mode="solve" />
         {isNull(mode) ? (
           <SolveModeSelector
             totalCount={blocks.length}
-            currentCount={Object.keys(savedAnswers).length}
             onModeSelect={setMode}
           />
         ) : mode == "all" ? (
@@ -192,7 +115,6 @@ export function WorkBookSolve({
               return (
                 <Block
                   key={block.id}
-                  ref={focusBlockId === block.id ? handleFocusBlock : undefined}
                   content={block.content}
                   id={block.id}
                   index={index}
@@ -210,7 +132,7 @@ export function WorkBookSolve({
             })}
             <div className="w-full">
               <Button onClick={handleSubmit} size="lg" className="w-full">
-                {isPending && <LoaderIcon className="size-4 animate-spin" />}
+                {isSubmitting && <LoaderIcon className="size-4 animate-spin" />}
                 제출하고 결과 보기
               </Button>
             </div>
@@ -220,7 +142,7 @@ export function WorkBookSolve({
             onNext={onNext}
             onPrevious={onPrevious}
             onSubmit={handleSubmit}
-            isPending={isPending}
+            isPending={isSubmitting}
             totalCount={blocks.length}
             currentIndex={sequentialCursor}
             blockProps={
@@ -245,22 +167,6 @@ export function WorkBookSolve({
         )}
       </div>
     </div>
-  );
-}
-
-function extractSubmitsDiff(
-  prev: Record<string, BlockAnswerSubmit> = {},
-  next: Record<string, BlockAnswerSubmit> = {},
-) {
-  return Object.entries(next).reduce(
-    (acc, [blockId, answer]) => {
-      const prevAnswer = prev[blockId];
-      if (!prevAnswer || !equal(prevAnswer, answer)) {
-        acc[blockId] = answer;
-      }
-      return acc;
-    },
-    {} as Record<string, BlockAnswerSubmit>,
   );
 }
 

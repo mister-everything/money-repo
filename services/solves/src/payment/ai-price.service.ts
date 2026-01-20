@@ -20,10 +20,24 @@ import {
 export const aiPriceService = {
   getActivePrices: async (): Promise<AIPrice[]> => {
     const prices = await pgDb
-      .select(getTableColumns(AiProviderPricesTable))
+      .select()
       .from(AiProviderPricesTable)
       .where(eq(AiProviderPricesTable.isActive, true));
     return prices;
+  },
+
+  getDefaultChatModel: async (): Promise<AIPrice | null> => {
+    const [price] = await pgDb
+      .select()
+      .from(AiProviderPricesTable)
+      .where(
+        and(
+          eq(AiProviderPricesTable.isActive, true),
+          eq(AiProviderPricesTable.isDefaultModel, true),
+        ),
+      )
+      .limit(1);
+    return price;
   },
 
   /**

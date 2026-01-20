@@ -50,6 +50,13 @@
       "when": 1766108550427,
       "tag": "0006_fat_ronan",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1768836688706,
+      "tag": "0007_sturdy_tusk",
+      "breakpoints": true
     }
   ]
 }

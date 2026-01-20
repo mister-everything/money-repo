@@ -6,7 +6,9 @@ import { SidebarController } from "@/components/ui/sidebar";
 import { WorkbookPublicPreview } from "@/components/workbook/workbook-public-preview";
 
 // 30분(1800초) 동안 캐싱 후 revalidate
-export const revalidate = 1800;
+export const revalidate = 30;
+// // 30분(1800초) 동안 캐싱 후 revalidate
+// export const revalidate = 1800;
 
 type PageProps = {
   params: Promise<{ id: string }>;

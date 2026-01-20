@@ -1101,7 +1101,7 @@ export function RankingBlockContent({
                   <div key={slotIndex} className="flex items-center gap-3">
                     <div
                       className={cn(
-                        "size-12 rounded-md flex items-center justify-center text-xs font-bold shrink-0",
+                        "size-10 rounded-md flex items-center justify-center text-xs font-bold shrink-0",
                         rankBadgeClass,
                       )}
                     >
@@ -1109,7 +1109,7 @@ export function RankingBlockContent({
                     </div>
                     <div
                       className={cn(
-                        "flex-1 flex items-center px-4 py-3 rounded-md border transition-all bg-card",
+                        "flex-1 flex items-center px-4 py-2 rounded-md border transition-all bg-card",
                         slotStatus === "correct" ? okClass : failClass,
                       )}
                     >
@@ -1171,7 +1171,7 @@ export function RankingBlockContent({
                   {/* 순위 뱃지 */}
                   <div
                     className={cn(
-                      "size-12 rounded-md flex items-center justify-center text-lg font-bold shrink-0",
+                      "size-10 rounded-md flex items-center justify-center text-sm font-bold shrink-0",
                       slotStatus === "correct" &&
                         "bg-primary text-primary-foreground",
                       slotStatus !== "correct" && rankBadgeClass,
@@ -1188,7 +1188,7 @@ export function RankingBlockContent({
                     <div
                       onClick={() => isInteractive && removeFromSlot(slotIndex)}
                       className={cn(
-                        "flex-1 flex items-center px-3 py-3 rounded-md border transition-all bg-card select-none",
+                        "flex-1 flex items-center px-3 py-2 rounded-md border transition-all bg-card select-none",
                         slotStatus === "correct" && okClass,
                         isInteractive &&
                           "cursor-pointer hover:bg-destructive/5 hover:border-destructive/50 active:scale-[0.99]",
@@ -1204,7 +1204,7 @@ export function RankingBlockContent({
                   ) : (
                     <div
                       className={cn(
-                        "flex-1 min-h-[40px] py-3 rounded-md border-2 border-dashed bg-muted/20 transition-all flex items-center justify-center",
+                        "flex-1 py-2 rounded-md border-2 border-dashed bg-muted/20 transition-all flex items-center justify-center",
                         isNextSlot &&
                           isInteractive &&
                           "border-primary bg-primary/10 animate-pulse",
