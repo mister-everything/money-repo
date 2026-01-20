@@ -9,35 +9,27 @@ import { Button } from "@/components/ui/button";
 import { ButtonSelect } from "@/components/ui/button-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCategories } from "@/hooks/query/use-categories";
-import {
-  MAX_BLOCK_COUNT,
-  WorkBookAgeGroup,
-  WorkBookSituation,
-} from "@/lib/const";
+import { MAX_BLOCK_COUNT } from "@/lib/const";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
-import { WorkbookOptions } from "@/store/types";
+
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import JsonView from "../ui/json-view";
 import { notify } from "../ui/notify";
 import { CategorySelector } from "./category-selector";
 
-interface WorkbookCreateAiFormData extends WorkbookOptions {
-  prompt?: string;
-}
-
-export function WorkbookCreateAiForm({
-  initialFormData = {
-    situation: "",
-    ageGroup: "",
+export function WorkbookCreateAiForm() {
+  const [formData, setFormData] = useState<{
+    categoryId?: number;
+    blockTypes?: BlockType[];
+    blockCount?: number;
+    prompt: string;
+  }>({
     categoryId: undefined,
     blockTypes: Object.keys(blockDisplayNames) as BlockType[],
+    blockCount: undefined,
     prompt: "",
-  },
-}: {
-  initialFormData?: WorkbookCreateAiFormData;
-}) {
-  const [formData, setFormData] = useState(initialFormData);
+  });
   const setWorkbookPlan = useWorkbookEditStore(
     (state) => state.setWorkbookPlan,
   );
@@ -92,8 +84,7 @@ export function WorkbookCreateAiForm({
     generateAndSave({
       categoryId: formData.categoryId,
       blockTypes: formData.blockTypes,
-      situation: formData.situation,
-      ageGroup: formData.ageGroup,
+      blockCount: formData.blockCount || MAX_BLOCK_COUNT,
       prompt: formData.prompt,
     });
   };
@@ -132,22 +123,6 @@ export function WorkbookCreateAiForm({
             value={formData.categoryId}
           />
         </div>
-        <div className="space-y-3">
-          <div className="flex flex-cols gap-1">
-            <label className="text-sm font-bold text-foreground">상황</label>
-          </div>
-          <ButtonSelect
-            value={formData.situation}
-            onChange={(value) => {
-              setFormData({ ...formData, situation: value as string });
-            }}
-            name="situation"
-            options={WorkBookSituation.map((value) => ({
-              label: value.label,
-              value: value.value,
-            }))}
-          />
-        </div>
 
         <div className="space-y-3">
           <div className="flex flex-cols gap-1">
@@ -170,27 +145,32 @@ export function WorkbookCreateAiForm({
         </div>
         <div className="space-y-3">
           <div className="flex flex-cols gap-1">
-            <label className="text-sm font-bold text-foreground">연령대</label>
+            <label className="text-sm font-bold text-foreground">
+              문제 개수
+            </label>
           </div>
           <ButtonSelect
-            value={formData.ageGroup || ""}
+            value={formData.blockCount?.toString() || ""}
             onChange={(value) => {
-              setFormData({ ...formData, ageGroup: value as string });
+              setFormData({ ...formData, blockCount: Number(value) });
             }}
-            name="ageGroup"
-            options={WorkBookAgeGroup.map((value) => ({
-              label: value.label,
-              value: value.value,
-            }))}
+            name="blockCount"
+            options={[
+              {
+                label: "3",
+                value: "3",
+              },
+              {
+                label: "5",
+                value: "5",
+              },
+              {
+                label: "10",
+                value: "10",
+              },
+            ]}
           />
         </div>
-
-        {!valid && (
-          <p className="w-full text-xs text-muted-foreground px-4 text-center">
-            모두 입력해주세요.
-          </p>
-        )}
-
         <div className="space-y-3">
           <div className="flex flex-col items-start gap-1">
             <label className="text-sm font-bold text-foreground">
