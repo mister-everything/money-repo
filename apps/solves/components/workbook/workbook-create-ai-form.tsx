@@ -65,7 +65,7 @@ export function WorkbookCreateAiForm({
         setWorkbookPlan(result.plan);
       },
       failMessage: errorToString,
-      successMessage: "플래닝이 완료되었습니다.",
+      successMessage: "생성이 완료되었습니다. 화면 이동중...",
     },
   );
 
@@ -81,7 +81,7 @@ export function WorkbookCreateAiForm({
       return;
     }
     const confirm = await notify.confirm({
-      title: "AI로 문제집 플래닝을 진행할까요?",
+      title: "AI로 문제 생성을 진행할까요?",
       okText: "확인",
       cancelText: "취소",
     });
@@ -216,7 +216,7 @@ export function WorkbookCreateAiForm({
           className={cn("w-full rounded-lg py-6 text-base mt-2")}
         >
           {isGenerating && <Loader className="size-4 animate-spin mr-2" />}
-          {isGenerating ? "플래닝 중..." : "AI로 플래닝하기"}
+          {isGenerating ? "생성 중..." : "AI로 생성하기"}
         </Button>
       </div>
     </div>
