@@ -1,4 +1,4 @@
-import { blockDisplayNames, Category } from "@service/solves/shared";
+import { BlockType, blockDisplayNames, Category } from "@service/solves/shared";
 import { MAX_BLOCK_COUNT, WorkBookAgeGroup, WorkBookSituation } from "../const";
 import { ASK_QUESTION_TOOL_NAME } from "./tools/workbook/ask-question-tools";
 import { WORKBOOK_META_TOOL_NAME } from "./tools/workbook/shared";
@@ -80,4 +80,62 @@ ${serializeBlocks.join("\n\n")}
 }
 
 `.trim();
+};
+
+export const workbookPlanPrompt = ({
+  category,
+  blockTypes = Object.keys(blockDisplayNames) as BlockType[],
+  blockCount,
+  userName,
+}: {
+  category?: Category;
+  blockTypes?: BlockType[];
+  blockCount: number;
+  userName?: string;
+}) => {
+  const categoryPrompt = category
+    ? `\n- 가장 중요한 문제집의 소재는 **${category.name}**입니다. **${category.name}** 와 관련된 문제를 생성해주세요. ${category.aiPrompt ? ` ${category.aiPrompt}` : ""}`
+    : "";
+  return `
+당신은 **Solves AI** 입니다. Solves AI는 “문제집 생성 전문가”로서, 목적에 맞는 고품질 문제집을 생성합니다.
+
+
+> 지금 시간은 한국 시간으로 **${new Date().toLocaleTimeString("ko-KR", { hour12: false })}** 입니다.${userName ? `\n> 사용자 이름은 **${userName}** 입니다.` : ""}
+
+# 당신의 목적
+- 사용자의 요청을 바탕으로 문제집 생성의 계획을 만드는것이 목표 입니다.${categoryPrompt}
+- 총 ${blockCount}개의  상세 계획 목록을 만드는것이 목표 입니다.
+- 문제 유형은 ${blockTypes.map((type) => `\`${blockDisplayNames[type as keyof typeof blockDisplayNames]}(${type})\``).join(", ")}로 총 ${blockTypes.length}개가 있습니다.
+
+# 계획 구조 안내
+당신이 생성할 계획은 다음 구조를 가집니다:
+
+## 1. Overview (전체 개요)
+- **title**: 문제집 제목
+- **description**: 문제집 설명
+- **goal**: 문제집의 전체 목표
+- **targetAudience**: 문제집 대상 (예: 중학교 1학년, 일반인 등)
+- **difficulty**: 문제집 전체 난이도 (easy, medium, hard)
+
+## 2. BlockPlans (총 ${blockCount}개의 문제 계획)
+각 문제에 대해 다음 정보를 포함하세요:
+- **type**: 문제 유형
+- **intent**: 문제 의도 및 목적
+- **learningObjective**: 이 문제를 통해 달성할 학습 목표
+- **expectedDifficulty**: 예상 난이도 (easy, medium, hard)
+- **topic**: 다룰 주제 또는 개념
+- **notes**: (선택) 추가 메모 또는 특별 고려사항
+
+## 3. Constraints & Guidelines (제약사항 및 가이드라인)
+- **constraints**: 문제집 생성 시 반드시 고려해야 할 제약사항 (예: 특정 개념 필수 포함, 특정 형식 사용 등)
+- **guidelines**: 문제 생성 시 따라야 할 가이드라인 (예: 실생활 예시 사용, 단계별 설명 포함 등)
+
+# 생성 시 주의사항
+- 각 문제 계획은 구체적이고 실행 가능해야 합니다.
+- 문제 간의 논리적 순서와 의존성을 고려하세요.
+- 학습 목표와 문제 계획이 일관성 있게 연결되어야 합니다.
+- 난이도 진행 방식에 따라 문제 순서를 배치하세요.
+
+
+  `.trim();
 };
