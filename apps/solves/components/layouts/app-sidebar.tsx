@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createCommunityCommentAction } from "@/actions/community";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import {
@@ -38,6 +38,7 @@ export function AppSidebar() {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const [content, setContent] = useState("");
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [, createComment, isPending] = useSafeAction(
     createCommunityCommentAction,
@@ -58,6 +59,29 @@ export function AppSidebar() {
     e.stopPropagation();
     if (!content.trim() || isPending) return;
     createComment({ content: content.trim() });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(false);
+      hoverTimeoutRef.current = null;
+    }, 200); // 딜레이
   };
 
   return (
@@ -145,8 +169,8 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-4 px-2 pb-2">
         <div
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           className={cn(
             "group relative overflow-visible rounded-xl border bg-card transition-all duration-300",
             isHovered ? "border-primary/50" : "hover:border-primary/50",
@@ -183,15 +207,15 @@ export function AppSidebar() {
                 ? "translate-y-0 opacity-100 pointer-events-auto"
                 : "translate-y-2 opacity-0 pointer-events-none",
             )}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             onClick={(e) => e.stopPropagation()}
           >
             <form onSubmit={handleSubmit} className="space-y-3">
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="오늘의 한마디를 남겨보세요..."
+                placeholder="자유롭게 의견을 남겨보세요"
                 maxLength={280}
                 rows={3}
                 disabled={isPending}

@@ -28,7 +28,9 @@ export const TestimonialsColumn = (props: {
       <motion.div
         animate={
           isHovered
-            ? {}
+            ? {
+                translateY: "-1%",
+              }
             : {
                 translateY: "-50%",
               }
