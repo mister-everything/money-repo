@@ -1,4 +1,3 @@
-import { userService } from "@service/auth";
 import { communityService } from "@service/solves";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -12,7 +11,6 @@ export const dynamic = "force-dynamic";
 export default async function CommunityPage() {
   const session = await getSession();
   const comments = await communityService.listComments({ limit: 50 });
-  const isAdmin = await userService.isAdmin(session.user.id);
 
   // 댓글을 testimonials 형식으로 변환
   const testimonials = comments.map((comment) => ({
@@ -44,7 +42,7 @@ export default async function CommunityPage() {
           커뮤니티
         </span>
       </HeaderWithSidebarToggle>
-      <div className="container max-w-7xl mx-auto py-6 px-4 pb-32">
+      <div className="container max-w-7xl mx-auto  px-4 pb-32">
         <div className="space-y-6">
           <div className="text-center max-w-2xl mx-auto">
             <h1 className="text-2xl font-bold mb-2">Small Talk</h1>
@@ -65,7 +63,6 @@ export default async function CommunityPage() {
               secondColumn={secondColumn}
               thirdColumn={thirdColumn}
               currentUserId={session.user.id}
-              isAdmin={isAdmin}
             />
           )}
         </div>
