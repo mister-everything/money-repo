@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   BookOpenCheck,
   LibraryIcon,
-  MessageSquare,
   Pencil,
   Plus,
 } from "lucide-react";
