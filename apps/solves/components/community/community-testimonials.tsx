@@ -31,7 +31,6 @@ interface CommunityTestimonialsProps {
     userId?: string;
   }>;
   currentUserId: string;
-  isAdmin: boolean;
 }
 
 export function CommunityTestimonials({
@@ -39,7 +38,6 @@ export function CommunityTestimonials({
   secondColumn,
   thirdColumn,
   currentUserId,
-  isAdmin,
 }: CommunityTestimonialsProps) {
   const router = useRouter();
 
@@ -60,7 +58,7 @@ export function CommunityTestimonials({
     <div className="flex justify-center gap-6 mt-10 mask-[linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[740px] overflow-hidden">
       <TestimonialsColumn
         testimonials={firstColumn}
-        duration={30}
+        duration={40}
         currentUserId={currentUserId}
         onDelete={handleDelete}
       />
@@ -68,7 +66,7 @@ export function CommunityTestimonials({
         <TestimonialsColumn
           testimonials={secondColumn}
           className="hidden md:block"
-          duration={25}
+          duration={38}
           currentUserId={currentUserId}
           onDelete={handleDelete}
         />
@@ -77,7 +75,7 @@ export function CommunityTestimonials({
         <TestimonialsColumn
           testimonials={thirdColumn}
           className="hidden lg:block"
-          duration={28}
+          duration={35}
           currentUserId={currentUserId}
           onDelete={handleDelete}
         />

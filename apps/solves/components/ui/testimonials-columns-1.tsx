@@ -43,21 +43,7 @@ export const TestimonialsColumn = (props: {
         isAnimatingRef.current = true;
       }
     }
-  }, [isHovered, controls, props.duration]);
-
-  // 초기 애니메이션 시작
-  useEffect(() => {
-    controls.start({
-      translateY: "-50%",
-      transition: {
-        duration: props.duration || 10,
-        repeat: Infinity,
-        ease: "linear",
-        repeatType: "loop",
-      },
-    });
-    isAnimatingRef.current = true;
-  }, [controls, props.duration]);
+  }, [isHovered, isAnimatingRef, controls]);
 
   return (
     <div
