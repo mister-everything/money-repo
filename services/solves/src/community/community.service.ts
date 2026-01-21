@@ -26,9 +26,9 @@ export const communityService = {
         )
         .limit(1);
 
-      //   if (existingComment) {
-      //     throw new PublicError("24시간 이내에는 다시 작성할 수 없어요.");
-      //   }
+      if (existingComment) {
+        throw new PublicError("24시간 이내에는 다시 작성할 수 없어요.");
+      }
 
       // 댓글 생성 (UTC 기준으로 명시적으로 저장)
       const [newComment] = await tx
