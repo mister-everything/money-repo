@@ -133,7 +133,7 @@ export const TestimonialsColumn = (props: {
                     props.currentUserId && userId === props.currentUserId;
                   return (
                     <div
-                      className="relative p-10 rounded-3xl border shadow-lg shadow-primary/10 max-w-xs w-full group"
+                      className="relative p-8 rounded-3xl border shadow-lg shadow-primary/10 max-w-xs w-full group"
                       key={i}
                     >
                       {isMyComment && commentId && props.onDelete && (
@@ -150,19 +150,19 @@ export const TestimonialsColumn = (props: {
                         </button>
                       )}
                       <div>{text}</div>
-                      <div className="flex items-center gap-2 mt-5">
+                      <div className="flex items-center gap-2 mt-4">
                         <img
-                          width={40}
-                          height={40}
+                          width={32}
+                          height={32}
                           src={image}
                           alt={name}
-                          className="h-8 w-8 rounded-full"
+                          className="h-6 w-6 rounded-full"
                         />
                         <div className="flex flex-col">
-                          <div className="font-medium tracking-tight leading-5">
+                          <div className="text-sm font-medium tracking-tight leading-tight">
                             {name}
                           </div>
-                          <div className="leading-5 opacity-60 tracking-tight">
+                          <div className="text-xs leading-tight opacity-60 tracking-tight">
                             {role}
                           </div>
                         </div>
