@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { MessageCircle, SendIcon } from "lucide-react";
+import { Flag, MessageCircle, SendIcon, ThumbsUp } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -264,6 +264,14 @@ function CommentCard({
                 대댓글 {comment.replies?.length ?? 0}개
               </Badge>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
+            >
+              <Flag className="mr-1 h-3 w-3" />
+              신고하기
+            </Button>
           </div>
           <p className="text-xs text-muted-foreground">{timeAgo}</p>
           <p className="text-sm leading-relaxed whitespace-pre-line">
@@ -291,6 +299,14 @@ function CommentCard({
         >
           <MessageCircle className="mr-1 h-3 w-3" />
           답글 달기
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ThumbsUp className="mr-1 h-3 w-3" />
+          좋아요
         </Button>
       </div>
 
@@ -367,11 +383,29 @@ function ReplyCard({ comment }: { comment: Reply }) {
             <Badge variant="secondary" className="text-2xs">
               답글
             </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
+            >
+              <Flag className="mr-1 h-3 w-3" />
+              신고하기
+            </Button>
           </div>
           <p className="text-2xs text-muted-foreground">{timeAgo}</p>
           <p className="text-sm leading-relaxed whitespace-pre-line">
             {comment.body}
           </p>
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
+            >
+              <ThumbsUp className="mr-1 h-3 w-3" />
+              좋아요
+            </Button>
+          </div>
         </div>
       </div>
     </div>
