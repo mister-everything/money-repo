@@ -270,7 +270,7 @@ function CommentCard({
               className="ml-auto h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
             >
               <Flag className="mr-1 h-3 w-3" />
-              신고하기
+              신고
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">{timeAgo}</p>
@@ -303,7 +303,7 @@ function CommentCard({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 text-xs text-muted-foreground hover:text-foreground"
+          className="ml-auto h-7 text-xs text-muted-foreground hover:text-foreground"
         >
           <ThumbsUp className="mr-1 h-3 w-3" />
           좋아요
@@ -389,14 +389,14 @@ function ReplyCard({ comment }: { comment: Reply }) {
               className="ml-auto h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
             >
               <Flag className="mr-1 h-3 w-3" />
-              신고하기
+              신고
             </Button>
           </div>
           <p className="text-2xs text-muted-foreground">{timeAgo}</p>
           <p className="text-sm leading-relaxed whitespace-pre-line">
             {comment.body}
           </p>
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center justify-end pt-1">
             <Button
               variant="ghost"
               size="sm"
