@@ -142,20 +142,6 @@ export function AppSidebar() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>커뮤니티</SidebarGroupLabel>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === "/community"}>
-                <Link href="/community" onClick={() => setOpenMobile(false)}>
-                  <MessageSquare />
-                  <span>오늘의 한마디</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-4 px-2 pb-2">
         <div
