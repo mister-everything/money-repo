@@ -2,8 +2,8 @@ import { userService } from "@service/auth";
 import { communityService } from "@service/solves";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { CommentForm } from "@/components/community/comment-form";
 import { CommunityTestimonials } from "@/components/community/community-testimonials";
+import { FixedCommentForm } from "@/components/community/fixed-comment-form";
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { getSession } from "@/lib/auth/server";
 
@@ -44,7 +44,7 @@ export default async function CommunityPage() {
           커뮤니티
         </span>
       </HeaderWithSidebarToggle>
-      <div className="container max-w-7xl mx-auto py-6 px-4">
+      <div className="container max-w-7xl mx-auto py-6 px-4 pb-32">
         <div className="space-y-6">
           <div className="text-center max-w-2xl mx-auto">
             <h1 className="text-2xl font-bold mb-2">Small Talk</h1>
@@ -53,10 +53,6 @@ export default async function CommunityPage() {
               <br />
               24시간에 한 번만 작성할 수 있어요.
             </p>
-          </div>
-
-          <div className="border rounded-lg p-4 max-w-2xl mx-auto">
-            <CommentForm />
           </div>
 
           {testimonials.length === 0 ? (
@@ -74,6 +70,7 @@ export default async function CommunityPage() {
           )}
         </div>
       </div>
+      <FixedCommentForm />
     </div>
   );
 }

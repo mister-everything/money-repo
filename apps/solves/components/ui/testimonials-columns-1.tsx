@@ -1,7 +1,7 @@
 "use client";
-import { motion } from "framer-motion";
+import { motion, useAnimationControls } from "framer-motion";
 import { XIcon } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export const TestimonialsColumn = (props: {
   className?: string;
@@ -18,6 +18,46 @@ export const TestimonialsColumn = (props: {
   onDelete?: (commentId: string) => void;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const controls = useAnimationControls();
+  const isAnimatingRef = useRef(false);
+
+  useEffect(() => {
+    if (isHovered) {
+      // hover 시 애니메이션 일시정지 (현재 위치 유지)
+      if (isAnimatingRef.current) {
+        controls.stop();
+        isAnimatingRef.current = false;
+      }
+    } else {
+      // hover 해제 시 애니메이션 재개 (현재 위치에서 계속)
+      if (!isAnimatingRef.current) {
+        controls.start({
+          translateY: "-50%",
+          transition: {
+            duration: props.duration || 10,
+            repeat: Infinity,
+            ease: "linear",
+            repeatType: "loop",
+          },
+        });
+        isAnimatingRef.current = true;
+      }
+    }
+  }, [isHovered, controls, props.duration]);
+
+  // 초기 애니메이션 시작
+  useEffect(() => {
+    controls.start({
+      translateY: "-50%",
+      transition: {
+        duration: props.duration || 10,
+        repeat: Infinity,
+        ease: "linear",
+        repeatType: "loop",
+      },
+    });
+    isAnimatingRef.current = true;
+  }, [controls, props.duration]);
 
   return (
     <div
@@ -26,25 +66,11 @@ export const TestimonialsColumn = (props: {
       onMouseLeave={() => setIsHovered(false)}
     >
       <motion.div
-        animate={
-          isHovered
-            ? {
-                translateY: "-1%",
-              }
-            : {
-                translateY: "-50%",
-              }
-        }
-        transition={{
-          duration: props.duration || 10,
-          repeat: isHovered ? 0 : Infinity,
-          ease: "linear",
-          repeatType: "loop",
-        }}
+        animate={controls}
         className="flex flex-col gap-6 pb-6 bg-background"
       >
         {[
-          ...new Array(2).fill(0).map((_, index) => (
+          ...new Array(4).fill(0).map((_, index) => (
             <React.Fragment key={index}>
               {props.testimonials.map(
                 ({ text, image, name, role, commentId, userId }, i) => {

@@ -60,7 +60,7 @@ export function CommunityTestimonials({
     <div className="flex justify-center gap-6 mt-10 mask-[linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[740px] overflow-hidden">
       <TestimonialsColumn
         testimonials={firstColumn}
-        duration={15}
+        duration={30}
         currentUserId={currentUserId}
         onDelete={handleDelete}
       />
@@ -68,7 +68,7 @@ export function CommunityTestimonials({
         <TestimonialsColumn
           testimonials={secondColumn}
           className="hidden md:block"
-          duration={19}
+          duration={25}
           currentUserId={currentUserId}
           onDelete={handleDelete}
         />
@@ -77,7 +77,7 @@ export function CommunityTestimonials({
         <TestimonialsColumn
           testimonials={thirdColumn}
           className="hidden lg:block"
-          duration={19}
+          duration={28}
           currentUserId={currentUserId}
           onDelete={handleDelete}
         />
