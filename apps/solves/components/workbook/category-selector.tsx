@@ -5,7 +5,7 @@ import { isNull } from "@workspace/util";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { Badge } from "../ui/badge";
+
 import { Button } from "../ui/button";
 import { ButtonSelect } from "../ui/button-select";
 import { CategoryIcon } from "../ui/category-icon";
@@ -80,7 +80,7 @@ export function CategoryMultipleSelector({
 
   return (
     <div className="mb-4">
-      <div className="flex overflow-x-auto gap-0.5 py-2">
+      <div className="flex flex-wrap justify-center xl:justify-start gap-2 py-2">
         {isLoading ? (
           <Skeleton className="w-full h-26" />
         ) : categories?.length ? (
@@ -100,7 +100,10 @@ export function CategoryMultipleSelector({
                       "bg-primary text-primary-foreground",
                   )}
                 >
-                  <CategoryIcon categoryName={category.name} />
+                  <CategoryIcon
+                    categoryName={category.name}
+                    className="size-6"
+                  />
                 </Button>
                 <span
                   className={cn(
@@ -121,33 +124,33 @@ export function CategoryMultipleSelector({
       </div>
 
       {visibleCategory && (
-        <div className="flex flex-wrap items-center gap-2 w-full">
-          <Badge
+        <div className="flex flex-wrap justify-center xl:justify-start items-center gap-2 w-full px-4">
+          <Button
+            size={"sm"}
             variant="secondary"
             onClick={handleRootClick}
             className={cn(
-              "cursor-pointer rounded-full py-1.5  hover:bg-primary/10 transition-all",
+              "rounded-full bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all shadow-none",
               value.includes(visibleCategory.id) &&
-                "bg-primary text-primary-foreground hover:text-primary-foreground hover:bg-primary",
+                "bg-primary text-primary-foreground",
             )}
           >
             {visibleCategory.name} 전체
-          </Badge>
+          </Button>
           {visibleChildren.map((child) => {
             const isChecked = value.includes(child.id);
             return (
-              <Badge
+              <Button
                 key={child.id}
                 variant="secondary"
                 onClick={() => handleChildClick(child.id)}
                 className={cn(
-                  "rounded-full cursor-pointer py-1.5 hover:bg-primary/5 hover:border-primary transition-all",
-                  isChecked &&
-                    "bg-primary/5 hover:bg-primary/10 border-primary",
+                  "rounded-full bg-primary/5 hover:bg-primary hover:text-primary-foreground transition-all shadow-none",
+                  isChecked && "bg-primary text-primary-foreground",
                 )}
               >
                 {child.name}
-              </Badge>
+              </Button>
             );
           })}
         </div>
@@ -170,6 +173,7 @@ interface CategorySelectorProps {
   /** 카테고리 선택 시 호출 */
   onCategoryChange?: (categoryId: number | undefined) => void;
   className?: string;
+  showIcon?: boolean;
 }
 
 export function CategorySelector({
@@ -178,6 +182,7 @@ export function CategorySelector({
   isLoading = false,
   onCategoryChange,
   className,
+  showIcon = false,
 }: CategorySelectorProps) {
   const flatedCategories = useMemo(
     () => categories.flatMap((c) => [c, ...c.children]),
