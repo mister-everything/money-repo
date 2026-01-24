@@ -21,10 +21,9 @@ import { AskQuestionOutput } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { PlanPreview } from "../workbook-plan-preview";
-import { BlockTypesStep } from "./workbook-instant-block-types-step";
 import { WorkbookInstantCategoryStep } from "./workbook-instant-category-step";
-import { PromptStep } from "./workbook-instant-prompt-step";
-import { QuestionStep } from "./workbook-instant-question-step";
+import { WorkbookInstantPromptStep } from "./workbook-instant-prompt-step";
+import { WorkbookInstantQuestionStep } from "./workbook-instant-question-step";
 
 type PlanCreateOptions = {
   categoryId?: number;
@@ -36,7 +35,6 @@ type PlanCreateOptions = {
 
 enum Step {
   CATEGORY = "category",
-  BLOCK_TYPES = "blockTypes",
   PROMPT = "prompt",
   QUESTION = "question",
   PLAN = "plan",
@@ -84,6 +82,20 @@ export function WorkbookInstantForm() {
     },
   );
 
+  const handleReset = () => {
+    setStep(Step.CATEGORY);
+    setFormData({ ...defaultOptions });
+    setWorkbookPlan(undefined);
+    setQuestion({});
+  };
+
+  const handleStart = () => {
+    notify.alert({
+      title: "문제집 생성 시작",
+      description: "문제집 생성을 시작합니다!",
+    });
+  };
+
   useEffect(() => {
     if (step === Step.QUESTION) {
       generateQuestions({
@@ -129,10 +141,6 @@ export function WorkbookInstantForm() {
               setFormData((prev) => ({ ...prev, categoryId: ct }))
             }
             categoryId={formData.categoryId}
-            onNextStep={() => setStep(Step.BLOCK_TYPES)}
-          />
-        ) : step === Step.BLOCK_TYPES ? (
-          <BlockTypesStep
             blockTypes={formData.blockTypes}
             onBlockTypesChange={(blockTypes) => {
               setFormData({ ...formData, blockTypes });
@@ -142,10 +150,9 @@ export function WorkbookInstantForm() {
               setFormData({ ...formData, blockCount });
             }}
             onNextStep={() => setStep(Step.PROMPT)}
-            onPreviousStep={() => setStep(Step.CATEGORY)}
           />
         ) : step === Step.PROMPT ? (
-          <PromptStep
+          <WorkbookInstantPromptStep
             model={formData.model}
             onModelChange={(model) => {
               setFormData({ ...formData, model });
@@ -155,10 +162,10 @@ export function WorkbookInstantForm() {
               setFormData({ ...formData, prompt });
             }}
             onNextStep={() => setStep(Step.QUESTION)}
-            onPreviousStep={() => setStep(Step.BLOCK_TYPES)}
+            onPreviousStep={() => setStep(Step.CATEGORY)}
           />
         ) : step === Step.QUESTION ? (
-          <QuestionStep
+          <WorkbookInstantQuestionStep
             input={question.input}
             output={question.output}
             onChangeOutput={(output) => {
@@ -175,30 +182,14 @@ export function WorkbookInstantForm() {
               prompt={formData.prompt}
               blockCount={formData.blockCount}
             />
-            <div className="flex items-center justify-between gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setStep(Step.CATEGORY);
-                  setFormData({ ...defaultOptions });
-                  setWorkbookPlan(undefined);
-                  setQuestion({});
-                }}
-              >
-                다시 설계하기
-              </Button>
-              <Button
-                onClick={() => {
-                  notify.alert({
-                    title: "문제집 생성 시작",
-                    description: "문제집 생성을 시작합니다!",
-                  });
-                }}
-              >
-                {" "}
-                시작하기
-              </Button>
-            </div>
+            {!isPlanGenerating && (
+              <div className="flex items-center justify-between gap-2">
+                <Button variant="outline" onClick={handleReset}>
+                  다시 설계하기
+                </Button>
+                <Button onClick={handleStart}> 시작하기</Button>
+              </div>
+            )}
           </>
         )}
       </section>

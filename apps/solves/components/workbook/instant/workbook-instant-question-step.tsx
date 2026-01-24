@@ -12,7 +12,7 @@ import { AskQuestionOutput } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { cn } from "@/lib/utils";
 import { GradualSpacingText } from "../../ui/gradual-spacing-text";
 
-export function QuestionStep({
+export function WorkbookInstantQuestionStep({
   input,
   output,
   onChangeOutput,

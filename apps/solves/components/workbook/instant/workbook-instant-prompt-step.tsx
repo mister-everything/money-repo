@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ModelDropDownMenu } from "../../chat/model-drop-down-menu";
 
-export function PromptStep({
+export function WorkbookInstantPromptStep({
   model,
   prompt,
   onModelChange,
