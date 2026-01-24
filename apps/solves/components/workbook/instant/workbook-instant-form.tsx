@@ -7,7 +7,9 @@ import {
 } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
 
-import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { LoaderIcon } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import {
   generateWorkbookPlanAction,
@@ -121,9 +123,19 @@ export function WorkbookInstantForm() {
     }
   }, [step]);
 
+  const currentStepOrder = useMemo(() => {
+    return step === Step.CATEGORY
+      ? 1
+      : step === Step.PROMPT
+        ? 2
+        : step === Step.QUESTION
+          ? 3
+          : 4;
+  }, [step]);
+
   return (
     <div className="w-full space-y-6 max-w-4xl mx-auto">
-      <header className="flex flex-col gap-2">
+      <header className="flex flex-col gap-2 py-4">
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           검색 없이 바로 시작하는 문제집 풀기
           <Badge className="rounded-full text-xs">Beta</Badge>
@@ -134,21 +146,119 @@ export function WorkbookInstantForm() {
         </p>
       </header>
 
-      <section className="space-y-6">
+      <section className="flex flex-col gap-4">
+        {/* Step Indicator */}
+        <div className="w-full flex items-center justify-center gap-1 pb-4">
+          {[
+            { order: 1, label: "카테고리", step: Step.CATEGORY },
+            { order: 2, label: "프롬프트", step: Step.PROMPT },
+            { order: 3, label: "질문", step: Step.QUESTION },
+            { order: 4, label: "계획", step: Step.PLAN },
+          ].map((item, index) => {
+            const isCompleted = currentStepOrder > item.order;
+            const isCurrent = currentStepOrder === item.order;
+            const isLoading =
+              (item.order === 3 && isQuestionGenerating) ||
+              (item.order === 4 && isPlanGenerating);
+
+            return (
+              <Fragment key={item.step}>
+                <div className="relative">
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      scale: isCurrent ? 1 : isCompleted ? 1 : 0.95,
+                    }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className={`relative size-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
+                      isCompleted || isCurrent
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-input dark:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Number.POSITIVE_INFINITY,
+                          ease: "linear",
+                        }}
+                      >
+                        <LoaderIcon className="size-4 animate-spin" />
+                      </motion.div>
+                    ) : isCompleted ? (
+                      <motion.svg
+                        initial={{ scale: 0, rotate: -90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 260,
+                          damping: 20,
+                        }}
+                        className="size-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </motion.svg>
+                    ) : (
+                      <motion.span
+                        initial={false}
+                        animate={{
+                          scale: isCurrent ? [1, 1.05, 1] : 1,
+                        }}
+                        className="font-bold"
+                        transition={{
+                          duration: 1.5,
+                          repeat: isCurrent ? Number.POSITIVE_INFINITY : 0,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        {item.order}
+                      </motion.span>
+                    )}
+                  </motion.div>
+                  {isCurrent && (
+                    <motion.span
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.3 }}
+                      className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-xs font-medium text-foreground whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </div>
+                {index < 3 && (
+                  <div className="h-0.5 w-12 md:w-20 bg-input dark:bg-muted  relative overflow-hidden rounded-full shrink-0">
+                    <motion.div
+                      initial={false}
+                      animate={{
+                        x: isCompleted ? "0%" : "-100%",
+                      }}
+                      transition={{ duration: 0.5, ease: "easeInOut" }}
+                      className="h-full w-full bg-primary"
+                    />
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
         {step === Step.CATEGORY ? (
           <WorkbookInstantCategoryStep
             onCategoryChange={(ct) =>
               setFormData((prev) => ({ ...prev, categoryId: ct }))
             }
             categoryId={formData.categoryId}
-            blockTypes={formData.blockTypes}
-            onBlockTypesChange={(blockTypes) => {
-              setFormData({ ...formData, blockTypes });
-            }}
-            blockCount={formData.blockCount}
-            onBlockCountChange={(blockCount) => {
-              setFormData({ ...formData, blockCount });
-            }}
             onNextStep={() => setStep(Step.PROMPT)}
           />
         ) : step === Step.PROMPT ? (
@@ -160,6 +270,14 @@ export function WorkbookInstantForm() {
             prompt={formData.prompt}
             onPromptChange={(prompt) => {
               setFormData({ ...formData, prompt });
+            }}
+            blockTypes={formData.blockTypes}
+            onBlockTypesChange={(blockTypes) => {
+              setFormData({ ...formData, blockTypes });
+            }}
+            blockCount={formData.blockCount}
+            onBlockCountChange={(blockCount) => {
+              setFormData({ ...formData, blockCount });
             }}
             onNextStep={() => setStep(Step.QUESTION)}
             onPreviousStep={() => setStep(Step.CATEGORY)}

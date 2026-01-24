@@ -83,11 +83,11 @@ export function WorkbookInstantQuestionStep({
   return (
     <div className="space-y-4">
       {isLoading ? (
-        <div className="rounded-2xl px-4 py-3 text-sm">
+        <div className="rounded-2xl py-3 text-sm">
           <TextShimmer>필요한 질문을 준비하고 있어요</TextShimmer>
         </div>
       ) : (
-        <div className="fade-2000 space-y-3 p-3">
+        <div className="fade-2000 space-y-3 py-3">
           {/* Header */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 w-full">
@@ -106,16 +106,6 @@ export function WorkbookInstantQuestionStep({
             </div>
           </div>
 
-          {/* Progress Bar - 2개 이상일 때만 표시 */}
-          {total > 1 && (
-            <div className="h-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${((step + 1) / total) * 100}%` }}
-              />
-            </div>
-          )}
-
           {/* Options */}
           <div className="flex flex-col gap-2 max-h-[30vh] overflow-y-auto">
             {options.map((opt, idx) => {
@@ -129,7 +119,7 @@ export function WorkbookInstantQuestionStep({
                   type="button"
                   onClick={() => handleSelect(oId)}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all",
+                    "flex items-center gap-2 rounded-lg border p-3 text-sm transition-all",
                     isSelected
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-muted bg-background hover:border-primary/40",

@@ -211,6 +211,36 @@ export function CategorySelector({
     <div className={cn("flex flex-col gap-3", className)}>
       {isLoading ? (
         <Skeleton className="w-full h-16" />
+      ) : showIcon ? (
+        <div className="flex flex-wrap justify-center xl:justify-start gap-2 py-2">
+          {oneDepthCategories.map((category) => (
+            <div
+              key={category.id}
+              onClick={() => onCategoryChange?.(category.id)}
+              className={cn(
+                "flex flex-col items-center gap-2 py-3.5 justify-center min-w-28 cursor-pointer group",
+              )}
+            >
+              <Button
+                className={cn(
+                  "size-12! bg-primary/5 group-hover:bg-primary transition-all text-primary group-hover:text-primary-foreground",
+                  oneDepthCategory?.id === category.id &&
+                    "bg-primary text-primary-foreground",
+                )}
+              >
+                <CategoryIcon categoryName={category.name} className="size-6" />
+              </Button>
+              <span
+                className={cn(
+                  "text-sm font-semibold",
+                  oneDepthCategory?.id === category.id && "font-bold",
+                )}
+              >
+                {category.name}
+              </span>
+            </div>
+          ))}
+        </div>
       ) : (
         <ButtonSelect
           value={oneDepthCategory?.id?.toString()}
@@ -225,7 +255,13 @@ export function CategorySelector({
       )}
 
       {twoDepthCategories.length > 0 && (
-        <div className="flex flex-wrap gap-2 fade-300">
+        <div
+          className={cn(
+            "flex flex-wrap gap-2 fade-300",
+
+            showIcon && "justify-center xl:justify-start",
+          )}
+        >
           <Button
             variant="secondary"
             size={"sm"}

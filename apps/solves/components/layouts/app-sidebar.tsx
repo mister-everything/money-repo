@@ -3,6 +3,7 @@
 import {
   ArrowUpRight,
   BookOpenCheck,
+  FlaskConicalIcon,
   LibraryIcon,
   Pencil,
   Plus,
@@ -25,8 +26,8 @@ import {
 } from "@/components/ui/sidebar";
 
 import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-
 import { NavUser } from "./nav-user";
 
 export function AppSidebar() {
@@ -61,6 +62,21 @@ export function AppSidebar() {
                 <Link href="/workbooks" onClick={() => setOpenMobile(false)}>
                   <LibraryIcon />
                   <span>문제 풀기</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/workbooks/instant"}
+              >
+                <Link
+                  href="/workbooks/instant"
+                  onClick={() => setOpenMobile(false)}
+                >
+                  <FlaskConicalIcon />
+                  <span>만들어서 풀기</span>
+                  <Badge className="ml-auto rounded-full text-2xs">Beta</Badge>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
