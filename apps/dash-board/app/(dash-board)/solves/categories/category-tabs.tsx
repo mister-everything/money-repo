@@ -148,7 +148,7 @@ export function CategoryTabs({ categories }: Props) {
                 )}
                 {selectedCategory.name}
               </CardTitle>
-              <CardDescription></CardDescription>
+              <CardDescription>순서: {selectedCategory.order}</CardDescription>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

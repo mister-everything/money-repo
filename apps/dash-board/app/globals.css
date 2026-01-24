@@ -1,9 +1,17 @@
-@import 'tailwindcss';
-@import '@workspace/tailwind-config';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "@workspace/tailwind-config";
+@import "tw-animate-css";
 
 @layer base {
   body {
     @apply bg-sidebar;
   }
+}
+
+:root {
+  --sidebar: oklch(0.985 0 0);
+}
+
+.dark {
+  --sidebar: oklch(0.21 0.006 285.885);
 }

@@ -3,7 +3,17 @@ import { PublicError } from "@workspace/error";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import { CommunityCommentTable } from "./schema";
-import { CommunityComment, CommunityCommentWithUser } from "./types";
+import { CommunityComment } from "./types";
+
+const CommunityCommentColumns = {
+  id: CommunityCommentTable.id,
+  content: CommunityCommentTable.content,
+  createdAt: CommunityCommentTable.createdAt,
+  ownerPublicId: userTable.publicId,
+  ownerName: userTable.nickname,
+  ownerProfile: userTable.image,
+  ownerRole: userTable.role,
+};
 
 export const communityService = {
   async createComment({
@@ -36,11 +46,18 @@ export const communityService = {
         .values({
           userId,
           content,
-          createdAt: sql`NOW()`,
         })
-        .returning();
+        .returning({
+          id: CommunityCommentTable.id,
+        });
 
-      return newComment;
+      const [row] = await tx
+        .select(CommunityCommentColumns)
+        .from(CommunityCommentTable)
+        .innerJoin(userTable, eq(CommunityCommentTable.userId, userTable.id))
+        .where(eq(CommunityCommentTable.id, newComment.id));
+
+      return row;
     });
   },
 
@@ -48,32 +65,15 @@ export const communityService = {
     limit = 50,
   }: {
     limit?: number;
-  }): Promise<CommunityCommentWithUser[]> {
+  }): Promise<CommunityComment[]> {
     const comments = await pgDb
-      .select({
-        id: CommunityCommentTable.id,
-        userId: CommunityCommentTable.userId,
-        content: CommunityCommentTable.content,
-        createdAt: CommunityCommentTable.createdAt,
-        user: {
-          id: userTable.id,
-          name: userTable.name,
-          nickname: userTable.nickname,
-          image: userTable.image,
-        },
-      })
+      .select(CommunityCommentColumns)
       .from(CommunityCommentTable)
       .innerJoin(userTable, eq(CommunityCommentTable.userId, userTable.id))
       .orderBy(desc(CommunityCommentTable.createdAt))
       .limit(limit);
 
-    return comments.map((comment) => ({
-      id: comment.id,
-      userId: comment.userId,
-      content: comment.content,
-      createdAt: comment.createdAt,
-      user: comment.user,
-    }));
+    return comments;
   },
 
   async deleteComment({

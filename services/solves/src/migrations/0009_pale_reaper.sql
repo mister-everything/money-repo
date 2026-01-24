@@ -1,0 +1,1 @@
+ALTER TABLE "solves"."category" ADD COLUMN IF NOT EXISTS "order" integer DEFAULT 0 NOT NULL;
