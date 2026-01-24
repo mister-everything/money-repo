@@ -2,13 +2,13 @@
 
 import { CategoryTree } from "@service/solves/shared";
 import { isNull } from "@workspace/util";
-import { LightbulbIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ButtonSelect } from "../ui/button-select";
+import { CategoryIcon } from "../ui/category-icon";
 import { Skeleton } from "../ui/skeleton";
 
 interface CategoryMultipleSelectorProps {
@@ -85,31 +85,31 @@ export function CategoryMultipleSelector({
           <Skeleton className="w-full h-26" />
         ) : categories?.length ? (
           categories.map((category) => {
-            const selectedChildCount = category.children.filter((c) =>
-              value.includes(c.id),
-            );
-            const isSelected = value.includes(category.id);
-
             return (
               <div
                 key={category.id}
                 onClick={() => setVisibleCategoryId(category.id)}
                 className={cn(
-                  "flex flex-col items-center gap-2 py-3.5 justify-center min-w-28 cursor-pointer",
-                  "hover:bg-secondary/50 rounded-md",
-                  visibleCategoryId === category.id && "bg-secondary",
+                  "flex flex-col items-center gap-2 py-3.5 justify-center min-w-28 cursor-pointer group",
                 )}
               >
                 <Button
                   className={cn(
-                    "size-12!",
-                    (Boolean(selectedChildCount) || isSelected) &&
-                      "ring-2 ring-primary",
+                    "size-12! bg-primary/5 group-hover:bg-primary transition-all text-primary group-hover:text-primary-foreground",
+                    visibleCategoryId === category.id &&
+                      "bg-primary text-primary-foreground",
                   )}
                 >
-                  <LightbulbIcon />
+                  <CategoryIcon categoryName={category.name} />
                 </Button>
-                <span className="text-sm font-bold">{category.name}</span>
+                <span
+                  className={cn(
+                    "text-sm font-semibold",
+                    visibleCategoryId === category.id && "font-bold",
+                  )}
+                >
+                  {category.name}
+                </span>
               </div>
             );
           })

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { CommentForm } from "@/components/community/comment-form";
 import { CommentItem } from "@/components/community/comment-item";
 import { GoBackButton } from "@/components/layouts/go-back-button";
-import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
+
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
 import { SidebarController } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
