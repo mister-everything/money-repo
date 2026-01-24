@@ -4,8 +4,10 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { CommentForm } from "@/components/community/comment-form";
 import { CommentItem } from "@/components/community/comment-item";
+import { GoBackButton } from "@/components/layouts/go-back-button";
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
+import { SidebarController } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 const FaultyTerminal = dynamic(
@@ -30,7 +32,8 @@ export function CommunityClient({
   >(() => initialComments);
 
   return (
-    <div className="flex flex-col relative h-full overflow-hidden">
+    <div className="flex flex-col relative h-full overflow-hidden bg-background">
+      <SidebarController openMounted={false} openUnmounted={true} />
       <div className="absolute inset-0 w-full h-full opacity-50">
         <FaultyTerminal mouseReact={false} />
         <div
@@ -41,12 +44,12 @@ export function CommunityClient({
           }}
         />
       </div>
-      <HeaderWithSidebarToggle>
-        <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
-          커뮤니티
-        </span>
-      </HeaderWithSidebarToggle>
-      <div className="h-full z-10 overflow-y-auto">
+
+      <div className="absolute top-0 left-0 z-20 p-4">
+        <GoBackButton>뒤로가기</GoBackButton>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none bg-linear-to-t from-background via-background/80 to-transparent z-20" />
+      <div className="h-full z-10 overflow-y-auto relative py-12">
         <div
           className={cn(
             "container max-w-7xl mx-auto px-4 pb-32",
@@ -86,7 +89,7 @@ export function CommunityClient({
           </div>
         </div>
       </div>
-      <div className="max-w-2xl mx-auto absolute bottom-12 left-0 right-0 z-10">
+      <div className="max-w-2xl mx-auto absolute bottom-12 left-0 right-0 z-30">
         <CommentForm
           hasSession={hasSession}
           onCreateComment={(newComment) => {

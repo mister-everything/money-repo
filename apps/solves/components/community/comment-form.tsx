@@ -1,7 +1,7 @@
 "use client";
 
 import { CommunityComment } from "@service/solves";
-import { ArrowUpIcon, LoaderIcon, LogIn } from "lucide-react";
+import { ArrowUpIcon, LoaderIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { createCommunityCommentAction } from "@/actions/community";
@@ -54,7 +54,6 @@ export function CommentForm({
     return (
       <div className="bg-background flex items-center justify-between gap-3 border shadow-lg rounded-full p-4 px-6">
         <div className="flex items-center gap-2">
-          <LogIn className="size-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             로그인하고 이야기를 남겨보세요
           </span>
