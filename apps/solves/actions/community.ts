@@ -15,7 +15,6 @@ export const createCommunityCommentAction = safeAction(
       userId: session.user.id,
       content: input.content,
     });
-
     return comment;
   },
 );
@@ -30,7 +29,5 @@ export const deleteCommunityCommentAction = safeAction(
       requesterUserId: session.user.id,
       isAdmin,
     });
-
-    return { success: true };
   },
 );
