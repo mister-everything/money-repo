@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  BlockType,
-  blockDisplayNames,
-  ChatModel,
-} from "@service/solves/shared";
+import { BlockType, blockDisplayNames } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
 
 import { motion } from "framer-motion";
@@ -21,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
 import { AskQuestionOutput } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { useAiStore } from "@/store/ai-store";
 import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { PlanPreview } from "../workbook-plan-preview";
 import { WorkbookInstantCategoryStep } from "./workbook-instant-category-step";
@@ -32,7 +29,6 @@ type PlanCreateOptions = {
   blockTypes: BlockType[];
   blockCount: number;
   prompt: string;
-  model?: ChatModel;
 };
 
 enum Step {
@@ -58,6 +54,8 @@ export function WorkbookInstantForm() {
     input?: AskQuestionInput; // 질문
     output?: AskQuestionOutput; // 질문 답변
   }>({});
+
+  const { chatModel, setChatModel } = useAiStore();
 
   const [workbookPlan, setWorkbookPlan] = useWorkbookEditStore(
     useShallow((state) => [state.workbookPlan, state.setWorkbookPlan]),
@@ -103,7 +101,7 @@ export function WorkbookInstantForm() {
       generateQuestions({
         categoryId: formData.categoryId!,
         prompt: formData.prompt,
-        model: formData.model!,
+        model: chatModel!,
         blockTypes: formData.blockTypes,
         blockCount: formData.blockCount,
       });
@@ -116,7 +114,7 @@ export function WorkbookInstantForm() {
           output: question.output ?? { answers: [] },
         },
         prompt: formData.prompt,
-        model: formData.model!,
+        model: chatModel!,
         blockTypes: formData.blockTypes,
         blockCount: formData.blockCount,
       });
@@ -263,10 +261,8 @@ export function WorkbookInstantForm() {
           />
         ) : step === Step.PROMPT ? (
           <WorkbookInstantPromptStep
-            model={formData.model}
-            onModelChange={(model) => {
-              setFormData({ ...formData, model });
-            }}
+            model={chatModel}
+            onModelChange={setChatModel}
             prompt={formData.prompt}
             onPromptChange={(prompt) => {
               setFormData({ ...formData, prompt });
@@ -302,10 +298,17 @@ export function WorkbookInstantForm() {
             />
             {!isPlanGenerating && (
               <div className="flex items-center justify-between gap-2">
-                <Button variant="outline" onClick={handleReset}>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="shadow-none bg-input flex-1"
+                  onClick={handleReset}
+                >
                   다시 설계하기
                 </Button>
-                <Button onClick={handleStart}> 시작하기</Button>
+                <Button onClick={handleStart} size="lg" className="flex-1">
+                  시작하기
+                </Button>
               </div>
             )}
           </>

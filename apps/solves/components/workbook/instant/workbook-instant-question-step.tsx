@@ -1,8 +1,3 @@
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CornerDownLeftIcon,
-} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { AskQuestionInput } from "@/components/chat/tool-part/ask-question-tool-part";
 import { Badge } from "@/components/ui/badge";
@@ -148,7 +143,7 @@ export function WorkbookInstantQuestionStep({
 
           {/* 추가 메시지 입력 - 마지막 스텝에서만 표시 */}
           {isLast && (
-            <div className="pt-2">
+            <div className="">
               <textarea
                 value={output?.additionalMessage ?? ""}
                 onChange={(e) =>
@@ -169,24 +164,25 @@ export function WorkbookInstantQuestionStep({
             {!isFirst && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="lg"
                 onClick={() => setStep((s) => s - 1)}
-                className="gap-1"
+                className="gap-1 flex-1 shadow-none bg-input"
               >
-                <ChevronLeftIcon className="size-4" />
                 이전
               </Button>
             )}
-            <div className="flex-1" />
+
             {isLast ? (
-              <Button onClick={onNextStep} className="gap-1">
+              <Button onClick={onNextStep} className="gap-1 flex-1" size="lg">
                 완료
-                <CornerDownLeftIcon className="size-4" />
               </Button>
             ) : (
-              <Button onClick={() => setStep((s) => s + 1)} className="gap-1">
+              <Button
+                onClick={() => setStep((s) => s + 1)}
+                className="gap-1 flex-1"
+                size="lg"
+              >
                 다음
-                <ChevronRightIcon className="size-4" />
               </Button>
             )}
           </div>
