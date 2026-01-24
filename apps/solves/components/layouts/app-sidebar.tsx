@@ -8,9 +8,8 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { createCommunityCommentAction } from "@/actions/community";
+import { usePathname } from "next/navigation";
+
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import {
   Sidebar,
@@ -22,70 +21,20 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useSafeAction } from "@/lib/protocol/use-safe-action";
+
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
+
 import { NavUser } from "./nav-user";
 
 export function AppSidebar() {
   const { setOpenMobile } = useSidebar();
   const pathname = usePathname();
-  const router = useRouter();
-  const [isHovered, setIsHovered] = useState(false);
-  const [content, setContent] = useState("");
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const [, createComment, isPending] = useSafeAction(
-    createCommunityCommentAction,
-    {
-      successMessage: "댓글이 작성되었어요.",
-      failMessage: (error) => error.message || "댓글 작성에 실패했어요.",
-      onSuccess: () => {
-        setContent("");
-        setIsHovered(false);
-        router.push("/community");
-        router.refresh();
-      },
-    },
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!content.trim() || isPending) return;
-    createComment({ content: content.trim() });
-  };
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleMouseEnter = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    hoverTimeoutRef.current = setTimeout(() => {
-      setIsHovered(false);
-      hoverTimeoutRef.current = null;
-    }, 200); // 딜레이
-  };
 
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
-      <SidebarRail />
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -167,76 +116,28 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-4 px-2 pb-2">
-        <div
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+        <Link
+          href="/community"
           className={cn(
-            "group relative overflow-visible rounded-xl border bg-card transition-all duration-300",
-            isHovered ? "border-primary/50" : "hover:border-primary/50",
+            "group hover:bg-secondary/60 flex flex-col gap-2 p-4 group rounded-lg fade-300",
           )}
+          onClick={() => setOpenMobile(false)}
         >
-          <Link
-            href="/community"
-            onClick={() => setOpenMobile(false)}
-            className="relative flex flex-col gap-2 p-4"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 space-y-1">
-                <AnimatedShinyText
-                  shimmerWidth={120}
-                  className={cn("font-bold text-foreground", "mx-0 max-w-none")}
-                >
-                  Small Talk
-                </AnimatedShinyText>
-                <p className="text-xs text-muted-foreground">
-                  서비스에 대한 의견 또는 자유로운 이야기를 나눠보세요
-                </p>
-              </div>
-              <div className="flex items-center gap-1 text-sm font-medium text-foreground/70 group-hover:text-foreground transition-colors">
-                <ArrowUpRight className="size-4" />
-              </div>
-            </div>
-          </Link>
+          <div className="flex items-center gap-1 justify-between">
+            <AnimatedShinyText
+              shimmerWidth={120}
+              className={cn("font-bold text-foreground", "mx-0 max-w-none")}
+            >
+              Small Talk
+            </AnimatedShinyText>
 
-          {/* 입력창이 위로 튀어나오는 효과 */}
-          <div
-            className={cn(
-              "absolute bottom-full left-0 right-0 mb-2 rounded-xl border bg-card p-4 shadow-lg transition-all duration-300 ease-out",
-              isHovered
-                ? "translate-y-0 opacity-100 pointer-events-auto"
-                : "translate-y-2 opacity-0 pointer-events-none",
-            )}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="자유롭게 의견을 남겨보세요"
-                maxLength={280}
-                rows={3}
-                disabled={isPending}
-                autoFocus={isHovered}
-                className="resize-none"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-muted-foreground">
-                  {content.length}/280
-                </span>
-                <Button
-                  type="submit"
-                  disabled={!content.trim() || isPending}
-                  size="sm"
-                >
-                  {isPending ? "작성 중..." : "작성하기"}
-                </Button>
-              </div>
-            </form>
+            <ArrowUpRight className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
-        </div>
+          <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+            서비스에 대한 의견 또는 자유로운 이야기를 나눠보세요
+          </p>
+        </Link>
+
         <SidebarMenu>
           <NavUser />
         </SidebarMenu>

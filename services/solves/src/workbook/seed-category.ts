@@ -3,58 +3,110 @@ import { categoryService } from "./category.service";
 
 /**
  * 카테고리 시드 데이터
- * { name: string, description: string, children: string[] }
+ * { name: string, description: string, order: number, children: Array<{ name: string, order: number }> }
  */
 const categoryData = [
   {
-    name: "일반 상식",
+    name: "시사 • 상식",
     description: "특정 분야에 국한되지 않은 보편적이고 재미 위주의 지식",
-    children: ["기초 상식", "넌센스", "일상 잡학"],
+    order: 0,
+    children: [
+      { name: "기초 상식", order: 0 },
+      { name: "넌센스", order: 0 },
+      { name: "일상 잡학", order: 0 },
+    ],
   },
   {
     name: "학교 교과목",
     description: "초/중/고 교육과정 기반의 심화 및 내신/수능 대비 문제",
-    children: ["국어", "수학", "영어", "사회", "과학", "예체능"],
+    order: 1,
+    children: [
+      { name: "국어", order: 0 },
+      { name: "수학", order: 0 },
+      { name: "영어", order: 0 },
+      { name: "사회", order: 0 },
+      { name: "과학", order: 0 },
+      { name: "예체능", order: 0 },
+    ],
   },
   {
-    name: "시사",
-    description: "최근 1년 이내 주요 뉴스, 정책, 사회 이슈",
-    children: ["국내 정치/사회", "국제/외교", "문학/철학", "전통문화"],
-  },
-  {
-    name: "역사/문화/예술",
+    name: "역사 • 문화 • 예술",
     description: "연도, 작품명/작가 연결, 유적지 상식 등",
-    children: ["한국사", "세계사", "미술사", "음악사", "문학/철학"],
+    order: 2,
+    children: [
+      { name: "한국사", order: 0 },
+      { name: "세계사", order: 0 },
+      { name: "미술사", order: 0 },
+      { name: "음악사", order: 0 },
+      { name: "문학 • 철학", order: 0 },
+    ],
   },
   {
-    name: "영화/음악",
+    name: "영화 • 음악",
     description: "배우/가수/곡 제목 맞히기, 팬덤 지식",
-    children: ["K-POP", "팝/클래식", "영화/드라마", "웹툰/애니메이션"],
+    order: 3,
+    children: [
+      { name: "K-POP", order: 0 },
+      { name: "팝/클래식", order: 0 },
+      { name: "영화/드라마", order: 0 },
+      { name: "웹툰/애니메이션", order: 0 },
+    ],
   },
   {
-    name: "업무/직무",
+    name: "업무 • 직무",
     description: "전문 직무 지식, 팀빌딩 퀴즈, 워크숍 자료",
-    children: ["HR/경영", "비즈니스매너", "직장생활", "마케팅/홍보", "IT/개발"],
+    order: 4,
+    children: [
+      { name: "HR/경영", order: 0 },
+      { name: "비즈니스매너", order: 0 },
+      { name: "직장생활", order: 0 },
+      { name: "마케팅/홍보", order: 0 },
+      { name: "IT/개발", order: 0 },
+    ],
   },
   {
-    name: "MBTI/성향",
+    name: "MBTI • 성향 • 트렌드",
     description: "재미 중심의 심리 테스트",
-    children: ["MBTI 유형", "애니어그램", "심리테스트", "가치관"],
+    order: 5,
+    children: [
+      { name: "MBTI 유형", order: 0 },
+      { name: "애니어그램", order: 0 },
+      { name: "심리테스트", order: 0 },
+      { name: "가치관", order: 0 },
+      { name: "유행어", order: 0 },
+      { name: "SNS트렌드", order: 0 },
+    ],
   },
   {
-    name: "밈/트렌드",
-    description: "라이트 유저 대상의 재미 요소, 유행어 생성 배경 파악 퀴즈",
-    children: ["유행어", "SNS트렌드", "밸런스게임"],
-  },
-  {
-    name: "취미/라이프스타일",
+    name: "취미 • 라이프스타일",
     description: "특정 취미 분야 전문 지식 테스트, 라이프스타일 취향 파악 퀴즈",
-    children: ["여행", "스포츠", "요리", "패션/뷰티", "반려동물", "건강/웰빙"],
+    order: 6,
+    children: [
+      { name: "여행", order: 0 },
+      { name: "스포츠", order: 0 },
+      { name: "요리", order: 0 },
+      { name: "패션/뷰티", order: 0 },
+      { name: "반려동물", order: 0 },
+      { name: "건강/웰빙", order: 0 },
+    ],
   },
   {
-    name: "과학/기술/IT",
+    name: "과학 • 기술 • IT",
     description: "기술 용어 이해도, 과학 원리 응용, 테크 트렌드 파악 문제",
-    children: ["인공지능(AI)", "우주/천문학", "생명과학", "최신 IT 트렌드"],
+    order: 7,
+    children: [
+      { name: "인공지능(AI)", order: 0 },
+      { name: "우주/천문학", order: 0 },
+      { name: "생명과학", order: 0 },
+      { name: "최신 IT 트렌드", order: 0 },
+    ],
+  },
+  {
+    name: "기타",
+    description: null,
+    aiPrompt: "ETC 항목 입니다. 사용자에게 어떤 문제집을 만들건지 구체적으로 질문이 필요합니다.",
+    order: 20,
+    children: [],
   },
 ];
 
@@ -75,24 +127,26 @@ export const seedCategory = async () => {
         name: category.name,
         parentId: null,
         description: category.description,
-        aiPrompt: null,
+        aiPrompt: category.aiPrompt || null,
+        order: category.order,
       });
       logger.info(`✅ 루트 카테고리 생성: ${rootCategory.name}`);
     }
 
     // 하위 카테고리 처리
-    for (const childName of category.children) {
+    for (const child of category.children) {
       const existsChild = await categoryService.getCategoryByNameAndParent(
-        childName,
+        child.name,
         rootCategory.id,
       );
 
       if (!existsChild) {
         await categoryService.insertCategory({
-          name: childName,
+          name: child.name,
           parentId: rootCategory.id,
           description: null,
           aiPrompt: null,
+          order: child.order,
         });
       }
     }
