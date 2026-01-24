@@ -220,6 +220,22 @@
     animation: gentle-bounce 3s ease-in-out infinite;
   }
 
+  @keyframes shiny-text {
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+
+  .animate-shiny-text {
+    animation: shiny-text 8s infinite;
+  }
+
   .max-w-8xl {
     max-width: 96rem; /* 1536px */
   }

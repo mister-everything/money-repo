@@ -1,4 +1,6 @@
 export * from "./chat/types";
+export * from "./community/shared";
+export * from "./community/types";
 export * from "./payment/shared";
 export * from "./payment/types";
 export * from "./workbook/block-config";
