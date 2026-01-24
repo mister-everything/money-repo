@@ -40,3 +40,14 @@ export const askQuestionTool: Tool = createTool({
     "Collect structured multiple-choice answers from the user. Provide one or more questions with options, and set allow_multiple when multi-select is appropriate.",
   inputSchema: askQuestionInputSchema,
 });
+
+export const askQuestionOutputSchema = z.object({
+  answers: z.array(
+    z.object({
+      questionId: z.string(),
+      selectedOptionIds: z.array(z.string()),
+    }),
+  ),
+  additionalMessage: z.string().optional(),
+});
+export type AskQuestionOutput = z.infer<typeof askQuestionOutputSchema>;

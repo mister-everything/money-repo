@@ -2,8 +2,9 @@ import { BlockType, blockDisplayNames, Category } from "@service/solves/shared";
 import { MAX_BLOCK_COUNT, WorkBookAgeGroup, WorkBookSituation } from "../const";
 import { ASK_QUESTION_TOOL_NAME } from "./tools/workbook/ask-question-tools";
 import { WORKBOOK_META_TOOL_NAME } from "./tools/workbook/shared";
+import { WorkbookPlan } from "./tools/workbook/workbook-plan";
 
-export const WorkBookCreatePrompt = ({
+export const CreateWorkBookPrompt = ({
   title,
   description,
   blockTypes,
@@ -82,7 +83,7 @@ ${serializeBlocks.join("\n\n")}
 `.trim();
 };
 
-export const workbookPlanPrompt = ({
+export const CreateWorkbookPlanPrompt = ({
   category,
   blockTypes = Object.keys(blockDisplayNames) as BlockType[],
   blockCount,
@@ -135,7 +136,138 @@ export const workbookPlanPrompt = ({
 - 문제 간의 논리적 순서와 의존성을 고려하세요.
 - 학습 목표와 문제 계획이 일관성 있게 연결되어야 합니다.
 - 난이도 진행 방식에 따라 문제 순서를 배치하세요.
-
-
   `.trim();
+};
+
+export const CreateWorkbookPlanQuestionsPrompt = ({
+  category,
+  blockCount,
+  userName,
+}: {
+  category?: Category;
+  blockCount: number;
+  userName?: string;
+}) => {
+  const categoryPrompt = category
+    ? `\n- 문제집 카테고리(소재)는 **${category.name}**로 이미 선택되었습니다. 질문은 이 카테고리 안에서 “문제집 계획”을 더 정교하게 만드는 데 집중하세요.${category.aiPrompt ? ` ${category.aiPrompt}` : ""}`
+    : "\n- 문제집 카테고리(소재)는 이미 선택되어 있습니다. 질문은 “문제집 계획”을 더 정교하게 만드는 데 집중하세요.";
+
+  return `
+당신은 **Solves AI** 입니다. Solves AI는 “문제집 생성 전문 AI”로서, 사용자의 요청을 바탕으로 **문제집 계획(workbook plan)** 을 최고 품질로 세우는 것이 목적입니다.
+
+> 지금 시간은 한국 시간으로 **${new Date().toLocaleTimeString("ko-KR", { hour12: false })}** 입니다.${userName ? `\n> 사용자 이름은 **${userName}** 입니다.` : ""}
+
+# 이미 확정된 값(절대 질문하지 말 것)
+- 카테고리: 확정${categoryPrompt}
+- 문제 수(blockCount): **${blockCount}개** (확정)
+
+# 당신의 목표 (ask 단계의 역할)
+- 사용자의 짧은 요청(예: “~~~한 문제집 만들어줘”)만으로는 **문제집 계획이 빈약해질 때**,
+  계획을 디테일하게 만들기 위해 필요한 **핵심 질문 2~3개만** 생성한다.
+- 질문은 “답변을 받으면 곧바로 계획(overview + blockPlans)의 방향이 확정되는 것”이어야 한다.
+
+# 출력 형식 (askQuestionInputSchema)
+- 출력은 반드시 **JSON만**. (설명/마크다운/코드펜스 금지)
+- questions: **2~3개 고정**
+- 각 질문의 options: **3~4개 고정**
+- allow_multiple: 기본 false (특별한 이유가 있을 때만 true)
+
+# 질문 설계 규칙 (품질 핵심)
+- 질문은 “문제집 계획”을 채우기 위한 것:
+  - overview에 반영될 큰 방향(평가 목적/대상/범위)
+  - blockPlans에 반영될 구체 요소(평가할 역량, 문제 성격, 난이도 흐름)
+- 질문은 아래 우선순위에서 **가장 영향 큰 것만 2~3개** 고른다:
+  1) 평가 목적/기준(무엇을 뽑기 위한 문제집인가)
+  2) 평가 범위(어디까지 포함/제외할 것인가)
+  3) 문제 성격/채점 방식(암기/이해/응용/디버깅/설계 등)
+- 사용자가 이미 말한 내용은 다시 묻지 않는다.
+- options 라벨은 “선택하면 바로 계획 문장으로 쓸 수 있게” 구체적으로 작성한다.
+- 질문 id / 옵션 id는 예측 가능하게:
+  - 질문 id: q_focus, q_scope, q_style
+  - 옵션 id: opt_...
+
+# 금지
+- 확정된 값(categoryId, blockTypes, model, blockCount)을 묻는 질문 금지
+- 플랜 JSON(workbookPlanSchema) 생성 금지
+- 장문 해설 금지
+
+`.trim();
+};
+
+export const CreateBlockWithPlanPrompt = ({
+  plan,
+  previousBlocks = [],
+}: {
+  plan: Omit<WorkbookPlan, "blockPlans">;
+  previousBlocks?: string[];
+}) => {
+  const constraintsText = plan.constraints?.length
+    ? plan.constraints.map((c) => `- ${c}`).join("\n")
+    : "- 없음";
+
+  const guidelinesText = plan.guidelines?.length
+    ? plan.guidelines.map((g) => `- ${g}`).join("\n")
+    : "- 없음";
+
+  const prevText = previousBlocks?.length
+    ? previousBlocks.map((b, i) => `[#${i + 1}]\n${b}`).join("\n\n")
+    : "없음";
+
+  return `
+너는 문제 생성 전문가야
+너의 임무는 사용자 메시지로 전달되는 blockPlan(JSON 1개)을 기반으로 도구를 사용하여 **문제(블록) 1개만** 생성하는 것이다.
+
+> 지금 시간은 한국 시간으로 **${new Date().toLocaleTimeString("ko-KR", { hour12: false })}** 입니다.
+    
+# 문제집(전역) 정보
+- 제목: "${plan.overview.title}"
+- 설명: "${plan.overview.description}"
+- 전체 목표: "${plan.overview.goal}"
+- 대상: "${plan.overview.targetAudience}"
+- 문제집 전체 난이도(톤/기준): "${plan.overview.difficulty}"
+
+# 전역 제약/가이드라인 (모든 문제에 공통 적용)
+constraints:
+${constraintsText}
+
+guidelines:
+${guidelinesText}
+
+# 이미 생성된 문제들(previousBlocks)
+- 아래 목록은 이미 만들어진 기존 문제들이다.
+- 너는 이 목록을 참고하여 **중복/유사 문제를 만들지 말아야** 한다.
+- 동일한 질문, 동일한 지문, 동일한 정답 구조(보기 구성/정답 위치/수치/상황)가 반복되면 안 된다.
+- 같은 topic이라도 관점/상황/수치/지문/보기 구성을 바꿔 변주하라.
+
+${prevText}
+
+# 입력 형태 (User Message)
+사용자 메시지는 아래 형태의 JSON "하나"만 제공한다:
+{
+  "type": string,
+  "intent": string,
+  "learningObjective": string,
+  "expectedDifficulty": "easy" | "medium" | "hard",
+  "topic": string,
+  "notes"?: string
+}
+
+# 핵심 규칙 (절대 준수)
+1) 이번 응답에서는 **문제 1개만** 생성하라.
+2) 문제 유형은 사용자 메시지의 type을 정확히 따르라. (임의 변경 금지)
+3) 문제는 intent / learningObjective / topic / notes 를 직접 반영하라.
+4) 난이도는 expectedDifficulty를 최우선으로 맞추되,
+   전체 톤/표현은 대상("${plan.overview.targetAudience}")과 전체 난이도("${plan.overview.difficulty}")에 맞춰 일관되게 유지하라.
+5) previousBlocks와 **중복/유사**하면 안 된다. (유사 판단 기준: 주제 동일 + 질문 구조 유사 + 정답 패턴 유사 등)
+6) 정보가 부족하면 최소한의 보수적 가정으로 문제를 성립시키되,
+   문제 품질을 해치지 말아라.
+
+# 난이도 가이드
+- easy: 단순 회상/기초 확인, 지문 짧게, 함정 최소
+- medium: 개념 적용/간단 추론, 조건 활용, 변별력 있는 보기
+- hard: 다단계 추론/복합 개념, 오개념 유도 보기 가능(단 정답 명확)
+
+
+이제 사용자 메시지로 제공되는 blockPlan(JSON 1개)을 사용해 문제 1개를 생성하라.
+    `.trim();
 };

@@ -17,17 +17,13 @@ import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { DeepPartial } from "@/global";
 import { ToolCanceledMessage } from "@/lib/ai/shared";
-import { askQuestionInputSchema } from "@/lib/ai/tools/workbook/ask-question-tools";
+import {
+  AskQuestionOutput,
+  askQuestionInputSchema,
+} from "@/lib/ai/tools/workbook/ask-question-tools";
 import { cn } from "@/lib/utils";
 
 export type AskQuestionInput = z.infer<typeof askQuestionInputSchema>;
-export type AskQuestionOutput = {
-  answers: Array<{
-    questionId: string;
-    selectedOptionIds: string[];
-  }>;
-  additionalMessage?: string;
-};
 
 interface AskQuestionToolPartProps {
   part: ToolUIPart;
@@ -206,7 +202,7 @@ type SelectionMap = Record<string, string[]>;
 interface AskQuestionInteractionProps {
   part: ToolUIPart;
   addToolOutput: UseChatHelpers<UIMessage>["addToolOutput"];
-  cancelTool: () => void;
+  cancelTool?: () => void;
 }
 
 export function AskQuestionInteraction({
@@ -299,15 +295,17 @@ export function AskQuestionInteraction({
               <GradualSpacingText key={step} text={question?.prompt ?? ""} />
             </span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 ml-auto"
-            onClick={cancelTool}
-            title="건너뛰기"
-          >
-            <XIcon className="size-4" />
-          </Button>
+          {cancelTool && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 ml-auto"
+              onClick={cancelTool}
+              title="건너뛰기"
+            >
+              <XIcon className="size-4" />
+            </Button>
+          )}
         </div>
       </div>
 
