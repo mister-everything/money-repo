@@ -32,7 +32,9 @@ export function ModelDropDownMenu({
 
   const selectedModel = useMemo(() => {
     const m = defaultModel || chatModel;
-    return modelList?.find((model) => model.model === m?.model);
+    return modelList?.find((model) => {
+      return model.model === m?.model && model.provider === m?.provider;
+    });
   }, [modelList, defaultModel, chatModel]);
 
   const handleModelChange = useCallback(
@@ -59,15 +61,16 @@ export function ModelDropDownMenu({
             {chatModel?.model ? (
               <>
                 <ModelProviderIcon
-                  provider={chatModel.provider}
-                  // className="size-3 opacity-0 group-hover:opacity-100 group-data-[state=open]:opacity-100 transition-opacity duration-200"
+                  provider={
+                    selectedModel?.provider || chatModel?.provider || ""
+                  }
                   className="size-3 group-data-[state=open]:opacity-100 transition-opacity duration-200"
                 />
                 <span
                   className="text-foreground group-data-[state=open]:text-foreground  "
                   data-testid="selected-model-name"
                 >
-                  {chatModel?.displayName}
+                  {selectedModel?.displayName || chatModel?.displayName || ""}
                 </span>
               </>
             ) : (

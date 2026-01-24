@@ -1,7 +1,17 @@
-import { BlockAnswer, BlockContent, BlockType, SystemPrompt } from "@service/solves/shared";
+import {
+  BlockAnswer,
+  BlockContent,
+  BlockType,
+  SystemPrompt,
+} from "@service/solves/shared";
 import { exclude } from "@workspace/util";
 import { isToolUIPart, ToolUIPart, UIMessage, UIMessagePart } from "ai";
 import z from "zod";
+import {
+  askQuestionInputSchema,
+  askQuestionOutputSchema,
+} from "@/lib/ai/tools/workbook/ask-question-tools";
+import { MAX_BLOCK_COUNT } from "@/lib/const";
 
 export const DefaultChatRequest = z.object({
   messages: z.array(z.any() as z.ZodType<UIMessage>),
@@ -96,3 +106,25 @@ export type ChatRequest = z.infer<typeof ChatRequest>;
 export type CompletionRequest = z.infer<typeof CompletionRequest>;
 export type ExplainSolutionRequest = z.infer<typeof ExplainSolutionRequest>;
 export type Options = z.infer<typeof Options>;
+
+export const generateWorkbookPlanQuestionInputSchema = z.object({
+  categoryId: z.number("카테고리를 선택해주세요"),
+  blockTypes: z.array(z.string()).optional(),
+  model: z.object({
+    provider: z.string(),
+    model: z.string(),
+  }),
+  blockCount: z
+    .number(`최소 1개, 최대 ${MAX_BLOCK_COUNT}개를 선택해주세요`)
+    .min(1)
+    .max(MAX_BLOCK_COUNT),
+  prompt: z.string("프롬프트를 입력해주세요").min(1),
+});
+
+export const generateWorkbookPlanInputSchema =
+  generateWorkbookPlanQuestionInputSchema.extend({
+    askQuestion: z.object({
+      input: askQuestionInputSchema,
+      output: askQuestionOutputSchema,
+    }),
+  });

@@ -1,5 +1,5 @@
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
-import { WorkbookCreateAiForm } from "@/components/workbook/workbook-create-ai-form";
+import { WorkbookInstantForm } from "@/components/workbook/instant/workbook-instant-form";
 
 export default async function WorkBookAiCreatePage() {
   return (
@@ -10,7 +10,7 @@ export default async function WorkBookAiCreatePage() {
         </span>
       </HeaderWithSidebarToggle>
       <div className="w-max-3xl mx-auto flex flex-col w-full p-6 pt-0!">
-        <WorkbookCreateAiForm />
+        <WorkbookInstantForm />
       </div>
     </div>
   );
