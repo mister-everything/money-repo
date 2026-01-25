@@ -50,8 +50,8 @@ export function PlanPreview({
   const DifficultyIcon = difficulty.icon;
 
   return (
-    <div className="space-y-6 w-full bg-background/80 p-4 rounded-2xl">
-      <div className="flex items-center justify-between gap-3 ">
+    <div className="space-y-4 w-full p-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{plan.overview.title}</h2>
         </div>

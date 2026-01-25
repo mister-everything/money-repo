@@ -299,6 +299,7 @@ export function WorkbookInstantForm() {
               plan={workbookPlan}
               isLoading={isPlanGenerating}
               prompt={formData.prompt}
+              categoryId={formData.categoryId}
               blockCount={formData.blockCount}
             />
             {!isPlanGenerating && (

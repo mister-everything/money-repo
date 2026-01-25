@@ -45,7 +45,7 @@ export default async function WorkBookCreatePage({
   const hasSession = !!session?.user;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <HeaderWithSidebarToggle>
         <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
           문제집 생성
