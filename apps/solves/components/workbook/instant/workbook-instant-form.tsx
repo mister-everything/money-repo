@@ -13,7 +13,6 @@ import {
 } from "@/actions/workbook-ai";
 import { AskQuestionInput } from "@/components/chat/tool-part/ask-question-tool-part";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { notify } from "@/components/ui/notify";
 import { AskQuestionOutput } from "@/lib/ai/tools/workbook/ask-question-tools";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
@@ -146,7 +145,7 @@ export function WorkbookInstantForm() {
 
       <section className="flex flex-col gap-4">
         {/* Step Indicator */}
-        <div className="w-full flex items-center justify-center gap-1 pb-5">
+        <div className="w-full flex items-center justify-center gap-1 pb-6">
           {[
             { order: 1, label: "카테고리", step: Step.CATEGORY },
             { order: 2, label: "프롬프트", step: Step.PROMPT },
@@ -294,30 +293,15 @@ export function WorkbookInstantForm() {
             isLoading={isQuestionGenerating}
           />
         ) : (
-          <>
-            <PlanPreview
-              plan={workbookPlan}
-              isLoading={isPlanGenerating}
-              prompt={formData.prompt}
-              categoryId={formData.categoryId}
-              blockCount={formData.blockCount}
-            />
-            {!isPlanGenerating && (
-              <div className="flex items-center justify-between gap-2">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="shadow-none bg-input flex-1"
-                  onClick={handleReset}
-                >
-                  다시 설계하기
-                </Button>
-                <Button onClick={handleStart} size="lg" className="flex-1">
-                  시작하기
-                </Button>
-              </div>
-            )}
-          </>
+          <PlanPreview
+            plan={workbookPlan}
+            isLoading={isPlanGenerating}
+            prompt={formData.prompt}
+            categoryId={formData.categoryId}
+            blockCount={formData.blockCount}
+            onStart={handleStart}
+            onReset={handleReset}
+          />
         )}
       </section>
     </div>

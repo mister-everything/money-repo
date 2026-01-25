@@ -214,7 +214,7 @@ function Loading() {
   return (
     <div className="space-y-4 py-3">
       <div className="rounded-lg w-full flex items-center justify-between">
-        <TextShimmer>몇가지 필요한 질문을 생성하는 중</TextShimmer>
+        <TextShimmer>문제 생성을 위해 필요한 질문을 생성하는 중</TextShimmer>
       </div>
 
       {/* 고정 높이 컨테이너 */}

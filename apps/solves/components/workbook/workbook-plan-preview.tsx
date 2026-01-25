@@ -1,11 +1,11 @@
 "use client";
 
 import { blockDisplayNames } from "@service/solves/shared";
-import { motion } from "framer-motion";
-import { SignalHigh, SignalLow, SignalMedium } from "lucide-react";
-import { useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-
+import { Button } from "@/components/ui/button";
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TextShimmer } from "@/components/ui/text-shimmer";
@@ -13,10 +13,10 @@ import { useCategories } from "@/hooks/query/use-categories";
 import { WorkbookPlan } from "@/lib/ai/tools/workbook/workbook-plan";
 import { cn } from "@/lib/utils";
 
-const difficultyMeta = {
-  easy: { label: "쉬움", icon: SignalLow, tone: "text-emerald-500" },
-  medium: { label: "보통", icon: SignalMedium, tone: "text-amber-500" },
-  hard: { label: "도전", icon: SignalHigh, tone: "text-rose-500" },
+const difficultyLabel = {
+  easy: "쉬움",
+  medium: "보통",
+  hard: "어려움",
 } as const;
 
 interface PlanPreviewProps {
@@ -25,6 +25,8 @@ interface PlanPreviewProps {
   prompt?: string;
   blockCount?: number;
   categoryId?: number;
+  onStart?: () => void;
+  onReset?: () => void;
 }
 
 export function PlanPreview({
@@ -33,7 +35,12 @@ export function PlanPreview({
   prompt,
   blockCount = plan?.blockPlans.length ?? 0,
   categoryId,
+  onStart,
+  onReset,
 }: PlanPreviewProps) {
+  const [expandedBlock, setExpandedBlock] = useState<number | null>(null);
+  const [showConstraints, setShowConstraints] = useState(false);
+
   if (isLoading) {
     return <PlanGenerationLoading prompt={prompt} blockCount={blockCount} />;
   }
@@ -46,136 +53,201 @@ export function PlanPreview({
     return categories.find((c) => c.id === categoryId);
   }, [categories, categoryId]);
 
-  const difficulty = difficultyMeta[plan.overview.difficulty ?? "medium"];
-  const DifficultyIcon = difficulty.icon;
+  const hasConstraintsOrGuidelines =
+    (plan.constraints?.length ?? 0) > 0 || (plan.guidelines?.length ?? 0) > 0;
 
   return (
-    <div className="space-y-4 w-full p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{plan.overview.title}</h2>
+    <div className="w-full space-y-4">
+      {/* 헤더: 제목 + 배지 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-xl font-bold flex-1 truncate">
+            {plan.overview.title}
+          </h2>
+
+          <Badge className="rounded-full py-1">
+            {category?.name ?? "선택한 소재"}
+          </Badge>
         </div>
-        <Badge variant="outline" className="rounded-full">
-          {category?.name ?? "선택한 소재"}
-        </Badge>
+
+        <p className="text-sm text-muted-foreground">
+          {plan.overview.description}
+        </p>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-4">
-        <div className="w-1/2 space-y-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">설명</p>
-            <p className="text-sm text-foreground">
-              {plan.overview.description}
-            </p>
-          </div>
-          <div className="grid gap-3 grid-cols-2 text-sm">
-            <div className="rounded-lg bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground">목표</p>
-              <p className="font-medium">{plan.overview.goal}</p>
-            </div>
-            <div className="rounded-lg bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground">대상</p>
-              <p className="font-medium">{plan.overview.targetAudience}</p>
-            </div>
-            <div className="rounded-lg bg-muted/30 p-3 flex items-center gap-2">
-              <div
-                className={cn("rounded-full bg-muted/60 p-2", difficulty.tone)}
-              >
-                <DifficultyIcon className="size-4" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">난이도</p>
-                <p className="font-medium">{difficulty.label}</p>
-              </div>
-            </div>
-            <div className="rounded-lg bg-muted/30 p-3">
-              <p className="text-xs text-muted-foreground">문제 수</p>
-              <p className="font-medium">{blockCount}문제</p>
-            </div>
-          </div>
-          {(plan.constraints?.length || plan.guidelines?.length) && (
-            <div className="space-y-2 text-sm">
-              {plan.constraints?.length ? (
-                <div>
-                  <p className="text-xs text-muted-foreground">제약</p>
-                  <ul>
-                    {plan.constraints.map((constraint) => (
-                      <li key={constraint}>{constraint}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {plan.guidelines?.length ? (
-                <div>
-                  <p className="text-xs text-muted-foreground">가이드</p>
-                  <ul>
-                    {plan.guidelines.map((guideline) => (
-                      <li key={guideline}>{guideline}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-          )}
+      {/* 계획 요약 카드 */}
+      <div className="rounded-xl space-y-3">
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground font-medium">대상</p>
+          <p className="text-sm">{plan.overview.targetAudience}</p>
+        </div>
+        <div className="space-y-1 pt-2 ">
+          <p className="text-xs text-muted-foreground font-medium">목표</p>
+          <p className="text-sm">{plan.overview.goal}</p>
         </div>
 
-        <div className="w-1/2 space-y-4">
-          <div className="flex items-center justify-between text-sm font-semibold">
-            <span>문제 계획 전체</span>
-            <Badge variant="secondary" className="rounded-full">
-              {plan.blockPlans.length}문제
-            </Badge>
-          </div>
-          <div className="space-y-3 pr-1 scrollbar-hide">
-            {plan.blockPlans.map((block, index) => {
-              const blockDifficulty =
-                difficultyMeta[block.expectedDifficulty ?? "medium"];
-              const BlockDifficultyIcon = blockDifficulty.icon;
-              return (
-                <div
-                  key={`${block.topic}-${index}`}
-                  className="rounded-xl bg-muted/30 p-3 space-y-2"
+        {hasConstraintsOrGuidelines && (
+          <div className="pt-2">
+            <Button
+              variant={showConstraints ? "ghost" : "secondary"}
+              size="lg"
+              onClick={() => setShowConstraints(!showConstraints)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <p className="text-xs font-medium">제약 및 가이드</p>
+              <ChevronDown
+                className={cn(
+                  "size-4 text-muted-foreground transition-transform duration-150",
+                  showConstraints && "rotate-180",
+                )}
+              />
+            </Button>
+            <AnimatePresence>
+              {showConstraints && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden px-4"
                 >
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>#{index + 1}</span>
-                    <Badge variant="outline" className="rounded-full">
-                      {blockDisplayNames[block.type]}
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-medium">{block.topic}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span
-                      className={cn(
-                        "flex items-center gap-1",
-                        blockDifficulty.tone,
-                      )}
-                    >
-                      <BlockDifficultyIcon className="size-3" />
-                      {blockDifficulty.label}
-                    </span>
-                    <span className="text-muted-foreground/50">-</span>
-                    <span className="truncate">{block.learningObjective}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>
-                      <span className="font-semibold text-foreground/80">
-                        의도:
-                      </span>{" "}
-                      {block.intent}
-                    </p>
-                    {block.notes ? (
-                      <p>
-                        <span className="font-semibold text-foreground/80">
-                          메모:
-                        </span>{" "}
-                        {block.notes}
-                      </p>
+                  <div className="space-y-3 pt-2 text-sm">
+                    {plan.constraints?.length ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">제약</p>
+                        <ul className="space-y-1">
+                          {plan.constraints.map((c) => (
+                            <li key={c} className="flex items-start gap-2">
+                              <span className="text-muted-foreground">•</span>
+                              <span>{c}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {plan.guidelines?.length ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">가이드</p>
+                        <ul className="space-y-1">
+                          {plan.guidelines.map((g) => (
+                            <li key={g} className="flex items-start gap-2">
+                              <span className="text-muted-foreground">•</span>
+                              <span>{g}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     ) : null}
                   </div>
-                </div>
-              );
-            })}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+        )}
+      </div>
+
+      {/* 버튼 */}
+      {(onStart || onReset) && (
+        <div className="flex items-center gap-2">
+          {onReset && (
+            <Button
+              variant="secondary"
+              size="lg"
+              className="shadow-none bg-background dark:bg-muted"
+              onClick={onReset}
+            >
+              다시 설계하기
+            </Button>
+          )}
+          {onStart && (
+            <Button onClick={onStart} size="lg" className="flex-1 gap-2">
+              시작하기
+              <ChevronRight className="size-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* 문제 계획 (바로 보임) */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-muted-foreground">문제 계획</p>
+        <div className="space-y-1">
+          {plan.blockPlans.map((block, index) => {
+            const blockDifficulty = block.expectedDifficulty ?? "medium";
+            const isExpanded = expandedBlock === index;
+
+            return (
+              <div
+                key={`${block.topic}-${index}`}
+                className={cn(
+                  "rounded-lg transition-all duration-150",
+                  isExpanded ? "bg-muted/20" : "bg-card hover:bg-muted/10",
+                )}
+              >
+                <button
+                  onClick={() => setExpandedBlock(isExpanded ? null : index)}
+                  className="w-full text-left px-4 py-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <span className="text-sm font-medium text-muted-foreground tabular-nums">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <p className="text-sm font-medium truncate flex-1">
+                        {block.topic}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs text-muted-foreground">
+                        {difficultyLabel[blockDifficulty]}
+                      </span>
+                      <span className="text-muted-foreground mx-1">·</span>
+                      <span className="text-xs text-muted-foreground">
+                        {blockDisplayNames[block.type]}
+                      </span>
+                      <ChevronDown
+                        className={cn(
+                          "size-3.5 text-muted-foreground transition-transform duration-150 ml-1",
+                          isExpanded && "rotate-180",
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1 ml-7">
+                    {block.learningObjective}
+                  </div>
+                </button>
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-3 pt-2 space-y-3 text-sm ml-7">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <span>출제 의도</span>
+                          </div>
+                          <p>{block.intent}</p>
+                        </div>
+                        {block.notes && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <span>주의사항</span>
+                            </div>
+                            <p>{block.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
