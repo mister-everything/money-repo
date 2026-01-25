@@ -170,7 +170,7 @@ export const CreateWorkbookPlanQuestionsPrompt = ({
 - 출력은 반드시 **JSON만**. (설명/마크다운/코드펜스 금지)
 - questions: **2~3개 고정**
 - 각 질문의 options: **3~4개 고정**
-- allow_multiple: 기본 false (특별한 이유가 있을 때만 true)
+- allow_multiple: 기본 true (특별한 이유가 있을 때만 false)
 
 # 질문 설계 규칙 (품질 핵심)
 - 질문은 “문제집 계획”을 채우기 위한 것:

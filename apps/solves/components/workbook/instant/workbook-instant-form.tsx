@@ -146,7 +146,7 @@ export function WorkbookInstantForm() {
 
       <section className="flex flex-col gap-4">
         {/* Step Indicator */}
-        <div className="w-full flex items-center justify-center gap-1 pb-4">
+        <div className="w-full flex items-center justify-center gap-1 pb-5">
           {[
             { order: 1, label: "카테고리", step: Step.CATEGORY },
             { order: 2, label: "프롬프트", step: Step.PROMPT },
@@ -168,11 +168,16 @@ export function WorkbookInstantForm() {
                       scale: isCurrent ? 1 : isCompleted ? 1 : 0.95,
                     }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
+                    onClick={() => {
+                      if (isCompleted) {
+                        setStep(item.step);
+                      }
+                    }}
                     className={`relative size-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
                       isCompleted || isCurrent
                         ? "bg-primary text-primary-foreground"
                         : "bg-input dark:bg-muted text-muted-foreground"
-                    }`}
+                    } ${isCompleted ? "cursor-pointer hover:scale-110 transition-transform" : ""}`}
                   >
                     {isLoading ? (
                       <motion.div
@@ -229,7 +234,7 @@ export function WorkbookInstantForm() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -5 }}
                       transition={{ duration: 0.3 }}
-                      className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-xs font-medium text-foreground whitespace-nowrap"
+                      className="absolute top-full mt-3 left-1/2 -translate-x-1/2 text-xs font-medium text-foreground whitespace-nowrap"
                     >
                       {item.label}
                     </motion.span>
