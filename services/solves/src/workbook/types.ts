@@ -109,6 +109,7 @@ export type Category = {
   parentId: number | null;
   description: string | null;
   aiPrompt: string | null;
+  order: number;
   createdAt: Date;
 };
 

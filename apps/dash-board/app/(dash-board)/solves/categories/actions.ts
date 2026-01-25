@@ -1,6 +1,7 @@
 "use server";
 
 import { categoryService } from "@service/solves";
+import { Category } from "@service/solves/shared";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/server";
 import { safeAction } from "@/lib/protocol/server-action";
@@ -10,6 +11,7 @@ const addCategorySchema = z.object({
   parentId: z.number().optional(),
   description: z.string().max(300).optional(),
   aiPrompt: z.string().max(300).optional(),
+  order: z.number().int().min(0).optional(),
 });
 
 export type AddCategoryData = z.infer<typeof addCategorySchema>;
@@ -20,12 +22,13 @@ export type AddCategoryData = z.infer<typeof addCategorySchema>;
 export const addCategoryAction = safeAction(addCategorySchema, async (data) => {
   const session = await getSession();
   const category = await categoryService.insertCategory({
+    ...data,
     name: data.name,
     parentId: data.parentId ?? null,
     description: data.description ?? null,
     aiPrompt: data.aiPrompt ?? null,
     createdId: session.user.id,
-  });
+  } as Category & { createdId: string });
 
   return { category };
 });
@@ -38,6 +41,7 @@ const updateCategorySchema = z.object({
   name: z.string().min(1).max(50).optional(),
   description: z.string().max(300).optional(),
   aiPrompt: z.string().max(300).optional(),
+  order: z.number().int().min(0).optional(),
 });
 
 export type UpdateCategoryData = z.infer<typeof updateCategorySchema>;
@@ -53,6 +57,7 @@ export const updateCategoryAction = safeAction(
       name: data.name,
       description: data.description || null,
       aiPrompt: data.aiPrompt || null,
+      order: data.order,
     });
 
     return { category: exists };

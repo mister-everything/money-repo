@@ -57,6 +57,20 @@
       "when": 1768836688706,
       "tag": "0007_sturdy_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1768956603714,
+      "tag": "0008_needy_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1769240083575,
+      "tag": "0009_pale_reaper",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,6 @@ import {
   SafeFailResponse,
   SafeFunction,
   SafeResponse,
-  SafeSuccessResponse,
   UnwrapSafeSuccessResponse,
 } from "./interface";
 
@@ -24,7 +23,9 @@ export function useSafeAction<T, U>(
   options?: SafeActionOptions<T, UnwrapSafeSuccessResponse<U>>,
 ) {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<SafeResponse<U> | null>(null);
+  const [result, setResult] = useState<SafeResponse<
+    UnwrapSafeSuccessResponse<U>
+  > | null>(null);
 
   const action = useCallback(
     (input: T | undefined = undefined) => {
@@ -39,7 +40,7 @@ export function useSafeAction<T, U>(
             if (isSafeFail(result)) throw result;
 
             const data = result.data;
-            setResult(result as SafeSuccessResponse<U>);
+            setResult(result as SafeResponse<UnwrapSafeSuccessResponse<U>>);
 
             options?.onSuccess?.(data as UnwrapSafeSuccessResponse<U>);
             options?.onFinish?.(
