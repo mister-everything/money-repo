@@ -211,7 +211,7 @@ export const workBookCommentsTable = solvesSchema.table("work_book_comments", {
   workBookId: uuid("work_book_id")
     .notNull()
     .references(() => workBooksTable.id, { onDelete: "cascade" }),
-  parentId: uuid("parent_id").references(() => workBookCommentsTable.id, {
+  parentId: uuid("parent_id").references((): any => workBookCommentsTable.id, {
     onDelete: "set null",
   }),
   authorId: text("author_id").references(() => userTable.id, {
