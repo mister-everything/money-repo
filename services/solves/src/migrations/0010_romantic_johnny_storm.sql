@@ -35,6 +35,7 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 --> statement-breakpoint
+DO $$ BEGIN
 ALTER TABLE "solves"."work_book_comments" ADD CONSTRAINT "work_book_comments_parent_id_work_book_comments_id_fk" FOREIGN KEY ("parent_id") REFERENCES "solves"."work_book_comments"("id") ON DELETE set null ON UPDATE no action;
 EXCEPTION
   WHEN duplicate_object THEN NULL;
