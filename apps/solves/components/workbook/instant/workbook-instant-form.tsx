@@ -97,6 +97,7 @@ export function WorkbookInstantForm() {
 
   useEffect(() => {
     if (step === Step.QUESTION) {
+      setQuestion({});
       generateQuestions({
         categoryId: formData.categoryId!,
         prompt: formData.prompt,
@@ -106,6 +107,7 @@ export function WorkbookInstantForm() {
       });
     }
     if (step === Step.PLAN) {
+      setWorkbookPlan(undefined);
       generatePlan({
         categoryId: formData.categoryId!,
         askQuestion: {
