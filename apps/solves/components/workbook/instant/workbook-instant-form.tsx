@@ -5,6 +5,7 @@ import { errorToString } from "@workspace/util";
 
 import { motion } from "framer-motion";
 import { LoaderIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import {
@@ -44,6 +45,7 @@ const defaultOptions: PlanCreateOptions = {
 };
 
 export function WorkbookInstantForm() {
+  const router = useRouter();
   const [formData, setFormData] = useState<PlanCreateOptions>({
     ...defaultOptions,
   });
@@ -88,12 +90,30 @@ export function WorkbookInstantForm() {
     setQuestion({});
   };
 
-  const handleStart = () => {
-    // PART3 진입점
-    notify.alert({
+  const handleStart = async () => {
+    const confirm = await notify.confirm({
       title: "문제집 생성 시작",
       description: "문제집 생성을 시작합니다!",
+      okText: "이대로 진행하기",
+      cancelText: "다시 선택하기",
     });
+    if (!confirm) return;
+
+    if (!workbookPlan) {
+      notify.alert({
+        title: "플랜이 없습니다",
+        description: "문제집 플랜 생성이 필요합니다.",
+      });
+      return;
+    }
+    if (!formData.categoryId) {
+      notify.alert({
+        title: "카테고리가 없습니다",
+        description: "카테고리를 먼저 선택해주세요.",
+      });
+      return;
+    }
+    router.push(`/workbooks/instant/solve?categoryId=${formData.categoryId}`);
   };
 
   useEffect(() => {

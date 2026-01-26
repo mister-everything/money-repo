@@ -16,9 +16,13 @@ import { WorkBookLikeButton } from "./workbook-like-button";
 
 interface WorkBookReviewProps {
   session: WorkBookReviewSession;
+  hideActions?: boolean;
 }
 
-export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
+export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
+  session,
+  hideActions = false,
+}) => {
   const submitAnswerByBlockId = session.submitAnswers.reduce(
     (acc, submitAnswer) => {
       acc[submitAnswer.blockId] = {
@@ -33,21 +37,24 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
   const [copied, copy] = useCopy();
 
   const handleShare = useCallback(() => {
+    if (hideActions) return;
     const url = `${window.location.origin}/workbooks/${session.workBook.id}/preview`;
     copy(url);
-  }, [session.workBook.id]);
+  }, [hideActions, session.workBook.id]);
 
   return (
     <div className="w-full px-4">
-      <div className="sticky top-0 z-10 backdrop-blur-sm flex items-center gap-2">
-        <div className="ml-auto lg:hidden">
-          <WorkBookLikeButton
-            workBookId={session.workBook.id}
-            initialIsLiked={session.isLiked}
-            initialLikeCount={session.workBook.likeCount}
-          />
+      {!hideActions && (
+        <div className="sticky top-0 z-10 backdrop-blur-sm flex items-center gap-2">
+          <div className="ml-auto lg:hidden">
+            <WorkBookLikeButton
+              workBookId={session.workBook.id}
+              initialIsLiked={session.isLiked}
+              initialLikeCount={session.workBook.likeCount}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="w-full lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,56rem)_minmax(0,1fr)] lg:gap-x-6">
         <div className="hidden lg:block" />
@@ -109,28 +116,30 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
             })}
           </div>
         </div>
-        <div className="hidden lg:flex lg:justify-center">
-          <div className="sticky top-[20%] h-fit pt-1 flex flex-col gap-4">
-            <WorkBookLikeButton
-              workBookId={session.workBook.id}
-              initialIsLiked={session.isLiked}
-              initialLikeCount={session.workBook.likeCount}
-            />
-            <div className="flex flex-col items-center justify-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="text-muted-foreground"
-                onClick={handleShare}
-              >
-                {copied ? <CheckIcon /> : <Share2Icon />}
-              </Button>
-              <span className="text-2xs text-muted-foreground">
-                {copied ? "링크 복사됨" : "공유"}
-              </span>
+        {!hideActions && (
+          <div className="hidden lg:flex lg:justify-center">
+            <div className="sticky top-[20%] h-fit pt-1 flex flex-col gap-4">
+              <WorkBookLikeButton
+                workBookId={session.workBook.id}
+                initialIsLiked={session.isLiked}
+                initialLikeCount={session.workBook.likeCount}
+              />
+              <div className="flex flex-col items-center justify-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-muted-foreground"
+                  onClick={handleShare}
+                >
+                  {copied ? <CheckIcon /> : <Share2Icon />}
+                </Button>
+                <span className="text-2xs text-muted-foreground">
+                  {copied ? "링크 복사됨" : "공유"}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
