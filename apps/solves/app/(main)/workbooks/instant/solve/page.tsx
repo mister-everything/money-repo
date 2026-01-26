@@ -1,5 +1,6 @@
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { WorkbookInstantSolve } from "@/components/workbook/instant/workbook-instant-solve";
+import { Suspense } from "react";
 
 export default function WorkbookInstantSolvePage() {
   return (
@@ -10,7 +11,9 @@ export default function WorkbookInstantSolvePage() {
         </span>
       </HeaderWithSidebarToggle>
       <div className="w-max-4xl mx-auto flex flex-col w-full p-6 pt-0!">
-        <WorkbookInstantSolve />
+        <Suspense fallback={<div>Loading...</div>}>
+          <WorkbookInstantSolve />
+        </Suspense>
       </div>
     </div>
   );
