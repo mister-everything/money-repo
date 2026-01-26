@@ -1,13 +1,38 @@
 "use client";
 
+import {
+  COMMENT_REPORT_REASON_SECTIONS,
+  ReportCategoryDetail,
+  ReportTargetType,
+} from "@service/report/shared";
+import { badWords } from "@workspace/util";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Flag, MessageCircle, SendIcon, ThumbsUp } from "lucide-react";
-import { useState } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Flag, Loader, MessageCircle, Pencil, SendIcon, ThumbsUp, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  createCommentAction,
+  createReplyAction,
+  deleteCommentAction,
+  getCommentsAction,
+  toggleCommentLikeAction,
+  updateCommentAction,
+} from "@/actions/comment";
+import { createReportAction } from "@/actions/report";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -17,87 +42,169 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { authClient } from "@/lib/auth/client";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { cn } from "@/lib/utils";
+import { notify } from "../ui/notify";
 
-// 대댓글 타입
-type Reply = {
+type CommentData = {
   id: string;
-  user: {
-    name: string;
-    initials: string;
-    role?: "author"; // 나중에 갔다버려 
-  };
-  postedAt: string;
+  parentId: string | null;
+  authorId: string | null;
+  authorNickname: string | null;
+  authorImage: string | null;
   body: string;
+  createdAt: Date;
+  editedAt: Date | null;
+  deletedAt: Date | null;
+  likeCount: number;
+  isLikedByMe: boolean;
 };
 
-// 댓글 타입
-type Comment = {
-  id: string;
-  user: {
-    name: string;
-    initials: string;
-    role?: "author"; // 나중에 갔다버려 
-  };
-  postedAt: string;
-  body: string;
-  replies?: Reply[];
+type CommentWithReplies = CommentData & {
+  replies: CommentData[];
 };
 
-// 목업 데이터: API 연동 전까지 UI 미리보기용
-const mockComments: Comment[] = [
-  {
-    id: "c1",
-    user: { name: "전인산", initials: "전" },
-    postedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-    body: "서울의 수도면 강남 아님? 장난해?",
-    replies: [
-      {
-        id: "c1-r1",
-        user: { name: "최성근", initials: "최", role: "author" },
-        postedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        body: "불편해? 불편하면 자세를 고쳐앉아",
-      },
-      {
-        id: "c1-r2",
-        user: { name: "조현재", initials: "조" },
-        postedAt: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
-        body: "서울은 나라 아닌가요??",
-      },
-    ],
-  },
-  {
-    id: "c2",
-    user: { name: "이수민", initials: "이"},
-    postedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    body: "이수만 아니구요 이수민인데요 잘생긴 순서 4번문제 법적 소송 걸게요",
-  },
-  {
-    id: "c3",
-    user: { name: "박주창", initials: "박" },
-    postedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-    body: "문제 3번 키 183cm 안 되는 사람도 있음? 푸푸푸푸푸푸풉~~",
-  },
-  {
-    id: "c4",
-    user: { name: "다혜", initials: "다" },
-    postedAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-    body: "......잘...있...ㅈ..ㅣ...?",
-  },
-];
+const BEST_COMMENT_THRESHOLD = 10;
+
+const validateComment = (
+  text: string,
+): { valid: boolean; error?: string } => {
+  const lowerText = text.toLowerCase();
+  for (const word of badWords) {
+    if (lowerText.includes(word)) {
+      return {
+        valid: false,
+        error: `비속어가 포함되어 있습니다: ${word}`,
+      };
+    }
+  }
+  return { valid: true };
+};
 
 export function WorkbookCommentsPanel({
   open,
   onOpenChange,
+  workBookId,
+  workBookOwnerId,
   workbookTitle,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  workBookId: string;
+  workBookOwnerId: string;
   workbookTitle?: string;
 }) {
-  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const { data: session } = authClient.useSession();
+  const currentUserId = session?.user?.id;
+
+  const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [openReplies, setOpenReplies] = useState<Record<string, boolean>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<Record<string, string>>({});
+  const [newCommentText, setNewCommentText] = useState("");
+
+  const commentValidation = useMemo(() => {
+    return validateComment(newCommentText);
+  }, [newCommentText]);
+
+  // 대댓글 포함 댓글 총 개수
+  const totalCount = useMemo(() => {
+    return comments.reduce((acc, c) => acc + 1 + c.replies.length, 0);
+  }, [comments]);
+  // 댓글 목록 조회
+  const [, fetchComments, isFetching] = useSafeAction(getCommentsAction, {
+    onSuccess: (data) => {
+      const tree = buildCommentTree(data);
+      setComments(tree);
+    },
+    onError: (error) => {
+      // console.error("댓글 조회 실패:", error);
+    },
+  });
+
+  // 새 댓글 작성
+  const [, createComment, isCreating] = useSafeAction(createCommentAction, {
+    successMessage: "댓글이 작성되었습니다",
+    failMessage: (error) => {
+      return error.message ?? "댓글 작성에 실패했습니다";
+    },
+    onSuccess: () => {
+      setNewCommentText("");
+      fetchComments({ workBookId });
+    },
+  });
+
+  // 대댓글 작성
+  const [, createReply, isReplying] = useSafeAction(createReplyAction, {
+    successMessage: "답글이 작성되었습니다",
+    failMessage: "답글 작성에 실패했습니다",
+    onSuccess: () => {
+      setReplyText({});
+      setReplyingTo(null);
+      fetchComments({ workBookId });
+    },
+  });
+
+  // 좋아요 토글
+  const [, toggleLike] = useSafeAction(toggleCommentLikeAction, {
+    failMessage: "좋아요 처리에 실패했습니다",
+    onSuccess: () => {
+      fetchComments({ workBookId });
+    },
+  });
+
+  // 댓글 수정
+  const [, updateComment] = useSafeAction(updateCommentAction, {
+    successMessage: "댓글이 수정되었습니다",
+    failMessage: "댓글 수정에 실패했습니다",
+    onSuccess: () => {
+      fetchComments({ workBookId });
+    },
+  });
+
+  // 댓글 삭제
+  const [, deleteComment] = useSafeAction(deleteCommentAction, {
+    successMessage: "댓글이 삭제되었습니다",
+    failMessage: "댓글 삭제에 실패했습니다",
+    onSuccess: () => {
+      fetchComments({ workBookId });
+    },
+  });
+
+
+
+  // flat 배열 → 트리 구조 변환 + 정렬 (좋아요 10개 이상 상단)
+  const buildCommentTree = (flat: CommentData[]): CommentWithReplies[] => {
+    const roots: CommentWithReplies[] = [];
+    const replyMap: Record<string, CommentData[]> = {};
+
+    for (const c of flat) {
+      if (c.parentId) {
+        if (!replyMap[c.parentId]) replyMap[c.parentId] = [];
+        replyMap[c.parentId].push(c);
+      } else {
+        roots.push({ ...c, replies: [] });
+      }
+    }
+
+    for (const root of roots) {
+      root.replies = (replyMap[root.id] || []).sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+    }
+
+    // 정렬: 좋아요 10개 이상 상단, 나머지는 최신순
+    return roots.sort((a, b) => {
+      const aTop = a.likeCount >= BEST_COMMENT_THRESHOLD;
+      const bTop = b.likeCount >= BEST_COMMENT_THRESHOLD;
+      if (aTop && !bTop) return -1;
+      if (!aTop && bTop) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  };
+
+
 
   const toggleReplies = (commentId: string) => {
     setOpenReplies((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
@@ -115,32 +222,35 @@ export function WorkbookCommentsPanel({
   const handleSubmitReply = (commentId: string) => {
     const text = replyText[commentId]?.trim();
     if (!text) return;
-
-    // 새 답글 생성
-    const newReply: Reply = {
-      id: `${commentId}-r${Date.now()}`,
-      user: { name: "쓰는놈", initials: "쓰는놈" }, // useSession
-      postedAt: new Date().toISOString(),
-      body: text,
-    };
-
-    // 댓글 목록 업데이트
-    setComments((prev) =>
-      prev.map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), newReply],
-          };
-        }
-        return comment;
-      })
-    );
-
-    // 입력 필드 초기화 및 답글 모드 종료
-    setReplyText((prev) => ({ ...prev, [commentId]: "" }));
-    setReplyingTo(null);
+    createReply({ commentId, body: text });
   };
+
+  const handleSubmitComment = () => {
+    const text = newCommentText;
+    if (!text) return;
+    createComment({ workBookId, body: text });
+  };
+
+  const handleToggleLike = (commentId: string) => {
+    toggleLike({ commentId });
+  };
+
+  const handleUpdateComment = (commentId: string, body: string) => {
+    updateComment({ commentId, body });
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const confirmed = await notify.confirm({ title: "정말 삭제하시겠습니까?" });
+    if (!confirmed) return;
+    deleteComment({ commentId });
+  };
+
+  useEffect(() => {
+    if (open && workBookId) {
+      fetchComments({ workBookId });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, workBookId]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -150,10 +260,9 @@ export function WorkbookCommentsPanel({
             <div>
               <SheetTitle>풀이 댓글</SheetTitle>
               <SheetDescription>
-                완료한 풀이에 대한 의견을 모아볼 수 있어요. (API 연동 예정)
+                완료한 풀이에 대한 의견을 모아볼 수 있어요.
               </SheetDescription>
             </div>
-            <Badge variant="outline">베타화면임</Badge>
           </div>
           {workbookTitle && (
             <p className="text-xs text-muted-foreground line-clamp-1">
@@ -164,15 +273,18 @@ export function WorkbookCommentsPanel({
 
         <div className="px-4 pb-3 flex items-center gap-2 text-sm text-muted-foreground">
           <MessageCircle className="h-4 w-4" />
-          <span>{comments.length}개의 댓글</span>
+          <span>{totalCount}개의 댓글</span>
+          {isFetching && <Loader className="h-3 w-3 animate-spin" />}
         </div>
 
-        <ScrollArea className="px-4 pb-6" style={{ height: "60vh" }}>
+        <ScrollArea className="px-4 pb-6" style={{ height: "55vh" }}>
           <div className="space-y-3">
             {comments.map((comment) => (
               <CommentCard
                 key={comment.id}
                 comment={comment}
+                currentUserId={currentUserId}
+                workBookOwnerId={workBookOwnerId}
                 isRepliesOpen={Boolean(openReplies[comment.id])}
                 onToggleReplies={() => toggleReplies(comment.id)}
                 isReplyingTo={replyingTo === comment.id}
@@ -183,28 +295,45 @@ export function WorkbookCommentsPanel({
                   setReplyText((prev) => ({ ...prev, [comment.id]: text }))
                 }
                 onSubmitReply={() => handleSubmitReply(comment.id)}
+                isReplying={isReplying}
+                onToggleLike={handleToggleLike}
+                onUpdateComment={handleUpdateComment}
+                onDeleteComment={handleDeleteComment}
               />
             ))}
+            {!isFetching && comments.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                아직 댓글이 없습니다. 첫 댓글을 남겨보세요!
+              </p>
+            )}
           </div>
         </ScrollArea>
 
         <div className="border-t px-4 py-4 space-y-2 bg-muted/40">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            새 댓글 작성
-            <Badge variant="outline" className="text-2xs">
-              곧 지원
-            </Badge>
-          </Label>
+          <Label className="text-sm font-medium">새 댓글 작성</Label>
           <Textarea
-            disabled
+            value={newCommentText}
+            onChange={(e) => setNewCommentText(e.target.value)}
             rows={3}
             className="resize-none"
-            placeholder="새로운 댓글을 작성하세요. (API 연결 후 활성화)"
+            placeholder="새로운 댓글을 작성하세요."
           />
-          <Button disabled className="w-full" variant="secondary">
-            <SendIcon className="mr-2 h-4 w-4" />
+          <Button
+            onClick={handleSubmitComment}
+            disabled={!newCommentText || isCreating || !commentValidation.valid}
+            className="w-full"
+            variant="secondary"
+          >
+            {isCreating ? (
+              <Loader className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <SendIcon className="mr-2 h-4 w-4" />
+            )}
             댓글 작성
           </Button>
+          {!commentValidation.valid && (
+            <p className="text-xs text-destructive">{commentValidation.error}</p>
+          )}
           <p className="text-2xs text-muted-foreground">
             답글을 달려면 댓글 카드의 "답글 달기" 버튼을 눌러주세요.
           </p>
@@ -213,9 +342,11 @@ export function WorkbookCommentsPanel({
     </Sheet>
   );
 }
-
+//----------------------------댓글카드--------------------------------------------------
 function CommentCard({
   comment,
+  currentUserId,
+  workBookOwnerId,
   isRepliesOpen,
   onToggleReplies,
   isReplyingTo,
@@ -224,60 +355,150 @@ function CommentCard({
   replyText,
   onReplyTextChange,
   onSubmitReply,
+  isReplying,
+  onToggleLike,
+  onUpdateComment,
+  onDeleteComment,
+  isReply = false,
 }: {
-  comment: Comment;
-  isRepliesOpen: boolean;
-  onToggleReplies: () => void;
-  isReplyingTo: boolean;
-  onReplyClick: () => void;
-  onCancelReply: () => void;
-  replyText: string;
-  onReplyTextChange: (text: string) => void;
-  onSubmitReply: () => void;
+  comment: CommentData & { replies?: CommentData[] };
+  currentUserId?: string;
+  workBookOwnerId: string;
+  isRepliesOpen?: boolean;
+  onToggleReplies?: () => void;
+  isReplyingTo?: boolean;
+  onReplyClick?: () => void;
+  onCancelReply?: () => void;
+  replyText?: string;
+  onReplyTextChange?: (text: string) => void;
+  onSubmitReply?: () => void;
+  isReplying?: boolean;
+  onToggleLike: (commentId: string) => void;
+  onUpdateComment: (commentId: string, body: string) => void;
+  onDeleteComment: (commentId: string) => void;
+  isReply?: boolean;
 }) {
-  const timeAgo = formatDistanceToNow(new Date(comment.postedAt), {
+  const [reportOpen, setReportOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.body);
+  const isDeleted = Boolean(comment.deletedAt);
+  const isAuthor = currentUserId === comment.authorId;
+  const isWorkBookOwner = comment.authorId === workBookOwnerId;
+
+  const timeAgo = formatDistanceToNow(new Date(comment.createdAt), {
     addSuffix: true,
     locale: ko,
   });
-  const hasReplies = Boolean(comment.replies?.length);
+  const hasReplies = comment.replies && comment.replies.length > 0;
+
+  const replyValidation = useMemo(() => {
+    return validateComment(replyText || "");
+  }, [replyText]);
+
+  const editValidation = useMemo(() => {
+    return validateComment(editText || "");
+  }, [editText]);
 
   return (
-    <div className="rounded-lg border bg-muted/30 p-3 shadow-sm">
+    <div
+      className={cn(
+        "rounded-lg border p-3",
+        isReply ? "bg-background/60" : "bg-muted/30 shadow-sm"
+      )}
+    >
       <div className="flex w-full items-start gap-3">
-        <Avatar className="h-9 w-9">
-          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-            {comment.user.initials}
-          </AvatarFallback>
+        <Avatar className={cn(isReply ? "h-8 w-8" : "h-9 w-9")}>
+          {comment.authorImage && <AvatarImage src={comment.authorImage} />}
+         
         </Avatar>
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold leading-none">
-              {comment.user.name}
+              {comment.authorNickname ?? "알 수 없음"}
             </p>
-            {comment.user.role === "author" && (
-              <Badge variant="outline" className="text-xs text-muted-foreground">
-                문제집 작성자
+            {isWorkBookOwner && (
+              <Badge variant="default" className="text-2xs">
+                작성자
               </Badge>
             )}
-            {hasReplies && (
+            {isReply && (
+              <Badge variant="secondary" className="text-2xs">
+                답글
+              </Badge>
+            )}
+            {!isReply && hasReplies && (
               <Badge variant="secondary" className="text-xs">
-                대댓글 {comment.replies?.length ?? 0}개
+                대댓글 {comment.replies?.length}개
               </Badge>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
-            >
-              <Flag className="mr-1 h-3 w-3" />
-              신고
-            </Button>
+            {comment.likeCount >= BEST_COMMENT_THRESHOLD && (
+              <Badge variant="outline" className="text-xs text-orange-500">
+                인기
+              </Badge>
+            )}
+            {!isDeleted && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
+                onClick={() => setReportOpen(true)}
+              >
+                <Flag className="mr-1 h-3 w-3" />
+                신고
+              </Button>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground">{timeAgo}</p>
-          <p className="text-sm leading-relaxed whitespace-pre-line">
-            {comment.body}
+          <p className="text-xs text-muted-foreground">
+            {timeAgo}
+            {comment.editedAt && " (수정됨)"}
           </p>
-          {hasReplies && (
+          {isDeleted ? (
+            <p className="text-sm text-muted-foreground italic">
+              삭제된 댓글입니다.
+            </p>
+          ) : isEditing ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                rows={2}
+                className="resize-none text-sm"
+              />
+              {!editValidation.valid && (
+                <p className="text-xs text-destructive">{editValidation.error}</p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className={cn("text-xs", isReply ? "h-6 text-2xs" : "h-7")}
+                  onClick={() => {
+                    onUpdateComment(comment.id, editText);
+                    setIsEditing(false);
+                  }}
+                  disabled={!editText.trim() || !editValidation.valid}
+                >
+                  저장
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={cn("text-xs", isReply ? "h-6 text-2xs" : "h-7")}
+                  onClick={() => {
+                    setEditText(comment.body);
+                    setIsEditing(false);
+                  }}
+                >
+                  취소
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-line">
+              {comment.body}
+            </p>
+          )}
+          {!isReply && hasReplies && (
             <Button
               variant="ghost"
               size="sm"
@@ -290,31 +511,79 @@ function CommentCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={onReplyClick}
+      {!isDeleted && !isEditing && (
+        <div
+          className={cn(
+            "flex items-center gap-2",
+            isReply ? "justify-end gap-1 pt-1" : "mt-3"
+          )}
         >
-          <MessageCircle className="mr-1 h-3 w-3" />
-          답글 달기
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto h-7 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ThumbsUp className="mr-1 h-3 w-3" />
-          좋아요
-        </Button>
-      </div>
+          {!isReply && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={onReplyClick}
+            >
+              <MessageCircle className="mr-1 h-3 w-3" />
+              답글 달기
+            </Button>
+          )}
+          {isAuthor && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "text-muted-foreground hover:text-foreground",
+                  isReply ? "h-6 px-2 text-2xs" : "h-7 text-xs"
+                )}
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="mr-1 h-3 w-3" />
+                수정
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "text-muted-foreground hover:text-destructive",
+                  isReply ? "h-6 px-2 text-2xs" : "h-7 text-xs"
+                )}
+                onClick={() => onDeleteComment(comment.id)}
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                삭제
+              </Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              isReply ? "h-6 px-2 text-2xs" : "ml-auto h-7 text-xs",
+              comment.isLikedByMe
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => onToggleLike(comment.id)}
+          >
+            <ThumbsUp
+              className={cn(
+                "mr-1 h-3 w-3",
+                comment.isLikedByMe && "fill-primary"
+              )}
+            />
+            좋아요 {comment.likeCount > 0 && comment.likeCount}
+          </Button>
+        </div>
+      )}
 
-      {isReplyingTo && (
+      {!isReply && isReplyingTo && (
         <div className="mt-3 space-y-2 rounded-lg border bg-muted/50 p-3">
           <div className="flex items-center justify-between">
             <Label className="text-xs font-medium">
-              {comment.user.name}님에게 답글 작성
+              {comment.authorNickname ?? "알 수 없음"}님에게 답글 작성
             </Label>
             <Button
               variant="ghost"
@@ -327,7 +596,7 @@ function CommentCard({
           </div>
           <Textarea
             value={replyText}
-            onChange={(e) => onReplyTextChange(e.target.value)}
+            onChange={(e) => onReplyTextChange?.(e.target.value)}
             rows={2}
             className="resize-none text-sm"
             placeholder="답글을 입력하세요..."
@@ -335,79 +604,162 @@ function CommentCard({
           />
           <Button
             onClick={onSubmitReply}
-            disabled={!replyText.trim()}
+            disabled={!replyText || isReplying || !replyValidation.valid}
             size="sm"
             className="w-full"
           >
-            <SendIcon className="mr-2 h-3 w-3" />
+            {isReplying ? (
+              <Loader className="mr-2 h-3 w-3 animate-spin" />
+            ) : (
+              <SendIcon className="mr-2 h-3 w-3" />
+            )}
             답글 작성
           </Button>
+          {!replyValidation.valid && (
+            <p className="text-xs text-destructive">{replyValidation.error}</p>
+          )}
         </div>
       )}
 
-      {comment.replies?.length && isRepliesOpen ? (
+      {!isReply && isRepliesOpen && comment.replies && comment.replies.length > 0 && (
         <div className="mt-3 space-y-3 border-l pl-4">
           {comment.replies.map((reply) => (
-            <ReplyCard key={reply.id} comment={reply} />
+            <CommentCard
+              key={reply.id}
+              comment={reply}
+              currentUserId={currentUserId}
+              workBookOwnerId={workBookOwnerId}
+              onToggleLike={onToggleLike}
+              onUpdateComment={onUpdateComment}
+              onDeleteComment={onDeleteComment}
+              isReply={true}
+            />
           ))}
         </div>
-      ) : null}
+      )}
+
+      <CommentReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        commentId={comment.id}
+      />
     </div>
   );
 }
 
-function ReplyCard({ comment }: { comment: Reply }) {
-  const timeAgo = formatDistanceToNow(new Date(comment.postedAt), {
-    addSuffix: true,
-    locale: ko,
+//----------------------------댓글신고--------------------------------------------------
+function CommentReportDialog({
+  open,
+  onOpenChange,
+  commentId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  commentId: string;
+}) {
+  const [selectedReason, setSelectedReason] = useState<ReportCategoryDetail>();
+  const [description, setDescription] = useState("");
+
+  const selectedCategoryMain = useMemo(() => {
+    if (!selectedReason) return undefined;
+    for (const section of COMMENT_REPORT_REASON_SECTIONS) {
+      if (section.reasons.some((r: { detail: ReportCategoryDetail; label: string }) => r.detail === selectedReason)) {
+        return section.main;
+      }
+    }
+    return undefined;
+  }, [selectedReason]);
+
+  const [, createReport, isPending] = useSafeAction(createReportAction, {
+    successMessage: "신고가 접수되었습니다",
+    failMessage: "신고 접수에 실패했습니다",
+    onSuccess: () => {
+      onOpenChange(false);
+    },
   });
 
+  const canSubmit = Boolean(
+    selectedReason && selectedCategoryMain && description.trim().length > 0
+  );
+
+  const handleSubmit = () => {
+    if (!canSubmit || !selectedCategoryMain || !selectedReason) return;
+    createReport({
+      targetType: ReportTargetType.COMMENT,
+      targetId: commentId,
+      categoryMain: selectedCategoryMain,
+      categoryDetail: selectedReason,
+      detailText: description,
+    });
+  };
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedReason(undefined);
+      setDescription("");
+    }
+  }, [open]);
+
   return (
-    <div className="rounded-lg border bg-background/60 p-3">
-      <div className="flex items-start gap-3">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-secondary text-foreground/80 text-sm font-semibold">
-            {comment.user.initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 space-y-1">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold leading-none">
-              {comment.user.name}
-            </p>
-            {comment.user.role === "author" && (
-              <Badge variant="outline" className="text-2xs text-muted-foreground">
-                문제집 작성자
-              </Badge>
-            )}
-            <Badge variant="secondary" className="text-2xs">
-              답글
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
-            >
-              <Flag className="mr-1 h-3 w-3" />
-              신고
-            </Button>
-          </div>
-          <p className="text-2xs text-muted-foreground">{timeAgo}</p>
-          <p className="text-sm leading-relaxed whitespace-pre-line">
-            {comment.body}
-          </p>
-          <div className="flex items-center justify-end pt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-2xs text-muted-foreground hover:text-foreground"
-            >
-              <ThumbsUp className="mr-1 h-3 w-3" />
-              좋아요
-            </Button>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>댓글 신고</DialogTitle>
+          <DialogDescription>
+            부적절한 댓글을 신고해주세요. 검토 후 조치하겠습니다.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <RadioGroup
+            value={selectedReason}
+            onValueChange={(v) => setSelectedReason(v as ReportCategoryDetail)}
+          >
+            {COMMENT_REPORT_REASON_SECTIONS.map((section) => (
+              <div key={section.main} className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {section.heading}
+                </p>
+                {section.reasons.map((reason: { detail: ReportCategoryDetail; label: string }) => (
+                  <label
+                    key={reason.detail}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                      selectedReason === reason.detail
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted/50"
+                    )}
+                  >
+                    <RadioGroupItem value={reason.detail} />
+                    <span className="text-sm">{reason.label}</span>
+                  </label>
+                ))}
+              </div>
+            ))}
+          </RadioGroup>
+
+          <div className="space-y-2">
+            <Label>상세 내용</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="신고 사유를 자세히 작성해주세요."
+              rows={3}
+              className="resize-none"
+            />
           </div>
         </div>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            취소
+          </Button>
+          <Button onClick={handleSubmit} disabled={!canSubmit || isPending}>
+            {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+            신고하기
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

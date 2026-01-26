@@ -149,6 +149,8 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
         <WorkbookCommentsPanel
           open={isCommentsOpen}
           onOpenChange={setIsCommentsOpen}
+          workBookId={session.workBook.id}
+          workBookOwnerId={session.workBook.ownerId}
           workbookTitle={session.workBook.title}
         />
     </div>

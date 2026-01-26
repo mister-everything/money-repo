@@ -57,6 +57,13 @@
       "when": 1768836688706,
       "tag": "0007_sturdy_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1768975268748,
+      "tag": "0008_famous_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }
