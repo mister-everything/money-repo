@@ -168,7 +168,7 @@ export const CreateWorkbookPlanQuestionsPrompt = ({
 
 # 출력 형식 (askQuestionInputSchema)
 - 출력은 반드시 **JSON만**. (설명/마크다운/코드펜스 금지)
-- questions: **2~3개 고정**
+- questions: **되도록 2~3개 추천**, 단 필요한 경우 최대 10개 까지 추천 가능
 - 각 질문의 options: **3~4개 고정**
 - allow_multiple: 기본 true (특별한 이유가 있을 때만 false)
 
