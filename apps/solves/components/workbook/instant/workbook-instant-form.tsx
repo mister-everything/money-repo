@@ -89,6 +89,7 @@ export function WorkbookInstantForm() {
   };
 
   const handleStart = () => {
+    // PART3 진입점
     notify.alert({
       title: "문제집 생성 시작",
       description: "문제집 생성을 시작합니다!",
