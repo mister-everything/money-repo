@@ -94,11 +94,8 @@ export function BlockSelectPopup({
           {blockItems.map(({ type, displayName }) => (
             <Button
               key={type}
-              variant="outline"
-              className={cn(
-                "rounded-full focus-visible:ring-0!",
-                block == type && "border-primary bg-primary/5",
-              )}
+              variant={block == type ? "default" : "outline"}
+              className={cn("rounded-full focus-visible:ring-0! shadow-none")}
               onClick={() => setBlock(type as BlockType)}
             >
               {displayName}

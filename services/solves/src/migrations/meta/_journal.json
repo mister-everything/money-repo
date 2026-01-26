@@ -61,8 +61,22 @@
     {
       "idx": 8,
       "version": "7",
-      "when": 1768975268748,
-      "tag": "0008_famous_omega_sentinel",
+      "when": 1768956603714,
+      "tag": "0008_needy_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1769240083575,
+      "tag": "0009_pale_reaper",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1769389176762,
+      "tag": "0010_romantic_johnny_storm",
       "breakpoints": true
     }
   ]

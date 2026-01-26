@@ -31,6 +31,7 @@ export const categoryTable = solvesSchema.table("category", {
   }),
   description: varchar("description", { length: 300 }),
   aiPrompt: varchar("ai_prompt", { length: 300 }),
+  order: integer("order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   createdId: text("created_id").references(() => userTable.id, {
     onDelete: "set null",

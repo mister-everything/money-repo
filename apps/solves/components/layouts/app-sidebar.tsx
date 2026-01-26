@@ -1,8 +1,17 @@
 "use client";
 
-import { BookOpenCheck, LibraryIcon, Pencil, Plus } from "lucide-react";
+import {
+  ArrowUpRight,
+  BookOpenCheck,
+  FlaskConicalIcon,
+  LibraryIcon,
+  Pencil,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import {
   Sidebar,
   SidebarContent,
@@ -13,9 +22,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+
+import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { NavUser } from "./nav-user";
 
@@ -25,7 +36,6 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
-      <SidebarRail />
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -52,6 +62,21 @@ export function AppSidebar() {
                 <Link href="/workbooks" onClick={() => setOpenMobile(false)}>
                   <LibraryIcon />
                   <span>문제 풀기</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/workbooks/instant"}
+              >
+                <Link
+                  href="/workbooks/instant"
+                  onClick={() => setOpenMobile(false)}
+                >
+                  <FlaskConicalIcon />
+                  <span>만들어서 풀기</span>
+                  <Badge className="ml-auto rounded-full text-2xs">Beta</Badge>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -106,7 +131,29 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="flex flex-col items-stretch space-y-2">
+      <SidebarFooter className="flex flex-col items-stretch space-y-4 px-2 pb-2">
+        <Link
+          href="/community"
+          className={cn(
+            "group hover:bg-secondary/60 flex flex-col gap-2 p-4 group rounded-lg fade-300",
+          )}
+          onClick={() => setOpenMobile(false)}
+        >
+          <div className="flex items-center gap-1 justify-between">
+            <AnimatedShinyText
+              shimmerWidth={120}
+              className={cn("font-bold text-foreground", "mx-0 max-w-none")}
+            >
+              Small Talk
+            </AnimatedShinyText>
+
+            <ArrowUpRight className="size-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </div>
+          <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+            서비스에 대한 의견 또는 자유로운 이야기를 나눠보세요
+          </p>
+        </Link>
+
         <SidebarMenu>
           <NavUser />
         </SidebarMenu>

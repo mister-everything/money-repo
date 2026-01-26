@@ -19,8 +19,11 @@ import {
 } from "@/lib/ai/tools/workbook/shared";
 import { handleErrorToast } from "@/lib/handle-toast";
 import { useAiStore } from "@/store/ai-store";
+import { BlockSuggest } from "./block-suggest";
 
 type Props<T extends BlockType = BlockType> = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: ReactNode;
   type: T;
   question: string;
@@ -32,10 +35,11 @@ type Props<T extends BlockType = BlockType> = {
   onUpdateSolution?: (solution: string) => void;
 };
 
-type BlockSnapshot<T extends BlockType = BlockType> = {
-  question: string;
-  content: BlockContent<T>;
-  answer: BlockAnswer<T>;
+export type BlockEditState<T extends BlockType = BlockType> = {
+  question?: string;
+  content?: BlockContent<T>;
+  answer?: BlockAnswer<T>;
+  solution?: string | undefined;
 };
 
 const MENU_OPTIONS: { label: string; value: EditFields }[] = [
@@ -46,6 +50,8 @@ const MENU_OPTIONS: { label: string; value: EditFields }[] = [
 ];
 
 export function BlockEditAgent<T extends BlockType = BlockType>({
+  open,
+  onOpenChange,
   children,
   type,
   question,
@@ -56,9 +62,8 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
   onUpdateAnswer,
   onUpdateSolution,
 }: Props<T>) {
-  const [blockSnapshot, setBlockSnapshot] = useState<BlockSnapshot<T> | null>(
-    null,
-  );
+  const [blockEditState, setBlockEditState] =
+    useState<BlockEditState<T> | null>(null);
   const [selectedMenuOptions, setSelectedMenuOptions] = useState<string[]>([]);
   const selectedMenuOptionsRef = useRef<string[]>([]);
   useEffect(() => {
@@ -85,26 +90,36 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
       },
     }),
     onToolCall: ({ toolCall }) => {
-      setBlockSnapshot((prev) => prev ?? getCurrentSnapshot());
-
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.QUESTION) {
         const updatedQuestion = (toolCall.input as EditQuestionInput).question;
-        onUpdateQuestion?.(updatedQuestion);
+        setBlockEditState((prev) => ({
+          ...(prev ?? {}),
+          question: updatedQuestion,
+        }));
         return;
       }
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.CONTENT) {
         const updatedContent = toolCall.input as BlockContent<T>;
-        onUpdateContent?.(updatedContent);
+        setBlockEditState((prev) => ({
+          ...(prev ?? {}),
+          content: updatedContent,
+        }));
         return;
       }
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.ANSWER) {
         const updatedAnswer = toolCall.input as BlockAnswer<T>;
-        onUpdateAnswer?.(updatedAnswer);
+        setBlockEditState((prev) => ({
+          ...(prev ?? {}),
+          answer: updatedAnswer,
+        }));
         return;
       }
       if (toolCall.toolName === EDIT_FIELD_TOOL_NAMES.SOLUTION) {
         const updatedSolution = (toolCall.input as EditSolutionInput).solution;
-        onUpdateSolution?.(updatedSolution);
+        setBlockEditState((prev) => ({
+          ...(prev ?? {}),
+          solution: updatedSolution,
+        }));
       }
     },
 
@@ -118,45 +133,93 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
     },
   });
 
-  const getCurrentSnapshot = useCallback(
-    (): BlockSnapshot<T> => ({
-      question,
-      content,
-      answer,
-    }),
-    [answer, content, question],
-  );
-
   const isBusy = status === "submitted" || status === "streaming";
 
   const clearBuffers = useCallback(() => {
-    setBlockSnapshot(null);
+    setBlockEditState(null);
   }, []);
 
-  const handleAccept = useCallback(() => {
-    clearBuffers();
-  }, [clearBuffers]);
+  const dropEditField = useCallback((field: keyof BlockEditState<T>) => {
+    setBlockEditState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev };
+      delete next[field];
+      // undefined 값만 남는 케이스까지 정리해서 껍데기 렌더를 방지
+      const cleaned = Object.fromEntries(
+        Object.entries(next).filter(([, v]) => v !== undefined),
+      ) as BlockEditState<T>;
+      return Object.keys(cleaned).length ? cleaned : null;
+    });
+  }, []);
 
-  const handleReject = useCallback(() => {
-    if (!blockSnapshot) return;
-    onUpdateQuestion?.(blockSnapshot.question);
-    onUpdateContent?.(blockSnapshot.content);
-    onUpdateAnswer?.(blockSnapshot.answer);
-    onUpdateSolution?.(blockSnapshot.answer?.solution ?? "");
+  const handleAcceptQuestion = useCallback(() => {
+    if (blockEditState?.question === undefined) return;
+    onUpdateQuestion?.(blockEditState.question);
+    dropEditField("question");
+  }, [blockEditState?.question, dropEditField, onUpdateQuestion]);
+
+  const handleRejectQuestion = useCallback(() => {
+    dropEditField("question");
+  }, [dropEditField]);
+
+  const handleAcceptContent = useCallback(() => {
+    if (blockEditState?.content === undefined) return;
+    onUpdateContent?.(blockEditState.content);
+    dropEditField("content");
+  }, [blockEditState?.content, dropEditField, onUpdateContent]);
+
+  const handleRejectContent = useCallback(() => {
+    dropEditField("content");
+  }, [dropEditField]);
+
+  const handleAcceptAnswer = useCallback(() => {
+    if (blockEditState?.answer === undefined) return;
+    onUpdateAnswer?.(blockEditState.answer);
+    dropEditField("answer");
+  }, [blockEditState?.answer, dropEditField, onUpdateAnswer]);
+
+  const handleRejectAnswer = useCallback(() => {
+    dropEditField("answer");
+  }, [dropEditField]);
+
+  const handleAcceptSolution = useCallback(() => {
+    if (blockEditState?.solution === undefined) return;
+    onUpdateSolution?.(blockEditState.solution);
+    dropEditField("solution");
+  }, [blockEditState?.solution, dropEditField, onUpdateSolution]);
+
+  const handleRejectSolution = useCallback(() => {
+    dropEditField("solution");
+  }, [dropEditField]);
+
+  const handleAcceptAll = useCallback(() => {
+    if (!blockEditState) return;
+    if (blockEditState.question !== undefined)
+      onUpdateQuestion?.(blockEditState.question);
+    if (blockEditState.content !== undefined)
+      onUpdateContent?.(blockEditState.content);
+    if (blockEditState.answer !== undefined)
+      onUpdateAnswer?.(blockEditState.answer);
+    if (blockEditState.solution !== undefined)
+      onUpdateSolution?.(blockEditState.solution);
     clearBuffers();
   }, [
+    blockEditState,
     clearBuffers,
     onUpdateAnswer,
     onUpdateContent,
     onUpdateQuestion,
     onUpdateSolution,
-    blockSnapshot,
   ]);
+
+  const handleRejectAll = useCallback(() => {
+    clearBuffers();
+  }, [clearBuffers]);
 
   const handleSendMessage = useCallback(
     (value: string) => {
       if (isBusy) return;
-      setBlockSnapshot(getCurrentSnapshot());
+      setBlockEditState(null);
       setMessages([]);
       sendMessage({
         role: "user",
@@ -166,14 +229,14 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
         } as UIDataTypes,
       });
     },
-    [getCurrentSnapshot, isBusy, selectedMenuOptions, sendMessage],
+    [isBusy, selectedMenuOptions, sendMessage],
   );
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverPortal>
-        <PopoverContent side="left" align="start" sideOffset={12}>
+        <PopoverContent side="right" align="start" sideOffset={12}>
           <PromptInputDynamicGrow
             placeholder="AI로 문제를 수정하세요"
             onSubmit={(value) => {
@@ -184,27 +247,79 @@ export function BlockEditAgent<T extends BlockType = BlockType>({
             showEffects={true}
             expandOnFocus={true}
           />
-          {blockSnapshot && (
+          {blockEditState && (
             <div className="mt-1 mr-2">
-              <div className="flex gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs text-primary hover:text-primary hover:bg-primary/10"
-                  onClick={handleAccept}
-                  disabled={isBusy}
-                >
-                  Accept
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs text-destructive hover:text-destructive"
-                  onClick={handleReject}
-                  disabled={isBusy || !blockSnapshot}
-                >
-                  Reject
-                </Button>
+              <div className="w-100">
+                <BlockSuggest
+                  question={question}
+                  content={content}
+                  answer={answer}
+                  id={"block-suggest-id"}
+                  index={0}
+                  mode="preview"
+                  order={0}
+                  type={type}
+                  blockEditState={blockEditState}
+                  onAcceptQuestion={
+                    blockEditState.question !== undefined
+                      ? handleAcceptQuestion
+                      : undefined
+                  }
+                  onRejectQuestion={
+                    blockEditState.question !== undefined
+                      ? handleRejectQuestion
+                      : undefined
+                  }
+                  onAcceptContent={
+                    blockEditState.content !== undefined
+                      ? handleAcceptContent
+                      : undefined
+                  }
+                  onRejectContent={
+                    blockEditState.content !== undefined
+                      ? handleRejectContent
+                      : undefined
+                  }
+                  onAcceptAnswer={
+                    blockEditState.answer !== undefined
+                      ? handleAcceptAnswer
+                      : undefined
+                  }
+                  onRejectAnswer={
+                    blockEditState.answer !== undefined
+                      ? handleRejectAnswer
+                      : undefined
+                  }
+                  onAcceptSolution={
+                    blockEditState.solution !== undefined
+                      ? handleAcceptSolution
+                      : undefined
+                  }
+                  onRejectSolution={
+                    blockEditState.solution !== undefined
+                      ? handleRejectSolution
+                      : undefined
+                  }
+                />
+                <div className="flex justify-end items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-destructive hover:text-destructive"
+                    onClick={handleRejectAll}
+                  >
+                    Reject
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={handleAcceptAll}
+                  >
+                    Accept
+                  </Button>
+                </div>
               </div>
             </div>
           )}

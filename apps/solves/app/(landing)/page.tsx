@@ -87,7 +87,7 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col w-full gap-0 pt-20 relative">
-      <div className="absolute inset-0 w-full h-screen opacity-50">
+      <div className="absolute inset-0 w-full opacity-50 h-screen">
         <FaultyTerminal mouseReact={false} />
         <div className="absolute inset-0 bg-linear-to-b from-transparent to-background" />
         <div

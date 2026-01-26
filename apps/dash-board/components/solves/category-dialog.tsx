@@ -32,6 +32,7 @@ const defaultCategory: MutateableCategory = {
   description: null,
   aiPrompt: null,
   parentId: null,
+  order: 0,
 };
 
 export function CategoryDialog(props: {
@@ -108,6 +109,27 @@ export function CategoryDialog(props: {
         </div>
 
         <div className="grid gap-2">
+          <Label htmlFor="order">
+            순서 <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="order"
+            type="number"
+            placeholder="표시 순서를 입력하세요"
+            value={category.order ?? 0}
+            onChange={(e) =>
+              setCategory({ ...category, order: parseInt(e.target.value) || 0 })
+            }
+            required
+            min={0}
+            disabled={isPending}
+          />
+          <p className="text-xs text-muted-foreground">
+            작은 숫자가 먼저 표시됩니다
+          </p>
+        </div>
+
+        <div className="grid gap-2">
           <Label htmlFor="description">설명</Label>
           <Textarea
             id="description"
@@ -161,6 +183,7 @@ export function CategoryDialog(props: {
                   name: category.name,
                   description: category.description ?? undefined,
                   aiPrompt: category.aiPrompt ?? undefined,
+                  order: category.order,
                 });
               } else {
                 addCategory({
@@ -168,6 +191,7 @@ export function CategoryDialog(props: {
                   parentId: category.parentId ?? undefined,
                   description: category.description ?? undefined,
                   aiPrompt: category.aiPrompt ?? undefined,
+                  order: category.order,
                 });
               }
             }}

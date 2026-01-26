@@ -5,7 +5,7 @@ const difficulty = ["easy", "medium", "hard"] as const;
 const blockTypes = Object.keys(blockDisplayNames) as BlockType[];
 
 // 개별 문제 계획 스키마
-const blockPlanItemSchema = z.object({
+export const blockPlanItemSchema = z.object({
   type: z.enum(blockTypes).describe("문제 유형"),
   intent: z.string().describe("문제 의도 및 목적"),
   learningObjective: z.string().describe("이 문제를 통해 달성할 학습 목표"),
@@ -18,7 +18,7 @@ const blockPlanItemSchema = z.object({
 });
 
 // 전체 개요 스키마
-const overviewSchema = z.object({
+export const overviewSchema = z.object({
   title: z.string().describe("문제집 제목"),
   description: z.string().describe("문제집 설명"),
   goal: z.string().describe("문제집의 전체 목표"),

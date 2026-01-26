@@ -1,5 +1,5 @@
 import { PublicError } from "@workspace/error";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { CacheKeys, CacheTTL } from "../cache-keys";
 import { pgDb } from "../db";
 import { sharedCache } from "../shared-cache";
@@ -49,6 +49,7 @@ export const categoryService = {
         parentId: categoryTable.parentId,
         description: categoryTable.description,
         aiPrompt: categoryTable.aiPrompt,
+        order: categoryTable.order,
         createdAt: categoryTable.createdAt,
       })
       .from(categoryTable)
@@ -80,9 +81,11 @@ export const categoryService = {
         parentId: categoryTable.parentId,
         description: categoryTable.description,
         aiPrompt: categoryTable.aiPrompt,
+        order: categoryTable.order,
         createdAt: categoryTable.createdAt,
       })
-      .from(categoryTable);
+      .from(categoryTable)
+      .orderBy(categoryTable.order);
 
     const result = buildCategoryTree(categories);
     await sharedCache.setex(
@@ -116,6 +119,7 @@ export const categoryService = {
         parentId: categoryTable.parentId,
         description: categoryTable.description,
         aiPrompt: categoryTable.aiPrompt,
+        order: categoryTable.order,
         createdAt: categoryTable.createdAt,
       })
       .from(categoryTable)
@@ -143,6 +147,21 @@ export const categoryService = {
         throw new PublicError("최대 2 Depth 까지 생성 가능.");
       }
     }
+
+    // order 값이 없으면 자동으로 맨 끝에 추가 (max order + 1)
+    let orderValue = data.order;
+    if (orderValue === undefined || orderValue === null) {
+      const [maxOrder] = await pgDb
+        .select({
+          maxOrder: categoryTable.order,
+        })
+        .from(categoryTable)
+        .orderBy(desc(categoryTable.order))
+        .limit(1);
+      
+      orderValue = maxOrder?.maxOrder != null ? maxOrder.maxOrder + 1 : 1;
+    }
+
     const [row] = await pgDb
       .insert(categoryTable)
       .values({
@@ -150,6 +169,7 @@ export const categoryService = {
         parentId: data.parentId,
         description: data.description,
         aiPrompt: data.aiPrompt,
+        order: orderValue,
         createdId: data.createdId,
       })
       .returning({
@@ -158,6 +178,7 @@ export const categoryService = {
         parentId: categoryTable.parentId,
         description: categoryTable.description,
         aiPrompt: categoryTable.aiPrompt,
+        order: categoryTable.order,
         createdAt: categoryTable.createdAt,
       });
 
@@ -191,6 +212,7 @@ export const categoryService = {
         parentId: categoryTable.parentId,
         description: categoryTable.description,
         aiPrompt: categoryTable.aiPrompt,
+        order: categoryTable.order,
         createdAt: categoryTable.createdAt,
       });
 

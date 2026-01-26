@@ -15,10 +15,11 @@ import {
   smoothStream,
   stepCountIs,
   streamText,
+  TextUIPart,
   UIMessage,
 } from "ai";
 import { getChatModel } from "@/lib/ai/model";
-import { WorkBookCreatePrompt } from "@/lib/ai/prompt";
+import { CreateWorkBookPrompt } from "@/lib/ai/prompt";
 import { getTokens } from "@/lib/ai/shared";
 import { EXA_SEARCH_TOOL_NAME } from "@/lib/ai/tools/web-search/types";
 import { exaSearchTool } from "@/lib/ai/tools/web-search/web-search-tool";
@@ -59,10 +60,12 @@ export async function POST(req: Request) {
   const session = await getSession();
 
   const threadTitle =
-    messages
-      .find((m) => m.role == "user")
-      ?.parts?.find((v) => v.type == "text")
-      ?.text?.trim()
+    (
+      messages
+        .find((m) => m.role == "user")
+        ?.parts?.find((v) => v.type == "text") as TextUIPart
+    )?.text
+      ?.trim()
       ?.slice(0, 20) ||
     new Date().toLocaleTimeString("ko-KR", { hour12: false });
 
@@ -79,7 +82,7 @@ export async function POST(req: Request) {
     ? undefined
     : await categoryService.getById(categoryId);
 
-  const systemPrompt = WorkBookCreatePrompt({
+  const systemPrompt = CreateWorkBookPrompt({
     category: category ?? undefined,
     blockTypes,
     situation: situation ?? "",

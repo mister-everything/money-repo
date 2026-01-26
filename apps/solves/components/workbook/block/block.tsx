@@ -169,7 +169,7 @@ function PureBlock<T extends BlockType = BlockType>({
               <Button
                 variant="outline"
                 size="icon"
-                className="border-point! hover:bg-point! hover:text-foreground text-point"
+                className="border-point! hover:bg-point! hover:text-primary-foreground text-point bg-transparent!"
               >
                 <SparklesIcon className="size-4" />
               </Button>

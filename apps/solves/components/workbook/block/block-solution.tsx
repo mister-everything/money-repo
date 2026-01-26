@@ -11,6 +11,7 @@ import {
 } from "@service/solves/shared";
 import { toAny } from "@workspace/util";
 import {
+  CheckIcon,
   ChevronDownIcon,
   CircleIcon,
   LightbulbIcon,
@@ -31,6 +32,9 @@ export function BlockSolution<T extends BlockType = BlockType>({
   content,
   submit,
   isCorrect,
+  isSuggest = false,
+  onAcceptSuggest,
+  onRejectSuggest,
 }: {
   blockId?: string;
   question: string;
@@ -41,6 +45,9 @@ export function BlockSolution<T extends BlockType = BlockType>({
   answer?: BlockAnswer<T>;
   submit?: BlockAnswerSubmit<T>;
   isCorrect?: boolean;
+  isSuggest?: boolean;
+  onAcceptSuggest?: () => void;
+  onRejectSuggest?: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const handleToggleExpanded = useCallback(() => {
@@ -274,9 +281,45 @@ export function BlockSolution<T extends BlockType = BlockType>({
           </div>
         ) : (
           <p className="px-2 text-xs text-muted-foreground truncate min-w-0">
-            {solution}
+            {answer?.solution ?? "해설이 없습니다."}
           </p>
         )}
+      </div>
+    );
+
+  if (isSuggest)
+    return (
+      <div className="pb-2 flex flex-col gap-4 text-muted-foreground text-xs">
+        {(onAcceptSuggest || onRejectSuggest) && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground mr-auto">해설</span>
+            {onRejectSuggest && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs text-destructive hover:text-destructive"
+                onClick={onRejectSuggest}
+              >
+                <XIcon className="size-4" />
+              </Button>
+            )}
+            {onAcceptSuggest && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs text-primary hover:text-primary hover:bg-primary/10"
+                onClick={onAcceptSuggest}
+              >
+                <CheckIcon className="size-4" />
+              </Button>
+            )}
+          </div>
+        )}
+        <div className="flex gap-2">
+          <p className="text-muted-foreground whitespace-pre-wrap">
+            {solution.trim() || "해설이 없습니다."}
+          </p>
+        </div>
       </div>
     );
 
