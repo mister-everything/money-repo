@@ -5,7 +5,8 @@ import {
   ReportCategoryDetail,
   ReportTargetType,
 } from "@service/report/shared";
-import { badWords } from "@workspace/util";
+import { PaginatedCommentsResponse } from "@service/solves/shared";
+import { badWords, TIME } from "@workspace/util";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import {
@@ -17,8 +18,8 @@ import {
   ThumbsUp,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import {
   createCommentAction,
   deleteCommentAction,
@@ -49,23 +50,10 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth/client";
+import { fetcher } from "@/lib/protocol/fetcher";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
 import { cn } from "@/lib/utils";
 import { notify } from "../ui/notify";
-
-type CommentData = {
-  id: string;
-  parentId: string | null;
-  authorId: string | null;
-  authorNickname: string | null;
-  authorImage: string | null;
-  body: string;
-  createdAt: Date;
-  editedAt: Date | null;
-  deletedAt: Date | null;
-  likeCount: number;
-  isLikedByMe: boolean;
-};
 
 type CommentWithReplies = CommentData & {
   replies: CommentData[];
@@ -98,6 +86,9 @@ export function WorkbookCommentsPanel({
   workbookTitle?: string;
 }) {
   const { data: session } = authClient.useSession();
+
+  const [isFetching, setIsFetching] = useState(false);
+
   const currentUserId = session?.user?.id;
 
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
@@ -105,6 +96,16 @@ export function WorkbookCommentsPanel({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<Record<string, string>>({});
   const [newCommentText, setNewCommentText] = useState("");
+
+  const fetchComments = useCallback(async () => {
+    setIsFetching(true);
+    const data = await fetcher<PaginatedCommentsResponse>(
+      `/api/workbooks/${workBookId}/comments`,
+    ).finally(() => {
+      setIsFetching(false);
+    });
+    setComments(data.comments);
+  }, [workBookId]);
 
   const commentValidation = useMemo(() => {
     return validateComment(newCommentText);
@@ -114,16 +115,6 @@ export function WorkbookCommentsPanel({
   const totalCount = useMemo(() => {
     return comments.reduce((acc, c) => acc + 1 + c.replies.length, 0);
   }, [comments]);
-  // 댓글 목록 조회
-  const [, fetchComments, isFetching] = useSafeAction(getCommentsAction, {
-    onSuccess: (data) => {
-      const tree = buildCommentTree(data);
-      setComments(tree);
-    },
-    onError: (error) => {
-      // console.error("댓글 조회 실패:", error);
-    },
-  });
 
   // 새 댓글 작성
   const [, createComment, isCreating] = useSafeAction(createCommentAction, {
@@ -133,7 +124,7 @@ export function WorkbookCommentsPanel({
     },
     onSuccess: () => {
       setNewCommentText("");
-      fetchComments({ workBookId });
+      fetchComments();
     },
   });
 
@@ -141,7 +132,7 @@ export function WorkbookCommentsPanel({
   const [, toggleLike] = useSafeAction(toggleCommentLikeAction, {
     failMessage: "좋아요 처리에 실패했습니다",
     onSuccess: () => {
-      fetchComments({ workBookId });
+      fetchComments();
     },
   });
 
@@ -150,7 +141,7 @@ export function WorkbookCommentsPanel({
     successMessage: "댓글이 수정되었습니다",
     failMessage: "댓글 수정에 실패했습니다",
     onSuccess: () => {
-      fetchComments({ workBookId });
+      fetchComments();
     },
   });
 
@@ -159,7 +150,7 @@ export function WorkbookCommentsPanel({
     successMessage: "댓글이 삭제되었습니다",
     failMessage: "댓글 삭제에 실패했습니다",
     onSuccess: () => {
-      fetchComments({ workBookId });
+      fetchComments();
     },
   });
 

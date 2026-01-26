@@ -44,6 +44,13 @@ export const WorkbookCommentColumns = {
 };
 
 export const commentService = {
+  getCommentCountByWorkBookId: async (workBookId: string): Promise<number> => {
+    const [row] = await pgDb
+      .select({ count: sql<number>`count(*)::int` })
+      .from(workBookCommentsTable)
+      .where(eq(workBookCommentsTable.workBookId, workBookId));
+    return row?.count ?? 0;
+  },
   // 제출 완료한 사용자만 댓글 작성 가능
   hasWritePermission: async (
     workBookId: string,

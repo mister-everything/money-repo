@@ -17,9 +17,13 @@ import { WorkBookLikeButton } from "./workbook-like-button";
 
 interface WorkBookReviewProps {
   session: WorkBookReviewSession;
+  commentCount: number;
 }
 
-export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
+export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
+  session,
+  commentCount: initialCommentCount,
+}) => {
   const submitAnswerByBlockId = session.submitAnswers.reduce(
     (acc, submitAnswer) => {
       acc[submitAnswer.blockId] = {
@@ -33,7 +37,7 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
 
   const [copied, copy] = useCopy();
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-
+  const [commentCount, setCommentCount] = useState(initialCommentCount);
   const handleShare = useCallback(() => {
     const url = `${window.location.origin}/workbooks/${session.workBook.id}/preview`;
     copy(url);

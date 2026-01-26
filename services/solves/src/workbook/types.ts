@@ -92,6 +92,7 @@ export type WorkBookReviewSession = {
   workBook: WorkBook;
   isLiked: boolean;
   session: SessionSubmitted;
+  commentCount: number;
   submitAnswers: {
     blockId: string;
     isCorrect: boolean;
