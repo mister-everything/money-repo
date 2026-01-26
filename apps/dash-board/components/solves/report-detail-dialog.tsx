@@ -139,6 +139,12 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
     [ReportCategoryDetail.VIOL_PERSONAL_DATA]: "개인정보 노출",
     [ReportCategoryDetail.OTHER_SYSTEM]: "시스템 오류",
     [ReportCategoryDetail.OTHER_FREE]: "기타",
+    [ReportCategoryDetail.COMMENT_SPAM]: "도배/스팸",
+    [ReportCategoryDetail.COMMENT_ABUSE]: "욕설/괴롭힘",
+    [ReportCategoryDetail.COMMENT_HATE]: "혐오표현",
+    [ReportCategoryDetail.COMMENT_SEXUAL]: "성적/선정적 내용",
+    [ReportCategoryDetail.COMMENT_PERSONAL]: "개인정보 노출",
+    [ReportCategoryDetail.COMMENT_OTHER]: "기타", 
   };
 
   const statusLabel: Record<ReportStatus, string> = {

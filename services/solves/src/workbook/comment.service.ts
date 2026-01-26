@@ -1,6 +1,6 @@
 import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import { pgDb } from "../db";
 import {
