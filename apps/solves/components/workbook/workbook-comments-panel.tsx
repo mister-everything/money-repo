@@ -8,14 +8,20 @@ import {
 import { badWords } from "@workspace/util";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Flag, Loader, MessageCircle, Pencil, SendIcon, ThumbsUp, Trash2 } from "lucide-react";
+import {
+  Flag,
+  Loader,
+  MessageCircle,
+  Pencil,
+  SendIcon,
+  ThumbsUp,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
   createCommentAction,
-  createReplyAction,
   deleteCommentAction,
-  getCommentsAction,
   toggleCommentLikeAction,
   updateCommentAction,
 } from "@/actions/comment";
@@ -67,9 +73,7 @@ type CommentWithReplies = CommentData & {
 
 const BEST_COMMENT_THRESHOLD = 10;
 
-const validateComment = (
-  text: string,
-): { valid: boolean; error?: string } => {
+const validateComment = (text: string): { valid: boolean; error?: string } => {
   const lowerText = text.toLowerCase();
   for (const word of badWords) {
     if (lowerText.includes(word)) {
@@ -86,13 +90,11 @@ export function WorkbookCommentsPanel({
   open,
   onOpenChange,
   workBookId,
-  workBookOwnerId,
   workbookTitle,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workBookId: string;
-  workBookOwnerId: string;
   workbookTitle?: string;
 }) {
   const { data: session } = authClient.useSession();
@@ -135,17 +137,6 @@ export function WorkbookCommentsPanel({
     },
   });
 
-  // 대댓글 작성
-  const [, createReply, isReplying] = useSafeAction(createReplyAction, {
-    successMessage: "답글이 작성되었습니다",
-    failMessage: "답글 작성에 실패했습니다",
-    onSuccess: () => {
-      setReplyText({});
-      setReplyingTo(null);
-      fetchComments({ workBookId });
-    },
-  });
-
   // 좋아요 토글
   const [, toggleLike] = useSafeAction(toggleCommentLikeAction, {
     failMessage: "좋아요 처리에 실패했습니다",
@@ -172,8 +163,6 @@ export function WorkbookCommentsPanel({
     },
   });
 
-
-
   // flat 배열 → 트리 구조 변환 + 정렬 (좋아요 10개 이상 상단)
   const buildCommentTree = (flat: CommentData[]): CommentWithReplies[] => {
     const roots: CommentWithReplies[] = [];
@@ -190,7 +179,8 @@ export function WorkbookCommentsPanel({
 
     for (const root of roots) {
       root.replies = (replyMap[root.id] || []).sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     }
 
@@ -203,8 +193,6 @@ export function WorkbookCommentsPanel({
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   };
-
-
 
   const toggleReplies = (commentId: string) => {
     setOpenReplies((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
@@ -284,7 +272,6 @@ export function WorkbookCommentsPanel({
                 key={comment.id}
                 comment={comment}
                 currentUserId={currentUserId}
-                workBookOwnerId={workBookOwnerId}
                 isRepliesOpen={Boolean(openReplies[comment.id])}
                 onToggleReplies={() => toggleReplies(comment.id)}
                 isReplyingTo={replyingTo === comment.id}
@@ -295,7 +282,6 @@ export function WorkbookCommentsPanel({
                   setReplyText((prev) => ({ ...prev, [comment.id]: text }))
                 }
                 onSubmitReply={() => handleSubmitReply(comment.id)}
-                isReplying={isReplying}
                 onToggleLike={handleToggleLike}
                 onUpdateComment={handleUpdateComment}
                 onDeleteComment={handleDeleteComment}
@@ -332,7 +318,9 @@ export function WorkbookCommentsPanel({
             댓글 작성
           </Button>
           {!commentValidation.valid && (
-            <p className="text-xs text-destructive">{commentValidation.error}</p>
+            <p className="text-xs text-destructive">
+              {commentValidation.error}
+            </p>
           )}
           <p className="text-2xs text-muted-foreground">
             답글을 달려면 댓글 카드의 "답글 달기" 버튼을 눌러주세요.
@@ -403,13 +391,12 @@ function CommentCard({
     <div
       className={cn(
         "rounded-lg border p-3",
-        isReply ? "bg-background/60" : "bg-muted/30 shadow-sm"
+        isReply ? "bg-background/60" : "bg-muted/30 shadow-sm",
       )}
     >
       <div className="flex w-full items-start gap-3">
         <Avatar className={cn(isReply ? "h-8 w-8" : "h-9 w-9")}>
           {comment.authorImage && <AvatarImage src={comment.authorImage} />}
-         
         </Avatar>
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
@@ -465,7 +452,9 @@ function CommentCard({
                 className="resize-none text-sm"
               />
               {!editValidation.valid && (
-                <p className="text-xs text-destructive">{editValidation.error}</p>
+                <p className="text-xs text-destructive">
+                  {editValidation.error}
+                </p>
               )}
               <div className="flex gap-2">
                 <Button
@@ -515,7 +504,7 @@ function CommentCard({
         <div
           className={cn(
             "flex items-center gap-2",
-            isReply ? "justify-end gap-1 pt-1" : "mt-3"
+            isReply ? "justify-end gap-1 pt-1" : "mt-3",
           )}
         >
           {!isReply && (
@@ -536,7 +525,7 @@ function CommentCard({
                 size="sm"
                 className={cn(
                   "text-muted-foreground hover:text-foreground",
-                  isReply ? "h-6 px-2 text-2xs" : "h-7 text-xs"
+                  isReply ? "h-6 px-2 text-2xs" : "h-7 text-xs",
                 )}
                 onClick={() => setIsEditing(true)}
               >
@@ -548,7 +537,7 @@ function CommentCard({
                 size="sm"
                 className={cn(
                   "text-muted-foreground hover:text-destructive",
-                  isReply ? "h-6 px-2 text-2xs" : "h-7 text-xs"
+                  isReply ? "h-6 px-2 text-2xs" : "h-7 text-xs",
                 )}
                 onClick={() => onDeleteComment(comment.id)}
               >
@@ -564,14 +553,14 @@ function CommentCard({
               isReply ? "h-6 px-2 text-2xs" : "ml-auto h-7 text-xs",
               comment.isLikedByMe
                 ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             onClick={() => onToggleLike(comment.id)}
           >
             <ThumbsUp
               className={cn(
                 "mr-1 h-3 w-3",
-                comment.isLikedByMe && "fill-primary"
+                comment.isLikedByMe && "fill-primary",
               )}
             />
             좋아요 {comment.likeCount > 0 && comment.likeCount}
@@ -621,22 +610,25 @@ function CommentCard({
         </div>
       )}
 
-      {!isReply && isRepliesOpen && comment.replies && comment.replies.length > 0 && (
-        <div className="mt-3 space-y-3 border-l pl-4">
-          {comment.replies.map((reply) => (
-            <CommentCard
-              key={reply.id}
-              comment={reply}
-              currentUserId={currentUserId}
-              workBookOwnerId={workBookOwnerId}
-              onToggleLike={onToggleLike}
-              onUpdateComment={onUpdateComment}
-              onDeleteComment={onDeleteComment}
-              isReply={true}
-            />
-          ))}
-        </div>
-      )}
+      {!isReply &&
+        isRepliesOpen &&
+        comment.replies &&
+        comment.replies.length > 0 && (
+          <div className="mt-3 space-y-3 border-l pl-4">
+            {comment.replies.map((reply) => (
+              <CommentCard
+                key={reply.id}
+                comment={reply}
+                currentUserId={currentUserId}
+                workBookOwnerId={workBookOwnerId}
+                onToggleLike={onToggleLike}
+                onUpdateComment={onUpdateComment}
+                onDeleteComment={onDeleteComment}
+                isReply={true}
+              />
+            ))}
+          </div>
+        )}
 
       <CommentReportDialog
         open={reportOpen}
@@ -663,7 +655,12 @@ function CommentReportDialog({
   const selectedCategoryMain = useMemo(() => {
     if (!selectedReason) return undefined;
     for (const section of COMMENT_REPORT_REASON_SECTIONS) {
-      if (section.reasons.some((r: { detail: ReportCategoryDetail; label: string }) => r.detail === selectedReason)) {
+      if (
+        section.reasons.some(
+          (r: { detail: ReportCategoryDetail; label: string }) =>
+            r.detail === selectedReason,
+        )
+      ) {
         return section.main;
       }
     }
@@ -679,7 +676,7 @@ function CommentReportDialog({
   });
 
   const canSubmit = Boolean(
-    selectedReason && selectedCategoryMain && description.trim().length > 0
+    selectedReason && selectedCategoryMain && description.trim().length > 0,
   );
 
   const handleSubmit = () => {
@@ -720,20 +717,22 @@ function CommentReportDialog({
                 <p className="text-sm font-medium text-muted-foreground">
                   {section.heading}
                 </p>
-                {section.reasons.map((reason: { detail: ReportCategoryDetail; label: string }) => (
-                  <label
-                    key={reason.detail}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
-                      selectedReason === reason.detail
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-muted/50"
-                    )}
-                  >
-                    <RadioGroupItem value={reason.detail} />
-                    <span className="text-sm">{reason.label}</span>
-                  </label>
-                ))}
+                {section.reasons.map(
+                  (reason: { detail: ReportCategoryDetail; label: string }) => (
+                    <label
+                      key={reason.detail}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                        selectedReason === reason.detail
+                          ? "border-primary bg-primary/5"
+                          : "hover:bg-muted/50",
+                      )}
+                    >
+                      <RadioGroupItem value={reason.detail} />
+                      <span className="text-sm">{reason.label}</span>
+                    </label>
+                  ),
+                )}
               </div>
             ))}
           </RadioGroup>

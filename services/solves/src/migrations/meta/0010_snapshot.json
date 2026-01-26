@@ -1,5 +1,5 @@
 {
-  "id": "df066126-d96e-456e-b593-e1c6fa2f16e1",
+  "id": "9525a669-66f5-4583-beda-6220f4eca504",
   "prevId": "8348a071-86b9-40dd-afcb-4b7beeebb674",
   "version": "7",
   "dialect": "postgresql",
@@ -1870,7 +1870,7 @@
         },
         "body": {
           "name": "body",
-          "type": "text",
+          "type": "varchar(300)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1881,8 +1881,8 @@
           "notNull": true,
           "default": "now()"
         },
-        "edited_at": {
-          "name": "edited_at",
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -1895,7 +1895,7 @@
         },
         "deleted_reason": {
           "name": "deleted_reason",
-          "type": "text",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
         }

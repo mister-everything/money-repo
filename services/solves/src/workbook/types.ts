@@ -43,7 +43,6 @@ export type WorkBook = {
   blocks: WorkBookBlock[];
   tags: { id: number; name: string }[];
   isPublic: boolean;
-  ownerId: string;
   ownerName?: string | null;
   ownerPublicId: number;
   ownerProfile?: string | null;
@@ -129,3 +128,32 @@ export enum WorkBookDifficultyLevel {
   HARD = "hard", // 36점 이상
   VERY_HARD = "very_hard", // 36점 미만
 }
+
+export type WorkbookComment = {
+  id: string;
+  parentId: string | null;
+  authorNickname: string | null;
+  authorPublicId: number | null;
+  authorProfile: string | null;
+  body: string;
+  createdAt: Date;
+  updatedAt: Date | null;
+  likeCount: number;
+  isLikedByMe?: boolean;
+};
+
+/**
+ * 대댓글을 포함한 댓글 타입
+ * replies는 최대 1-depth까지만 허용
+ */
+export type WorkbookCommentWithReplies = WorkbookComment & {
+  replies: WorkbookComment[];
+};
+
+/**
+ * 페이지네이션이 적용된 댓글 응답 타입
+ */
+export type PaginatedCommentsResponse = {
+  comments: WorkbookCommentWithReplies[];
+  nextCursor: string | null;
+};

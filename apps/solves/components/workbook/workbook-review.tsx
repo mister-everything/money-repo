@@ -118,18 +118,18 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
               initialIsLiked={session.isLiked}
               initialLikeCount={session.workBook.likeCount}
             />
-              <div className="flex flex-col items-center justify-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-muted-foreground"
-                  onClick={() => setIsCommentsOpen(true)}
-                  aria-label="댓글 보기"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                </Button>
-                <span className="text-2xs text-muted-foreground">댓글</span>
-              </div>
+            <div className="flex flex-col items-center justify-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-muted-foreground"
+                onClick={() => setIsCommentsOpen(true)}
+                aria-label="댓글 보기"
+              >
+                <MessageCircle className="h-4 w-4" />
+              </Button>
+              <span className="text-2xs text-muted-foreground">댓글</span>
+            </div>
             <div className="flex flex-col items-center justify-center gap-1">
               <Button
                 variant="outline"
@@ -146,13 +146,12 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({ session }) => {
           </div>
         </div>
       </div>
-        <WorkbookCommentsPanel
-          open={isCommentsOpen}
-          onOpenChange={setIsCommentsOpen}
-          workBookId={session.workBook.id}
-          workBookOwnerId={session.workBook.ownerId}
-          workbookTitle={session.workBook.title}
-        />
+      <WorkbookCommentsPanel
+        open={isCommentsOpen}
+        onOpenChange={setIsCommentsOpen}
+        workBookId={session.workBook.id}
+        workbookTitle={session.workBook.title}
+      />
     </div>
   );
 };

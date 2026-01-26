@@ -1,6 +1,6 @@
 import { userTable } from "@service/auth";
 import { PublicError } from "@workspace/error";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 
 import { pgDb } from "../db";
 import {
@@ -8,10 +8,44 @@ import {
   workBookCommentsTable,
   workBookSubmitsTable,
 } from "./schema";
+import {
+  PaginatedCommentsResponse,
+  WorkbookComment,
+  WorkbookCommentWithReplies,
+} from "./types";
+
+/** Subquery for counting likes on a comment */
+const LikeCountSubQuery = pgDb
+  .select({ count: sql<number>`count(*)::int` })
+  .from(workBookCommentLikesTable)
+  .where(eq(workBookCommentLikesTable.commentId, workBookCommentsTable.id));
+
+/** Subquery factory for checking if a user has liked a comment */
+const createIsLikedByMeSubQuery = (userId: string) =>
+  pgDb
+    .select({ exists: sql<boolean>`true` })
+    .from(workBookCommentLikesTable)
+    .where(
+      and(
+        eq(workBookCommentLikesTable.commentId, workBookCommentsTable.id),
+        eq(workBookCommentLikesTable.userId, userId),
+      ),
+    );
+
+export const WorkbookCommentColumns = {
+  id: workBookCommentsTable.id,
+  parentId: workBookCommentsTable.parentId,
+  authorNickname: userTable.nickname,
+  authorPublicId: userTable.publicId,
+  authorProfile: userTable.image,
+  body: workBookCommentsTable.body,
+  createdAt: workBookCommentsTable.createdAt,
+  updatedAt: workBookCommentsTable.updatedAt,
+};
 
 export const commentService = {
-  /** 제출 완료 여부 확인 (권한 체크) */
-  hasSubmitted: async (
+  // 제출 완료한 사용자만 댓글 작성 가능
+  hasWritePermission: async (
     workBookId: string,
     userId: string,
   ): Promise<boolean> => {
@@ -28,114 +62,157 @@ export const commentService = {
     return !!row;
   },
 
-  /** 댓글 목록 조회 */
-  getComments: async (workBookId: string, userId?: string) => {
-    const comments = await pgDb
+  /** 댓글 목록 조회 (페이지네이션 + 대댓글 포함) */
+  getComments: async (
+    workBookId: string,
+    options: { cursor?: string; limit?: number; userId?: string } = {},
+  ): Promise<PaginatedCommentsResponse> => {
+    const { cursor, limit = 50, userId } = options;
+    // 1. Fetch root comments with pagination (parentId IS NULL)
+    const rootCommentsQuery = pgDb
       .select({
         id: workBookCommentsTable.id,
         parentId: workBookCommentsTable.parentId,
-        authorId: workBookCommentsTable.authorId,
+        authorNickname: userTable.nickname,
+        authorPublicId: userTable.publicId,
+        authorProfile: userTable.image,
         body: workBookCommentsTable.body,
         createdAt: workBookCommentsTable.createdAt,
-        editedAt: workBookCommentsTable.editedAt,
-        deletedAt: workBookCommentsTable.deletedAt,
-        authorNickname: userTable.nickname,
-        authorImage: userTable.image,
+        updatedAt: workBookCommentsTable.updatedAt,
+        likeCount: sql<number>`coalesce((${LikeCountSubQuery}), 0)`,
+        isLikedByMe: userId
+          ? sql<boolean>`coalesce((${createIsLikedByMeSubQuery(userId)}), false)`
+          : sql<boolean>`false`,
       })
       .from(workBookCommentsTable)
       .leftJoin(userTable, eq(workBookCommentsTable.authorId, userTable.id))
-      .where(eq(workBookCommentsTable.workBookId, workBookId));
+      .where(
+        and(
+          eq(workBookCommentsTable.workBookId, workBookId),
+          isNull(workBookCommentsTable.parentId),
+          cursor ? gt(workBookCommentsTable.id, cursor) : undefined,
+        ),
+      )
+      .orderBy(asc(workBookCommentsTable.createdAt))
+      .limit(limit + 1); // +1 to check hasMore
 
-    const commentIds = comments.map((c) => c.id);
-    if (commentIds.length === 0) return [];
+    console.log(rootCommentsQuery.toSQL());
 
-    const likeCounts = await pgDb
+    const rootComments = await rootCommentsQuery;
+
+    const hasMore = rootComments.length > limit;
+    if (hasMore) rootComments.pop();
+
+    if (rootComments.length === 0) {
+      return { comments: [], nextCursor: null };
+    }
+
+    // 2. Fetch all replies for these root comments in single query
+    const rootIds = rootComments.map((c) => c.id);
+    const replies = await pgDb
       .select({
-        commentId: workBookCommentLikesTable.commentId,
+        id: workBookCommentsTable.id,
+        parentId: workBookCommentsTable.parentId,
+        authorNickname: userTable.nickname,
+        authorPublicId: userTable.publicId,
+        authorProfile: userTable.image,
+        body: workBookCommentsTable.body,
+        createdAt: workBookCommentsTable.createdAt,
+        updatedAt: workBookCommentsTable.updatedAt,
+        likeCount: sql<number>`coalesce((${LikeCountSubQuery}), 0)`,
+        isLikedByMe: userId
+          ? sql<boolean>`coalesce((${createIsLikedByMeSubQuery(userId)}), false)`
+          : sql<boolean>`false`,
       })
-      .from(workBookCommentLikesTable)
-      .where(inArray(workBookCommentLikesTable.commentId, commentIds));
+      .from(workBookCommentsTable)
+      .leftJoin(userTable, eq(workBookCommentsTable.authorId, userTable.id))
+      .where(inArray(workBookCommentsTable.parentId, rootIds))
+      .orderBy(asc(workBookCommentsTable.createdAt));
 
-    // 좋아요 수 집계
-    const likeCountMap: Record<string, number> = {};
-    for (const like of likeCounts) {
-      likeCountMap[like.commentId] = (likeCountMap[like.commentId] || 0) + 1;
+    // 3. Group replies by parentId
+    const repliesMap: Record<string, WorkbookComment[]> = {};
+    for (const reply of replies) {
+      const parentId = reply.parentId!;
+      if (!repliesMap[parentId]) {
+        repliesMap[parentId] = [];
+      }
+      repliesMap[parentId].push(reply);
     }
 
-    let myLikes: string[] = [];
-    if (userId) {
-      const rows = await pgDb
-        .select({ commentId: workBookCommentLikesTable.commentId })
-        .from(workBookCommentLikesTable)
-        .where(
-          and(
-            inArray(workBookCommentLikesTable.commentId, commentIds),
-            eq(workBookCommentLikesTable.userId, userId),
-          ),
-        );
-      myLikes = rows.map((r) => r.commentId);
-    }
+    // 4. Combine root comments with their replies
+    const commentsWithReplies: WorkbookCommentWithReplies[] = rootComments.map(
+      (comment) => ({
+        ...comment,
+        replies: repliesMap[comment.id] || [],
+      }),
+    );
 
-    return comments.map((c) => ({
-      ...c,
-      likeCount: likeCountMap[c.id] ?? 0,
-      isLikedByMe: myLikes.includes(c.id),
-    }));
+    return {
+      comments: commentsWithReplies,
+      nextCursor: hasMore ? rootComments[rootComments.length - 1].id : null,
+    };
   },
 
   /** 루트 댓글 작성 */
-  createComment: async (workBookId: string, authorId: string, body: string) => {
-    const [comment] = await pgDb
+  createComment: async ({
+    workBookId,
+    authorId,
+    body,
+    parentId,
+  }: {
+    workBookId: string;
+    authorId: string;
+    body: string;
+    parentId?: string;
+  }): Promise<WorkbookComment> => {
+    const [inserted] = await pgDb
       .insert(workBookCommentsTable)
-      .values({ workBookId, authorId, body })
-      .returning();
+      .values({ workBookId, authorId, body, parentId })
+      .returning({ id: workBookCommentsTable.id });
+
+    // Query back with full author info
+    const [comment] = await pgDb
+      .select({
+        id: workBookCommentsTable.id,
+        parentId: workBookCommentsTable.parentId,
+        authorNickname: userTable.nickname,
+        authorPublicId: userTable.publicId,
+        authorProfile: userTable.image,
+        body: workBookCommentsTable.body,
+        createdAt: workBookCommentsTable.createdAt,
+        updatedAt: workBookCommentsTable.updatedAt,
+        likeCount: sql<number>`0`,
+        isLikedByMe: sql<boolean>`false`,
+      })
+      .from(workBookCommentsTable)
+      .leftJoin(userTable, eq(workBookCommentsTable.authorId, userTable.id))
+      .where(eq(workBookCommentsTable.id, inserted.id));
+
     return comment;
   },
 
-  /** 대댓글 작성 */
-  createReply: async (parentId: string, authorId: string, body: string) => {
-    const [parent] = await pgDb
-      .select({
-        workBookId: workBookCommentsTable.workBookId,
-        parentId: workBookCommentsTable.parentId,
-      })
-      .from(workBookCommentsTable)
-      .where(eq(workBookCommentsTable.id, parentId));
-
-    if (!parent) throw new PublicError("부모 댓글을 찾을 수 없습니다.");
-    if (parent.parentId) throw new PublicError("대대댓글은 지원하지 않습니다.");
-
-    const [reply] = await pgDb
-      .insert(workBookCommentsTable)
-      .values({
-        workBookId: parent.workBookId,
-        parentId,
-        authorId,
-        body,
-      })
-      .returning();
-    return reply;
-  },
-
   /** 댓글 수정 */
-  updateComment: async (commentId: string, authorId: string, body: string) => {
-    const [updated] = await pgDb
+  updateComment: async (
+    commentId: string,
+    authorId: string,
+    body: string,
+  ): Promise<void> => {
+    const result = await pgDb
       .update(workBookCommentsTable)
-      .set({ body, editedAt: new Date() })
+      .set({ body, updatedAt: new Date() })
       .where(
         and(
           eq(workBookCommentsTable.id, commentId),
           eq(workBookCommentsTable.authorId, authorId),
           isNull(workBookCommentsTable.deletedAt),
         ),
-      )
-      .returning();
-    return updated;
+      );
+    if (result.rowCount === 0) throw new PublicError("댓글을 찾을 수 없어요.");
   },
 
   /** 댓글 삭제 (soft delete) */
-  deleteComment: async (commentId: string, authorId: string) => {
-    const [deleted] = await pgDb
+  deleteComment: async (commentId: string, authorId: string): Promise<void> => {
+    const result = await pgDb
       .update(workBookCommentsTable)
       .set({ deletedAt: new Date() })
       .where(
@@ -143,13 +220,15 @@ export const commentService = {
           eq(workBookCommentsTable.id, commentId),
           eq(workBookCommentsTable.authorId, authorId),
         ),
-      )
-      .returning();
-    return deleted;
+      );
+    if (result.rowCount === 0) throw new PublicError("댓글을 찾을 수 없어요.");
   },
 
   /** 좋아요 토글 */
-  toggleLike: async (commentId: string, userId: string) => {
+  toggleLike: async (
+    commentId: string,
+    userId: string,
+  ): Promise<{ isLiked: boolean }> => {
     const [likeRow] = await pgDb
       .select({ commentId: workBookCommentLikesTable.commentId })
       .from(workBookCommentLikesTable)
@@ -176,14 +255,5 @@ export const commentService = {
         .values({ commentId, userId });
       return { isLiked: true };
     }
-  },
-
-  /** 댓글의 workBookId 조회 (권한 체크용) */
-  getCommentWorkBookId: async (commentId: string): Promise<string | null> => {
-    const [row] = await pgDb
-      .select({ workBookId: workBookCommentsTable.workBookId })
-      .from(workBookCommentsTable)
-      .where(eq(workBookCommentsTable.id, commentId));
-    return row?.workBookId ?? null;
   },
 };

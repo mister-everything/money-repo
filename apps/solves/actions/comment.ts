@@ -9,49 +9,49 @@ import { safeAction } from "@/lib/protocol/server-action";
 
 /** 권한 체크 헬퍼 */
 const checkPermission = async (workBookId: string, userId: string) => {
-  const hasSubmitted = await commentService.hasSubmitted(workBookId, userId);
+  const hasSubmitted = await commentService.hasWritePermission(
+    workBookId,
+    userId,
+  );
   if (!hasSubmitted) {
     throw new PublicError("문제집을 풀어야 댓글을 작성할 수 있습니다.");
   }
 };
 
-/** 댓글 목록 조회 */
-export const getCommentsAction = safeAction(
-  z.object({ workBookId: z.string() }),
-  async ({ workBookId }) => {
-    const session = await getSession().catch(() => null);
-    return commentService.getComments(workBookId, session?.user?.id);
-  },
-);
-
 /** 루트 댓글 작성 */
 export const createCommentAction = safeAction(
-  z.object({ workBookId: z.string(), body: z.string().min(1) }),
-  async ({ workBookId, body }) => {
+  z.object({
+    workBookId: z.string(),
+    body: z
+      .string("최소 1자 이상, 최대 280자 이하의 문자열을 입력해주세요.")
+      .min(1)
+      .max(280),
+    parentId: z.string().optional(),
+  }),
+  async ({ workBookId, body, parentId }) => {
     const session = await getSession();
     await checkPermission(workBookId, session.user.id);
-    return commentService.createComment(workBookId, session.user.id, body);
-  },
-);
-
-/** 대댓글 작성 */
-export const createReplyAction = safeAction(
-  z.object({ commentId: z.string(), body: z.string().min(1) }),
-  async ({ commentId, body }) => {
-    const session = await getSession();
-    const workBookId = await commentService.getCommentWorkBookId(commentId);
-    if (!workBookId) throw new PublicError("댓글을 찾을 수 없습니다");
-    await checkPermission(workBookId, session.user.id);
-    return commentService.createReply(commentId, session.user.id, body);
+    return commentService.createComment({
+      workBookId,
+      authorId: session.user.id,
+      body,
+      parentId,
+    });
   },
 );
 
 /** 댓글 수정 */
 export const updateCommentAction = safeAction(
-  z.object({ commentId: z.string(), body: z.string().min(1) }),
+  z.object({
+    commentId: z.string(),
+    body: z
+      .string("최소 1자 이상, 최대 280자 이하의 문자열을 입력해주세요.")
+      .min(1)
+      .max(280),
+  }),
   async ({ commentId, body }) => {
     const session = await getSession();
-    return commentService.updateComment(commentId, session.user.id, body);
+    await commentService.updateComment(commentId, session.user.id, body);
   },
 );
 
@@ -60,7 +60,7 @@ export const deleteCommentAction = safeAction(
   z.object({ commentId: z.string() }),
   async ({ commentId }) => {
     const session = await getSession();
-    return commentService.deleteComment(commentId, session.user.id);
+    commentService.deleteComment(commentId, session.user.id);
   },
 );
 
@@ -69,9 +69,6 @@ export const toggleCommentLikeAction = safeAction(
   z.object({ commentId: z.string() }),
   async ({ commentId }) => {
     const session = await getSession();
-    const workBookId = await commentService.getCommentWorkBookId(commentId);
-    if (!workBookId) throw new PublicError("댓글을 찾을 수 없습니다");
-    await checkPermission(workBookId, session.user.id);
     return commentService.toggleLike(commentId, session.user.id);
   },
 );

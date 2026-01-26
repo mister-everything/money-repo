@@ -10,11 +10,11 @@ CREATE TABLE IF NOT EXISTS "solves"."work_book_comments" (
 	"work_book_id" uuid NOT NULL,
 	"parent_id" uuid,
 	"author_id" text,
-	"body" text NOT NULL,
+	"body" varchar(300) NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"edited_at" timestamp,
+	"updated_at" timestamp,
 	"deleted_at" timestamp,
-	"deleted_reason" text
+	"deleted_reason" varchar(20)
 );
 --> statement-breakpoint
 DO $$ BEGIN
@@ -46,4 +46,3 @@ ALTER TABLE "solves"."work_book_comments" ADD CONSTRAINT "work_book_comments_aut
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
---> statement-breakpoint

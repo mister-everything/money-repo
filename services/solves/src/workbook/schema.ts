@@ -211,17 +211,17 @@ export const workBookCommentsTable = solvesSchema.table("work_book_comments", {
   workBookId: uuid("work_book_id")
     .notNull()
     .references(() => workBooksTable.id, { onDelete: "cascade" }),
-  parentId: uuid("parent_id").references((): any => workBookCommentsTable.id, {
+  parentId: uuid("parent_id").references(() => workBookCommentsTable.id, {
     onDelete: "set null",
   }),
   authorId: text("author_id").references(() => userTable.id, {
     onDelete: "set null",
   }),
-  body: text("body").notNull(),
+  body: varchar("body", { length: 300 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  editedAt: timestamp("edited_at"),
+  updatedAt: timestamp("updated_at"),
   deletedAt: timestamp("deleted_at"),
-  deletedReason: text("deleted_reason"),
+  deletedReason: varchar("deleted_reason", { length: 20 }),
 });
 
 /**

@@ -2,6 +2,7 @@
 
 import {
   ReportCategoryDetail,
+  ReportCategoryDetailLabel,
   ReportCategoryMain,
   ReportStatus,
 } from "@service/report/shared";
@@ -72,7 +73,7 @@ export function ReportTable({ reports }: Props) {
 
   const handleTogglePublic = async (
     e: React.MouseEvent,
-    report: ReportListItem
+    report: ReportListItem,
   ) => {
     e.stopPropagation();
 
@@ -134,8 +135,8 @@ export function ReportTable({ reports }: Props) {
                     ReportCategoryDetail.VIOL_COPYRIGHT
                       ? "destructive"
                       : report.targetIsPublic
-                      ? "default"
-                      : "outline"
+                        ? "default"
+                        : "outline"
                   }
                   onClick={(e) => handleTogglePublic(e, report)}
                   disabled={togglingId === report.id}
@@ -216,27 +217,8 @@ function CategoryBadge({
     categoryMain === ReportCategoryMain.VIOLATION
       ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-200"
       : categoryMain === ReportCategoryMain.ERROR
-      ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200"
-      : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200";
-
-  const detailLabel: Record<ReportCategoryDetail, string> = {
-    [ReportCategoryDetail.ERROR_ANSWER]: "정답 오류",
-    [ReportCategoryDetail.ERROR_TYPO]: "오타 오류",
-    [ReportCategoryDetail.ERROR_EXPLANATION]: "해설 오류",
-    [ReportCategoryDetail.VIOL_GUIDELINE]: "가이드라인 위반",
-    [ReportCategoryDetail.VIOL_SPAM]: "스팸/도배",
-    [ReportCategoryDetail.VIOL_TITLE]: "연령·주제 위반",
-    [ReportCategoryDetail.VIOL_COPYRIGHT]: "저작권 위반",
-    [ReportCategoryDetail.VIOL_PERSONAL_DATA]: "개인정보 노출",
-    [ReportCategoryDetail.OTHER_SYSTEM]: "시스템 오류",
-    [ReportCategoryDetail.OTHER_FREE]: "기타",
-    [ReportCategoryDetail.COMMENT_SPAM]: "도배/스팸",
-    [ReportCategoryDetail.COMMENT_ABUSE]: "욕설/괴롭힘",
-    [ReportCategoryDetail.COMMENT_HATE]: "혐오표현",
-    [ReportCategoryDetail.COMMENT_SEXUAL]: "성적/선정적 내용",
-    [ReportCategoryDetail.COMMENT_PERSONAL]: "개인정보 노출",
-    [ReportCategoryDetail.COMMENT_OTHER]: "기타",
-  };
+        ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200"
+        : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200";
 
   return (
     <Badge variant="outline" className={`gap-1 ${color}`}>
@@ -244,11 +226,11 @@ function CategoryBadge({
         {categoryMain === ReportCategoryMain.VIOLATION
           ? "위반"
           : categoryMain === ReportCategoryMain.ERROR
-          ? "오류"
-          : "기타"}
+            ? "오류"
+            : "기타"}
       </span>
       <span className="text-[11px] text-muted-foreground">
-        {detailLabel[categoryDetail]}
+        {ReportCategoryDetailLabel[categoryDetail]}
       </span>
     </Badge>
   );
