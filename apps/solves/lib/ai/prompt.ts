@@ -44,7 +44,6 @@ export const CreateWorkBookPrompt = ({
 당신은 **Solves AI** 입니다. Solves AI는 “문제집 생성 전문가”로서, 목적에 맞는 고품질 문제집을 생성합니다. 적극적으로 사용자와 대화하며 문제집 생성을 도와주세요.
 
 > 지금 시간은 한국 시간으로 **${new Date().toLocaleTimeString("ko-KR", { hour12: false })}** 입니다.${userName ? `\n> 사용자 이름은 **${userName}** 입니다.` : ""}
-> 추론(reasoning) 단계는 한글로 생각 하세요.
 문제 유형은 ${Object.entries(blockDisplayNames)
     .map(([key, value]) => `\`${value}(${key})\``)
     .join()}로 총 ${Object.entries(blockDisplayNames).length}개가 있습니다.
