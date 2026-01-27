@@ -201,3 +201,43 @@ export const WorkBookLikes = solvesSchema.table(
   },
   (t) => [primaryKey({ columns: [t.workBookId, t.userId] })],
 );
+
+/**
+ * 워크북 댓글 테이블
+ * 댓글 + 대댓글(1-depth)을 단일 테이블로 관리
+ */
+export const workBookCommentsTable = solvesSchema.table("work_book_comments", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  workBookId: uuid("work_book_id")
+    .notNull()
+    .references(() => workBooksTable.id, { onDelete: "cascade" }),
+  parentId: uuid("parent_id").references(() => workBookCommentsTable.id, {
+    onDelete: "set null",
+  }),
+  authorId: text("author_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }),
+  body: varchar("body", { length: 300 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+  deletedAt: timestamp("deleted_at"),
+  deletedReason: varchar("deleted_reason", { length: 20 }),
+});
+
+/**
+ * 워크북 댓글 좋아요 테이블
+ * Composite PK로 중복 좋아요 방지
+ */
+export const workBookCommentLikesTable = solvesSchema.table(
+  "work_book_comment_likes",
+  {
+    commentId: uuid("comment_id")
+      .notNull()
+      .references(() => workBookCommentsTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.commentId, t.userId] })],
+);

@@ -3,7 +3,7 @@ import {
   BlockAnswerSubmit,
   WorkBookReviewSession,
 } from "@service/solves/shared";
-import { CheckIcon, Share2Icon } from "lucide-react";
+import { CheckIcon, MessageCircle, Share2Icon } from "lucide-react";
 import { useCallback } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
@@ -11,16 +11,19 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { GradualSpacingText } from "../ui/gradual-spacing-text";
 import { Block } from "./block/block";
+import { WorkbookCommentsPanel } from "./comment/workbook-comments-panel";
 import { WorkbookHeader } from "./workbook-header";
 import { WorkBookLikeButton } from "./workbook-like-button";
 
 interface WorkBookReviewProps {
   session: WorkBookReviewSession;
+  commentCount: number;
   hideActions?: boolean;
 }
 
 export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
   session,
+  commentCount,
   hideActions = false,
 }) => {
   const submitAnswerByBlockId = session.submitAnswers.reduce(
@@ -37,10 +40,9 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
   const [copied, copy] = useCopy();
 
   const handleShare = useCallback(() => {
-    if (hideActions) return;
     const url = `${window.location.origin}/workbooks/${session.workBook.id}/preview`;
     copy(url);
-  }, [hideActions, session.workBook.id]);
+  }, [session.workBook.id]);
 
   return (
     <div className="w-full px-4">
@@ -124,6 +126,24 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
                 initialIsLiked={session.isLiked}
                 initialLikeCount={session.workBook.likeCount}
               />
+              <WorkbookCommentsPanel
+                workBookId={session.workBook.id}
+                workbookTitle={session.workBook.title}
+              >
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-muted-foreground"
+                    aria-label="댓글 보기"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                  <span className="text-2xs text-muted-foreground">
+                    {commentCount}
+                  </span>
+                </div>
+              </WorkbookCommentsPanel>
               <div className="flex flex-col items-center justify-center gap-1">
                 <Button
                   variant="outline"

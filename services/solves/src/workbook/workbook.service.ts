@@ -16,6 +16,7 @@ import { pgDb } from "../db";
 import { MAX_INPROGRESS_WORKBOOK_CREATE_COUNT } from "./block-config";
 import { blockValidate } from "./block-validate";
 import { BlockAnswer, BlockAnswerSubmit } from "./blocks";
+import { commentService } from "./comment.service";
 import {
   blocksTable,
   tagsTable,
@@ -817,11 +818,16 @@ export const workBookService = {
       correctBlocks: row.correctBlocks,
     };
     const submitAnswers = await workBookService.getSubmitAnswers(row.id);
+
+    const commentCount = await commentService.getCommentCountByWorkBookId(
+      row.workBookId,
+    );
     return {
       workBook: { ...workBook },
       isLiked,
       session,
       submitAnswers,
+      commentCount,
     };
   },
 
