@@ -182,6 +182,7 @@ export const CreateWorkbookPlanQuestionsPrompt = ({
 - 질문은 “문제집 계획”을 채우기 위한 것:
   - overview에 반영될 큰 방향(평가 목적/대상/범위)
   - blockPlans에 반영될 구체 요소(평가할 역량, 문제 성격, 난이도 흐름)
+  - 사용자의 수준을 파악할 수 있는 질문을 생성하세요.
 - 질문은 아래 우선순위에서 **가장 영향 큰 것만 2~3개** 고른다:
   1) 평가 목적/기준(무엇을 뽑기 위한 문제집인가)
   2) 평가 범위(어디까지 포함/제외할 것인가)
@@ -191,6 +192,7 @@ export const CreateWorkbookPlanQuestionsPrompt = ({
 - 질문 id / 옵션 id는 예측 가능하게:
   - 질문 id: q_focus, q_scope, q_style
   - 옵션 id: opt_...
+
 
 
 `.trim();
