@@ -31,7 +31,10 @@ export default async function ReviewPage({
       <div className="p-4 sticky top-0 z-10">
         <GoBackButton href="/workbooks">다른 문제집 보기</GoBackButton>
       </div>
-      <WorkBookReview session={reviewSession} />
+      <WorkBookReview
+        session={reviewSession}
+        commentCount={reviewSession.commentCount}
+      />
       <div className="px-4 max-w-6xl mx-auto w-full">
         <WorkbookRecommendations
           workBookId={reviewSession.workBook.id}

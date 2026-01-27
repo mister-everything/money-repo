@@ -163,3 +163,18 @@ export const validateNickname = (
   }
   return { valid: true };
 };
+
+export const validateComment = (
+  text?: string,
+): { valid: boolean; error?: string } => {
+  if (!text) return { valid: false, error: "댓글을 입력해주세요." };
+  if (text.length > 280)
+    return { valid: false, error: "댓글은 최대 280자까지 입력할 수 있습니다." };
+  const lowerText = text.toLowerCase();
+  for (const word of badWords) {
+    if (lowerText.includes(word)) {
+      return { valid: false, error: `비속어가 포함되어 있습니다: ${word}` };
+    }
+  }
+  return { valid: true };
+};

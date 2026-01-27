@@ -92,6 +92,7 @@ export type WorkBookReviewSession = {
   workBook: WorkBook;
   isLiked: boolean;
   session: SessionSubmitted;
+  commentCount: number;
   submitAnswers: {
     blockId: string;
     isCorrect: boolean;
@@ -128,3 +129,36 @@ export enum WorkBookDifficultyLevel {
   HARD = "hard", // 36점 이상
   VERY_HARD = "very_hard", // 36점 미만
 }
+
+export type WorkbookComment = {
+  id: string;
+  parentId: string | null;
+  authorNickname: string | null;
+  authorPublicId: number | null;
+  authorProfile: string | null;
+  body: string;
+  createdAt: Date;
+  updatedAt: Date | null;
+  likeCount: number;
+  isWorkbookOwner?: boolean;
+  isAuthorAdmin?: boolean;
+  isCommentAuthor?: boolean;
+  isLikedByMe?: boolean;
+};
+
+/**
+ * 대댓글을 포함한 댓글 타입
+ * replies는 최대 1-depth까지만 허용
+ */
+export type WorkbookCommentWithReplies = WorkbookComment & {
+  replies: WorkbookComment[];
+};
+
+/**
+ * 플랫한 댓글 목록 응답 타입 (V1)
+ * root/reply 구분 없이 시간순 정렬
+ */
+export type PaginatedFlatCommentsResponse = {
+  comments: WorkbookComment[];
+  nextCursor: string | null;
+};

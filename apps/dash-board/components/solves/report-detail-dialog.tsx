@@ -2,8 +2,10 @@
 
 import {
   ReportCategoryDetail,
+  ReportCategoryDetailLabel,
   ReportCategoryMain,
   ReportStatus,
+  ReportStatusLabel,
 } from "@service/report/shared";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -57,7 +59,7 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ReportStatus>(
-    ReportStatus.RECEIVED
+    ReportStatus.RECEIVED,
   );
   const [processingNote, setProcessingNote] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -128,26 +130,6 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
     });
   };
 
-  const detailLabel: Record<ReportCategoryDetail, string> = {
-    [ReportCategoryDetail.ERROR_ANSWER]: "정답 오류",
-    [ReportCategoryDetail.ERROR_TYPO]: "오타 오류",
-    [ReportCategoryDetail.ERROR_EXPLANATION]: "해설 오류",
-    [ReportCategoryDetail.VIOL_GUIDELINE]: "가이드라인 위반",
-    [ReportCategoryDetail.VIOL_SPAM]: "스팸/도배",
-    [ReportCategoryDetail.VIOL_TITLE]: "연령·주제 위반",
-    [ReportCategoryDetail.VIOL_COPYRIGHT]: "저작권 위반",
-    [ReportCategoryDetail.VIOL_PERSONAL_DATA]: "개인정보 노출",
-    [ReportCategoryDetail.OTHER_SYSTEM]: "시스템 오류",
-    [ReportCategoryDetail.OTHER_FREE]: "기타",
-  };
-
-  const statusLabel: Record<ReportStatus, string> = {
-    [ReportStatus.RECEIVED]: "접수됨",
-    [ReportStatus.IN_REVIEW]: "검토중",
-    [ReportStatus.RESOLVED]: "처리완료",
-    [ReportStatus.REJECTED]: "반려",
-  };
-
   const showProcessingNote =
     selectedStatus === ReportStatus.RESOLVED ||
     selectedStatus === ReportStatus.REJECTED;
@@ -198,7 +180,7 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
                 <CategoryBadge
                   categoryMain={report.categoryMain}
                   categoryDetail={report.categoryDetail}
-                  detailLabel={detailLabel}
+                  detailLabel={ReportCategoryDetailLabel}
                 />
               </div>
               {report.isPriority && (
@@ -274,7 +256,7 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
                         htmlFor="received"
                         className="cursor-pointer font-normal"
                       >
-                        {statusLabel[ReportStatus.RECEIVED]}
+                        {ReportCategoryDetailLabel[ReportStatus.RECEIVED]}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -286,7 +268,7 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
                         htmlFor="in_review"
                         className="cursor-pointer font-normal"
                       >
-                        {statusLabel[ReportStatus.IN_REVIEW]}
+                        {ReportCategoryDetailLabel[ReportStatus.IN_REVIEW]}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -298,7 +280,7 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
                         htmlFor="resolved"
                         className="cursor-pointer font-normal"
                       >
-                        {statusLabel[ReportStatus.RESOLVED]}
+                        {ReportStatusLabel[ReportStatus.RESOLVED]}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -310,7 +292,7 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
                         htmlFor="rejected"
                         className="cursor-pointer font-normal"
                       >
-                        {statusLabel[ReportStatus.REJECTED]}
+                        {ReportStatusLabel[ReportStatus.REJECTED]}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -348,7 +330,7 @@ export function ReportDetailDialog({ reportId, open, onOpenChange }: Props) {
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">상태:</span>
                     <Badge variant="outline">
-                      {statusLabel[report.status]}
+                      {ReportStatusLabel[report.status]}
                     </Badge>
                     <span className="text-muted-foreground ml-2">
                       {format(new Date(report.processedAt), "PPP HH:mm", {
@@ -404,8 +386,8 @@ function CategoryBadge({
     categoryMain === ReportCategoryMain.VIOLATION
       ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-200"
       : categoryMain === ReportCategoryMain.ERROR
-      ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200"
-      : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200";
+        ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200"
+        : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-200";
 
   return (
     <Badge variant="outline" className={`gap-1 ${color}`}>
@@ -413,8 +395,8 @@ function CategoryBadge({
         {categoryMain === ReportCategoryMain.VIOLATION
           ? "위반"
           : categoryMain === ReportCategoryMain.ERROR
-          ? "오류"
-          : "기타"}
+            ? "오류"
+            : "기타"}
       </span>
       <span className="text-[11px] text-muted-foreground">
         {detailLabel[categoryDetail]}

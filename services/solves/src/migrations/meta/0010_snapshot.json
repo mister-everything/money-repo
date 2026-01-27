@@ -1,6 +1,6 @@
 {
-  "id": "ad94fc5a-c9e4-4ba9-bfbc-7fc8d99fd9ad",
-  "prevId": "fb284bc7-92d0-4d5b-b66c-8b22a0a682fb",
+  "id": "9525a669-66f5-4583-beda-6220f4eca504",
+  "prevId": "8348a071-86b9-40dd-afcb-4b7beeebb674",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1570,6 +1570,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1758,6 +1765,187 @@
           ]
         }
       },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.work_book_comment_likes": {
+      "name": "work_book_comment_likes",
+      "schema": "solves",
+      "columns": {
+        "comment_id": {
+          "name": "comment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "work_book_comment_likes_comment_id_work_book_comments_id_fk": {
+          "name": "work_book_comment_likes_comment_id_work_book_comments_id_fk",
+          "tableFrom": "work_book_comment_likes",
+          "tableTo": "work_book_comments",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "comment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "work_book_comment_likes_user_id_user_id_fk": {
+          "name": "work_book_comment_likes_user_id_user_id_fk",
+          "tableFrom": "work_book_comment_likes",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "work_book_comment_likes_comment_id_user_id_pk": {
+          "name": "work_book_comment_likes_comment_id_user_id_pk",
+          "columns": [
+            "comment_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "solves.work_book_comments": {
+      "name": "work_book_comments",
+      "schema": "solves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "work_book_id": {
+          "name": "work_book_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body": {
+          "name": "body",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_reason": {
+          "name": "deleted_reason",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "work_book_comments_work_book_id_work_books_id_fk": {
+          "name": "work_book_comments_work_book_id_work_books_id_fk",
+          "tableFrom": "work_book_comments",
+          "tableTo": "work_books",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "work_book_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "work_book_comments_parent_id_work_book_comments_id_fk": {
+          "name": "work_book_comments_parent_id_work_book_comments_id_fk",
+          "tableFrom": "work_book_comments",
+          "tableTo": "work_book_comments",
+          "schemaTo": "solves",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "work_book_comments_author_id_user_id_fk": {
+          "name": "work_book_comments_author_id_user_id_fk",
+          "tableFrom": "work_book_comments",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
