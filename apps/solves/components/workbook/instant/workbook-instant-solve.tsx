@@ -55,8 +55,7 @@ export function WorkbookInstantSolve() {
   const searchParams = useSearchParams();
   const { chatModel } = useAiStore();
   const workbookPlan = useWorkbookEditStore((state) => state.workbookPlan);
-  const { sessions, saveSession, clearSession, hasHydrated } =
-    useInstantSolveStore();
+  const { sessions, saveSession, hasHydrated } = useInstantSolveStore();
 
   const categoryId = useMemo(() => {
     const value = Number(searchParams.get("categoryId") ?? 0);
@@ -369,7 +368,9 @@ export function WorkbookInstantSolve() {
     startTimeRef.current = new Date();
     // 세션도 현재 blocks 상태로 업데이트 (답변만 초기화)
     if (planKey) {
-      const persistedBlocks = blocksRef.current.filter(Boolean) as WorkBookBlock[];
+      const persistedBlocks = blocksRef.current.filter(
+        Boolean,
+      ) as WorkBookBlock[];
       saveSession({
         planKey,
         categoryId,
