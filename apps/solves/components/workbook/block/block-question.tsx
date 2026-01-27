@@ -82,7 +82,9 @@ export function BlockQuestion({
         />
       ) : (
         <div className="p-2">
-          <Streamdown>{question || placeholder}</Streamdown>
+          <Streamdown isAnimating shikiTheme={["github-light", "github-dark"]}>
+            {question || placeholder}
+          </Streamdown>
         </div>
       )}
     </div>

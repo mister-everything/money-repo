@@ -17,12 +17,14 @@ import { WorkBookLikeButton } from "./workbook-like-button";
 
 interface WorkBookReviewProps {
   session: WorkBookReviewSession;
-  commentCount: number;
+  commentCount?: number;
+  hideActions?: boolean;
 }
 
 export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
   session,
-  commentCount,
+  commentCount = 0,
+  hideActions = false,
 }) => {
   const submitAnswerByBlockId = session.submitAnswers.reduce(
     (acc, submitAnswer) => {
@@ -44,15 +46,17 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
 
   return (
     <div className="w-full px-4">
-      <div className="sticky top-0 z-10 backdrop-blur-sm flex items-center gap-2">
-        <div className="ml-auto lg:hidden">
-          <WorkBookLikeButton
-            workBookId={session.workBook.id}
-            initialIsLiked={session.isLiked}
-            initialLikeCount={session.workBook.likeCount}
-          />
+      {!hideActions && (
+        <div className="sticky top-0 z-10 backdrop-blur-sm flex items-center gap-2">
+          <div className="ml-auto lg:hidden">
+            <WorkBookLikeButton
+              workBookId={session.workBook.id}
+              initialIsLiked={session.isLiked}
+              initialLikeCount={session.workBook.likeCount}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="w-full lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,56rem)_minmax(0,1fr)] lg:gap-x-6">
         <div className="hidden lg:block" />
@@ -114,46 +118,48 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
             })}
           </div>
         </div>
-        <div className="hidden lg:flex lg:justify-center">
-          <div className="sticky top-[20%] h-fit pt-1 flex flex-col gap-4">
-            <WorkBookLikeButton
-              workBookId={session.workBook.id}
-              initialIsLiked={session.isLiked}
-              initialLikeCount={session.workBook.likeCount}
-            />
-            <WorkbookCommentsPanel
-              workBookId={session.workBook.id}
-              workbookTitle={session.workBook.title}
-            >
+        {!hideActions && (
+          <div className="hidden lg:flex lg:justify-center">
+            <div className="sticky top-[20%] h-fit pt-1 flex flex-col gap-4">
+              <WorkBookLikeButton
+                workBookId={session.workBook.id}
+                initialIsLiked={session.isLiked}
+                initialLikeCount={session.workBook.likeCount}
+              />
+              <WorkbookCommentsPanel
+                workBookId={session.workBook.id}
+                workbookTitle={session.workBook.title}
+              >
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-muted-foreground"
+                    aria-label="댓글 보기"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                  <span className="text-2xs text-muted-foreground">
+                    {commentCount}
+                  </span>
+                </div>
+              </WorkbookCommentsPanel>
               <div className="flex flex-col items-center justify-center gap-1">
                 <Button
                   variant="outline"
                   size="icon"
                   className="text-muted-foreground"
-                  aria-label="댓글 보기"
+                  onClick={handleShare}
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  {copied ? <CheckIcon /> : <Share2Icon />}
                 </Button>
                 <span className="text-2xs text-muted-foreground">
-                  {commentCount}
+                  {copied ? "링크 복사됨" : "공유"}
                 </span>
               </div>
-            </WorkbookCommentsPanel>
-            <div className="flex flex-col items-center justify-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="text-muted-foreground"
-                onClick={handleShare}
-              >
-                {copied ? <CheckIcon /> : <Share2Icon />}
-              </Button>
-              <span className="text-2xs text-muted-foreground">
-                {copied ? "링크 복사됨" : "공유"}
-              </span>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

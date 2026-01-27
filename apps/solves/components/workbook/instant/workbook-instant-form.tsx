@@ -1,36 +1,34 @@
 "use client";
 
-import { BlockType, blockDisplayNames } from "@service/solves/shared";
+import { BlockType, ChatModel } from "@service/solves/shared";
 import { errorToString } from "@workspace/util";
 
 import { motion } from "framer-motion";
 import { LoaderIcon } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { useShallow } from "zustand/shallow";
+
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import {
   generateWorkbookPlanAction,
   generateWorkbookPlanQuestionAction,
 } from "@/actions/workbook-ai";
 import { AskQuestionInput } from "@/components/chat/tool-part/ask-question-tool-part";
 import { Badge } from "@/components/ui/badge";
-import { notify } from "@/components/ui/notify";
+
 import { AskQuestionOutput } from "@/lib/ai/tools/workbook/ask-question-tools";
+import { WorkbookPlan } from "@/lib/ai/tools/workbook/workbook-plan";
 import { useSafeAction } from "@/lib/protocol/use-safe-action";
-import { useAiStore } from "@/store/ai-store";
-import { useWorkbookEditStore } from "@/store/workbook-edit-store";
 import { PlanPreview } from "../workbook-plan-preview";
 import { WorkbookInstantCategoryStep } from "./workbook-instant-category-step";
 import { WorkbookInstantPromptStep } from "./workbook-instant-prompt-step";
 import { WorkbookInstantQuestionStep } from "./workbook-instant-question-step";
 
 type PlanCreateOptions = {
-  categoryId?: number;
   blockTypes: BlockType[];
   blockCount: number;
   prompt: string;
 };
 
-enum Step {
+export enum Step {
   CATEGORY = "category",
   PROMPT = "prompt",
   QUESTION = "question",
@@ -38,36 +36,51 @@ enum Step {
 }
 
 const defaultOptions: PlanCreateOptions = {
-  blockTypes: Object.keys(blockDisplayNames) as BlockType[],
+  blockTypes: ["default", "mcq", "ox"],
   blockCount: 5,
   prompt: "",
 };
 
-export function WorkbookInstantForm() {
+interface WorkbookInstantFormProps {
+  model: ChatModel;
+  onModelChange: (model: ChatModel) => void;
+  workbookPlan?: WorkbookPlan;
+  onWorkbookPlanChange: (workbookPlan: WorkbookPlan | undefined) => void;
+  categoryId?: number;
+  onCategoryChange: (categoryId?: number) => void;
+  onReset: () => void;
+  onStart: () => void;
+  defaultStep?: Step;
+}
+
+export function WorkbookInstantForm({
+  workbookPlan,
+  model,
+  categoryId,
+  onModelChange,
+  onWorkbookPlanChange,
+  onCategoryChange,
+  onReset,
+  onStart,
+  defaultStep = Step.CATEGORY,
+}: WorkbookInstantFormProps) {
   const [formData, setFormData] = useState<PlanCreateOptions>({
     ...defaultOptions,
   });
-  const [step, setStep] = useState<Step>(Step.CATEGORY);
+  const [step, setStep] = useState<Step>(defaultStep);
 
   const [question, setQuestion] = useState<{
     input?: AskQuestionInput; // 질문
     output?: AskQuestionOutput; // 질문 답변
   }>({});
 
-  const { chatModel, setChatModel } = useAiStore();
-
-  const [workbookPlan, setWorkbookPlan] = useWorkbookEditStore(
-    useShallow((state) => [state.workbookPlan, state.setWorkbookPlan]),
-  );
-
   const [, generatePlan, isPlanGenerating] = useSafeAction(
     generateWorkbookPlanAction,
     {
       onSuccess: (result) => {
-        setWorkbookPlan(result.plan);
+        onWorkbookPlanChange(result.plan);
       },
       failMessage: errorToString,
-      successMessage: "생성이 완료되었습니다. 화면 이동중...",
     },
   );
 
@@ -81,41 +94,36 @@ export function WorkbookInstantForm() {
     },
   );
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setStep(Step.CATEGORY);
     setFormData({ ...defaultOptions });
-    setWorkbookPlan(undefined);
     setQuestion({});
-  };
-
-  const handleStart = () => {
-    notify.alert({
-      title: "문제집 생성 시작",
-      description: "문제집 생성을 시작합니다!",
-    });
-  };
+    onReset();
+  }, [onReset]);
 
   useEffect(() => {
     if (step === Step.QUESTION) {
-      setQuestion({});
-      generateQuestions({
-        categoryId: formData.categoryId!,
-        prompt: formData.prompt,
-        model: chatModel!,
-        blockTypes: formData.blockTypes,
-        blockCount: formData.blockCount,
-      });
+      if (!question.input) {
+        setQuestion({});
+        generateQuestions({
+          categoryId: categoryId!,
+          prompt: formData.prompt,
+          model,
+          blockTypes: formData.blockTypes,
+          blockCount: formData.blockCount,
+        });
+      }
     }
     if (step === Step.PLAN) {
-      setWorkbookPlan(undefined);
+      onWorkbookPlanChange(undefined);
       generatePlan({
-        categoryId: formData.categoryId!,
+        categoryId: categoryId!,
         askQuestion: {
           input: question.input ?? { questions: [] },
           output: question.output ?? { answers: [] },
         },
         prompt: formData.prompt,
-        model: chatModel!,
+        model,
         blockTypes: formData.blockTypes,
         blockCount: formData.blockCount,
       });
@@ -131,6 +139,10 @@ export function WorkbookInstantForm() {
           ? 3
           : 4;
   }, [step]);
+
+  useEffect(() => {
+    setStep(defaultStep);
+  }, [defaultStep]);
 
   return (
     <div className="w-full space-y-6 max-w-4xl mx-auto">
@@ -259,16 +271,14 @@ export function WorkbookInstantForm() {
         </div>
         {step === Step.CATEGORY ? (
           <WorkbookInstantCategoryStep
-            onCategoryChange={(ct) =>
-              setFormData((prev) => ({ ...prev, categoryId: ct }))
-            }
-            categoryId={formData.categoryId}
+            onCategoryChange={onCategoryChange}
+            categoryId={categoryId}
             onNextStep={() => setStep(Step.PROMPT)}
           />
         ) : step === Step.PROMPT ? (
           <WorkbookInstantPromptStep
-            model={chatModel}
-            onModelChange={setChatModel}
+            model={model}
+            onModelChange={onModelChange}
             prompt={formData.prompt}
             onPromptChange={(prompt) => {
               setFormData({ ...formData, prompt });
@@ -299,9 +309,9 @@ export function WorkbookInstantForm() {
             plan={workbookPlan}
             isLoading={isPlanGenerating}
             prompt={formData.prompt}
-            categoryId={formData.categoryId}
+            categoryId={categoryId}
             blockCount={formData.blockCount}
-            onStart={handleStart}
+            onStart={onStart}
             onReset={handleReset}
           />
         )}

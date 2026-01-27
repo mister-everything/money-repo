@@ -21,7 +21,6 @@ const textOption = z.object({
       `최대 ${BLOCK_OPTION_TEXT_MAX_LENGTH}자 이하로 입력해주세요.`,
     ),
 });
-
 const sourceOption = z.object({
   id: z.string(),
   type: z.literal("source"),
@@ -273,10 +272,10 @@ export type OxBlockAnswerSubmit = z.infer<typeof oxBlock.answerSubmitSchema>;
 
 export const All_BLOCKS = {
   [defaultBlock.type]: defaultBlock,
-  [mcqMultipleBlock.type]: mcqMultipleBlock,
   [mcqBlock.type]: mcqBlock,
-  [rankingBlock.type]: rankingBlock,
   [oxBlock.type]: oxBlock,
+  [mcqMultipleBlock.type]: mcqMultipleBlock,
+  [rankingBlock.type]: rankingBlock,
 } as const;
 
 export type BlockType = keyof typeof All_BLOCKS;

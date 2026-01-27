@@ -47,8 +47,14 @@ export const WORKBOOK_META_TOOL_NAME = "recommendWorkbookMetaData";
 
 // 공통 입력 스키마
 const BASE = z.object({
-  question: z.string().min(1, "문제의 질문을 입력하세요."),
-  solution: z.string().min(1).max(300).describe("문제의 해설을 입력하세요."),
+  question: z
+    .string()
+    .min(1, "문제의 질문을 입력하세요.")
+    .describe("문제의 질문을 입력하세요. markdown 문법을 사용할 수 있습니다."),
+  solution: z
+    .string()
+    .min(1)
+    .describe("문제의 해설을 입력하세요. (최대 300자)"),
 });
 
 // 객관식(단일)
@@ -57,7 +63,9 @@ export const GenerateMcqInputSchema = BASE.extend({
     .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
     .min(MCQ_BLOCK_MIN_OPTIONS)
     .max(MCQ_BLOCK_MAX_OPTIONS)
-    .describe("보기를 입력하세요."),
+    .describe(
+      `보기를 입력하세요. (최소 ${MCQ_BLOCK_MIN_OPTIONS}개, 최대 ${MCQ_BLOCK_MAX_OPTIONS}개)`,
+    ),
   correctOptionIndex: z
     .number()
     .int()
@@ -108,7 +116,9 @@ export const GenerateMcqMultipleInputSchema = BASE.extend({
     .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
     .min(MCQ_BLOCK_MIN_OPTIONS)
     .max(MCQ_BLOCK_MAX_OPTIONS)
-    .describe("보기를 입력하세요."),
+    .describe(
+      `보기를 입력하세요. (최소 ${MCQ_BLOCK_MIN_OPTIONS}개, 최대 ${MCQ_BLOCK_MAX_OPTIONS}개)`,
+    ),
   correctOptionIndexes: z
     .array(z.number().int().nonnegative())
     .min(1)
@@ -158,7 +168,10 @@ export const mcqMultipleToolInputToBlock = ({
 // 주관식
 export const GenerateSubjectiveInputSchema = BASE.extend({
   answers: z
-    .array(z.string().min(1).max(DEFAULT_BLOCK_ANSWER_MAX_LENGTH))
+    .array(z.string().min(1))
+    .describe(
+      `정답 단어를 입력하세요. (최소 1개, 최대 ${DEFAULT_BLOCK_MAX_ANSWERS}개)`,
+    )
     .min(1)
     .max(DEFAULT_BLOCK_MAX_ANSWERS)
     .describe("정답 단어를 입력하세요."),
@@ -201,12 +214,16 @@ export const GenerateRankingInputSchema = BASE.extend({
     .array(z.string().min(1).max(RANKING_BLOCK_ITEM_MAX_LENGTH))
     .min(RANKING_BLOCK_MIN_ITEMS)
     .max(RANKING_BLOCK_MAX_ITEMS)
-    .describe("순위를 매길 항목을 입력하세요."),
+    .describe(
+      `순위를 매길 항목을 입력하세요. (최소 ${RANKING_BLOCK_MIN_ITEMS}개, 최대 ${RANKING_BLOCK_MAX_ITEMS}개)`,
+    ),
   correctOrderIndexes: z
     .array(z.number().int().nonnegative())
     .min(RANKING_BLOCK_MIN_ITEMS)
     .max(RANKING_BLOCK_MAX_ITEMS)
-    .describe("items 배열의 올바른 순서 인덱스 배열을 입력하세요."),
+    .describe(
+      `items 배열의 올바른 순서 인덱스 배열을 입력하세요. (최소 ${RANKING_BLOCK_MIN_ITEMS}개, 최대 ${RANKING_BLOCK_MAX_ITEMS}개)`,
+    ),
 });
 
 export const rankingToolInputToBlock = ({
@@ -285,7 +302,9 @@ export const EditMcqInputSchema = BASE.extend({
     .array(z.string().min(1).max(BLOCK_OPTION_TEXT_MAX_LENGTH))
     .min(MCQ_BLOCK_MIN_OPTIONS)
     .max(MCQ_BLOCK_MAX_OPTIONS)
-    .describe("보기를 입력하세요."),
+    .describe(
+      `보기를 입력하세요. (최소 ${MCQ_BLOCK_MIN_OPTIONS}개, 최대 ${MCQ_BLOCK_MAX_OPTIONS}개)`,
+    ),
   correctOptionIndex: z
     .number()
     .int()
@@ -457,4 +476,3 @@ export const WorkbookMetaInputSchema = z.object({
 });
 
 export type WorkbookMetaInput = z.infer<typeof WorkbookMetaInputSchema>;
-

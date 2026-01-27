@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { AskQuestionInput } from "@/components/chat/tool-part/ask-question-tool-part";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { TextShimmer } from "@/components/ui/text-shimmer";
 import { AskQuestionOutput } from "@/lib/ai/tools/workbook/ask-question-tools";
@@ -84,22 +85,22 @@ export function WorkbookInstantQuestionStep({
       ) : (
         <div className="fade-2000 space-y-3 py-3">
           {/* Header */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 w-full">
-              <Badge className="font-bold py-1">
-                Q{step + 1}
-                {total > 1 && <span className="opacity-60">/{total}</span>}
-              </Badge>
-              <div className="flex-1 min-w-0">
-                <span className="text-lg font-semibold block">
-                  <GradualSpacingText
-                    key={step}
-                    text={question?.prompt ?? ""}
-                  />
-                </span>
-              </div>
+
+          <div className="flex items-center gap-2 w-full">
+            <Badge className="font-bold rounded size-6">{step + 1}</Badge>
+            <div className="flex-1 min-w-0">
+              <span className="text-lg font-semibold block">
+                <GradualSpacingText key={step} text={question?.prompt ?? ""} />
+              </span>
             </div>
           </div>
+          {total > 1 && (
+            <p className="text-xs text-muted-foreground text-right px-2">
+              {total - 1 == step
+                ? "마지막 질문입니다."
+                : `총 ${total}개의 질문중 ${step + 1}번째 질문입니다.`}
+            </p>
+          )}
 
           {/* Options */}
           <div className="flex flex-col gap-2">
@@ -182,7 +183,7 @@ export function WorkbookInstantQuestionStep({
                 className="gap-1 flex-1"
                 size="lg"
               >
-                다음
+                {selected.length > 0 ? "다음" : "건너뛰기"}
               </Button>
             )}
           </div>

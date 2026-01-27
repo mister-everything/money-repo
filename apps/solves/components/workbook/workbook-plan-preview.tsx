@@ -40,24 +40,24 @@ export function PlanPreview({
 }: PlanPreviewProps) {
   const [expandedBlock, setExpandedBlock] = useState<number | null>(null);
   const [showConstraints, setShowConstraints] = useState(false);
+  const { data: categories = [] } = useCategories();
+  const category = useMemo(() => {
+    return categories
+      .flatMap((c) => [c, ...c.children])
+      .find((c) => c.id === categoryId);
+  }, [categories, categoryId]);
 
   if (isLoading) {
     return <PlanGenerationLoading prompt={prompt} blockCount={blockCount} />;
   }
 
-  if (!plan) return null;
-
-  const { data: categories = [] } = useCategories();
-
-  const category = useMemo(() => {
-    return categories.find((c) => c.id === categoryId);
-  }, [categories, categoryId]);
+  if (!plan) return <p>계획을 생성해주세요.</p>;
 
   const hasConstraintsOrGuidelines =
     (plan.constraints?.length ?? 0) > 0 || (plan.guidelines?.length ?? 0) > 0;
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4 fade-3000">
       {/* 헤더: 제목 + 배지 */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-4">
@@ -356,24 +356,16 @@ function PlanGenerationLoading({
         <span className="text-xs">예상 {blockCount}문제 구성</span>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl bg-background/80 p-4">
-        <div className="absolute inset-x-0 top-0 z-10 h-10 bg-linear-to-b from-background to-transparent" />
+      <div className="relative overflow-hidden rounded-2xl p-4">
         <div className="h-[220px]">
           <Layout />
         </div>
-        <div className="relative z-20 pt-4 text-xs text-muted-foreground">
-          <GradualSpacingText text="문제 블록을 조합해서 계획을 구성하고 있어요." />
+        <div className="relative z-20 text-center text-sm text-muted-foreground py-6">
+          <GradualSpacingText
+            delayMultiple={0.2}
+            text="문제들을 계획하고 있어요. 잠시만 기다려 주세요."
+          />
         </div>
-      </div>
-
-      <div className="rounded-xl bg-muted/40 p-4 text-xs text-muted-foreground">
-        <GradualSpacingText
-          text={
-            prompt?.trim()
-              ? `"${prompt.trim().slice(0, 80)}"`
-              : "요청 내용을 바탕으로 계획을 만들고 있어요."
-          }
-        />
       </div>
     </div>
   );

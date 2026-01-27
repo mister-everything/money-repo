@@ -121,8 +121,6 @@ export const commentService = {
       .orderBy(desc(workBookCommentsTable.createdAt))
       .limit(limit + 1);
 
-    console.log(commentsQuery.toSQL());
-
     const comments = await commentsQuery;
 
     const hasMore = comments.length > limit;
