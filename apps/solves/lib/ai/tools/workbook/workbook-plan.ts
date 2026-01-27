@@ -42,4 +42,6 @@ export const workbookPlanSchema = z.object({
   guidelines: z.array(z.string()).optional(),
 });
 
+export type BlockPlan = z.infer<typeof blockPlanItemSchema>;
+
 export type WorkbookPlan = z.infer<typeof workbookPlanSchema>;

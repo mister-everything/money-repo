@@ -144,3 +144,20 @@ export const loadGenerateBlockTools = (blockTypes?: BlockType[]) => {
     {} as Record<string, Tool>,
   );
 };
+
+export const getGenerateBlockInputSchema = (blockType: BlockType) => {
+  switch (blockType) {
+    case "mcq":
+      return GenerateMcqInputSchema;
+    case "mcq-multiple":
+      return GenerateMcqMultipleInputSchema;
+    case "ranking":
+      return GenerateRankingInputSchema;
+    case "ox":
+      return GenerateOxInputSchema;
+    case "default":
+      return GenerateSubjectiveInputSchema;
+    default:
+      throw new Error(`Unsupported block type: ${blockType}`);
+  }
+};

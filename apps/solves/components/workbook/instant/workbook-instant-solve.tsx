@@ -2,340 +2,101 @@
 
 import {
   BlockAnswerSubmit,
-  BlockType,
-  blockDisplayNames,
+  ChatModel,
   checkAnswer,
   initialSubmitAnswer,
-  serializeSummaryBlock,
-  WorkBook,
   WorkBookBlock,
-  WorkBookReviewSession,
 } from "@service/solves/shared";
-import {
-  applyStateUpdate,
-  errorToString,
-  generateUUID,
-  StateUpdate,
-} from "@workspace/util";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { applyStateUpdate, StateUpdate } from "@workspace/util";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { generateBlockByPlanAction } from "@/actions/workbook-ai";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 import { notify } from "@/components/ui/notify";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Block } from "@/components/workbook/block/block";
-import { WorkBookReview } from "@/components/workbook/workbook-review";
-import { useChatModelList } from "@/hooks/query/use-chat-model-list";
-import {
-  mcqMultipleToolInputToBlock,
-  mcqToolInputToBlock,
-  oxToolInputToBlock,
-  rankingToolInputToBlock,
-  subjectiveToolInputToBlock,
-} from "@/lib/ai/tools/workbook/shared";
-import { fetcher } from "@/lib/protocol/fetcher";
-import { useAiStore } from "@/store/ai-store";
-import {
-  getInstantSolvePlanKey,
-  useInstantSolveStore,
-} from "@/store/instant-solve-store";
-import { useWorkbookEditStore } from "@/store/workbook-edit-store";
+import { useToRef } from "@/hooks/use-to-ref";
+import { WorkbookPlan } from "@/lib/ai/tools/workbook/workbook-plan";
+import { useSafeAction } from "@/lib/protocol/use-safe-action";
+import { cn } from "@/lib/utils";
 
-export function WorkbookInstantSolve() {
-  useChatModelList();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { chatModel } = useAiStore();
-  const workbookPlan = useWorkbookEditStore((state) => state.workbookPlan);
-  const { sessions, saveSession, hasHydrated } = useInstantSolveStore();
+interface WorkbookInstantSolveProps {
+  workbookPlan: WorkbookPlan;
+  categoryId: number;
+  model: ChatModel;
+  onRestart: () => void;
+}
 
-  const categoryId = useMemo(() => {
-    const value = Number(searchParams.get("categoryId") ?? 0);
-    return Number.isFinite(value) ? value : 0;
-  }, [searchParams]);
-  const planKey = useMemo(() => {
-    if (!workbookPlan || categoryId <= 0) return null;
-    return getInstantSolvePlanKey(workbookPlan, categoryId);
-  }, [workbookPlan, categoryId]);
-  const storedSession = planKey ? sessions[planKey] : undefined;
-
-  const totalCount = workbookPlan?.blockPlans.length ?? 0;
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [blocks, setBlocks] = useState<(WorkBookBlock | undefined)[]>([]);
-  const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function WorkbookInstantSolve({
+  workbookPlan,
+  categoryId,
+  model,
+  onRestart,
+}: WorkbookInstantSolveProps) {
   const [isCompleted, setIsCompleted] = useState(false);
-  const [completedAt, setCompletedAt] = useState<Date | null>(null);
-  const [isRestored, setIsRestored] = useState(false);
+  const totalCount = workbookPlan.blockPlans.length;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [blocks, setBlocks] = useState<(WorkBookBlock | undefined)[]>(() => {
+    return workbookPlan.blockPlans.map(() => undefined);
+  });
+  const [submits, setSubmits] = useState<Record<string, BlockAnswerSubmit>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  const blocksRef = useRef<(WorkBookBlock | undefined)[]>([]);
-  const isGeneratingRef = useRef(false);
-  const startTimeRef = useRef<Date>(new Date());
-  const instantWorkbookId = useMemo(() => generateUUID(), []);
-  const restoredKeyRef = useRef<string | null>(null);
-  const inFlightRef = useRef<{
-    planKey: string;
-    index: number;
-    requestId: string;
-  } | null>(null);
+  const isLast = totalCount > 0 && currentIndex === totalCount - 1;
 
-  useEffect(() => {
-    blocksRef.current = blocks;
-  }, [blocks]);
-
-  useEffect(() => {
-    isGeneratingRef.current = isGenerating;
-  }, [isGenerating]);
-
-  useEffect(() => {
-    setIsRestored(false);
-  }, [planKey]);
-
-  useEffect(() => {
-    if (!hasHydrated || !planKey) return;
-    if (restoredKeyRef.current === planKey) {
-      setIsRestored(true);
-      return;
-    }
-    const session = storedSession;
-    if (!session) {
-      setBlocks([]);
-      setSubmits({});
-      setCurrentIndex(0);
-      setIsCompleted(false);
-      setCompletedAt(null);
-      restoredKeyRef.current = planKey;
-      setIsRestored(true);
-      return;
-    }
-
-    const restoredBlocks = session.blocks ?? [];
-    const nextIndex = Math.max(
-      0,
-      Math.min(
-        session.currentIndex ?? 0,
-        Math.max(restoredBlocks.length - 1, 0),
-      ),
-    );
-    const hasCompleted =
-      Boolean(session.completedAt) &&
-      restoredBlocks.length >= (workbookPlan?.blockPlans.length ?? 0);
-
-    setBlocks(restoredBlocks);
-    setSubmits(session.submits ?? {});
-    setCurrentIndex(nextIndex);
-    setIsCompleted(hasCompleted);
-    setCompletedAt(session.completedAt ? new Date(session.completedAt) : null);
-    restoredKeyRef.current = planKey;
-    setIsRestored(true);
-  }, [hasHydrated, planKey, storedSession, workbookPlan?.blockPlans.length]);
-
-  useEffect(() => {
-    if (!hasHydrated || !planKey || !workbookPlan || categoryId <= 0) return;
-    if (!isRestored) return;
-    const persistedBlocks = blocks.filter(Boolean) as WorkBookBlock[];
-    saveSession({
-      planKey,
-      categoryId,
-      currentIndex: Math.max(
-        0,
-        Math.min(currentIndex, Math.max(persistedBlocks.length - 1, 0)),
-      ),
-      blocks: persistedBlocks,
-      submits,
-      completedAt:
-        isCompleted && completedAt ? completedAt.toISOString() : undefined,
-      updatedAt: new Date().toISOString(),
-    });
-  }, [
-    blocks,
-    categoryId,
-    completedAt,
+  const latestRef = useToRef({
     currentIndex,
-    hasHydrated,
-    isCompleted,
-    isRestored,
-    planKey,
-    saveSession,
-    submits,
-    workbookPlan,
-  ]);
+  });
 
-  const currentBlock = blocks[currentIndex];
-  const currentPlanType = workbookPlan?.blockPlans[currentIndex]?.type as
-    | BlockType
-    | undefined;
-
-  const reviewSession = useMemo<WorkBookReviewSession | undefined>(() => {
-    if (!workbookPlan || categoryId <= 0) return undefined;
-    const solvedBlocks = blocks.filter(Boolean) as WorkBookBlock[];
-    if (solvedBlocks.length === 0) return undefined;
-
-    const submitAnswers = solvedBlocks.map((block) => {
+  const submitBlocks = useMemo(() => {
+    return (blocks.filter(Boolean) as WorkBookBlock[]).map((block) => {
       const submit = submits[block.id];
       const isCorrect = checkAnswer(block.answer, submit);
       return {
-        blockId: block.id,
-        isCorrect,
-        submit,
+        block,
+        submit: {
+          blockId: block.id,
+          isCorrect,
+          submit: submit,
+        },
       };
     });
+  }, [blocks, submits]);
 
-    const correctBlocks = submitAnswers.filter((v) => v.isCorrect).length;
-    const totalBlocks = workbookPlan.blockPlans.length;
+  const currentBlockPlan = useMemo(() => {
+    return workbookPlan.blockPlans[currentIndex];
+  }, [currentIndex, workbookPlan]);
 
-    const workBook: WorkBook = {
-      id: instantWorkbookId,
-      title: workbookPlan.overview.title,
-      likeCount: 0,
-      description: workbookPlan.overview.description,
-      blocks: solvedBlocks,
-      tags: [],
-      isPublic: false,
-      ownerPublicId: 0,
-      createdAt: completedAt ?? new Date(),
-      categoryId,
-    };
+  const currentBlock = useMemo(() => {
+    return blocks[currentIndex];
+  }, [blocks, currentIndex]);
 
-    return {
-      workBook,
-      isLiked: false,
-      session: {
-        status: "submitted",
-        startTime: startTimeRef.current,
-        submitId: instantWorkbookId,
-        endTime: completedAt ?? new Date(),
-        totalBlocks,
-        correctBlocks,
-      },
-      submitAnswers,
-      commentCount: 0,
-    };
-  }, [
-    blocks,
-    categoryId,
-    completedAt,
-    instantWorkbookId,
-    submits,
-    workbookPlan,
-  ]);
+  const progressValue = useMemo(() => {
+    return totalCount > 0 ? ((currentIndex + 1) / totalCount) * 100 : 0;
+  }, [totalCount, currentIndex]);
 
-  const canGenerate = Boolean(
-    workbookPlan && chatModel && categoryId > 0 && hasHydrated && isRestored,
-  );
-  const isLast = totalCount > 0 && currentIndex === totalCount - 1;
-  const progressValue =
-    totalCount > 0 ? ((currentIndex + 1) / totalCount) * 100 : 0;
-
-  const createBlockFromToolInput = useCallback(
-    (type: BlockType, input: unknown, order: number) => {
-      const id = generateUUID();
-      const block =
-        type === "mcq"
-          ? mcqToolInputToBlock({ id, input: input as any })
-          : type === "mcq-multiple"
-            ? mcqMultipleToolInputToBlock({ id, input: input as any })
-            : type === "ranking"
-              ? rankingToolInputToBlock({ id, input: input as any })
-              : type === "ox"
-                ? oxToolInputToBlock({ id, input: input as any })
-                : subjectiveToolInputToBlock({ id, input: input as any });
-
-      return { ...block, order };
-    },
-    [],
-  );
-
-  const generateBlock = useCallback(
-    async (index: number) => {
-      if (!workbookPlan || !chatModel || categoryId <= 0 || !planKey) return;
-      if (isGeneratingRef.current) return;
-      if (blocksRef.current[index]) return;
-      const blockPlan = workbookPlan.blockPlans[index];
-      if (!blockPlan) return;
-
-      const requestId = generateUUID();
-      inFlightRef.current = { planKey, index, requestId };
-      setIsGenerating(true);
-      setError(null);
-      isGeneratingRef.current = true;
-      try {
-        const previousBlocks = blocksRef.current
-          .filter(Boolean)
-          .map((block) => JSON.stringify(serializeSummaryBlock(block!)));
-
-        const input = await fetcher<unknown>("/api/workbooks/instant", {
-          method: "POST",
-          body: JSON.stringify({
-            overview: workbookPlan.overview,
-            constraints: workbookPlan.constraints ?? [],
-            guidelines: workbookPlan.guidelines ?? [],
-            blockPlan,
-            categoryId,
-            previousBlocks,
-            model: chatModel,
-          }),
-        });
-
-        if (
-          !inFlightRef.current ||
-          inFlightRef.current.requestId !== requestId
-        ) {
-          return;
-        }
-
-        const nextBlock = createBlockFromToolInput(
-          blockPlan.type as BlockType,
-          input,
-          index + 1,
-        );
-
+  const [, generateBlock, isGenerating] = useSafeAction(
+    generateBlockByPlanAction,
+    {
+      onSuccess: (result) => {
         setBlocks((prev) => {
-          const next = [...prev];
-          next[index] = nextBlock;
-          return next;
+          const nextBlocks = [...prev];
+          nextBlocks[latestRef.current.currentIndex] = result.block;
+          return nextBlocks;
         });
-      } catch (err) {
-        setError(errorToString(err));
-      } finally {
-        setIsGenerating(false);
-        isGeneratingRef.current = false;
-        if (inFlightRef.current?.requestId === requestId) {
-          inFlightRef.current = null;
-        }
-      }
+      },
+      onError: (error) => setError(error.message),
     },
-    [workbookPlan, chatModel, categoryId, createBlockFromToolInput, planKey],
   );
-
-  useEffect(() => {
-    if (!canGenerate || isCompleted || error) return;
-    if (currentIndex < 0 || currentIndex >= totalCount) return;
-    if (blocksRef.current[currentIndex]) return;
-    generateBlock(currentIndex);
-  }, [
-    canGenerate,
-    currentIndex,
-    error,
-    isCompleted,
-    totalCount,
-    generateBlock,
-  ]);
 
   const handleUpdateSubmitAnswer = useCallback(
     (id: string, answer: StateUpdate<BlockAnswerSubmit>) => {
       setSubmits((prev) => {
         const nextSubmits = { ...prev };
-        const block = blocksRef.current.find((b) => b?.id === id);
+        const block = blocks.find((b) => b?.id === id);
         if (!block) return prev;
         nextSubmits[id] = applyStateUpdate(
           { ...initialSubmitAnswer(block.type), ...nextSubmits[id] },
@@ -344,51 +105,41 @@ export function WorkbookInstantSolve() {
         return nextSubmits;
       });
     },
-    [],
+    [blocks],
   );
 
   const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => Math.min(prev + 1, totalCount - 1));
-  }, [totalCount]);
+    const nextIndex = Math.min(currentIndex + 1, totalCount - 1);
+    const nextBlockPlan = workbookPlan.blockPlans[nextIndex];
+    const nextBlock = blocks[nextIndex];
+
+    if (!nextBlockPlan) return toast.error("다음 문제를 생성할 수 없습니다.");
+    if (!nextBlock) {
+      generateBlock({
+        plan: workbookPlan,
+        blockPlan: nextBlockPlan,
+        categoryId,
+        model,
+      });
+    }
+    setCurrentIndex(nextIndex);
+  }, [
+    totalCount,
+    currentIndex,
+    workbookPlan,
+    categoryId,
+    model,
+    blocks,
+    generateBlock,
+  ]);
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   }, []);
 
   const handleComplete = useCallback(() => {
-    setCompletedAt(new Date());
     setIsCompleted(true);
   }, []);
-
-  const handleRestart = useCallback(() => {
-    setIsCompleted(false);
-    setCompletedAt(null);
-    // blocks는 유지하고 답변만 초기화
-    setSubmits({});
-    setCurrentIndex(0);
-    startTimeRef.current = new Date();
-    // 세션도 현재 blocks 상태로 업데이트 (답변만 초기화)
-    if (planKey) {
-      const persistedBlocks = blocksRef.current.filter(
-        Boolean,
-      ) as WorkBookBlock[];
-      saveSession({
-        planKey,
-        categoryId,
-        currentIndex: 0,
-        blocks: persistedBlocks,
-        submits: {},
-        completedAt: undefined,
-        updatedAt: new Date().toISOString(),
-      });
-    }
-    inFlightRef.current = null;
-  }, [planKey, categoryId, saveSession]);
-
-  const handleBackToPlan = useCallback(() => {
-    inFlightRef.current = null;
-    router.push("/workbooks/instant");
-  }, [router]);
 
   const handleSave = useCallback(async () => {
     await notify.alert({
@@ -397,55 +148,64 @@ export function WorkbookInstantSolve() {
     });
   }, []);
 
-  if (!workbookPlan) {
-    return (
-      <EmptyState
-        title="플랜이 없습니다"
-        description="먼저 문제집 플랜을 생성해주세요."
-        onAction={handleBackToPlan}
-        actionLabel="플랜 만들기"
-      />
-    );
-  }
+  useEffect(() => {
+    if (!currentBlockPlan) return;
+    generateBlock({
+      plan: workbookPlan,
+      blockPlan: currentBlockPlan,
+      categoryId,
+      model,
+    });
+  }, []);
 
-  if (categoryId <= 0) {
+  if (isCompleted) {
     return (
-      <EmptyState
-        title="카테고리가 없습니다"
-        description="카테고리를 다시 선택해주세요."
-        onAction={handleBackToPlan}
-        actionLabel="카테고리 선택"
-      />
-    );
-  }
-
-  if (!chatModel) {
-    return (
-      <Card className="w-full max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle>모델 준비 중</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-6 w-2/3" />
-          <Skeleton className="h-6 w-1/2" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isCompleted && reviewSession) {
-    return (
-      <div className="w-full space-y-4">
+      <div className="w-full space-y-4 max-w-4xl mx-auto">
         <div className="flex items-center justify-end gap-2">
-          <Button variant="secondary" onClick={handleRestart}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setIsCompleted(false);
+              setCurrentIndex(0);
+              setSubmits({});
+            }}
+          >
             다시 풀기
           </Button>
           <Button variant="secondary" onClick={handleSave}>
             문제집 저장
           </Button>
-          <Button onClick={handleBackToPlan}>다른 문제집 만들기</Button>
+          <Button onClick={onRestart}>다른 문제집 만들기</Button>
         </div>
-        <WorkBookReview session={reviewSession} hideActions />
+        <div className="space-y-6 py-12">
+          {submitBlocks.map((submitBlock, index) => {
+            // 해당 블록의 결과 찾기
+
+            return (
+              <Block
+                className={cn(
+                  "fade-2000",
+                  !submitBlock.submit.isCorrect
+                    ? false
+                    : true
+                      ? "bg-muted-foreground/5"
+                      : "",
+                )}
+                index={index}
+                key={submitBlock.block.id}
+                id={submitBlock.block.id}
+                question={submitBlock.block.question}
+                order={submitBlock.block.order}
+                type={submitBlock.block.type}
+                content={submitBlock.block.content}
+                isCorrect={submitBlock.submit.isCorrect}
+                answer={submitBlock.block.answer}
+                submit={submitBlock.submit.submit}
+                mode="review"
+              />
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -462,121 +222,128 @@ export function WorkbookInstantSolve() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">
-              문제 {Math.min(currentIndex + 1, totalCount)} / {totalCount}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {Math.round(progressValue)}%
-            </span>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">
+          문제 {Math.min(currentIndex + 1, totalCount)} / {totalCount}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {Math.round(progressValue)}%
+        </span>
+      </div>
+      <Progress
+        value={progressValue}
+        indicatorColor="var(--primary)"
+        className="h-2 bg-muted/60"
+      />
+
+      {error ? (
+        <div className="flex flex-col items-center justify-center py-4">
+          <div className="space-y-2 text-center py-8">
+            <h4>문제 생성 중 오류가 발생했습니다.</h4>
+            <p className="text-sm text-muted-foreground">
+              {error || "문제를 생성할 수 없습니다."}
+            </p>
           </div>
-          <Progress
-            value={progressValue}
-            indicatorColor="var(--primary)"
-            className="h-2 bg-muted/60"
+          <div className="flex items-center gap-2">
+            <Button
+              size="lg"
+              onClick={onRestart}
+              disabled={isGenerating}
+              variant="ghost"
+            >
+              처음으로
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => {
+                setError(null);
+                generateBlock({
+                  plan: workbookPlan,
+                  blockPlan: currentBlockPlan,
+                  categoryId,
+                  model,
+                });
+              }}
+              disabled={isGenerating}
+              variant="secondary"
+            >
+              문제 다시 생성
+            </Button>
+          </div>
+        </div>
+      ) : currentBlock ? (
+        <>
+          <Block
+            id={currentBlock.id}
+            question={currentBlock.question}
+            index={currentIndex}
+            order={currentBlock.order}
+            type={currentBlock.type}
+            content={currentBlock.content}
+            mode="solve"
+            submit={submits[currentBlock.id]}
+            onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
+              null,
+              currentBlock.id,
+            )}
           />
-        </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-lg">
-            문제 {Math.min(currentIndex + 1, totalCount)}
-          </CardTitle>
-          <Badge variant="secondary">
-            {currentPlanType ? blockDisplayNames[currentPlanType] : "문제"}
-          </Badge>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <div className="space-y-3">
-              <p className="text-sm text-destructive">{error}</p>
+          <div className="flex items-center gap-2">
+            {currentIndex > 0 && (
               <Button
-                onClick={() => generateBlock(currentIndex)}
+                onClick={handlePrevious}
+                variant="ghost"
+                size="lg"
                 disabled={isGenerating}
-                variant="secondary"
               >
-                다시 생성
+                이전
               </Button>
-            </div>
-          ) : currentBlock ? (
-            <Block
-              id={currentBlock.id}
-              question={currentBlock.question}
-              index={currentIndex}
-              order={currentBlock.order}
-              type={currentBlock.type}
-              content={currentBlock.content}
-              mode="solve"
-              submit={submits[currentBlock.id]}
-              onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
-                null,
-                currentBlock.id,
-              )}
-            />
-          ) : (
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex items-center gap-2">
+            )}
+            {isLast ? (
+              <Button
+                className="ml-auto"
+                size="lg"
+                onClick={handleComplete}
+                disabled={isGenerating}
+              >
+                풀이 완료
+              </Button>
+            ) : (
+              <Button
+                className="ml-auto"
+                size="lg"
+                onClick={handleNext}
+                disabled={isGenerating || !currentBlock}
+              >
+                다음
+              </Button>
+            )}
+          </div>
+        </>
+      ) : !currentBlock && !isGenerating ? (
+        <div className="space-y-3">
           <Button
-            onClick={handlePrevious}
-            variant="ghost"
-            disabled={currentIndex === 0 || isGenerating}
+            size="lg"
+            onClick={() => {
+              if (!currentBlockPlan)
+                return toast.error("문제를 생성할 수 없습니다.");
+              generateBlock({
+                plan: workbookPlan,
+                blockPlan: currentBlockPlan,
+                categoryId,
+                model,
+              });
+            }}
           >
-            이전
+            문제 생성
           </Button>
-          {isLast ? (
-            <Button
-              className="ml-auto"
-              onClick={handleComplete}
-              disabled={isGenerating || !currentBlock}
-            >
-              풀이 완료
-            </Button>
-          ) : (
-            <Button
-              className="ml-auto"
-              onClick={handleNext}
-              disabled={isGenerating || !currentBlock}
-            >
-              다음
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      )}
     </div>
-  );
-}
-
-function EmptyState({
-  title,
-  description,
-  actionLabel,
-  onAction,
-}: {
-  title: string;
-  description: string;
-  actionLabel: string;
-  onAction: () => void;
-}) {
-  return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        {description}
-      </CardContent>
-      <CardFooter>
-        <Button onClick={onAction}>{actionLabel}</Button>
-      </CardFooter>
-    </Card>
   );
 }

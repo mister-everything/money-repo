@@ -1,6 +1,6 @@
 import { GoBackButton } from "@/components/layouts/go-back-button";
 import { SidebarController } from "@/components/ui/sidebar";
-import { WorkbookInstantForm } from "@/components/workbook/instant/workbook-instant-form";
+import { WorkbookInstant } from "@/components/workbook/instant/workbook-instant";
 
 export default async function WorkBookAiCreatePage() {
   return (
@@ -10,7 +10,7 @@ export default async function WorkBookAiCreatePage() {
         <GoBackButton>뒤로가기</GoBackButton>
       </div>
       <div className="w-max-4xl mx-auto flex flex-col w-full p-6 pt-0!">
-        <WorkbookInstantForm />
+        <WorkbookInstant />
       </div>
     </div>
   );

@@ -41,16 +41,17 @@ export function PlanPreview({
   const [expandedBlock, setExpandedBlock] = useState<number | null>(null);
   const [showConstraints, setShowConstraints] = useState(false);
   const { data: categories = [] } = useCategories();
-
   const category = useMemo(() => {
-    return categories.find((c) => c.id === categoryId);
+    return categories
+      .flatMap((c) => [c, ...c.children])
+      .find((c) => c.id === categoryId);
   }, [categories, categoryId]);
 
   if (isLoading) {
     return <PlanGenerationLoading prompt={prompt} blockCount={blockCount} />;
   }
 
-  if (!plan) return null;
+  if (!plan) return <p>계획을 생성해주세요.</p>;
 
   const hasConstraintsOrGuidelines =
     (plan.constraints?.length ?? 0) > 0 || (plan.guidelines?.length ?? 0) > 0;

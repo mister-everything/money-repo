@@ -4,12 +4,10 @@ import { SetStateAction } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { SolvesMentionItem } from "@/components/mention/types";
-import { WorkbookPlan } from "@/lib/ai/tools/workbook/workbook-plan";
 import { WorkbookOptions } from "./types";
 
 interface WorkbookEditStoreState {
   workbookOptions: Record<string, WorkbookOptions & { updatedAt: Date }>;
-  workbookPlan?: WorkbookPlan;
   workBook?: WorkBookWithoutBlocks;
   focusBlockId?: string;
   scrollTrigger: number;
@@ -18,7 +16,6 @@ interface WorkbookEditStoreState {
 }
 
 interface WorkbookEditStoreDispatch {
-  setWorkbookPlan: (plan: WorkbookPlan | undefined) => void;
   setWorkbookOption: (id: string, options: WorkbookOptions) => void;
   setMentions: (mentions: SolvesMentionItem[]) => void;
   setWorkBook: (workBook: SetStateAction<WorkBookWithoutBlocks>) => void;
@@ -36,7 +33,6 @@ const initialState: WorkbookEditStoreState = {
   workBook: undefined,
   mentions: [],
   scrollTrigger: 0,
-  workbookPlan: undefined,
 };
 
 export const useWorkbookEditStore = create<
@@ -45,9 +41,7 @@ export const useWorkbookEditStore = create<
   persist(
     (set) => ({
       ...initialState,
-      setWorkbookPlan: (plan) => {
-        set({ workbookPlan: plan });
-      },
+
       setFocusBlockId: (id) => {
         set({
           focusBlockId: id,
