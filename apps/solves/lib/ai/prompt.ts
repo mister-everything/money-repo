@@ -174,7 +174,7 @@ export const CreateWorkbookPlanQuestionsPrompt = ({
 - 질문은 “답변을 받으면 곧바로 계획(overview + blockPlans)의 방향이 확정되는 것”이어야 한다.
 
 # 출력 형식 (askQuestionInputSchema)
-- questions: **되도록 2~3개 추천**, 단 필요한 경우 최대 10개 까지 질문 가능
+- questions: **되도록 2~5개 추천**, 단 필요한 경우 최대 10개 까지 질문 가능 eg) 일반적인 혹은 범용적인 지식이 아닌 사용자 개인적인 내용이나 당신이 절대 알지 못하는 내용이 있다면 질문으로 문제 계획을 만들어야 합니다.
 - 각 질문의 options: **3~4개 고정**
 - allow_multiple: 기본 true (특별한 이유가 있을 때만 false)
 

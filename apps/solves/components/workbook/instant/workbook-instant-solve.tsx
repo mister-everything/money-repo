@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { generateBlockByPlanAction } from "@/actions/workbook-ai";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
+import { ModelProviderIcon } from "@/components/ui/model-provider-icon";
 import { notify } from "@/components/ui/notify";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TextShimmer } from "@/components/ui/text-shimmer";
@@ -221,7 +223,7 @@ export function WorkbookInstantSolve({
       <div className="w-full space-y-4 max-w-4xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-muted/50 px-4 py-2">
+            <div className="rounded-lg bg-input px-4 py-2">
               <div className="flex items-center gap-2 text-sm">
                 <ClockIcon className="size-4 text-muted-foreground" />
                 <span className="font-semibold tabular-nums">
@@ -234,6 +236,7 @@ export function WorkbookInstantSolve({
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
+              className="bg-input shadow-none"
               onClick={() => {
                 setIsCompleted(false);
                 setCurrentIndex(0);
@@ -242,7 +245,11 @@ export function WorkbookInstantSolve({
             >
               다시 풀기
             </Button>
-            <Button variant="secondary" onClick={handleSave}>
+            <Button
+              variant="secondary"
+              onClick={handleSave}
+              className="shadow-none bg-input"
+            >
               문제집 저장
             </Button>
             <Button onClick={onRestart}>다른 문제집 만들기</Button>
@@ -290,11 +297,13 @@ export function WorkbookInstantSolve({
     <div className="w-full space-y-6 max-w-4xl mx-auto">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">{workbookPlan.overview.title}</h1>
+          <h1 className="fade-2000 text-2xl font-bold">
+            {workbookPlan.overview.title}
+          </h1>
           <Badge className="rounded-full text-xs">Beta</Badge>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          {workbookPlan.overview.description}
+          <GradualSpacingText text={workbookPlan.overview.description} />
         </p>
       </div>
 
@@ -307,6 +316,7 @@ export function WorkbookInstantSolve({
           <div className="flex items-center gap-2">
             <Button
               size="lg"
+              className="shadow-none bg-input"
               onClick={onRestart}
               disabled={isGenerating}
               variant="ghost"
@@ -315,6 +325,7 @@ export function WorkbookInstantSolve({
             </Button>
             <Button
               size="lg"
+              className="shadow-none bg-input"
               onClick={() => {
                 setError(null);
                 generateBlock({
@@ -334,6 +345,7 @@ export function WorkbookInstantSolve({
       ) : (
         <>
           <BlockPlanHeader
+            model={model}
             workbookPlan={workbookPlan}
             currentIndex={currentIndex}
             blocks={blocks}
@@ -433,6 +445,7 @@ interface BlockPlanHeaderProps {
   blocks: (WorkBookBlock | undefined)[];
   currentElapsed: number;
   isGenerating?: boolean;
+  model: ChatModel;
   submits: Record<string, BlockAnswerSubmit>;
 }
 
@@ -440,6 +453,7 @@ function BlockPlanHeader({
   workbookPlan,
   currentIndex,
   blocks,
+  model,
   currentElapsed,
   isGenerating = false,
   submits,
@@ -540,7 +554,7 @@ function BlockPlanHeader({
       </div>
 
       {/* Current problem info */}
-      <div className="rounded-lg bg-muted/40 p-4 space-y-2">
+      <div className="rounded-lg bg-background dark:bg-muted/40 p-4 space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -556,10 +570,10 @@ function BlockPlanHeader({
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs shadow-none bg-input">
               {difficultyLabel[currentBlockPlan.expectedDifficulty ?? "medium"]}
             </Badge>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="secondary" className="text-xs shadow-none bg-input">
               {blockDisplayNames[currentBlockPlan.type]}
             </Badge>
           </div>
@@ -570,6 +584,12 @@ function BlockPlanHeader({
           <span className="tabular-nums font-medium">
             {formatTime(currentElapsed)}
           </span>
+
+          <ModelProviderIcon
+            provider={model.provider}
+            className="size-3.5 ml-auto"
+          />
+          <span className="text-xs">{model.model}</span>
         </div>
       </div>
     </div>
@@ -601,8 +621,8 @@ function BlockGenerationLoading({ blockPlan }: BlockGenerationLoadingProps) {
           transition={{ duration: 0.5 }}
           className="space-y-3"
         >
-          <Skeleton className="h-8 w-full rounded-lg" />
-          <Skeleton className="h-8 w-4/5 rounded-lg" />
+          <Skeleton className="h-8 w-full rounded-lg bg-input" />
+          <Skeleton className="h-8 w-4/5 rounded-lg bg-input" />
         </motion.div>
 
         {/* Answer Options based on type */}
@@ -620,7 +640,7 @@ function BlockGenerationLoading({ blockPlan }: BlockGenerationLoadingProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.3 + i * 0.1 }}
               >
-                <Skeleton className="h-14 w-full rounded-lg" />
+                <Skeleton className="h-14 w-full rounded-lg bg-input" />
               </motion.div>
             ))}
           </motion.div>
@@ -631,8 +651,8 @@ function BlockGenerationLoading({ blockPlan }: BlockGenerationLoadingProps) {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="grid grid-cols-2 gap-4"
           >
-            <Skeleton className="h-40 w-full rounded-lg" />
-            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton className="h-40 w-full rounded-lg bg-input" />
+            <Skeleton className="h-40 w-full rounded-lg bg-input" />
           </motion.div>
         ) : (
           <motion.div
@@ -640,7 +660,7 @@ function BlockGenerationLoading({ blockPlan }: BlockGenerationLoadingProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Skeleton className="h-32 w-full rounded-lg" />
+            <Skeleton className="h-32 w-full rounded-lg bg-input" />
           </motion.div>
         )}
       </div>

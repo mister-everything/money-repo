@@ -1,8 +1,8 @@
 "use client";
 
-import { blockDisplayNames } from "@service/solves/shared";
+import { blockDisplayNames, ChatModel } from "@service/solves/shared";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, Target, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ interface PlanPreviewProps {
   plan?: WorkbookPlan;
   isLoading?: boolean;
   prompt?: string;
+  model: ChatModel;
   blockCount?: number;
   categoryId?: number;
   onStart?: () => void;
@@ -32,8 +33,9 @@ interface PlanPreviewProps {
 export function PlanPreview({
   plan,
   isLoading = false,
-  prompt,
+
   blockCount = plan?.blockPlans.length ?? 0,
+  model,
   categoryId,
   onStart,
   onReset,
@@ -48,7 +50,7 @@ export function PlanPreview({
   }, [categories, categoryId]);
 
   if (isLoading) {
-    return <PlanGenerationLoading prompt={prompt} blockCount={blockCount} />;
+    return <PlanGenerationLoading blockCount={blockCount} />;
   }
 
   if (!plan) return <p>계획을 생성해주세요.</p>;
@@ -65,7 +67,7 @@ export function PlanPreview({
             {plan.overview.title}
           </h2>
 
-          <Badge className="rounded-full py-1">
+          <Badge className="rounded-full py-1 text-sm ">
             {category?.name ?? "선택한 소재"}
           </Badge>
         </div>
@@ -78,11 +80,17 @@ export function PlanPreview({
       {/* 계획 요약 카드 */}
       <div className="rounded-xl space-y-3">
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground font-medium">대상</p>
+          <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <Users className="size-3" />
+            대상
+          </p>
           <p className="text-sm">{plan.overview.targetAudience}</p>
         </div>
         <div className="space-y-1 pt-2 ">
-          <p className="text-xs text-muted-foreground font-medium">목표</p>
+          <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            <Target className="size-3" />
+            목표
+          </p>
           <p className="text-sm">{plan.overview.goal}</p>
         </div>
 
@@ -92,7 +100,7 @@ export function PlanPreview({
               variant={showConstraints ? "ghost" : "secondary"}
               size="lg"
               onClick={() => setShowConstraints(!showConstraints)}
-              className="flex items-center justify-between w-full text-left"
+              className="bg-background dark:bg-input/40 flex items-center justify-between w-full text-left"
             >
               <p className="text-xs font-medium">제약 및 가이드</p>
               <ChevronDown
@@ -153,16 +161,19 @@ export function PlanPreview({
             <Button
               variant="secondary"
               size="lg"
-              className="shadow-none bg-background dark:bg-muted"
+              className="h-12 shadow-none bg-background dark:bg-muted"
               onClick={onReset}
             >
               다시 설계하기
             </Button>
           )}
           {onStart && (
-            <Button onClick={onStart} size="lg" className="flex-1 gap-2">
+            <Button
+              onClick={onStart}
+              size="lg"
+              className="h-12 flex-1 gap-2 text-lg"
+            >
               시작하기
-              <ChevronRight className="size-4" />
             </Button>
           )}
         </div>
@@ -278,7 +289,7 @@ function BuildingBlock({
         }}
         className="absolute inset-0 overflow-hidden"
       >
-        <Skeleton className="w-full h-full rounded-xl opacity-50" />
+        <Skeleton className="w-full h-full rounded-xl bg-input" />
       </motion.div>
 
       <motion.div
@@ -336,13 +347,7 @@ function LayoutThree() {
   );
 }
 
-function PlanGenerationLoading({
-  prompt,
-  blockCount,
-}: {
-  prompt?: string;
-  blockCount: number;
-}) {
+function PlanGenerationLoading({ blockCount }: { blockCount: number }) {
   const layouts = [LayoutOne, LayoutTwo, LayoutThree];
   const Layout = useMemo(
     () => layouts[Math.floor(Math.random() * layouts.length)],

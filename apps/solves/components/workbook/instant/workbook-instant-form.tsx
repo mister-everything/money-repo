@@ -296,6 +296,7 @@ export function WorkbookInstantForm({
           />
         ) : step === Step.QUESTION ? (
           <WorkbookInstantQuestionStep
+            model={model}
             input={question.input}
             output={question.output}
             onChangeOutput={(output) => {
@@ -306,6 +307,7 @@ export function WorkbookInstantForm({
           />
         ) : (
           <PlanPreview
+            model={model}
             plan={workbookPlan}
             isLoading={isPlanGenerating}
             prompt={formData.prompt}

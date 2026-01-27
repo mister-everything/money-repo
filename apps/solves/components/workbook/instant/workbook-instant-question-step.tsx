@@ -1,4 +1,6 @@
+import { ChatModel } from "@service/solves/shared";
 import { motion } from "framer-motion";
+import { Lightbulb, TrendingUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { AskQuestionInput } from "@/components/chat/tool-part/ask-question-tool-part";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +16,13 @@ export function WorkbookInstantQuestionStep({
   input,
   output,
   onChangeOutput,
+  model,
   onNextStep,
   isLoading,
 }: {
   input?: AskQuestionInput;
   output?: AskQuestionOutput;
+  model: ChatModel;
   onChangeOutput: (output: AskQuestionOutput) => void;
   onNextStep: () => void;
   isLoading: boolean;
@@ -81,7 +85,7 @@ export function WorkbookInstantQuestionStep({
   return (
     <div className="space-y-4">
       {isLoading ? (
-        <Loading />
+        <Loading model={model} />
       ) : (
         <div className="fade-2000 space-y-3 py-3">
           {/* Header */}
@@ -93,14 +97,14 @@ export function WorkbookInstantQuestionStep({
                 <GradualSpacingText key={step} text={question?.prompt ?? ""} />
               </span>
             </div>
+            {total > 1 && (
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                {total - 1 == step
+                  ? "마지막 질문입니다."
+                  : `총 ${total}개의 질문중 ${step + 1}번째 질문입니다.`}
+              </p>
+            )}
           </div>
-          {total > 1 && (
-            <p className="text-xs text-muted-foreground text-right px-2">
-              {total - 1 == step
-                ? "마지막 질문입니다."
-                : `총 ${total}개의 질문중 ${step + 1}번째 질문입니다.`}
-            </p>
-          )}
 
           {/* Options */}
           <div className="flex flex-col gap-2">
@@ -144,8 +148,57 @@ export function WorkbookInstantQuestionStep({
 
           {/* 추가 메시지 입력 - 마지막 스텝에서만 표시 */}
           {isLast && (
-            <div className="">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="font-bold text-sm rounded bg-primary text-primary-foreground flex items-center justify-center size-6 shrink-0">
+                    Q
+                  </div>
+                  <label
+                    htmlFor="additional-message"
+                    className="text-lg font-semibold"
+                  >
+                    추가 요청사항이 있다면 작성해주세요
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    {
+                      icon: Lightbulb,
+                      label: "힌트 포함",
+                      prompt: "모든 문제에 적당한 힌트를 같이 포함해주세요",
+                    },
+                    {
+                      icon: TrendingUp,
+                      label: "난이도 조절",
+                      prompt:
+                        "쉬운 난이도부터 시작해서 점점 어려워지도록 문제를 구성해주세요",
+                    },
+                  ].map((item, idx) => (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="shadow-none bg-background dark:bg-input/40 px-3! hover:bg-input/60 rounded-full text-xs gap-2"
+                      key={idx}
+                      onClick={() => {
+                        const currentMessage = output?.additionalMessage ?? "";
+                        const newMessage = currentMessage
+                          ? `${currentMessage}\n${item.prompt}`
+                          : item.prompt;
+                        onChangeOutput({
+                          ...(output ?? { answers: [] }),
+                          additionalMessage: newMessage,
+                        });
+                      }}
+                    >
+                      <item.icon className="size-3" />
+                      {item.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <textarea
+                id="additional-message"
                 value={output?.additionalMessage ?? ""}
                 onChange={(e) =>
                   onChangeOutput({
@@ -153,7 +206,7 @@ export function WorkbookInstantQuestionStep({
                     additionalMessage: e.target.value,
                   })
                 }
-                placeholder="추가로 전달할 내용이 있다면 입력해주세요 (선택)"
+                placeholder="예: 각 문제마다 참고할 만한 학습 자료 링크를 추가해주세요"
                 className="w-full text-sm bg-background border rounded-lg px-3 py-2 resize-none placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
                 rows={2}
               />
@@ -161,7 +214,7 @@ export function WorkbookInstantQuestionStep({
           )}
 
           {/* Navigation */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-2">
             {!isFirst && (
               <Button
                 variant="ghost"
@@ -193,7 +246,7 @@ export function WorkbookInstantQuestionStep({
   );
 }
 
-function Loading() {
+function Loading({ model }: { model: ChatModel }) {
   const totalDuration = 8; // 전체 사이클 8초
 
   // 타이밍 (0~1 비율)
@@ -214,7 +267,15 @@ function Loading() {
 
   return (
     <div className="space-y-4 py-3">
-      <div className="rounded-lg w-full flex items-center justify-between">
+      <div className="w-full flex items-center gap-2">
+        {/* <div className="flex items-center gap-1 rounded bg-input/40 py-1 px-2 animate-pulse">
+          <ModelProviderIcon
+            provider={model?.provider ?? ""}
+            className="size-3.5"
+          />
+          <span className="text-xs">{model?.model}</span>
+        </div> */}
+
         <TextShimmer>문제 생성을 위해 필요한 질문을 생성하는 중</TextShimmer>
       </div>
 
@@ -247,8 +308,8 @@ function Loading() {
             }}
             className="flex items-center gap-2"
           >
-            <Skeleton className="h-7 w-14  shrink-0" />
-            <Skeleton className="h-7 w-[65%]" />
+            <Skeleton className="h-7 w-14  shrink-0 bg-input" />
+            <Skeleton className="h-7 w-[65%] bg-input" />
           </motion.div>
 
           {/* Options */}
@@ -279,7 +340,7 @@ function Loading() {
                   repeat: Number.POSITIVE_INFINITY,
                 }}
               >
-                <Skeleton className="h-12 w-full rounded-lg" />
+                <Skeleton className="h-12 w-full rounded-lg bg-input" />
               </motion.div>
             ))}
           </div>
