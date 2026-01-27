@@ -4,14 +4,14 @@ import {
   WorkBookReviewSession,
 } from "@service/solves/shared";
 import { CheckIcon, MessageCircle, Share2Icon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { GradualSpacingText } from "../ui/gradual-spacing-text";
 import { Block } from "./block/block";
-import { WorkbookCommentsPanel } from "./workbook-comments-panel";
+import { WorkbookCommentsPanel } from "./comment/workbook-comments-panel";
 import { WorkbookHeader } from "./workbook-header";
 import { WorkBookLikeButton } from "./workbook-like-button";
 
@@ -22,7 +22,7 @@ interface WorkBookReviewProps {
 
 export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
   session,
-  commentCount: initialCommentCount,
+  commentCount,
 }) => {
   const submitAnswerByBlockId = session.submitAnswers.reduce(
     (acc, submitAnswer) => {
@@ -36,8 +36,7 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
   );
 
   const [copied, copy] = useCopy();
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const [commentCount, setCommentCount] = useState(initialCommentCount);
+
   const handleShare = useCallback(() => {
     const url = `${window.location.origin}/workbooks/${session.workBook.id}/preview`;
     copy(url);
@@ -122,18 +121,24 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
               initialIsLiked={session.isLiked}
               initialLikeCount={session.workBook.likeCount}
             />
-            <div className="flex flex-col items-center justify-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="text-muted-foreground"
-                onClick={() => setIsCommentsOpen(true)}
-                aria-label="댓글 보기"
-              >
-                <MessageCircle className="h-4 w-4" />
-              </Button>
-              <span className="text-2xs text-muted-foreground">댓글</span>
-            </div>
+            <WorkbookCommentsPanel
+              workBookId={session.workBook.id}
+              workbookTitle={session.workBook.title}
+            >
+              <div className="flex flex-col items-center justify-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-muted-foreground"
+                  aria-label="댓글 보기"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+                <span className="text-2xs text-muted-foreground">
+                  {commentCount}
+                </span>
+              </div>
+            </WorkbookCommentsPanel>
             <div className="flex flex-col items-center justify-center gap-1">
               <Button
                 variant="outline"
@@ -150,12 +155,6 @@ export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
           </div>
         </div>
       </div>
-      <WorkbookCommentsPanel
-        open={isCommentsOpen}
-        onOpenChange={setIsCommentsOpen}
-        workBookId={session.workBook.id}
-        workbookTitle={session.workBook.title}
-      />
     </div>
   );
 };

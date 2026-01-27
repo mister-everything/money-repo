@@ -1,9 +1,9 @@
 "use server";
 
+import { validateComment } from "@service/auth/shared";
 import { commentService } from "@service/solves";
 import { PublicError } from "@workspace/error";
 import z from "zod";
-
 import { getSession } from "@/lib/auth/server";
 import { safeAction } from "@/lib/protocol/server-action";
 
@@ -29,6 +29,10 @@ export const createCommentAction = safeAction(
     parentId: z.string().optional(),
   }),
   async ({ workBookId, body, parentId }) => {
+    const validation = validateComment(body);
+    if (!validation.valid) {
+      throw new PublicError(validation.error ?? "댓글 작성에 실패했습니다.");
+    }
     const session = await getSession();
     await checkPermission(workBookId, session.user.id);
     return commentService.createComment({

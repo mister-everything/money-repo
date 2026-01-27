@@ -136,6 +136,9 @@ export type WorkbookComment = {
   authorNickname: string | null;
   authorPublicId: number | null;
   authorProfile: string | null;
+  isWorkbookOwner?: boolean;
+  isAuthorAdmin?: boolean;
+  isCommentAuthor?: boolean;
   body: string;
   createdAt: Date;
   updatedAt: Date | null;
@@ -152,9 +155,10 @@ export type WorkbookCommentWithReplies = WorkbookComment & {
 };
 
 /**
- * 페이지네이션이 적용된 댓글 응답 타입
+ * 플랫한 댓글 목록 응답 타입 (V1)
+ * root/reply 구분 없이 시간순 정렬
  */
-export type PaginatedCommentsResponse = {
-  comments: WorkbookCommentWithReplies[];
+export type PaginatedFlatCommentsResponse = {
+  comments: WorkbookComment[];
   nextCursor: string | null;
 };

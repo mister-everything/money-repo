@@ -1,18 +1,15 @@
 import { userTable } from "@service/auth";
+import { Role } from "@service/auth/shared";
 import { PublicError } from "@workspace/error";
-import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
-
+import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { pgDb } from "../db";
 import {
   workBookCommentLikesTable,
   workBookCommentsTable,
   workBookSubmitsTable,
+  workBooksTable,
 } from "./schema";
-import {
-  PaginatedCommentsResponse,
-  WorkbookComment,
-  WorkbookCommentWithReplies,
-} from "./types";
+import { PaginatedFlatCommentsResponse, WorkbookComment } from "./types";
 
 /** Subquery for counting likes on a comment */
 const LikeCountSubQuery = pgDb
@@ -69,94 +66,66 @@ export const commentService = {
     return !!row;
   },
 
-  /** 댓글 목록 조회 (페이지네이션 + 대댓글 포함) */
-  getComments: async (
+  /**
+   * 댓글 목록 조회 V1 - 플랫한 구조
+   * root/reply 구분 없이 시간순으로 조회 (기본 100개)
+   */
+  getCommentsByWorkbookIdV1: async (
     workBookId: string,
     options: { cursor?: string; limit?: number; userId?: string } = {},
-  ): Promise<PaginatedCommentsResponse> => {
-    const { cursor, limit = 50, userId } = options;
-    // 1. Fetch root comments with pagination (parentId IS NULL)
-    const rootCommentsQuery = pgDb
+  ): Promise<PaginatedFlatCommentsResponse> => {
+    const { cursor, limit = 100, userId } = options;
+
+    const commentsQuery = pgDb
       .select({
         id: workBookCommentsTable.id,
         parentId: workBookCommentsTable.parentId,
         authorNickname: userTable.nickname,
         authorPublicId: userTable.publicId,
         authorProfile: userTable.image,
+        isAuthorAdmin: sql<boolean>`coalesce((${eq(userTable.role, Role.ADMIN)}), false)`,
         body: workBookCommentsTable.body,
         createdAt: workBookCommentsTable.createdAt,
         updatedAt: workBookCommentsTable.updatedAt,
+        isWorkbookOwner: sql<boolean>`coalesce(${eq(
+          workBookCommentsTable.authorId,
+          workBooksTable.ownerId,
+        )}, false)`,
         likeCount: sql<number>`coalesce((${LikeCountSubQuery}), 0)`,
         isLikedByMe: userId
           ? sql<boolean>`coalesce((${createIsLikedByMeSubQuery(userId)}), false)`
           : sql<boolean>`false`,
+        isCommentAuthor: userId
+          ? sql<boolean>`coalesce((${eq(workBookCommentsTable.authorId, userId)}), false)`
+          : sql<boolean>`false`,
       })
       .from(workBookCommentsTable)
+      .innerJoin(
+        workBooksTable,
+        eq(workBooksTable.id, workBookCommentsTable.workBookId),
+      )
       .leftJoin(userTable, eq(workBookCommentsTable.authorId, userTable.id))
+
       .where(
         and(
           eq(workBookCommentsTable.workBookId, workBookId),
-          isNull(workBookCommentsTable.parentId),
+          isNull(workBookCommentsTable.deletedAt),
           cursor ? gt(workBookCommentsTable.id, cursor) : undefined,
         ),
       )
-      .orderBy(asc(workBookCommentsTable.createdAt))
-      .limit(limit + 1); // +1 to check hasMore
+      .orderBy(desc(workBookCommentsTable.createdAt))
+      .limit(limit + 1);
 
-    console.log(rootCommentsQuery.toSQL());
+    console.log(commentsQuery.toSQL());
 
-    const rootComments = await rootCommentsQuery;
+    const comments = await commentsQuery;
 
-    const hasMore = rootComments.length > limit;
-    if (hasMore) rootComments.pop();
-
-    if (rootComments.length === 0) {
-      return { comments: [], nextCursor: null };
-    }
-
-    // 2. Fetch all replies for these root comments in single query
-    const rootIds = rootComments.map((c) => c.id);
-    const replies = await pgDb
-      .select({
-        id: workBookCommentsTable.id,
-        parentId: workBookCommentsTable.parentId,
-        authorNickname: userTable.nickname,
-        authorPublicId: userTable.publicId,
-        authorProfile: userTable.image,
-        body: workBookCommentsTable.body,
-        createdAt: workBookCommentsTable.createdAt,
-        updatedAt: workBookCommentsTable.updatedAt,
-        likeCount: sql<number>`coalesce((${LikeCountSubQuery}), 0)`,
-        isLikedByMe: userId
-          ? sql<boolean>`coalesce((${createIsLikedByMeSubQuery(userId)}), false)`
-          : sql<boolean>`false`,
-      })
-      .from(workBookCommentsTable)
-      .leftJoin(userTable, eq(workBookCommentsTable.authorId, userTable.id))
-      .where(inArray(workBookCommentsTable.parentId, rootIds))
-      .orderBy(asc(workBookCommentsTable.createdAt));
-
-    // 3. Group replies by parentId
-    const repliesMap: Record<string, WorkbookComment[]> = {};
-    for (const reply of replies) {
-      const parentId = reply.parentId!;
-      if (!repliesMap[parentId]) {
-        repliesMap[parentId] = [];
-      }
-      repliesMap[parentId].push(reply);
-    }
-
-    // 4. Combine root comments with their replies
-    const commentsWithReplies: WorkbookCommentWithReplies[] = rootComments.map(
-      (comment) => ({
-        ...comment,
-        replies: repliesMap[comment.id] || [],
-      }),
-    );
+    const hasMore = comments.length > limit;
+    if (hasMore) comments.pop();
 
     return {
-      comments: commentsWithReplies,
-      nextCursor: hasMore ? rootComments[rootComments.length - 1].id : null,
+      comments,
+      nextCursor: hasMore ? comments[comments.length - 1].id : null,
     };
   },
 

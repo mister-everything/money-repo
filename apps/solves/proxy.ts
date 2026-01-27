@@ -57,6 +57,7 @@ export async function proxy(request: NextRequest) {
     (/^\/workbooks$/.test(pathname) ||
       /^\/workbooks\/creator\/new$/.test(pathname) ||
       /^\/workbooks\/[^/]+\/preview$/.test(pathname) ||
+      /^\/workbooks\/[^/]+\/comment$/.test(pathname) ||
       /^\/api\/categories$/.test(pathname) ||
       /^\/community$/.test(pathname) ||
       PUBLIC_PATHS.some((path) => pathname.startsWith(path)))

@@ -14,7 +14,7 @@ export async function GET(
     ? parseInt(searchParams.get("limit")!)
     : undefined;
   const session = await safeGetSession();
-  const comments = await commentService.getComments(id, {
+  const comments = await commentService.getCommentsByWorkbookIdV1(id, {
     userId: session?.user.id,
     cursor,
     limit,
