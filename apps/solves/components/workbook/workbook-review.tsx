@@ -17,13 +17,13 @@ import { WorkBookLikeButton } from "./workbook-like-button";
 
 interface WorkBookReviewProps {
   session: WorkBookReviewSession;
-  commentCount: number;
+  commentCount?: number;
   hideActions?: boolean;
 }
 
 export const WorkBookReview: React.FC<WorkBookReviewProps> = ({
   session,
-  commentCount,
+  commentCount = 0,
   hideActions = false,
 }) => {
   const submitAnswerByBlockId = session.submitAnswers.reduce(

@@ -218,6 +218,7 @@ export function WorkbookInstantSolve() {
         correctBlocks,
       },
       submitAnswers,
+      commentCount: 0,
     };
   }, [
     blocks,
