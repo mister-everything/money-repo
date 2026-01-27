@@ -1,6 +1,6 @@
+import { Suspense } from "react";
 import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 import { WorkbookInstantSolve } from "@/components/workbook/instant/workbook-instant-solve";
-import { Suspense } from "react";
 
 export default function WorkbookInstantSolvePage() {
   return (

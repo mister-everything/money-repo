@@ -40,18 +40,17 @@ export function PlanPreview({
 }: PlanPreviewProps) {
   const [expandedBlock, setExpandedBlock] = useState<number | null>(null);
   const [showConstraints, setShowConstraints] = useState(false);
+  const { data: categories = [] } = useCategories();
+
+  const category = useMemo(() => {
+    return categories.find((c) => c.id === categoryId);
+  }, [categories, categoryId]);
 
   if (isLoading) {
     return <PlanGenerationLoading prompt={prompt} blockCount={blockCount} />;
   }
 
   if (!plan) return null;
-
-  const { data: categories = [] } = useCategories();
-
-  const category = useMemo(() => {
-    return categories.find((c) => c.id === categoryId);
-  }, [categories, categoryId]);
 
   const hasConstraintsOrGuidelines =
     (plan.constraints?.length ?? 0) > 0 || (plan.guidelines?.length ?? 0) > 0;

@@ -363,15 +363,25 @@ export function WorkbookInstantSolve() {
   const handleRestart = useCallback(() => {
     setIsCompleted(false);
     setCompletedAt(null);
-    setBlocks([]);
+    // blocks는 유지하고 답변만 초기화
     setSubmits({});
     setCurrentIndex(0);
     startTimeRef.current = new Date();
+    // 세션도 현재 blocks 상태로 업데이트 (답변만 초기화)
     if (planKey) {
-      clearSession(planKey);
+      const persistedBlocks = blocksRef.current.filter(Boolean) as WorkBookBlock[];
+      saveSession({
+        planKey,
+        categoryId,
+        currentIndex: 0,
+        blocks: persistedBlocks,
+        submits: {},
+        completedAt: undefined,
+        updatedAt: new Date().toISOString(),
+      });
     }
     inFlightRef.current = null;
-  }, [clearSession, planKey]);
+  }, [planKey, categoryId, saveSession]);
 
   const handleBackToPlan = useCallback(() => {
     inFlightRef.current = null;
