@@ -136,13 +136,13 @@ export type WorkbookComment = {
   authorNickname: string | null;
   authorPublicId: number | null;
   authorProfile: string | null;
-  isWorkbookOwner?: boolean;
-  isAuthorAdmin?: boolean;
-  isCommentAuthor?: boolean;
   body: string;
   createdAt: Date;
   updatedAt: Date | null;
   likeCount: number;
+  isWorkbookOwner?: boolean;
+  isAuthorAdmin?: boolean;
+  isCommentAuthor?: boolean;
   isLikedByMe?: boolean;
 };
 

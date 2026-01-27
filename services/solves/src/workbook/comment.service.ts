@@ -45,7 +45,12 @@ export const commentService = {
     const [row] = await pgDb
       .select({ count: sql<number>`count(*)::int` })
       .from(workBookCommentsTable)
-      .where(eq(workBookCommentsTable.workBookId, workBookId));
+      .where(
+        and(
+          eq(workBookCommentsTable.workBookId, workBookId),
+          isNull(workBookCommentsTable.deletedAt),
+        ),
+      );
     return row?.count ?? 0;
   },
   // 제출 완료한 사용자만 댓글 작성 가능
@@ -146,7 +151,7 @@ export const commentService = {
       .values({ workBookId, authorId, body, parentId })
       .returning({ id: workBookCommentsTable.id });
 
-    // Query back with full author info
+    // Query back with full author info + workbook owner check
     const [comment] = await pgDb
       .select({
         id: workBookCommentsTable.id,
@@ -154,13 +159,23 @@ export const commentService = {
         authorNickname: userTable.nickname,
         authorPublicId: userTable.publicId,
         authorProfile: userTable.image,
+        isAuthorAdmin: sql<boolean>`coalesce(${eq(userTable.role, Role.ADMIN)}, false)`,
         body: workBookCommentsTable.body,
         createdAt: workBookCommentsTable.createdAt,
         updatedAt: workBookCommentsTable.updatedAt,
+        isWorkbookOwner: sql<boolean>`coalesce(${eq(
+          workBookCommentsTable.authorId,
+          workBooksTable.ownerId,
+        )}, false)`,
         likeCount: sql<number>`0`,
         isLikedByMe: sql<boolean>`false`,
+        isCommentAuthor: sql<boolean>`true`, // 본인이 작성한 댓글
       })
       .from(workBookCommentsTable)
+      .innerJoin(
+        workBooksTable,
+        eq(workBooksTable.id, workBookCommentsTable.workBookId),
+      )
       .leftJoin(userTable, eq(workBookCommentsTable.authorId, userTable.id))
       .where(eq(workBookCommentsTable.id, inserted.id));
 
