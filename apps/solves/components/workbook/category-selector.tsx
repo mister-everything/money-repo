@@ -218,21 +218,24 @@ export function CategorySelector({
               key={category.id}
               onClick={() => onCategoryChange?.(category.id)}
               className={cn(
-                "flex flex-col items-center gap-2 py-3.5 justify-center min-w-28 cursor-pointer group",
+                "flex flex-col items-center gap-2 py-2 sm:py-3.5 justify-center min-w-20 sm:min-w-28 cursor-pointer group",
               )}
             >
               <Button
                 className={cn(
-                  "size-12! bg-primary/5 group-hover:bg-primary transition-all text-primary group-hover:text-primary-foreground",
+                  "size-8 sm:size-12! bg-primary/5 group-hover:bg-primary transition-all text-primary group-hover:text-primary-foreground",
                   oneDepthCategory?.id === category.id &&
                     "bg-primary text-primary-foreground",
                 )}
               >
-                <CategoryIcon categoryName={category.name} className="size-6" />
+                <CategoryIcon
+                  categoryName={category.name}
+                  className="size-4 sm:size-6"
+                />
               </Button>
               <span
                 className={cn(
-                  "text-sm font-semibold",
+                  "text-xs sm:text-sm font-semibold",
                   oneDepthCategory?.id === category.id && "font-bold",
                 )}
               >

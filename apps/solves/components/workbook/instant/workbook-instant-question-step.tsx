@@ -89,22 +89,26 @@ export function WorkbookInstantQuestionStep({
       ) : (
         <div className="fade-2000 space-y-3 py-3">
           {/* Header */}
-
-          <div className="flex items-center gap-2 w-full">
-            <Badge className="font-bold rounded size-6">{step + 1}</Badge>
-            <div className="flex-1 min-w-0">
-              <span className="text-lg font-semibold block">
-                <GradualSpacingText key={step} text={question?.prompt ?? ""} />
-              </span>
+          <header>
+            <div className="flex items-center gap-2 w-full">
+              <Badge className="font-bold rounded size-6">{step + 1}</Badge>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm sm:text-lg font-semibold block">
+                  <GradualSpacingText
+                    key={step}
+                    text={question?.prompt ?? ""}
+                  />
+                </span>
+              </div>
             </div>
             {total > 1 && (
-              <p className="text-xs text-muted-foreground hidden sm:block">
+              <p className="text-xs text-muted-foreground hidden sm:block text-right px-2 mt-1">
                 {total - 1 == step
                   ? "마지막 질문입니다."
                   : `총 ${total}개의 질문중 ${step + 1}번째 질문입니다.`}
               </p>
             )}
-          </div>
+          </header>
 
           {/* Options */}
           <div className="flex flex-col gap-2">
@@ -135,7 +139,7 @@ export function WorkbookInstantQuestionStep({
                   >
                     {String.fromCharCode(65 + idx)}
                   </span>
-                  <span>{oLabel}</span>
+                  <span className="text-xs sm:text-sm">{oLabel}</span>
                 </button>
               );
             })}
@@ -148,7 +152,7 @@ export function WorkbookInstantQuestionStep({
 
           {/* 추가 메시지 입력 - 마지막 스텝에서만 표시 */}
           {isLast && (
-            <div className="space-y-3">
+            <div className="space-y-3 pt-6">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className="font-bold text-sm rounded bg-primary text-primary-foreground flex items-center justify-center size-6 shrink-0">
@@ -156,7 +160,7 @@ export function WorkbookInstantQuestionStep({
                   </div>
                   <label
                     htmlFor="additional-message"
-                    className="text-lg font-semibold"
+                    className="text-sm sm:text-lg font-semibold"
                   >
                     추가 요청사항이 있다면 작성해주세요
                   </label>
@@ -178,7 +182,7 @@ export function WorkbookInstantQuestionStep({
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="shadow-none bg-background dark:bg-input/40 px-3! hover:bg-input/60 rounded-full text-xs gap-2"
+                      className="h-6 shadow-none bg-background dark:bg-input/40 px-3! hover:bg-input/60 rounded-full text-2xs gap-2"
                       key={idx}
                       onClick={() => {
                         const currentMessage = output?.additionalMessage ?? "";

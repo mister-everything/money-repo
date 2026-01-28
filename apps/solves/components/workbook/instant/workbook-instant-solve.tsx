@@ -20,6 +20,7 @@ import {
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { generateBlockByPlanAction } from "@/actions/workbook-ai";
+import { ModelDropDownMenu } from "@/components/chat/model-drop-down-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
@@ -37,6 +38,7 @@ interface WorkbookInstantSolveProps {
   workbookPlan: WorkbookPlan;
   categoryId: number;
   model: ChatModel;
+  onModelChange?: (model: ChatModel) => void;
   onRestart: () => void;
 }
 
@@ -44,6 +46,7 @@ export function WorkbookInstantSolve({
   workbookPlan,
   categoryId,
   model,
+  onModelChange,
   onRestart,
 }: WorkbookInstantSolveProps) {
   const [isCompleted, setIsCompleted] = useState(false);
@@ -221,9 +224,9 @@ export function WorkbookInstantSolve({
   if (isCompleted) {
     return (
       <div className="w-full space-y-4 max-w-4xl mx-auto">
-        <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-input px-4 py-2">
+            <div className="px-4 py-2">
               <div className="flex items-center gap-2 text-sm">
                 <ClockIcon className="size-4 text-muted-foreground" />
                 <span className="font-semibold tabular-nums">
@@ -235,8 +238,8 @@ export function WorkbookInstantSolve({
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="secondary"
-              className="bg-input shadow-none"
+              variant="ghost"
+              className="shadow-none"
               onClick={() => {
                 setIsCompleted(false);
                 setCurrentIndex(0);
@@ -294,15 +297,15 @@ export function WorkbookInstantSolve({
   }
 
   return (
-    <div className="w-full space-y-6 max-w-4xl mx-auto">
+    <div className="w-full space-y-6 max-w-4xl mx-auto pb-12">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="fade-2000 text-2xl font-bold">
+          <h1 className="fade-2000 text-base sm:text-2xl font-bold">
             {workbookPlan.overview.title}
           </h1>
           <Badge className="rounded-full text-xs">Beta</Badge>
         </div>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
           <GradualSpacingText text={workbookPlan.overview.description} />
         </p>
       </div>
@@ -346,6 +349,7 @@ export function WorkbookInstantSolve({
         <>
           <BlockPlanHeader
             model={model}
+            onModelChange={onModelChange}
             workbookPlan={workbookPlan}
             currentIndex={currentIndex}
             blocks={blocks}
@@ -355,20 +359,22 @@ export function WorkbookInstantSolve({
           />
           {currentBlock ? (
             <>
-              <Block
-                id={currentBlock.id}
-                question={currentBlock.question}
-                index={currentIndex}
-                order={currentBlock.order}
-                type={currentBlock.type}
-                content={currentBlock.content}
-                mode="solve"
-                submit={submits[currentBlock.id]}
-                onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
-                  null,
-                  currentBlock.id,
-                )}
-              />
+              <div className="fade-2000" key={currentBlock.id}>
+                <Block
+                  id={currentBlock.id}
+                  question={currentBlock.question}
+                  index={currentIndex}
+                  order={currentBlock.order}
+                  type={currentBlock.type}
+                  content={currentBlock.content}
+                  mode="solve"
+                  submit={submits[currentBlock.id]}
+                  onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
+                    null,
+                    currentBlock.id,
+                  )}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 {currentIndex > 0 ? (
                   <Button
@@ -446,6 +452,7 @@ interface BlockPlanHeaderProps {
   currentElapsed: number;
   isGenerating?: boolean;
   model: ChatModel;
+  onModelChange?: (model: ChatModel) => void;
   submits: Record<string, BlockAnswerSubmit>;
 }
 
@@ -454,6 +461,7 @@ function BlockPlanHeader({
   currentIndex,
   blocks,
   model,
+  onModelChange,
   currentElapsed,
   isGenerating = false,
   submits,
@@ -554,7 +562,10 @@ function BlockPlanHeader({
       </div>
 
       {/* Current problem info */}
-      <div className="rounded-lg bg-background dark:bg-muted/40 p-4 space-y-2">
+      <div
+        key={currentIndex}
+        className="rounded-lg bg-background dark:bg-muted/40 p-4 space-y-2 fade-2000"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -565,11 +576,11 @@ function BlockPlanHeader({
                 {currentBlockPlan.topic}
               </h3>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {currentBlockPlan.learningObjective}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="items-center gap-2 shrink-0 hidden sm:flex">
             <Badge variant="secondary" className="text-xs shadow-none bg-input">
               {difficultyLabel[currentBlockPlan.expectedDifficulty ?? "medium"]}
             </Badge>
@@ -585,11 +596,21 @@ function BlockPlanHeader({
             {formatTime(currentElapsed)}
           </span>
 
-          <ModelProviderIcon
-            provider={model.provider}
-            className="size-3.5 ml-auto"
-          />
-          <span className="text-xs">{model.model}</span>
+          <div className="ml-auto">
+            <ModelDropDownMenu
+              defaultModel={model}
+              onModelChange={onModelChange}
+              align="end"
+            >
+              <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                <ModelProviderIcon
+                  provider={model.provider}
+                  className="size-3.5"
+                />
+                <span>{model.displayName || model.model}</span>
+              </button>
+            </ModelDropDownMenu>
+          </div>
         </div>
       </div>
     </div>

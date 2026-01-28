@@ -2,9 +2,7 @@ import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
 import z from "zod";
 import { GoBackButton } from "@/components/layouts/go-back-button";
-import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
 
-import { SidebarController } from "@/components/ui/sidebar";
 import { WorkbookEdit } from "@/components/workbook/workbook-edit";
 import { WorkbooksCreateChat } from "@/components/workbook/workbook-edit-chatbot";
 import { getSession } from "@/lib/auth/server";
@@ -29,13 +27,10 @@ export default async function WorkbookEditPage({
 
   return (
     <div className="flex w-full overflow-hidden h-full gap-2">
-      <SidebarController openMounted={false} openUnmounted={true} />
       <div className="flex-1 h-full relative pt-14">
-        <HeaderWithSidebarToggle className="absolute h-fit">
-          <GoBackButton arrow={false} href="/workbooks/creator">
-            뒤로가기
-          </GoBackButton>
-        </HeaderWithSidebarToggle>
+        <div className="p-4 absolute top-0 left-0 z-10 w-full">
+          <GoBackButton href="/workbooks/creator">뒤로가기</GoBackButton>
+        </div>
         <WorkbookEdit key={id} book={workBook} blocks={blocks} />
       </div>
       <div className="hidden lg:block w-sm lg:w-lg xl:w-2xl 2xl:w-3xl h-full py-2 pr-2">

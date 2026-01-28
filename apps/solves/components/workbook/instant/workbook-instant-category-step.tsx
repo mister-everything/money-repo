@@ -18,7 +18,7 @@ export function WorkbookInstantCategoryStep({
   return (
     <div className="flex flex-col gap-4">
       <div className="space-y-3">
-        <div className="flex items-center gap-2  font-semibold">
+        <div className="flex items-center gap-2 font-semibold">
           <span>풀고 싶은 소재를 골라주세요</span>
         </div>
         <CategorySelector

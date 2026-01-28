@@ -1,7 +1,7 @@
 import { workBookService } from "@service/solves";
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://www.solves-ai.com";
+import { BASE_URL } from "@/lib/const";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 정적 페이지

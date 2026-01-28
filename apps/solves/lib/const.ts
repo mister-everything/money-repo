@@ -1,3 +1,5 @@
+import { IS_PROD } from "@workspace/util/const";
+
 export const AUTH_COOKIE_PREFIX = "money-repo-solves";
 export const SOLVES_PROTOCOL_TAG = "solves-protocol";
 
@@ -62,3 +64,7 @@ export const WorkBookAgeGroup = [
     aiPrompt: "",
   },
 ] as const;
+
+export const BASE_URL = IS_PROD
+  ? (process.env.APP_DOMAIN ?? "https://www.solves-ai.com")
+  : "http://localhost:3000";

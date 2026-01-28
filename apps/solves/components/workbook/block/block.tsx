@@ -84,6 +84,22 @@ function PureBlock<T extends BlockType = BlockType>({
   ref,
   ...props
 }: BlockProps<T>) {
+  const isEditAgentAble = useMemo(() => {
+    return (
+      (props.mode === "edit" || props.mode === "preview") &&
+      props.onUpdateContent &&
+      props.onUpdateAnswer &&
+      props.onUpdateQuestion &&
+      props.onUpdateSolution
+    );
+  }, [
+    props.mode,
+    props.onUpdateContent,
+    props.onUpdateAnswer,
+    props.onUpdateQuestion,
+    props.onUpdateSolution,
+  ]);
+
   const blockErrorMessage = useMemo(() => {
     if (props.mode != "edit") return;
     const result = blockValidate({
@@ -120,6 +136,26 @@ function PureBlock<T extends BlockType = BlockType>({
           <Badge variant="secondary">{getBlockDisplayName(props.type)}</Badge>
 
           <div className="flex-1" />
+          {isEditAgentAble && (
+            <BlockEditAgent
+              type={props.type}
+              question={props.question}
+              content={props.content ?? ({} as BlockContent<T>)}
+              answer={props.answer ?? ({} as BlockAnswer<T>)}
+              onUpdateQuestion={props.onUpdateQuestion}
+              onUpdateContent={props.onUpdateContent}
+              onUpdateAnswer={props.onUpdateAnswer}
+              onUpdateSolution={props.onUpdateSolution}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className=" hover:bg-point! hover:text-primary-foreground bg-transparent!"
+              >
+                <SparklesIcon className="size-4" />
+              </Button>
+            </BlockEditAgent>
+          )}
           {props.mode === "preview" && props.onToggleEditMode && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -153,27 +189,6 @@ function PureBlock<T extends BlockType = BlockType>({
                 <span>문제 삭제</span>
               </TooltipContent>
             </Tooltip>
-          )}
-
-          {props.mode === "edit" && (
-            <BlockEditAgent
-              type={props.type}
-              question={props.question}
-              content={props.content ?? ({} as BlockContent<T>)}
-              answer={props.answer ?? ({} as BlockAnswer<T>)}
-              onUpdateQuestion={props.onUpdateQuestion}
-              onUpdateContent={props.onUpdateContent}
-              onUpdateAnswer={props.onUpdateAnswer}
-              onUpdateSolution={props.onUpdateSolution}
-            >
-              <Button
-                variant="outline"
-                size="icon"
-                className="border-point! hover:bg-point! hover:text-primary-foreground text-point bg-transparent!"
-              >
-                <SparklesIcon className="size-4" />
-              </Button>
-            </BlockEditAgent>
           )}
 
           {props.mode === "edit" && (

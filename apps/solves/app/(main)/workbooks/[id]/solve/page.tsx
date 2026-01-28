@@ -1,6 +1,5 @@
 import { workBookService } from "@service/solves";
 import { notFound } from "next/navigation";
-import { SidebarController } from "@/components/ui/sidebar";
 import { WorkBookSolve } from "@/components/workbook/workbook-solve";
 import { getSession } from "@/lib/auth/server";
 
@@ -21,7 +20,6 @@ export default async function Page({
 
   return (
     <div className="flex w-full px-4">
-      <SidebarController openMounted={false} />
       <WorkBookSolve workBook={book} />
     </div>
   );

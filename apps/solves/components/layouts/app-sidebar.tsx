@@ -22,6 +22,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -36,6 +37,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
+      <SidebarRail />
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

@@ -788,7 +788,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             />
           ) : (
             <div className="flex flex-wrap gap-2 items-center">
-              {mentionWithBlock.length ? (
+              {mentionWithBlock.length > 0 &&
                 mentionWithBlock.map((mention) => (
                   <Tooltip key={mention.id} delayDuration={500}>
                     <TooltipTrigger asChild>
@@ -811,97 +811,7 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
                       문제가 AI에 참고 됩니다. 문제를 제거하려면 클릭해주세요.
                     </TooltipContent>
                   </Tooltip>
-                ))
-              ) : (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <WorkbookOptionSituation
-                          value={workbookOption?.situation}
-                          onChange={(value) =>
-                            setWorkbookOption({
-                              ...workbookOption!,
-                              situation: value,
-                            })
-                          }
-                          align="start"
-                          side="top"
-                        >
-                          <Badge
-                            variant={"outline"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer shadow-none"
-                          >
-                            {WorkBookSituation.find(
-                              (value) =>
-                                value.value === workbookOption?.situation,
-                            )?.label || "상황"}
-                          </Badge>
-                        </WorkbookOptionSituation>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>상황</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <WorkbookOptionAgeGroup
-                          value={workbookOption?.ageGroup}
-                          onChange={(value) =>
-                            setWorkbookOption({
-                              ...workbookOption!,
-                              ageGroup: value,
-                            })
-                          }
-                          align="start"
-                          side="top"
-                        >
-                          <Badge
-                            variant={"outline"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none"
-                          >
-                            {WorkBookAgeGroup.find(
-                              (value) =>
-                                value.value === workbookOption?.ageGroup,
-                            )?.label || "연령대"}
-                          </Badge>
-                        </WorkbookOptionAgeGroup>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>연령대</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <WorkbookOptionBlockTypes
-                          value={workbookOption?.blockTypes}
-                          onChange={(value) =>
-                            setWorkbookOption({
-                              ...workbookOption,
-                              blockTypes: value,
-                            })
-                          }
-                          align="start"
-                          side="top"
-                        >
-                          <Badge
-                            variant={"outline"}
-                            className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none"
-                          >
-                            {workbookOption?.blockTypes?.length ==
-                            Object.keys(blockDisplayNames).length
-                              ? "모든 유형"
-                              : workbookOption?.blockTypes
-                                  ?.map((value) => blockDisplayNames[value])
-                                  .join(", ") || "문제 유형"}
-                          </Badge>
-                        </WorkbookOptionBlockTypes>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>문제 유형</TooltipContent>
-                  </Tooltip>
-                </>
-              )}
+                ))}
               {threadContextPercent >= 20 && (
                 <span className="ml-auto text-2xs text-muted-foreground">
                   {threadContextPercent}%
@@ -930,7 +840,94 @@ export function WorkbooksCreateChat({ workbookId }: WorkbooksCreateChatProps) {
             chatModel={chatModel}
             onChatModelChange={setChatModel}
             onSendButtonClick={() => (isChatPending ? stop() : send())}
-          />
+          >
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <WorkbookOptionSituation
+                      value={workbookOption?.situation}
+                      onChange={(value) =>
+                        setWorkbookOption({
+                          ...workbookOption!,
+                          situation: value,
+                        })
+                      }
+                      align="start"
+                      side="top"
+                    >
+                      <Badge
+                        variant={"secondary"}
+                        className="fade-300 data-[state=open]:bg-input! text-xs  cursor-pointer shadow-none bg-input"
+                      >
+                        {WorkBookSituation.find(
+                          (value) => value.value === workbookOption?.situation,
+                        )?.label || "상황"}
+                      </Badge>
+                    </WorkbookOptionSituation>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>상황</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <WorkbookOptionAgeGroup
+                      value={workbookOption?.ageGroup}
+                      onChange={(value) =>
+                        setWorkbookOption({
+                          ...workbookOption!,
+                          ageGroup: value,
+                        })
+                      }
+                      align="start"
+                      side="top"
+                    >
+                      <Badge
+                        variant={"secondary"}
+                        className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none bg-input"
+                      >
+                        {WorkBookAgeGroup.find(
+                          (value) => value.value === workbookOption?.ageGroup,
+                        )?.label || "연령대"}
+                      </Badge>
+                    </WorkbookOptionAgeGroup>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>연령대</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <WorkbookOptionBlockTypes
+                      value={workbookOption?.blockTypes}
+                      onChange={(value) =>
+                        setWorkbookOption({
+                          ...workbookOption,
+                          blockTypes: value,
+                        })
+                      }
+                      align="start"
+                      side="top"
+                    >
+                      <Badge
+                        variant={"secondary"}
+                        className="fade-300 data-[state=open]:bg-input! text-xs cursor-pointer shadow-none bg-input"
+                      >
+                        {workbookOption?.blockTypes?.length ==
+                        Object.keys(blockDisplayNames).length
+                          ? "모든 유형"
+                          : workbookOption?.blockTypes
+                              ?.map((value) => blockDisplayNames[value])
+                              .join(", ") || "문제 유형"}
+                      </Badge>
+                    </WorkbookOptionBlockTypes>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>문제 유형</TooltipContent>
+              </Tooltip>
+            </>
+          </PromptInput>
         </div>
       </div>
     </div>

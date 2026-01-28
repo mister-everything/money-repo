@@ -92,58 +92,54 @@ export function WorkbookReport({
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <div className="h-full relative">
-      <div className="h-full relative">
-        <div className="max-w-5xl mx-auto pb-24 px-4 sm:px-6">
-          <ReportHeader book={book} />
-          <Tabs
-            defaultValue="overview"
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full space-y-6 fade-1000"
-          >
-            <div className="flex items-center justify-between">
-              <TabsList className="grid w-full grid-cols-3 h-12 gap-1 bg-transparent">
-                <TabsTrigger
-                  className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
-                  value="overview"
-                >
-                  통계 개요
-                </TabsTrigger>
-                <TabsTrigger
-                  className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
-                  value="questions"
-                >
-                  문제별 분석
-                </TabsTrigger>
-                <TabsTrigger
-                  className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
-                  value="settings"
-                >
-                  설정
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="overview" className="space-y-6">
-              <OverviewTab
-                book={book}
-                blockStats={blockStats}
-                scoreDistribution={scoreDistribution}
-                dailySolves={dailySolves}
-              />
-            </TabsContent>
-
-            <TabsContent value="questions" className="space-y-6">
-              <QuestionsTab blockStats={blockStats} />
-            </TabsContent>
-
-            <TabsContent value="settings" className="space-y-6">
-              <SettingsTab book={book} />
-            </TabsContent>
-          </Tabs>
+    <div className="w-full pb-24 px-4 sm:px-6">
+      <ReportHeader book={book} />
+      <Tabs
+        defaultValue="overview"
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full space-y-6 fade-1000"
+      >
+        <div className="flex items-center justify-between">
+          <TabsList className="grid w-full grid-cols-3 h-12 gap-1 bg-transparent">
+            <TabsTrigger
+              className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
+              value="overview"
+            >
+              통계 개요
+            </TabsTrigger>
+            <TabsTrigger
+              className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
+              value="questions"
+            >
+              문제별 분석
+            </TabsTrigger>
+            <TabsTrigger
+              className="dark:hover:bg-secondary hover:bg-background data-[state=active]:border-none data-[state=active]:shadow-none dark:data-[state=active]:bg-secondary/80 data-[state=active]:bg-background"
+              value="settings"
+            >
+              설정
+            </TabsTrigger>
+          </TabsList>
         </div>
-      </div>
+
+        <TabsContent value="overview" className="space-y-6">
+          <OverviewTab
+            book={book}
+            blockStats={blockStats}
+            scoreDistribution={scoreDistribution}
+            dailySolves={dailySolves}
+          />
+        </TabsContent>
+
+        <TabsContent value="questions" className="space-y-6">
+          <QuestionsTab blockStats={blockStats} />
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <SettingsTab book={book} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
