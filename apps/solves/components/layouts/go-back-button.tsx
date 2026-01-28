@@ -6,6 +6,18 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
+function isSameOriginReferrer() {
+  if (typeof document === "undefined") return false;
+  const ref = document.referrer;
+  if (!ref) return false;
+
+  try {
+    return new URL(ref).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 export function GoBackButton({
   className,
   children,
@@ -23,7 +35,12 @@ export function GoBackButton({
 
   const onBack = () => {
     if (href) router.push(href);
-    else if (window.history.length > 1) router.back();
+    const canBack =
+      typeof window !== "undefined" &&
+      window.history.length > 1 &&
+      isSameOriginReferrer();
+
+    if (canBack) router.back();
     else router.replace("/");
   };
 

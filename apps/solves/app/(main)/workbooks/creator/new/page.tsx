@@ -51,7 +51,7 @@ export default async function WorkBookCreatePage({
           문제집 생성
         </span>
       </HeaderWithSidebarToggle>
-      <div className="w-max-3xl mx-auto flex flex-col w-full p-6 pt-0! h-full">
+      <div className="flex flex-col w-full p-6 pt-0! h-full">
         <WorkbookCreateForm
           isMaxInprogressWorkbookCreateCount={
             isMaxInprogressWorkbookCreateCount
@@ -70,21 +70,16 @@ export default async function WorkBookCreatePage({
         />
 
         {hasSession ? (
-          <div className="flex flex-col gap-1 mt-12">
-            <Label className="font-semibold mb-4">
-              {isMaxInprogressWorkbookCreateCount
-                ? "만들고 있는 문제집"
-                : "최근 생성한 문제집"}
-            </Label>
-
-            {latest3Workbooks.length > 0 ? (
+          latest3Workbooks.length > 0 ? (
+            <div className="flex flex-col gap-1 mt-12">
+              <Label className="font-semibold mb-4">
+                {isMaxInprogressWorkbookCreateCount
+                  ? "만들고 있는 문제집"
+                  : "최근 생성한 문제집"}
+              </Label>
               <LatestWorkbooks initialWorkBooks={latest3Workbooks} />
-            ) : (
-              <div className="text-center text-muted-foreground py-18 w-full h-full flex items-center justify-center">
-                <p>새로운 문제집을 만들어보세요</p>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null
         ) : (
           <div className="flex-1 flex items-center justify-center w-full">
             <LoginPreviewSection />
