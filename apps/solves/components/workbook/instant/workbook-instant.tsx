@@ -59,6 +59,7 @@ export function WorkbookInstant() {
       workbookPlan={workbookPlan!}
       categoryId={categoryId!}
       model={chatModel!}
+      onModelChange={setChatModel}
       onRestart={handleRestart}
     />
   );

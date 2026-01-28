@@ -20,6 +20,7 @@ import {
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { generateBlockByPlanAction } from "@/actions/workbook-ai";
+import { ModelDropDownMenu } from "@/components/chat/model-drop-down-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GradualSpacingText } from "@/components/ui/gradual-spacing-text";
@@ -37,6 +38,7 @@ interface WorkbookInstantSolveProps {
   workbookPlan: WorkbookPlan;
   categoryId: number;
   model: ChatModel;
+  onModelChange?: (model: ChatModel) => void;
   onRestart: () => void;
 }
 
@@ -44,6 +46,7 @@ export function WorkbookInstantSolve({
   workbookPlan,
   categoryId,
   model,
+  onModelChange,
   onRestart,
 }: WorkbookInstantSolveProps) {
   const [isCompleted, setIsCompleted] = useState(false);
@@ -346,6 +349,7 @@ export function WorkbookInstantSolve({
         <>
           <BlockPlanHeader
             model={model}
+            onModelChange={onModelChange}
             workbookPlan={workbookPlan}
             currentIndex={currentIndex}
             blocks={blocks}
@@ -448,6 +452,7 @@ interface BlockPlanHeaderProps {
   currentElapsed: number;
   isGenerating?: boolean;
   model: ChatModel;
+  onModelChange?: (model: ChatModel) => void;
   submits: Record<string, BlockAnswerSubmit>;
 }
 
@@ -456,6 +461,7 @@ function BlockPlanHeader({
   currentIndex,
   blocks,
   model,
+  onModelChange,
   currentElapsed,
   isGenerating = false,
   submits,
@@ -590,11 +596,21 @@ function BlockPlanHeader({
             {formatTime(currentElapsed)}
           </span>
 
-          <ModelProviderIcon
-            provider={model.provider}
-            className="size-3.5 ml-auto"
-          />
-          <span className="text-xs">{model.model}</span>
+          <div className="ml-auto">
+            <ModelDropDownMenu
+              defaultModel={model}
+              onModelChange={onModelChange}
+              align="end"
+            >
+              <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                <ModelProviderIcon
+                  provider={model.provider}
+                  className="size-3.5"
+                />
+                <span>{model.displayName || model.model}</span>
+              </button>
+            </ModelDropDownMenu>
+          </div>
         </div>
       </div>
     </div>
