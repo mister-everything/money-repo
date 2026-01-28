@@ -37,6 +37,7 @@ interface PromptInputProps {
   editorRef?: RefObject<Editor | null>;
   autofocus?: boolean;
   className?: string;
+  children?: React.ReactNode;
 }
 
 export default function PromptInput({
@@ -54,6 +55,7 @@ export default function PromptInput({
   onChatModelChange,
   mentionItems,
   onAppendMention,
+  children,
   onMentionChange,
   editorRef,
   className,
@@ -90,7 +92,9 @@ export default function PromptInput({
           autofocus={autofocus}
         />
       </div>
-      <div className="w-full flex justify-end gap-1 items-center">
+      <div className="w-full flex gap-1 items-center">
+        {children}
+        <div className="flex-1" />
         <ModelDropDownMenu
           defaultModel={chatModel}
           onModelChange={onChatModelChange}

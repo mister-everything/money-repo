@@ -2,8 +2,8 @@ import { workBookService } from "@service/solves";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GoBackButton } from "@/components/layouts/go-back-button";
-import { SidebarController } from "@/components/ui/sidebar";
 import { WorkbookPublicPreview } from "@/components/workbook/workbook-public-preview";
+import { BASE_URL } from "@/lib/const";
 
 // 30분(1800초) 동안 캐싱 후 revalidate
 export const revalidate = 30;
@@ -39,8 +39,16 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
+      images: [
+        {
+          url: `${BASE_URL}/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: "Solves - AI와 함께 만드는 나만의 문제집",
+        },
+      ],
       type: "article",
-      url: `https://www.solves-ai.com/workbooks/${id}/preview`,
+      url: `${BASE_URL}/workbooks/${id}/preview`,
       authors: [book.ownerName ?? "알수없는사용자"],
       publishedTime: book.publishedAt?.toISOString(),
       tags: book.tags.map((tag) => tag.name),
@@ -64,7 +72,6 @@ export default async function WorkbookPreviewPage({ params }: PageProps) {
 
   return (
     <div className="flex w-full h-full relative">
-      <SidebarController openMounted={false} openUnmounted={true} />
       <div className="flex-1">
         <div className="p-4 absolute top-0 left-0 z-10 w-full">
           <GoBackButton>목록으로</GoBackButton>

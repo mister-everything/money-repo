@@ -4,6 +4,7 @@ import { ChevronLeftIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 export function GoBackButton({
   className,
@@ -31,7 +32,11 @@ export function GoBackButton({
       variant={isMobile ? "secondary" : "ghost"}
       size={children ? "default" : "icon"}
       onClick={onBack}
-      className={className}
+      className={cn(
+        "shadow-none backdrop-blur-md",
+        isMobile && "bg-input",
+        className,
+      )}
     >
       {arrow && <ChevronLeftIcon className="size-4!" />}
       {children}

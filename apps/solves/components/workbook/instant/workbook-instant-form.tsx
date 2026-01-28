@@ -147,7 +147,7 @@ export function WorkbookInstantForm({
   return (
     <div className="w-full space-y-6 max-w-4xl mx-auto">
       <header className="flex flex-col gap-2 py-4">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+        <h1 className="text-lg sm:text-2xl font-bold text-foreground flex items-center gap-2">
           검색 없이 바로 시작하는 문제집 풀기
           <Badge className="rounded-full text-xs">Beta</Badge>
         </h1>
@@ -157,7 +157,7 @@ export function WorkbookInstantForm({
         </p>
       </header>
 
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-4 pb-12">
         {/* Step Indicator */}
         <div className="w-full flex items-center justify-center gap-1 pb-6">
           {[

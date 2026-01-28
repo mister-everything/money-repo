@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthCheck } from "@/components/layouts/auth-check";
 import { SwrProvider } from "@/components/swr-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { BASE_URL } from "@/lib/const";
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -18,10 +19,9 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 });
 
-const BASE_URL = "https://www.solves-ai.com";
-
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
+
   title: {
     default: "Solves - AI와 함께 만드는 나만의 문제집",
     template: "%s | Solves",
@@ -32,6 +32,14 @@ export const metadata: Metadata = {
   authors: [{ name: "Solves" }],
   openGraph: {
     type: "website",
+    images: [
+      {
+        url: `${BASE_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Solves - AI와 함께 만드는 나만의 문제집",
+      },
+    ],
     locale: "ko_KR",
     url: BASE_URL,
     siteName: "Solves",

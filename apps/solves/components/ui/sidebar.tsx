@@ -1,7 +1,7 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import { isNull } from "@workspace/util";
+import { createDebounce, isNull } from "@workspace/util";
 import { cva, type VariantProps } from "class-variance-authority";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -728,6 +728,8 @@ function SidebarMenuSubButton({
   );
 }
 
+const debounce = createDebounce();
+
 function SidebarController({
   openMounted,
   openUnmounted,
@@ -737,13 +739,17 @@ function SidebarController({
 }) {
   const { setOpen } = useSidebar();
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (!isNull(openMounted)) {
-      setOpen(openMounted);
+      debounce(() => {
+        setOpen(openMounted);
+      }, 50);
     }
     if (!isNull(openUnmounted)) {
       return () => {
-        setOpen(openUnmounted);
+        debounce(() => {
+          setOpen(openUnmounted);
+        }, 50);
       };
     }
   }, []);

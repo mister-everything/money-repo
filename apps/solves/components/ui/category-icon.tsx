@@ -32,7 +32,7 @@ export function CategoryIcon({
   if (categoryName?.startsWith("업무"))
     return <BriefcaseBusinessIcon {...props} />;
   // MBTI 성향
-  if (categoryName?.startsWith("MBTI")) return <UserRoundIcon {...props} />;
+  if (categoryName?.startsWith("심리")) return <UserRoundIcon {...props} />;
 
   // 취미 라이프 스타일
   if (categoryName?.startsWith("취미")) return <HouseHeartIcon {...props} />;

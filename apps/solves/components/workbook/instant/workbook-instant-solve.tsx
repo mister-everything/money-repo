@@ -221,9 +221,9 @@ export function WorkbookInstantSolve({
   if (isCompleted) {
     return (
       <div className="w-full space-y-4 max-w-4xl mx-auto">
-        <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-input px-4 py-2">
+            <div className="px-4 py-2">
               <div className="flex items-center gap-2 text-sm">
                 <ClockIcon className="size-4 text-muted-foreground" />
                 <span className="font-semibold tabular-nums">
@@ -235,8 +235,8 @@ export function WorkbookInstantSolve({
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="secondary"
-              className="bg-input shadow-none"
+              variant="ghost"
+              className="shadow-none"
               onClick={() => {
                 setIsCompleted(false);
                 setCurrentIndex(0);
@@ -294,15 +294,15 @@ export function WorkbookInstantSolve({
   }
 
   return (
-    <div className="w-full space-y-6 max-w-4xl mx-auto">
+    <div className="w-full space-y-6 max-w-4xl mx-auto pb-12">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="fade-2000 text-2xl font-bold">
+          <h1 className="fade-2000 text-base sm:text-2xl font-bold">
             {workbookPlan.overview.title}
           </h1>
           <Badge className="rounded-full text-xs">Beta</Badge>
         </div>
-        <p className="text-sm text-muted-foreground max-w-2xl">
+        <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
           <GradualSpacingText text={workbookPlan.overview.description} />
         </p>
       </div>
@@ -355,20 +355,22 @@ export function WorkbookInstantSolve({
           />
           {currentBlock ? (
             <>
-              <Block
-                id={currentBlock.id}
-                question={currentBlock.question}
-                index={currentIndex}
-                order={currentBlock.order}
-                type={currentBlock.type}
-                content={currentBlock.content}
-                mode="solve"
-                submit={submits[currentBlock.id]}
-                onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
-                  null,
-                  currentBlock.id,
-                )}
-              />
+              <div className="fade-2000" key={currentBlock.id}>
+                <Block
+                  id={currentBlock.id}
+                  question={currentBlock.question}
+                  index={currentIndex}
+                  order={currentBlock.order}
+                  type={currentBlock.type}
+                  content={currentBlock.content}
+                  mode="solve"
+                  submit={submits[currentBlock.id]}
+                  onUpdateSubmitAnswer={handleUpdateSubmitAnswer.bind(
+                    null,
+                    currentBlock.id,
+                  )}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 {currentIndex > 0 ? (
                   <Button
@@ -554,7 +556,10 @@ function BlockPlanHeader({
       </div>
 
       {/* Current problem info */}
-      <div className="rounded-lg bg-background dark:bg-muted/40 p-4 space-y-2">
+      <div
+        key={currentIndex}
+        className="rounded-lg bg-background dark:bg-muted/40 p-4 space-y-2 fade-2000"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -565,11 +570,11 @@ function BlockPlanHeader({
                 {currentBlockPlan.topic}
               </h3>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {currentBlockPlan.learningObjective}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="items-center gap-2 shrink-0 hidden sm:flex">
             <Badge variant="secondary" className="text-xs shadow-none bg-input">
               {difficultyLabel[currentBlockPlan.expectedDifficulty ?? "medium"]}
             </Badge>
