@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -17,13 +18,46 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 });
 
+const BASE_URL = "https://www.solves-ai.com";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "Solves - AI와 함께 만드는 나만의 문제집",
+    template: "%s | Solves",
+  },
+  description:
+    "호기심이 문제가 되는 순간, Solves. AI와 함께 만드는 나만의 지식 놀이터. 상상하던 모든 것을 문제집으로 만들어보세요.",
+  keywords: ["AI", "문제집", "퀴즈", "학습", "교육", "Solves"],
+  authors: [{ name: "Solves" }],
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: BASE_URL,
+    siteName: "Solves",
+    title: "Solves - AI와 함께 만드는 나만의 문제집",
+    description:
+      "호기심이 문제가 되는 순간, Solves. AI와 함께 만드는 나만의 지식 놀이터.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Solves - AI와 함께 만드는 나만의 문제집",
+    description:
+      "호기심이 문제가 되는 순간, Solves. AI와 함께 만드는 나만의 지식 놀이터.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning>
       <head>
         {/* Google Tag Manager */}
         <Script

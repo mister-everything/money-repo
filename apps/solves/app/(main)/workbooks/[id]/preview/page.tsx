@@ -40,6 +40,7 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
+      url: `https://www.solves-ai.com/workbooks/${id}/preview`,
       authors: [book.ownerName ?? "알수없는사용자"],
       publishedTime: book.publishedAt?.toISOString(),
       tags: book.tags.map((tag) => tag.name),
