@@ -1,6 +1,6 @@
 import { workBookService } from "@service/solves";
 import { WorkbooksClient } from "@/app/(main)/workbooks/client";
-import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
+import { SidebarHeaderLayout } from "@/components/layouts/sidebat-header-layout";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +10,8 @@ export default async function Page() {
   });
 
   return (
-    <div className="flex flex-col">
-      <HeaderWithSidebarToggle>
-        <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
-          문제 풀기
-        </span>
-      </HeaderWithSidebarToggle>
+    <SidebarHeaderLayout menuName="문제 풀기">
       <WorkbooksClient initialWorkBooks={workBooks} />
-    </div>
+    </SidebarHeaderLayout>
   );
 }

@@ -1,8 +1,10 @@
 import { workBookService } from "@service/solves";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { GoBackButton } from "@/components/layouts/go-back-button";
+import { BaseContainer } from "@/components/layouts/base-container";
+import { GoBackLayout } from "@/components/layouts/go-back-layout";
 import { WorkbookPublicPreview } from "@/components/workbook/workbook-public-preview";
+import { WorkbookSolveNavigateButton } from "@/components/workbook/workbook-solve-navigate-button";
 import { BASE_URL } from "@/lib/const";
 
 // 30분(1800초) 동안 캐싱 후 revalidate
@@ -71,13 +73,16 @@ export default async function WorkbookPreviewPage({ params }: PageProps) {
   if (!book) notFound();
 
   return (
-    <div className="flex w-full h-full relative">
-      <div className="flex-1">
-        <div className="p-4 absolute top-0 left-0 z-10 w-full">
-          <GoBackButton>목록으로</GoBackButton>
+    <GoBackLayout className="h-full overflow-hidden">
+      <div className="h-2/3 pointer-events-none absolute left-0 bottom-0 w-full bg-linear-to-b from-transparent via-background/60 to-background z-10 flex flex-col items-center justify-end gap-4">
+        <div className="absolute inset-0 bg-linear-to-b from-transparent to-primary/10" />
+        <div className="pointer-events-auto">
+          <WorkbookSolveNavigateButton workBookId={id} />
         </div>
-        <WorkbookPublicPreview book={book} />
       </div>
-    </div>
+      <BaseContainer className="h-full overflow-y-auto">
+        <WorkbookPublicPreview book={book} />
+      </BaseContainer>
+    </GoBackLayout>
   );
 }

@@ -733,9 +733,11 @@ const debounce = createDebounce();
 function SidebarController({
   openMounted,
   openUnmounted,
+  children,
 }: {
   openMounted?: boolean;
   openUnmounted?: boolean;
+  children?: React.ReactNode;
 }) {
   const { setOpen } = useSidebar();
 
@@ -754,7 +756,7 @@ function SidebarController({
     }
   }, []);
 
-  return null;
+  return <>{children}</>;
 }
 
 export {

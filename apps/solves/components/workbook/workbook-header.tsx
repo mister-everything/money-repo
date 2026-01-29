@@ -199,7 +199,7 @@ export function WorkbookHeader({
       <CardContent>
         <div className="flex gap-2 flex-wrap justify-end">
           {book.tags.map((tag) => (
-            <Badge variant={"secondary"} key={tag.id} className="rounded-xs">
+            <Badge variant={"secondary"} key={tag.id}>
               <HashIcon className="size-2.5" />
               {tag.name}
             </Badge>

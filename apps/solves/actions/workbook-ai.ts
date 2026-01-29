@@ -138,6 +138,7 @@ export const generateWorkbookPlanAction = safeAction(
       schema: workbookPlanSchema,
       system: planningPrompt,
       messages: convertToModelMessages(messages),
+      maxRetries: 1,
     });
     const { inputTokens, outputTokens } = getTokens(result.usage);
     const metadata: AssistantMessageMetadata = {
@@ -184,6 +185,7 @@ export const generateWorkbookPlanQuestionAction = safeAction(
       model: getChatModel(model),
       schema: askQuestionInputSchema,
       system: planningPrompt,
+      maxRetries: 1,
       prompt,
     });
     const { inputTokens, outputTokens } = getTokens(result.usage);
@@ -247,6 +249,7 @@ export const generateBlockByPlanAction = safeAction(
       schema,
       system: systemPrompt,
       prompt: JSON.stringify({ blockPlan }),
+      maxRetries: 1,
     });
 
     const { inputTokens, outputTokens } = getTokens(response.usage);

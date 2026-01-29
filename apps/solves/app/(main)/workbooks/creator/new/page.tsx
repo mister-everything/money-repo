@@ -1,6 +1,6 @@
 import { workBookService } from "@service/solves";
 import { BlockType, blockDisplayNames } from "@service/solves/shared";
-import { HeaderWithSidebarToggle } from "@/components/layouts/header-with-sidebar-toggle";
+import { SidebarHeaderLayout } from "@/components/layouts/sidebat-header-layout";
 import { Label } from "@/components/ui/label";
 import { WorkbookCreateForm } from "@/components/workbook/workbook-create-form";
 import { safeGetSession } from "@/lib/auth/server";
@@ -45,12 +45,7 @@ export default async function WorkBookCreatePage({
   const hasSession = !!session?.user;
 
   return (
-    <div className="flex flex-col">
-      <HeaderWithSidebarToggle>
-        <span className="text-sm font-semibold hover:text-muted-foreground transition-colors">
-          문제집 생성
-        </span>
-      </HeaderWithSidebarToggle>
+    <SidebarHeaderLayout menuName="문제집 생성">
       <div className="flex flex-col w-full p-6 pt-0! h-full">
         <WorkbookCreateForm
           isMaxInprogressWorkbookCreateCount={
@@ -86,6 +81,6 @@ export default async function WorkBookCreatePage({
           </div>
         )}
       </div>
-    </div>
+    </SidebarHeaderLayout>
   );
 }

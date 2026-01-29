@@ -1,7 +1,6 @@
 "use client";
 
 import { BlockType, ChatModel } from "@service/solves/shared";
-import { errorToString } from "@workspace/util";
 
 import { motion } from "framer-motion";
 import { LoaderIcon } from "lucide-react";
@@ -80,7 +79,7 @@ export function WorkbookInstantForm({
       onSuccess: (result) => {
         onWorkbookPlanChange(result.plan);
       },
-      failMessage: errorToString,
+      failMessage: "계획 생성 중 오류가 발생했습니다.",
     },
   );
 
@@ -90,7 +89,7 @@ export function WorkbookInstantForm({
       onSuccess: (result) => {
         setQuestion({ input: result.question });
       },
-      failMessage: errorToString,
+      failMessage: "질문 생성 중 오류가 발생했습니다.",
     },
   );
 
@@ -145,7 +144,7 @@ export function WorkbookInstantForm({
   }, [defaultStep]);
 
   return (
-    <div className="w-full space-y-6 max-w-4xl mx-auto">
+    <div className="w-full space-y-6">
       <header className="flex flex-col gap-2 py-4">
         <h1 className="text-lg sm:text-2xl font-bold text-foreground flex items-center gap-2">
           검색 없이 바로 시작하는 문제집 풀기
@@ -313,7 +312,21 @@ export function WorkbookInstantForm({
             prompt={formData.prompt}
             categoryId={categoryId}
             blockCount={formData.blockCount}
-            onStart={onStart}
+            onNext={onStart}
+            onGenerate={() => {
+              onWorkbookPlanChange(undefined);
+              generatePlan({
+                categoryId: categoryId!,
+                askQuestion: {
+                  input: question.input ?? { questions: [] },
+                  output: question.output ?? { answers: [] },
+                },
+                prompt: formData.prompt,
+                model,
+                blockTypes: formData.blockTypes,
+                blockCount: formData.blockCount,
+              });
+            }}
             onReset={handleReset}
           />
         )}
