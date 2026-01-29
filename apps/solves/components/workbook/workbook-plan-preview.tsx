@@ -26,18 +26,18 @@ interface PlanPreviewProps {
   model: ChatModel;
   blockCount?: number;
   categoryId?: number;
-  onStart?: () => void;
+  onGenerate?: () => void;
+  onNext?: () => void;
   onReset?: () => void;
 }
 
 export function PlanPreview({
   plan,
   isLoading = false,
-
   blockCount = plan?.blockPlans.length ?? 0,
-  model,
   categoryId,
-  onStart,
+  onNext,
+  onGenerate,
   onReset,
 }: PlanPreviewProps) {
   const [expandedBlock, setExpandedBlock] = useState<number | null>(null);
@@ -53,7 +53,17 @@ export function PlanPreview({
     return <PlanGenerationLoading blockCount={blockCount} />;
   }
 
-  if (!plan) return <p>계획을 생성해주세요.</p>;
+  if (!plan)
+    return (
+      <div className="flex flex-col gap-4 h-full w-full items-center justify-center">
+        <p className="py-8">
+          <GradualSpacingText text="계획을 생성해주세요." />
+        </p>
+        <Button className="w-full max-w-lg" size="lg" onClick={onGenerate}>
+          계획 생성
+        </Button>
+      </div>
+    );
 
   const hasConstraintsOrGuidelines =
     (plan.constraints?.length ?? 0) > 0 || (plan.guidelines?.length ?? 0) > 0;
@@ -67,7 +77,7 @@ export function PlanPreview({
             {plan.overview.title}
           </h2>
 
-          <Badge className="rounded-full py-1 text-sm ">
+          <Badge className="rounded-full text-xs">
             {category?.name ?? "선택한 소재"}
           </Badge>
         </div>
@@ -155,7 +165,7 @@ export function PlanPreview({
       </div>
 
       {/* 버튼 */}
-      {(onStart || onReset) && (
+      {(onNext || onReset) && (
         <div className="flex items-center gap-2">
           {onReset && (
             <Button
@@ -167,9 +177,9 @@ export function PlanPreview({
               다시 설계하기
             </Button>
           )}
-          {onStart && (
+          {onNext && (
             <Button
-              onClick={onStart}
+              onClick={onNext}
               size="lg"
               className="h-12 flex-1 gap-2 text-lg"
             >

@@ -453,6 +453,11 @@ export default function FaultyTerminal({
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
       if (mouseReact) ctn.removeEventListener("mousemove", handleMouseMove);
+
+      // 흰색 깜빡임 방지: 캔버스를 먼저 숨긴 후 컨텍스트 해제
+      gl.canvas.style.opacity = "0";
+      gl.canvas.style.visibility = "hidden";
+
       if (gl.canvas.parentElement === ctn) ctn.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
       loadAnimationStartRef.current = 0;

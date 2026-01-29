@@ -223,7 +223,7 @@ export function WorkbookInstantSolve({
 
   if (isCompleted) {
     return (
-      <div className="w-full space-y-4 max-w-4xl mx-auto">
+      <div className="w-full space-y-4">
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="px-4 py-2">
@@ -297,7 +297,7 @@ export function WorkbookInstantSolve({
   }
 
   return (
-    <div className="w-full space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="w-full space-y-6 max-w-4xl mx-auto">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <h1 className="fade-2000 text-base sm:text-2xl font-bold">
